@@ -212,6 +212,30 @@ class PaginaAulas {
 /// Las fechas son **anulables a propósito**: el centro no las ha cargado e
 /// inventarlas sería fabricar dato institucional (R-17). La pantalla debe decir
 /// «sin fechas cargadas», no un rango inventado.
+/// Estados del ciclo de vida de un lapso académico (Bloque E).
+enum EstadoPeriodo {
+  borrador,
+  programado,
+  activo,
+  vencido,
+  cerrado;
+
+  String get etiqueta {
+    switch (this) {
+      case EstadoPeriodo.borrador:
+        return 'Borrador';
+      case EstadoPeriodo.programado:
+        return 'Programado';
+      case EstadoPeriodo.activo:
+        return 'Activo';
+      case EstadoPeriodo.vencido:
+        return 'Vencido';
+      case EstadoPeriodo.cerrado:
+        return 'Cerrado';
+    }
+  }
+}
+
 class Periodo {
   const Periodo({
     required this.id,
@@ -221,6 +245,8 @@ class Periodo {
     this.fechaFin,
     required this.activo,
     required this.vigente,
+    this.cerradoEn,
+    this.cerradoPor,
     this.creadoEn,
     this.actualizadoEn,
   });
@@ -237,6 +263,8 @@ class Periodo {
 
   final bool activo;
   final bool vigente;
+  final DateTime? cerradoEn;
+  final String? cerradoPor;
   final DateTime? creadoEn;
   final DateTime? actualizadoEn;
 
@@ -245,6 +273,16 @@ class Periodo {
 
   /// ¿Tiene fechas cargadas? Si no, la pantalla dice «sin fechas cargadas».
   bool get tieneFechas => fechaInicio != null || fechaFin != null;
+
+  /// Estado institucional derivado del ciclo de vida del lapso (Bloque E).
+  EstadoPeriodo get estado {
+    if (cerradoEn != null) return EstadoPeriodo.cerrado;
+    if (!activo) return EstadoPeriodo.borrador;
+    final hoy = DateTime.now().toIso8601String().substring(0, 10);
+    if (fechaFin != null && fechaFin!.compareTo(hoy) < 0) return EstadoPeriodo.vencido;
+    if (fechaInicio != null && fechaInicio!.compareTo(hoy) > 0) return EstadoPeriodo.programado;
+    return EstadoPeriodo.activo;
+  }
 
   factory Periodo.fromJson(Map<String, dynamic> json) {
     return Periodo(
@@ -255,13 +293,15 @@ class Periodo {
       fechaFin: json['fechaFin'] as String?,
       activo: json['activo'] as bool? ?? false,
       vigente: json['vigente'] as bool? ?? false,
+      cerradoEn: DateTime.tryParse(json['cerradoEn']?.toString() ?? ''),
+      cerradoPor: json['cerradoPor'] as String?,
       creadoEn: DateTime.tryParse(json['creadoEn']?.toString() ?? ''),
       actualizadoEn: DateTime.tryParse(json['actualizadoEn']?.toString() ?? ''),
     );
   }
 
   @override
-  String toString() => 'Periodo($codigo${vigente ? ', vigente' : ''})';
+  String toString() => 'Periodo($codigo${vigente ? ', vigente' : ''}, ${estado.etiqueta})';
 }
 
 /// Una guardia de custodia.

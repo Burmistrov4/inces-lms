@@ -523,6 +523,49 @@ describe('PATCH /api/v1/admin/periodos/:id', () => {
     expect(respuesta.statusCode).toBe(404);
     expect(respuesta.json()).toMatchObject({ error: { codigo: 'PERIODO_INEXISTENTE' } });
   });
+
+  it('cierra un lapso explícitamente (cerrado: true) y deriva estado CERRADO', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/periodos/${ID_PERIODO_2026_2}`,
+      headers: conToken(TOKEN_ADMIN),
+      payload: { cerrado: true, motivo: 'Fin de actividades del lapso formativo' },
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    const cuerpo = respuesta.json() as { periodo: { cerradoEn: string | null; estado: string } };
+    expect(cuerpo.periodo.cerradoEn).not.toBeNull();
+    expect(cuerpo.periodo.estado).toBe('CERRADO');
+  });
+
+  it('reabre un lapso cerrado (cerrado: false) restableciendo estado sin cerrar', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    // Primero cerrar
+    await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/periodos/${ID_PERIODO_2026_2}`,
+      headers: conToken(TOKEN_ADMIN),
+      payload: { cerrado: true },
+    });
+
+    // Luego reabrir
+    const respuesta = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/periodos/${ID_PERIODO_2026_2}`,
+      headers: conToken(TOKEN_ADMIN),
+      payload: { cerrado: false, motivo: 'Reapertura para corrección de notas' },
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    const cuerpo = respuesta.json() as { periodo: { cerradoEn: string | null; estado: string } };
+    expect(cuerpo.periodo.cerradoEn).toBeNull();
+    expect(cuerpo.periodo.estado).not.toBe('CERRADO');
+  });
 });
 
 describe('PUT /api/v1/admin/periodos/:id/vigente', () => {

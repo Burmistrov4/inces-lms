@@ -8,7 +8,9 @@ import {
   diaLegible,
   esChoqueDeAgenda,
   esFechaISO,
+  estadoDePeriodo,
   rangoDeFechasValido,
+  sumarDuracion,
   turnoDeBloque,
 } from '../src/dominio/reglas-cuadrante.js';
 
@@ -352,5 +354,166 @@ describe('los techos del backend y los de la base siguen de acuerdo', () => {
     );
     expect(bloques.length).toBeGreaterThanOrEqual(2);
     expect(bloques.every((limite) => limite === BLOQUE_MAXIMO)).toBe(true);
+  });
+});
+
+describe('sumarDuracion (aritmética de fechas con saturación de meses)', () => {
+  it('suma días directamente respetando el calendario', () => {
+    expect(sumarDuracion('2026-01-10', 10, 'DIAS')).toBe('2026-01-20');
+    expect(sumarDuracion('2026-01-25', 10, 'DIAS')).toBe('2026-02-04');
+    expect(sumarDuracion('2026-12-25', 10, 'DIAS')).toBe('2027-01-04');
+    expect(sumarDuracion('2026-05-01', 0, 'DIAS')).toBe('2026-05-01');
+  });
+
+  it('suma semanas multiplicando por 7', () => {
+    expect(sumarDuracion('2026-01-10', 2, 'SEMANAS')).toBe('2026-01-24');
+    expect(sumarDuracion('2026-01-28', 1, 'SEMANAS')).toBe('2026-02-04');
+  });
+
+  it('suma meses normales cuando el día existe en el mes destino', () => {
+    expect(sumarDuracion('2026-03-15', 3, 'MESES')).toBe('2026-06-15');
+    expect(sumarDuracion('2026-10-15', 5, 'MESES')).toBe('2027-03-15');
+  });
+
+  it('satura al último día de febrero en año común (31-ene + 1 mes = 28-feb)', () => {
+    expect(sumarDuracion('2026-01-31', 1, 'MESES')).toBe('2026-02-28');
+    expect(sumarDuracion('2026-01-30', 1, 'MESES')).toBe('2026-02-28');
+    expect(sumarDuracion('2026-01-29', 1, 'MESES')).toBe('2026-02-28');
+  });
+
+  it('satura al 29 de febrero en año bisiesto (2024)', () => {
+    expect(sumarDuracion('2024-01-31', 1, 'MESES')).toBe('2024-02-29');
+    expect(sumarDuracion('2024-01-30', 1, 'MESES')).toBe('2024-02-29');
+  });
+
+  it('satura a meses de 30 días (31-mar + 1 mes = 30-abr)', () => {
+    expect(sumarDuracion('2026-03-31', 1, 'MESES')).toBe('2026-04-30');
+    expect(sumarDuracion('2026-05-31', 1, 'MESES')).toBe('2026-06-30');
+    expect(sumarDuracion('2026-08-31', 1, 'MESES')).toBe('2026-09-30');
+    expect(sumarDuracion('2026-10-31', 1, 'MESES')).toBe('2026-11-30');
+  });
+
+  it('soporta cruce de año con saturación (31-oct-2026 + 4 meses = 28-feb-2027)', () => {
+    expect(sumarDuracion('2026-10-31', 4, 'MESES')).toBe('2027-02-28');
+  });
+
+  it('rechaza fechas mal formadas o valores inválidos', () => {
+    expect(() => sumarDuracion('2026-02-30', 1, 'MESES')).toThrow();
+    expect(() => sumarDuracion('no-es-fecha', 1, 'MESES')).toThrow();
+    expect(() => sumarDuracion('2026-01-01', -1, 'MESES')).toThrow();
+    expect(() => sumarDuracion('2026-01-01', 1.5, 'MESES')).toThrow();
+  });
+});
+
+describe('estadoDePeriodo (los 5 estados institucionales del Bloque E)', () => {
+  const HOY = '2026-10-14';
+
+  it('CERRADO: tiene closed_at establecido (incluso si activo era true)', () => {
+    expect(
+      estadoDePeriodo(
+        {
+          activo: true,
+          fechaInicio: '2026-09-01',
+          fechaFin: '2026-12-01',
+          cerradoEn: '2026-10-13T10:00:00Z',
+        },
+        HOY,
+      ),
+    ).toBe('CERRADO');
+  });
+
+  it('BORRADOR: activo es false y closed_at es nulo', () => {
+    expect(
+      estadoDePeriodo(
+        {
+          activo: false,
+          fechaInicio: null,
+          fechaFin: null,
+          cerradoEn: null,
+        },
+        HOY,
+      ),
+    ).toBe('BORRADOR');
+  });
+
+  it('PROGRAMADO: activo es true y fechaInicio es posterior a hoy', () => {
+    expect(
+      estadoDePeriodo(
+        {
+          activo: true,
+          fechaInicio: '2026-11-01',
+          fechaFin: '2027-02-01',
+          cerradoEn: null,
+        },
+        HOY,
+      ),
+    ).toBe('PROGRAMADO');
+  });
+
+  it('ACTIVO: activo es true y las fechas cubren el día de hoy', () => {
+    expect(
+      estadoDePeriodo(
+        {
+          activo: true,
+          fechaInicio: '2026-09-01',
+          fechaFin: '2026-11-01',
+          cerradoEn: null,
+        },
+        HOY,
+      ),
+    ).toBe('ACTIVO');
+
+    // Justo el primer día
+    expect(
+      estadoDePeriodo(
+        {
+          activo: true,
+          fechaInicio: '2026-10-14',
+          fechaFin: '2026-12-14',
+          cerradoEn: null,
+        },
+        HOY,
+      ),
+    ).toBe('ACTIVO');
+
+    // Justo el último día
+    expect(
+      estadoDePeriodo(
+        {
+          activo: true,
+          fechaInicio: '2026-08-14',
+          fechaFin: '2026-10-14',
+          cerradoEn: null,
+        },
+        HOY,
+      ),
+    ).toBe('ACTIVO');
+
+    // Sin fechas cargadas (comportamiento seguro para períodos que no han cargado fechas)
+    expect(
+      estadoDePeriodo(
+        {
+          activo: true,
+          fechaInicio: null,
+          fechaFin: null,
+          cerradoEn: null,
+        },
+        HOY,
+      ),
+    ).toBe('ACTIVO');
+  });
+
+  it('VENCIDO: activo es true y fechaFin es anterior a hoy, sin estar cerrado', () => {
+    expect(
+      estadoDePeriodo(
+        {
+          activo: true,
+          fechaInicio: '2026-05-01',
+          fechaFin: '2026-08-31',
+          cerradoEn: null,
+        },
+        HOY,
+      ),
+    ).toBe('VENCIDO');
   });
 });

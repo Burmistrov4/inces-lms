@@ -114,6 +114,78 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
     );
   }
 
+  Future<void> _cambiarCierre(Periodo periodo) async {
+    final estaCerrado = periodo.estado == EstadoPeriodo.cerrado;
+    final accion = estaCerrado ? 'reabrir' : 'cerrar';
+    final motivoCtrl = TextEditingController();
+
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(estaCerrado ? 'Reabrir Lapso' : 'Cerrar Lapso'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              estaCerrado
+                  ? '¿Deseas reabrir el lapso «${periodo.etiqueta}»? Volverá a admitir planificaciones y modificaciones.'
+                  : '¿Deseas cerrar el lapso «${periodo.etiqueta}»? Quedará archivado en el historial de lapsos.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: motivoCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Motivo (opcional para auditoría)',
+                hintText: 'Ej. Culminación de clases / Ajuste institucional',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(estaCerrado ? 'Reabrir' : 'Cerrar lapso'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmado != true || !mounted) return;
+
+    setState(() => _guardandoId = periodo.id);
+    final resultado = await _repo.actualizarPeriodo(
+      periodo.id,
+      CambiosPeriodo(
+        cerrado: !estaCerrado,
+        motivo: motivoCtrl.text.trim().isNotEmpty ? motivoCtrl.text.trim() : null,
+      ),
+    );
+
+    if (!mounted) return;
+    setState(() => _guardandoId = null);
+
+    resultado.when(
+      success: (_) {
+        _cargar();
+        mostrarAviso(
+          context,
+          'Lapso ${estaCerrado ? 'reabierto' : 'cerrado'} correctamente.',
+          exito: true,
+        );
+      },
+      failure: (fallo) => mostrarAviso(
+        context,
+        'Error al $accion el lapso: ${fallo.message}',
+        error: true,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -166,6 +238,7 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
         guardando: _guardandoId == _periodos[indice].id,
         onEditar: () => _abrirFormulario(existente: _periodos[indice]),
         onMarcarVigente: () => _marcarVigente(_periodos[indice]),
+        onCambiarCierre: () => _cambiarCierre(_periodos[indice]),
       ),
     );
   }
@@ -178,17 +251,19 @@ class _FilaLapso extends StatelessWidget {
     required this.guardando,
     required this.onEditar,
     required this.onMarcarVigente,
+    required this.onCambiarCierre,
   });
 
   final Periodo periodo;
   final bool guardando;
   final VoidCallback onEditar;
   final VoidCallback onMarcarVigente;
+  final VoidCallback onCambiarCierre;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cerrado = !periodo.activo;
+    final estaCerrado = periodo.estado == EstadoPeriodo.cerrado;
 
     return Card(
       child: Padding(
@@ -226,7 +301,7 @@ class _FilaLapso extends StatelessWidget {
                         periodo.etiqueta,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleSmall?.copyWith(
-                          color: cerrado
+                          color: estaCerrado
                               ? theme.colorScheme.onSurfaceVariant
                               : theme.colorScheme.onSurface,
                         ),
@@ -238,14 +313,10 @@ class _FilaLapso extends StatelessWidget {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Etiqueta(texto: 'Código ${periodo.codigo}'),
-                          // Las dos insignias son distintas a propósito: son dos
-                          // cosas distintas, y llamar «activo» a las dos es lo
-                          // que hacía imposible saber qué lapso se está dictando.
+                          // Las insignias identifican claramente el rol y estado
                           if (periodo.vigente)
                             const Etiqueta(texto: 'Vigente', destacada: true),
-                          Etiqueta(
-                            texto: periodo.activo ? 'Abierto' : 'Cerrado',
-                          ),
+                          _InsigniaEstadoPeriodo(estado: periodo.estado),
                           Etiqueta(texto: _rangoDeFechas(periodo)),
                         ],
                       ),
@@ -267,7 +338,7 @@ class _FilaLapso extends StatelessWidget {
                     ),
                   ]
                 : <Widget>[
-                    if (!periodo.vigente)
+                    if (!periodo.vigente && !estaCerrado)
                       TextButton.icon(
                         onPressed: onMarcarVigente,
                         icon: const Icon(Icons.flag_outlined, size: 16),
@@ -275,6 +346,22 @@ class _FilaLapso extends StatelessWidget {
                         style: TextButton.styleFrom(
                           visualDensity: VisualDensity.compact,
                         ),
+                      ),
+                    if (estaCerrado)
+                      TextButton.icon(
+                        onPressed: onCambiarCierre,
+                        icon: const Icon(Icons.lock_open_outlined, size: 16),
+                        label: const Text('Reabrir'),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      )
+                    else if (periodo.estado != EstadoPeriodo.borrador)
+                      IconButton(
+                        tooltip: 'Cerrar lapso',
+                        onPressed: onCambiarCierre,
+                        icon: const Icon(Icons.lock_outline, size: 18),
+                        visualDensity: VisualDensity.compact,
                       ),
                     IconButton(
                       tooltip: 'Editar',
@@ -351,6 +438,7 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
       TextEditingController(text: widget.existente?.codigo ?? '');
   late final TextEditingController _nombreCtrl =
       TextEditingController(text: widget.existente?.nombre ?? '');
+  late final TextEditingController _motivoCtrl = TextEditingController();
 
   late String? _inicio = widget.existente?.fechaInicio;
   late String? _fin = widget.existente?.fechaFin;
@@ -366,7 +454,29 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
   void dispose() {
     _codigoCtrl.dispose();
     _nombreCtrl.dispose();
+    _motivoCtrl.dispose();
     super.dispose();
+  }
+
+  String _sumarMeses(String fechaInicio, int meses) {
+    try {
+      final partes = fechaInicio.split('-').map(int.parse).toList();
+      final anio = partes[0];
+      final mes = partes[1];
+      final dia = partes[2];
+
+      final nuevoIndiceMes = (mes - 1) + meses;
+      final nuevoAnio = anio + (nuevoIndiceMes ~/ 12);
+      final mesDestino = ((nuevoIndiceMes % 12) + 12) % 12;
+      final ultimoDia = DateTime.utc(nuevoAnio, mesDestino + 2, 0).day;
+      final diaFinal = dia < ultimoDia ? dia : ultimoDia;
+
+      return '${nuevoAnio.toString().padLeft(4, '0')}-'
+          '${(mesDestino + 1).toString().padLeft(2, '0')}-'
+          '${diaFinal.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return fechaInicio;
+    }
   }
 
   Future<void> _elegirFecha({required bool esInicio}) async {
@@ -416,6 +526,9 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
               fechaInicio: _inicio,
               fechaFin: _fin,
               activo: _activo,
+              motivo: _motivoCtrl.text.trim().isNotEmpty
+                  ? _motivoCtrl.text.trim()
+                  : null,
               // Si se quitaron las dos fechas, hay que mandarlas nulas de forma
               // explícita: «ausente» significa «no lo toques».
               borrarFechas: _inicio == null && _fin == null,
@@ -498,6 +611,31 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
                 onElegir: () => _elegirFecha(esInicio: false),
                 onLimpiar: () => setState(() => _fin = null),
               ),
+              if (_inicio != null) ...[
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    ActionChip(
+                      label: const Text('+3 meses (Soldadura)'),
+                      avatar: const Icon(Icons.bolt_rounded, size: 14),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => setState(() => _fin = _sumarMeses(_inicio!, 3)),
+                    ),
+                    ActionChip(
+                      label: const Text('+1 mes'),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => setState(() => _fin = _sumarMeses(_inicio!, 1)),
+                    ),
+                    ActionChip(
+                      label: const Text('+6 meses'),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => setState(() => _fin = _sumarMeses(_inicio!, 6)),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 4),
               Text(
                 'Las fechas son opcionales. Si el centro todavía no las ha '
@@ -508,6 +646,14 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
                     ),
               ),
               if (_esEdicion) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _motivoCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Motivo de prórroga o ajuste (auditoría)',
+                    hintText: 'Opcional. Queda registrado en el historial.',
+                  ),
+                ),
                 const SizedBox(height: 8),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
@@ -579,6 +725,53 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
             visualDensity: VisualDensity.compact,
           ),
       ],
+    );
+  }
+}
+
+/// Insignia visual para representar los 5 estados institucionales del Bloque E.
+class _InsigniaEstadoPeriodo extends StatelessWidget {
+  const _InsigniaEstadoPeriodo({required this.estado});
+
+  final EstadoPeriodo estado;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    Color colorFondo;
+    Color colorTexto;
+
+    switch (estado) {
+      case EstadoPeriodo.activo:
+        colorFondo = Colors.green.withValues(alpha: 0.14);
+        colorTexto = Colors.green.shade800;
+      case EstadoPeriodo.programado:
+        colorFondo = Colors.blue.withValues(alpha: 0.14);
+        colorTexto = Colors.blue.shade800;
+      case EstadoPeriodo.vencido:
+        colorFondo = Colors.orange.withValues(alpha: 0.16);
+        colorTexto = Colors.orange.shade900;
+      case EstadoPeriodo.cerrado:
+        colorFondo = Colors.purple.withValues(alpha: 0.14);
+        colorTexto = Colors.purple.shade800;
+      case EstadoPeriodo.borrador:
+        colorFondo = theme.colorScheme.surfaceContainerHighest;
+        colorTexto = theme.colorScheme.onSurfaceVariant;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: colorFondo,
+        borderRadius: BorderRadius.circular(IncesTheme.radioControl),
+      ),
+      child: Text(
+        estado.etiqueta,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: colorTexto,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }

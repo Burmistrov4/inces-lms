@@ -49,6 +49,7 @@ import type {
   TipoEntidadArchivo,
   TipoPrograma,
   TipoTarea,
+  UnidadDuracion,
 } from './tipos.js';
 import type { PeticionUrlSubida, UrlFirmada } from './almacenamiento.js';
 
@@ -408,6 +409,8 @@ export interface EntradaCrearPrograma {
   requierePasantia: boolean;
   publicar: boolean;
   pensum: EntradaPensum[];
+  duracionValor?: number | null;
+  duracionUnidad?: UnidadDuracion | null;
 }
 
 /**
@@ -421,6 +424,8 @@ export interface CambiosPrograma {
   nombre?: string;
   requierePasantia?: boolean;
   activo?: boolean;
+  duracionValor?: number | null;
+  duracionUnidad?: UnidadDuracion | null;
 }
 
 export interface EntradaCrearMateria {
@@ -589,6 +594,8 @@ export interface CambiosPeriodo {
   fechaInicio?: string | null;
   fechaFin?: string | null;
   activo?: boolean;
+  cerrado?: boolean | null;
+  motivo?: string | null;
 }
 
 export interface EntradaCrearGuardia {

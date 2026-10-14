@@ -181,6 +181,30 @@ export function esTipoPrograma(valor: unknown): valor is TipoPrograma {
 }
 
 /**
+ * Unidades de duración para programas y formaciones (Bloque E).
+ */
+export type UnidadDuracion = 'DIAS' | 'SEMANAS' | 'MESES';
+
+export const UNIDADES_DURACION: readonly UnidadDuracion[] = ['DIAS', 'SEMANAS', 'MESES'];
+
+export function esUnidadDuracion(valor: unknown): valor is UnidadDuracion {
+  return typeof valor === 'string' && (UNIDADES_DURACION as readonly string[]).includes(valor);
+}
+
+/**
+ * Estados derivados del ciclo de vida de un lapso académico (Bloque E).
+ */
+export type EstadoPeriodo = 'BORRADOR' | 'PROGRAMADO' | 'ACTIVO' | 'VENCIDO' | 'CERRADO';
+
+export const ESTADOS_PERIODO: readonly EstadoPeriodo[] = [
+  'BORRADOR',
+  'PROGRAMADO',
+  'ACTIVO',
+  'VENCIDO',
+  'CERRADO',
+];
+
+/**
  * Un programa de la oferta formativa.
  *
  * Los nombres van en español, aunque la base los tenga en inglés (`code`,
@@ -194,6 +218,8 @@ export interface Programa {
   nombre: string;
   tipo: TipoPrograma;
   requierePasantia: boolean;
+  duracionValor?: number | null;
+  duracionUnidad?: UnidadDuracion | null;
   activo: boolean;
   creadoEn: string;
   actualizadoEn: string;
@@ -350,6 +376,9 @@ export interface Periodo {
   fechaFin: string | null;
   activo: boolean;
   vigente: boolean;
+  cerradoEn?: string | null;
+  cerradoPor?: string | null;
+  estado?: EstadoPeriodo;
   creadoEn: string;
   actualizadoEn: string;
 }

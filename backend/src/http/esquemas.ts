@@ -318,6 +318,11 @@ export const esquemaListadoMaterias = z.object({
 });
 
 /**
+ * Unidades de duración admisibles para programas.
+ */
+export const duracionUnidadSchema = z.enum(['DIAS', 'SEMANAS', 'MESES']);
+
+/**
  * El cuerpo del asistente: programa + pensum en una sola petición.
  *
  * `publicar` decide el `is_active` inicial y va separado de un `activo` porque
@@ -332,8 +337,19 @@ export const esquemaCrearPrograma = z
     requierePasantia: z.boolean().default(false),
     publicar: z.boolean().default(false),
     pensum: esquemaPensum,
+    duracionValor: z.number().int().positive().nullable().optional(),
+    duracionUnidad: duracionUnidadSchema.nullable().optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (valor) =>
+      (valor.duracionValor == null && valor.duracionUnidad == null) ||
+      (valor.duracionValor != null && valor.duracionValor > 0 && valor.duracionUnidad != null),
+    {
+      path: ['duracionUnidad'],
+      message: 'Si se indica duración, deben definirse tanto el valor (positivo) como la unidad (DIAS, SEMANAS, MESES).',
+    },
+  );
 
 /**
  * Cambios de metadatos de un programa.
@@ -348,11 +364,28 @@ export const esquemaActualizarPrograma = z
     nombre: nombreCatalogo.optional(),
     requierePasantia: z.boolean().optional(),
     activo: z.boolean().optional(),
+    duracionValor: z.number().int().positive().nullable().optional(),
+    duracionUnidad: duracionUnidadSchema.nullable().optional(),
   })
   .strict()
   .refine((valor) => Object.keys(valor).length > 0, {
-    message: 'Indica al menos un cambio (nombre, requierePasantia o activo).',
-  });
+    message: 'Indica al menos un cambio (nombre, requierePasantia, activo o duración).',
+  })
+  .refine(
+    (valor) => {
+      if (valor.duracionValor === undefined && valor.duracionUnidad === undefined) return true;
+      if (valor.duracionValor === null && valor.duracionUnidad === null) return true;
+      return (
+        valor.duracionValor != null &&
+        valor.duracionValor > 0 &&
+        valor.duracionUnidad != null
+      );
+    },
+    {
+      path: ['duracionUnidad'],
+      message: 'Si se modifica la duración, deben definirse tanto el valor como la unidad, o ambos ser null.',
+    },
+  );
 
 /**
  * Reemplazo completo del pensum.
@@ -556,10 +589,12 @@ export const esquemaActualizarPeriodo = z
     fechaInicio: fechaIso.nullable().optional(),
     fechaFin: fechaIso.nullable().optional(),
     activo: z.boolean().optional(),
+    cerrado: z.boolean().nullable().optional(),
+    motivo: z.string().trim().min(3).max(500).optional(),
   })
   .strict()
   .refine((valor) => Object.keys(valor).length > 0, {
-    message: 'Indica al menos un cambio (nombre, fechaInicio, fechaFin o activo).',
+    message: 'Indica al menos un cambio (nombre, fechaInicio, fechaFin, activo, cerrado o motivo).',
   })
   .refine((valor) => rangoDeFechasValido(valor.fechaInicio, valor.fechaFin), {
     path: ['fechaFin'],

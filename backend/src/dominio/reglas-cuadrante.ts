@@ -11,7 +11,7 @@
  * decisión tomada antes de abrir una transacción, para dar un mensaje que nombre
  * el problema en vez de un error de restricción genérico.
  */
-import type { Turno } from './tipos.js';
+import type { EstadoPeriodo, Turno, UnidadDuracion } from './tipos.js';
 
 /**
  * Día máximo admitido: 6 = sábado.
@@ -141,4 +141,77 @@ export function rangoDeFechasValido(
 ): boolean {
   if (!inicio || !fin) return true;
   return fin > inicio;
+}
+
+export type { EstadoPeriodo, UnidadDuracion };
+
+/**
+ * Calcula el estado institucional derivado de un lapso académico.
+ */
+export function estadoDePeriodo(
+  periodo: {
+    activo: boolean;
+    fechaInicio?: string | null;
+    fechaFin?: string | null;
+    cerradoEn?: string | null;
+  },
+  hoy: string = new Date().toISOString().slice(0, 10),
+): EstadoPeriodo {
+  if (periodo.cerradoEn) {
+    return 'CERRADO';
+  }
+  if (!periodo.activo) {
+    return 'BORRADOR';
+  }
+  if (periodo.fechaFin && periodo.fechaFin < hoy) {
+    return 'VENCIDO';
+  }
+  if (periodo.fechaInicio && periodo.fechaInicio > hoy) {
+    return 'PROGRAMADO';
+  }
+  return 'ACTIVO';
+}
+
+/**
+ * Suma una duración en días, semanas o meses a una fecha en formato ISO `AAAA-MM-DD`.
+ *
+ * Regla de saturación para meses: Si el día original no existe en el mes destino
+ * (ej. 31 de enero + 1 mes), la fecha se satura al último día del mes resultante
+ * (28 de febrero, o 29 en año bisiesto), en lugar de desbordar a marzo.
+ */
+export function sumarDuracion(
+  fechaInicio: string,
+  valor: number,
+  unidad: UnidadDuracion,
+): string {
+  if (!esFechaISO(fechaInicio)) {
+    throw new Error(`Fecha inicial inválida: ${fechaInicio}`);
+  }
+  if (!Number.isInteger(valor) || valor < 0) {
+    throw new Error(`El valor de duración debe ser un entero positivo o cero: ${valor}`);
+  }
+  if (valor === 0) return fechaInicio;
+
+  const [anio, mes, dia] = fechaInicio.split('-').map(Number) as [number, number, number];
+
+  if (unidad === 'DIAS' || unidad === 'SEMANAS') {
+    const diasASumar = unidad === 'SEMANAS' ? valor * 7 : valor;
+    const fecha = new Date(Date.UTC(anio, mes - 1, dia + diasASumar));
+    return fecha.toISOString().slice(0, 10);
+  }
+
+  if (unidad === 'MESES') {
+    const nuevoIndiceMes = (mes - 1) + valor;
+    const nuevoAnio = anio + Math.floor(nuevoIndiceMes / 12);
+    const mesDestino = ((nuevoIndiceMes % 12) + 12) % 12; // 0..11
+    // El día 0 del mes siguiente devuelve el último día del mes actual en UTC
+    const diasEnMes = new Date(Date.UTC(nuevoAnio, mesDestino + 1, 0)).getUTCDate();
+    const diaFinal = Math.min(dia, diasEnMes);
+    const a = nuevoAnio.toString().padStart(4, '0');
+    const m = (mesDestino + 1).toString().padStart(2, '0');
+    const d = diaFinal.toString().padStart(2, '0');
+    return `${a}-${m}-${d}`;
+  }
+
+  throw new Error(`Unidad no soportada: ${unidad}`);
 }

@@ -172,6 +172,8 @@ class CambiosPeriodo {
     this.fechaInicio,
     this.fechaFin,
     this.activo,
+    this.cerrado,
+    this.motivo,
     this.borrarFechas = false,
   });
 
@@ -179,6 +181,8 @@ class CambiosPeriodo {
   final String? fechaInicio;
   final String? fechaFin;
   final bool? activo;
+  final bool? cerrado;
+  final String? motivo;
 
   /// Manda las fechas como `null`, que es como se borran.
   ///
@@ -192,6 +196,8 @@ class CambiosPeriodo {
       fechaInicio == null &&
       fechaFin == null &&
       activo == null &&
+      cerrado == null &&
+      motivo == null &&
       !borrarFechas;
 
   Map<String, dynamic> toJson() => {
@@ -200,6 +206,8 @@ class CambiosPeriodo {
         if (!borrarFechas && fechaInicio != null) 'fechaInicio': fechaInicio,
         if (!borrarFechas && fechaFin != null) 'fechaFin': fechaFin,
         if (activo != null) 'activo': activo,
+        if (cerrado != null) 'cerrado': cerrado,
+        if (motivo != null) 'motivo': motivo,
       };
 }
 

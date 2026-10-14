@@ -37,7 +37,7 @@ import {
   validarClave,
 } from '../../src/dominio/almacenamiento.js';
 import { agruparPensum, pensumEditable } from '../../src/dominio/reglas-curriculo.js';
-import { diaLegible, turnoDeBloque } from '../../src/dominio/reglas-cuadrante.js';
+import { diaLegible, estadoDePeriodo, turnoDeBloque } from '../../src/dominio/reglas-cuadrante.js';
 import { ofertaVencida } from '../../src/dominio/reglas-inscripciones.js';
 import type { EnvioCorreo } from '../../src/infra/correo.js';
 import type {
@@ -2063,6 +2063,8 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
         nombre: entrada.nombre,
         tipo: entrada.tipo,
         requierePasantia: entrada.requierePasantia,
+        duracionValor: entrada.duracionValor ?? null,
+        duracionUnidad: entrada.duracionUnidad ?? null,
         activo: entrada.publicar,
         creadoEn: ahora,
         actualizadoEn: ahora,
@@ -2092,6 +2094,12 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
           ? {}
           : { requierePasantia: cambios.requierePasantia }),
         ...(cambios.activo === undefined ? {} : { activo: cambios.activo }),
+        ...(cambios.duracionValor === undefined
+          ? {}
+          : { duracionValor: cambios.duracionValor }),
+        ...(cambios.duracionUnidad === undefined
+          ? {}
+          : { duracionUnidad: cambios.duracionUnidad }),
         actualizadoEn: new Date().toISOString(),
       };
 
@@ -2449,12 +2457,26 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
         throw ErrorApi.noEncontrado('PERIODO_INEXISTENTE', 'Ese lapso no existe.');
       }
 
+      const cerradoEn =
+        cambios.cerrado === true
+          ? new Date().toISOString()
+          : cambios.cerrado === false
+            ? null
+            : actual.cerradoEn;
+
       const actualizado: Periodo = {
         ...actual,
         ...soloDefinidos(cambios),
+        cerradoEn,
         actualizadoEn: new Date().toISOString(),
       };
       actualizado.vigente = actualizado.codigo === estado.periodoCodigoVigente;
+      actualizado.estado = estadoDePeriodo({
+        activo: actualizado.activo,
+        fechaInicio: actualizado.fechaInicio,
+        fechaFin: actualizado.fechaFin,
+        cerradoEn: actualizado.cerradoEn,
+      });
 
       estado.periodos = estado.periodos.map((p) => (p.id === id ? actualizado : p));
       return actualizado;

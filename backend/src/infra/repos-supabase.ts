@@ -67,7 +67,7 @@ import {
   esBloqueoPorPensumEnUso,
   pensumEditable,
 } from '../dominio/reglas-curriculo.js';
-import { esChoqueDeAgenda, turnoDeBloque } from '../dominio/reglas-cuadrante.js';
+import { esChoqueDeAgenda, estadoDePeriodo, turnoDeBloque } from '../dominio/reglas-cuadrante.js';
 import { nombreVisible } from '../dominio/reglas-perfiles.js';
 import {
   esAcaparamientoDeMateria,
@@ -91,6 +91,7 @@ import {
   esTipoPrograma,
   esTipoTarea,
   esTurno,
+  esUnidadDuracion,
   type Anuncio,
   type ArchivoMetadata,
   type Aula,
@@ -355,6 +356,8 @@ function aPrograma(fila: Fila): Programa {
     nombre: textoObligatorio(fila.name),
     tipo: esTipoPrograma(fila.type) ? fila.type : 'CURSO_LIBRE',
     requierePasantia: booleano(fila.requires_internship, false),
+    duracionValor: fila.duration_value != null ? entero(fila.duration_value, 0) : null,
+    duracionUnidad: esUnidadDuracion(fila.duration_unit) ? fila.duration_unit : null,
     activo: booleano(fila.is_active, false),
     creadoEn: textoObligatorio(fila.created_at),
     actualizadoEn: textoObligatorio(fila.updated_at),
@@ -443,14 +446,27 @@ function aAula(fila: Fila): Aula {
  */
 function aPeriodo(fila: Fila, codigoVigente: string | null): Periodo {
   const codigo = textoObligatorio(fila.code);
+  const activo = booleano(fila.is_active, false);
+  const fechaInicio = texto(fila.start_date);
+  const fechaFin = texto(fila.end_date);
+  const cerradoEn = texto(fila.closed_at);
+  const cerradoPor = texto(fila.closed_by);
   return {
     id: textoObligatorio(fila.id),
     codigo,
     nombre: texto(fila.name),
-    fechaInicio: texto(fila.start_date),
-    fechaFin: texto(fila.end_date),
-    activo: booleano(fila.is_active, false),
+    fechaInicio,
+    fechaFin,
+    activo,
     vigente: codigoVigente !== null && codigo === codigoVigente,
+    cerradoEn,
+    cerradoPor,
+    estado: estadoDePeriodo({
+      activo,
+      fechaInicio,
+      fechaFin,
+      cerradoEn,
+    }),
     creadoEn: textoObligatorio(fila.created_at),
     actualizadoEn: textoObligatorio(fila.updated_at),
   };
@@ -1019,7 +1035,7 @@ const COLUMNAS_ENTREGA = 'id,tarea_id,estado,es_tardia,nota_asignada,entregada_e
 const COLUMNAS_AULA = 'id,name,capacity,is_workshop,is_active,created_at,updated_at';
 
 const COLUMNAS_PERIODO =
-  'id,code,name,start_date,end_date,is_active,created_at,updated_at';
+  'id,code,name,start_date,end_date,is_active,closed_at,closed_by,created_at,updated_at';
 
 /**
  * `turno` va en la lista aunque sea una columna generada.
@@ -1081,7 +1097,7 @@ const ROLES_DOCENTES: readonly Rol[] = ['docente', 'admin'];
  * silencio a cadena vacía.
  */
 const COLUMNAS_PROGRAMA =
-  'id,code,name,type,requires_internship,is_active,created_at,updated_at';
+  'id,code,name,type,requires_internship,duration_value,duration_unit,is_active,created_at,updated_at';
 
 const COLUMNAS_MATERIA = 'id,code,name,academic_hours,created_at,updated_at';
 
@@ -1854,6 +1870,16 @@ class CurriculoSupabase implements PuertaCurriculo {
       throw ErrorApi.interno('La creación del programa no devolvió un identificador.');
     }
 
+    if (entrada.duracionValor !== undefined || entrada.duracionUnidad !== undefined) {
+      await this.cliente
+        .from(TABLA_PROGRAMAS)
+        .update({
+          duration_value: entrada.duracionValor ?? null,
+          duration_unit: entrada.duracionUnidad ?? null,
+        })
+        .eq('id', id);
+    }
+
     return this.detalleObligatorio(id);
   }
 
@@ -1864,6 +1890,12 @@ class CurriculoSupabase implements PuertaCurriculo {
       parche.requires_internship = cambios.requierePasantia;
     }
     if (cambios.activo !== undefined) parche.is_active = cambios.activo;
+    if (cambios.duracionValor !== undefined) {
+      parche.duration_value = cambios.duracionValor;
+    }
+    if (cambios.duracionUnidad !== undefined) {
+      parche.duration_unit = cambios.duracionUnidad;
+    }
 
     if (Object.keys(parche).length === 0) {
       throw ErrorApi.peticionInvalida('No se indicó ningún cambio para el programa.');
@@ -2296,6 +2328,13 @@ class CuadranteSupabase implements PuertaCuadrante {
     if (cambios.fechaInicio !== undefined) parche.start_date = cambios.fechaInicio;
     if (cambios.fechaFin !== undefined) parche.end_date = cambios.fechaFin;
     if (cambios.activo !== undefined) parche.is_active = cambios.activo;
+    if (cambios.cerrado === true) {
+      parche.closed_at = new Date().toISOString();
+      parche.closed_by = null;
+    } else if (cambios.cerrado === false) {
+      parche.closed_at = null;
+      parche.closed_by = null;
+    }
 
     if (Object.keys(parche).length === 0) {
       throw ErrorApi.peticionInvalida('No se indicó ningún cambio para el lapso.');
