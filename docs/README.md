@@ -110,7 +110,7 @@ Una contradicción se **registra en los dos documentos** y se resuelve con evide
 
 - [Ciclo de vida del cambio](contexto-ia/05_CICLO_DE_VIDA.md) — cómo nace, se verifica y se despliega un cambio.
 - [Estado actual del sistema](contexto-ia/02_ESTADO_ACTUAL.md) · [proyecto y producto](contexto-ia/01_PROYECTO_Y_PRODUCTO.md).
-- [Contrato E-2 de la planilla oficial](../CONTRATO_E2_PLANILLA_OFICIAL.md) · [diseño de persistencia](../DISENO_E2_PERSISTENCIA.md) · [renderer](../PLANILLA_OFICIAL_RENDERER_DISENO.md) · [auto-prompt del ciclo](../AUTOPROMPT_PLANILLA.md) · [auditoría de la planilla](../AUDITORIA_PLANILLA.md).
+- [Contrato E-2 de la planilla oficial](diseno/planilla/CONTRATO_E2_PLANILLA_OFICIAL.md) · [diseño de persistencia](diseno/planilla/DISENO_E2_PERSISTENCIA.md) · [renderer](diseno/planilla/PLANILLA_OFICIAL_RENDERER_DISENO.md) · [auto-prompt del ciclo](historial/prompts/AUTOPROMPT_PLANILLA.md) · [auditoría de la planilla](historial/auditorias/AUDITORIA_PLANILLA.md).
 - [Diseño de duración/caducidad de períodos](DISENO_PERIODOS_DURACION_Y_CADUCIDAD_2026-10-10.md) — sólo diseño, requiere migración nueva y cinco decisiones institucionales.
 
 ### Documentación para agentes de IA
@@ -119,13 +119,13 @@ Una contradicción se **registra en los dos documentos** y se resuelve con evide
 - [Paquete de contexto para otra IA](contexto-ia/00_INDICE.md) — nueve documentos autocontenidos.
 - [Contexto unificado](contexto-ia-unificado/CONTEXTO_COMPLETO_INCES_LMS.md) — el paquete entero en un solo archivo.
 - [Protocolo operativo](AI_AGENT_OPERATING_PROTOCOL.md) · [recuperación de entorno](AI_AGENT_AUTONOMY_AND_ENVIRONMENT_RECOVERY.md) · [autonomía eficiente](AI_AGENT_TOKEN_EFFICIENT_AUTONOMY.md).
-- **Prompts legados** (`PROMPT_*`, `MEGA_PROMPT_*`, `ULTRA_MEGA_PROMPT_*`, `AUTONOMOUS_*`, `INSTRUCCION_ANTIGRAVITY_*`): son historial. No se ejecutan en bloque ni se leen para una tarea sencilla; su alcance se comprueba contra el estado vigente antes de usarlos.
+- **[Prompts legados archivados](historial/prompts/README.md)**: son historial conservado para auditoría. No se ejecutan en bloque ni se leen para una tarea sencilla.
 
 ### Historiales, handovers y registros de auditoría
 
 - [Auditoría adversarial 2026-10-13](handover/AUDITORIA_ADVERSARIAL_2026-10-13.md) · [cierre nocturno 2026-10-13](handover/CIERRE_AUTONOMO_NOCTURNO_2026-10-13.md).
-- [HANDOVER.md](../HANDOVER.md) · [HANDOVER_CHAT_NUEVO.md](../HANDOVER_CHAT_NUEVO.md) · [handoff ARIA G3](../HANDOFF_ARIA_G3_2026-10-10.md) · [reporte ARIA](../REPORTE_ARIA.md) · [auditoría de estado real](../AUDITORIA_ESTADO_REAL.md).
-- [RELEASE_AUDIT_20261010_0302.md](../RELEASE_AUDIT_20261010_0302.md) — histórico; sus afirmaciones de build de Flutter quedaron superadas por la medición del 2026-10-13.
+- [HANDOVER.md](../HANDOVER.md) (bitácora canónica inmutable) · [auditorías y handoffs anteriores](historial/auditorias/README.md) ([HANDOVER_CHAT_NUEVO.md](historial/auditorias/HANDOVER_CHAT_NUEVO.md) · [handoff ARIA G3](historial/auditorias/HANDOFF_ARIA_G3_2026-10-10.md) · [reporte ARIA](historial/auditorias/REPORTE_ARIA.md) · [auditoría de estado real](historial/auditorias/AUDITORIA_ESTADO_REAL.md)).
+- [RELEASE_AUDIT_20261010_0302.md](historial/auditorias/RELEASE_AUDIT_20261010_0302.md) — histórico; sus afirmaciones de build de Flutter quedaron superadas por la medición del 2026-10-13.
 - [Auditoría de interfaz y Fase 0](CLINE_AUDITORIA_FASE_0.md) · [bloqueadores de Fase 0.5](CLINE_FASE_0_5_BLOQUEADORES.md) · [error handler](CLINE_BLOQUE_E_ERROR_HANDLER.md).
 
 ### Planificación y alcance
