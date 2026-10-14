@@ -11,6 +11,7 @@ import '../widgets/andamiaje.dart';
 import '../widgets/comunes.dart';
 import '../widgets/modulos_del_menu.dart';
 import 'docente/asistencia_qr_panel.dart';
+import 'docente/docente_calificaciones_panel.dart';
 import 'gestor_documental_panel.dart';
 import 'mi_horario_panel.dart';
 import 'mis_aulas_panel.dart';
@@ -121,23 +122,12 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
       disponible: true,
       modulo: 'm7_asistencia',
     ),
-    // Apagada **y con motivo**, porque «pendiente de construir» aquí sería
-    // falso: el libro de calificaciones existe desde M6 y se abre desde cada
-    // aula. Lo que no hay es una sección suelta de notas, y crear una sería una
-    // segunda puerta al mismo sitio. El texto lleva al docente a la que sí hay,
-    // que es lo único que convierte un ítem gris en algo accionable.
-    //
-    // **Sin `modulo:`**, y es deliberado: encender `m7_calificaciones` no puede
-    // encender esta sección porque no hay pantalla detrás. La bandera de aquí es
-    // un hecho del código —no existe—, no del servidor, y atarla al módulo
-    // prometería algo que el módulo no puede cumplir.
     ItemNavegacion(
       icono: Icons.grading_outlined,
       titulo: 'Calificaciones',
       categoria: 'Control de aulas',
-      disponible: false,
-      pendiente: 'Se califica dentro de cada aula. Abre Mis aulas, elige la '
-          'sección y entra en Trabajo de Clase.',
+      disponible: true,
+      modulo: 'm6_aula_virtual',
     ),
     ItemNavegacion(
       icono: Icons.folder_open_outlined,
@@ -252,6 +242,16 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
         return ContenidoSeccion(
           migas: ['Inicio', item.categoria, item.titulo],
           child: const AsistenciaQrPanel(),
+        );
+
+      case 'Calificaciones':
+        return ContenidoSeccion(
+          migas: ['Inicio', item.categoria, item.titulo],
+          child: DocenteCalificacionesPanel(
+            gateway: _aulasPropias,
+            aulaGateway: _aulaContenido,
+            onNavegarA: _navegarA,
+          ),
         );
 
       case 'Mi horario':

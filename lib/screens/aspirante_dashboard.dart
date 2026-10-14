@@ -18,6 +18,7 @@ import '../widgets/andamiaje.dart';
 import '../widgets/comunes.dart';
 import '../widgets/modulos_del_menu.dart';
 import 'aspirante/estudiante_resumen_panel.dart';
+import 'aspirante/estudiante_tareas_panel.dart';
 import 'aspirante/marcar_asistencia_panel.dart';
 import 'gestor_documental_panel.dart';
 import 'mis_aulas_panel.dart';
@@ -374,9 +375,44 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
       case 'Mis entregas':
         return ContenidoSeccion(
           migas: ['Inicio', item.categoria, item.titulo],
-          child: const GestorDocumentalPanel(
-            entityType: TipoEntidadArchivo.taskSubmission,
-            subtitulo: 'Sube aquí los trabajos que te pida el docente.',
+          child: DefaultTabController(
+            length: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const TabBar(
+                  isScrollable: true,
+                  tabs: [
+                    Tab(
+                      icon: Icon(Icons.assignment_turned_in_outlined),
+                      text: 'Tareas y Calificaciones',
+                    ),
+                    Tab(
+                      icon: Icon(Icons.folder_shared_outlined),
+                      text: 'Bóveda de Archivos Subidos',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      SingleChildScrollView(
+                        child: EstudianteTareasPanel(
+                          aulasGateway: _aulasPropias,
+                          aulaGateway: _aulaContenido,
+                          onNavegarA: _navegarA,
+                        ),
+                      ),
+                      const GestorDocumentalPanel(
+                        entityType: TipoEntidadArchivo.taskSubmission,
+                        subtitulo: 'Sube aquí los trabajos que te pida el docente.',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
 

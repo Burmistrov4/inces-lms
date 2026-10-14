@@ -114,6 +114,15 @@ rango → 200 con página vacía».
   con protección del último administrador en dos capas (regla pura + trigger),
   invitación/revocación/renovación de docentes y emisión de códigos de
   recuperación.
+- **Hub de Calificaciones del Docente (M6)**: panel centralizado `DocenteCalificacionesPanel`
+  con filtro por sección, métricas de tareas activas y acceso directo en un clic al
+  `LibroCalificacionesPanel` para revisión y asentamiento de notas.
+- **Hub de Tareas y Pendientes del Aprendiz (M6)**: panel `EstudianteTareasPanel`
+  estilo Google Classroom con clasificación trifásica (Asignadas, Vencidas, Calificadas)
+  integrado en el resumen del estudiante y en «Mis entregas».
+- **Tematización multi-área formativa (2026-10-14)**: catalogador semántico `AreaFormativa`
+  para Metalmecánica, Alimentos, Estética/Servicios, Gestión/Oratoria y Juventud,
+  con degradados oficiales y marca de agua institucional en el aula.
 
 ## 5. Abierto — pendientes reales (con su criterio de cierre)
 
@@ -124,7 +133,7 @@ rango → 200 con página vacía».
 | 3 | **D9 — barrido de subidas abandonadas** | El reloj (cron diario 07:17 UTC en GitHub Actions) y el código están hechos y verificados; **faltan los seis secretos** de GitHub. Sin ellos falla seguro (no toca nada). |
 | 4 | ~~Login con cédula~~ | ✅ **ARREGLADO el 2026-10-02.** Estaba muerto por construcción (la cédula vive en `aspirantes`, no en `profiles`, y las políticas de `profiles` no cubren `anon`). La migración `202610020001` creó la RPC `security definer` `email_por_cedula(text)`: entra una cédula, sale **un correo o NULL** (no expone el padrón), normaliza por dígitos en ambos lados, con `EXECUTE` sólo para `anon`/`authenticated` tras revocar de `PUBLIC`. El cliente ya la usa (`AuthService` → `emailPorCedula`). **El precio, aprobado explícitamente por Lorenzo el 2026-10-02: la función es un oráculo de existencia** (un anónimo puede comprobar si una cédula está registrada). Nota: la lista de pendientes de la memoria del proyecto lo seguía dando por muerto —era una nota anterior a esta fecha. |
 | 5 | **D7 — catálogo de la planilla** | `opciones` no es editable desde el panel, `aplica_a` quedó muerto, y hay cinco credenciales por rotar. |
-| 6 | **Bloque de períodos (duración/caducidad/estados)** | **Sólo diseño**: `docs/DISENO_PERIODOS_DURACION_Y_CADUCIDAD_2026-10-10.md`. `academic_periods` no tiene duración ni estados; `programs` no tiene duración. Requiere migración nueva + autorización + 5 decisiones institucionales. |
+| 6 | ~~Bloque de períodos (duración/caducidad/estados)~~ | ✅ **COMPLETADO el 2026-10-14.** Migración `202610140001_mod3_periodos_duracion.sql` aplicada (columnas `duracion_semanas`, `caduca_en`, trigger de auditoría `registrar_auditoria_periodos`), modelo Dart `PeriodoAcademico` extendido, lógica aritmética de vencimiento y chips de caducidad en UI (`CpanelLapsosPanel`). Pruebas unitarias de Flutter, Backend y E2E en verde. |
 | 7 | **Verificación funcional en producción** | Falta una cuenta de prueba autorizada para verificar en navegador real de producción «Invitar docente» y la promoción de administradores. |
 | 8 | **M7 — cámara en dispositivo físico** | Único pendiente del módulo de asistencia: validar `mobile_scanner` en un teléfono real. |
 | 9 | **`SUPABASE_JWT_SECRET`** | No está en `backend/.env`; es del propietario. Con él, la verificación local del JWT eliminaría el viaje a GoTrue. |

@@ -54,7 +54,7 @@ const Map<String, ({int items, int ramas})> _dashboards = {
   // una sección, y bajarlo sin querer es lo que este suelo existe para que no
   // pase inadvertido.
   'admin_dashboard.dart': (items: 16, ramas: 14),
-  'docente_dashboard.dart': (items: 5, ramas: 4),
+  'docente_dashboard.dart': (items: 5, ramas: 5),
   'aspirante_dashboard.dart': (items: 8, ramas: 8),
 };
 

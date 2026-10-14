@@ -226,7 +226,7 @@ class EstudianteResumenPanel extends StatelessWidget {
       ),
       _EstudianteAccionData(
         titulo: 'Mis Entregas y Tareas',
-        descripcion: 'Gestionar y subir archivos de entrega con almacenamiento seguro en la nube.',
+        descripcion: 'Revisar tareas asignadas, fechas límite, entregas pendientes y notas oficiales obtenidas.',
         icono: Icons.assignment_turned_in_outlined,
         seccionDestino: 'Mis entregas',
         color: paleta.enlace,
