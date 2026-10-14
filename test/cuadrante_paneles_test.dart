@@ -301,11 +301,10 @@ void main() {
 
       await montar(tester, CpanelLapsosPanel(repositorio: repo));
 
-      // El vigente lleva las dos insignias; el que sólo está abierto, una. Si
-      // ambos se llamaran «activo», no habría forma de saber qué se está
-      // dictando (R-19).
+      // El vigente lleva las dos insignias (Vigente y Activo); el no vigente
+      // lleva sólo su insignia de estado (Activo).
       expect(find.text('Vigente'), findsOneWidget);
-      expect(find.text('Abierto'), findsNWidgets(2));
+      expect(find.text('Activo'), findsNWidgets(2));
     });
 
     testWidgets('las fechas que faltan se dicen, no se inventan',
