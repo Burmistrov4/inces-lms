@@ -210,9 +210,9 @@ class _PanelMisAulasState extends State<PanelMisAulas> {
     final area = AreaFormativa.resolver(aula.etiqueta);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       clipBehavior: Clip.antiAlias,
-      elevation: 1,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
         side: BorderSide(color: theme.colorScheme.outline),
@@ -224,133 +224,93 @@ class _PanelMisAulasState extends State<PanelMisAulas> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Cabecera fotográfica estilo Google Classroom
             Container(
-              height: 110,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: area.degradadoBanner,
-              ),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset(
-                    area.rutaImagenAsset,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                  ),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.black.withValues(alpha: 0.85),
-                          Colors.black.withValues(alpha: 0.60),
-                          area.colorPrimario.withValues(alpha: 0.45),
-                        ],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: -10,
-                    bottom: -15,
-                    child: Opacity(
-                      opacity: 0.22,
-                      child: Icon(
-                        area.icono,
-                        size: 96,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.25),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.35),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(area.icono, size: 12, color: Colors.white),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    area.etiqueta,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          aula.etiqueta,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              height: 5,
+              decoration: BoxDecoration(gradient: area.degradadoBanner),
             ),
-            // Pie de tarjeta con información del centro y botón de acceso
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.school_outlined,
-                    size: 18,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      aula.programa?.trim().isNotEmpty == true
-                          ? aula.programa!.trim()
-                          : 'CFS Nacional de Soldadura «Rafael Urdaneta»',
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: area.colorPrimario.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: area.colorPrimario.withValues(alpha: 0.25),
                       ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(9),
+                      child: Image.asset(
+                        area.rutaImagenAsset,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Icon(
+                          area.icono,
+                          size: 24,
+                          color: area.colorPrimario,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          aula.etiqueta,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: area.colorPrimario.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                area.etiqueta,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: area.colorPrimario,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                aula.programa?.trim().isNotEmpty == true
+                                    ? aula.programa!.trim()
+                                    : 'CFS «Rafael Urdaneta»',
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                   if (abrible) ...[
                     const SizedBox(width: 8),
-                    FilledButton.tonalIcon(
-                      onPressed: () => setState(() => _abierta = aula),
-                      icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                      label: const Text('Entrar al aula'),
-                      style: FilledButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                      ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 22,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ],
