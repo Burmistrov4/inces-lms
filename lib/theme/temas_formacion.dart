@@ -67,6 +67,24 @@ enum AreaFormativa {
     }
   }
 
+  /// Ruta del recurso fotográfico oficial de la especialidad.
+  String get rutaImagenAsset {
+    switch (this) {
+      case AreaFormativa.metalmecanica:
+        return 'assets/images/area_metalmecanica.jpg';
+      case AreaFormativa.alimentos:
+        return 'assets/images/area_alimentos.jpg';
+      case AreaFormativa.serviciosPersonales:
+        return 'assets/images/area_servicios.jpg';
+      case AreaFormativa.comunicacionYGestion:
+        return 'assets/images/area_gestion.jpg';
+      case AreaFormativa.juvenilYBasica:
+        return 'assets/images/area_juvenil.jpg';
+      case AreaFormativa.tecnicaGeneral:
+        return 'assets/images/hero_soldadura.jpg';
+    }
+  }
+
   /// Degradado de cabecera tipo Google Classroom para el Aula Virtual.
   LinearGradient get degradadoBanner {
     switch (this) {
