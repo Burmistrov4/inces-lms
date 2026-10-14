@@ -1,6 +1,6 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — Fase 2 (Aula Virtual, Google Classroom, PWA No-Cache & Bloque E), 2026-10-14 11:42 -04:00
+## Fotografía operativa vigente — Fase 2 (Aula Virtual, Google Classroom, Banners de Roles & Bloque E), 2026-10-14 11:55 -04:00
 
 Sección actualizada tras la ejecución autónoma de la Fase 2 autorizada por Lorenzo. **Zona horaria: Venezuela (UTC−4).** Medido contra `main` y verificado en GitHub Actions y Cloudflare Pages. Las fotografías de Fase 1 (2026-10-13) y anteriores se conservan más abajo como registro histórico.
 
@@ -10,8 +10,8 @@ Sección actualizada tras la ejecución autónoma de la Fase 2 autorizada por Lo
 |---|---|
 | Raíz | `C:/Users/Loro/.gemini/antigravity/worktrees/INCES-LMS-PROJECT/analyze_project_status_inces` |
 | Rama | `main` |
-| HEAD | `eda57be` · 2026-10-14 · «fix(web): set strict no-cache revalidation headers for service worker and entrypoints» |
-| Despliegue Producción | **Cloudflare Pages:** `https://inces-lms.pages.dev` (Deployment ID: `2148ca95-02c8-452d-a736-7d7d9727eaac`, HTTP 200 OK, `Cache-Control: no-cache, no-store, must-revalidate`) |
+| HEAD | `35bc883` · 2026-10-14 · «feat(dashboards): add immersive vocational photographic headers to admin, teacher and student panels» |
+| Despliegue Producción | **Cloudflare Pages:** `https://inces-lms.pages.dev` (Deployment ID: `8364d205-699a-49bc-8203-3a1f6c6633e2`, HTTP 200 OK, `Cache-Control: no-cache, no-store, must-revalidate`) |
 | `git diff --check` | **exit 0** |
 
 ### Commits integrados y certificados en `main`
@@ -21,14 +21,15 @@ Sección actualizada tras la ejecución autónoma de la Fase 2 autorizada por Lo
 3. [`035abcd`](https://github.com/Burmistrov4/inces-lms/commit/035abcd): Cabecera fotográfica inmersiva para el Aula Virtual (`AulaVirtualDashboardScreen`) y tarjetas de clase estilo Google Classroom con foto vocacional en `PanelMisAulas` y catálogo público.
 4. [`39b868f`](https://github.com/Burmistrov4/inces-lms/commit/39b868f): Integración de miniaturas fotográficas por especialidad técnica con semántica web limpia en `PanelMisAulas`.
 5. [`eda57be`](https://github.com/Burmistrov4/inces-lms/commit/eda57be): Corrección de política de caché en `web/_headers` con cabeceras estrictas `no-cache, no-store, must-revalidate` para Service Worker y puntos de entrada de Flutter Web, garantizando refresco inmediato en móviles.
+6. [`35bc883`](https://github.com/Burmistrov4/inces-lms/commit/35bc883): Cabeceras fotográficas vocacionales inmersivas e insignias en los paneles de resumen de Administrador (`AdminResumenPanel`), Docente (`DocenteResumenPanel`) y Aprendiz (`EstudianteResumenPanel`).
 
 ### Verificación en la nube (GitHub Actions)
 
 | Flujo | Run ID | Estado | Duración | Cobertura |
 |---|---|---|---|---|
-| **Flutter CI** | `38590557255` | ✅ **SUCCESS** | 2m 53s | 1030 pruebas pasando; 0 errores, avisos ni infos en 232 archivos analizados. |
-| **E2E (Playwright)** | `38587429266` | ✅ **SUCCESS** | 5m 17s | 27/27 pruebas de punta a punta en navegador real Chromium. |
-| **Web bundle (Prod)** | `38590590656` | ✅ **SUCCESS** | 1m 31s | Artefacto web de producción desplegado a Cloudflare Pages (`2148ca95`). |
+| **Flutter CI** | `38592695586` | ✅ **SUCCESS** | 3m 0s | 1030 pruebas pasando; 0 errores, avisos ni infos en 232 archivos analizados. |
+| **E2E (Playwright)** | `38592695571` | ✅ **SUCCESS** | 4m 11s | 27/27 pruebas de punta a punta en navegador real Chromium. |
+| **Web bundle (Prod)** | `38592708529` | ✅ **SUCCESS** | 1m 13s | Artefacto web de producción desplegado a Cloudflare Pages (`8364d205`). |
 
 ---
 
