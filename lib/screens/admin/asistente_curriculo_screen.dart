@@ -71,6 +71,8 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
   TipoPrograma _tipo = TipoPrograma.carrera;
   bool _requierePasantia = false;
   bool _publicar = true;
+  int? _duracionValor;
+  String _duracionUnidad = 'MESES';
 
   // --- Paso 2: pensum -------------------------------------------------------
   /// Borrador del pensum. Vive en memoria hasta el paso 3: el backend recibe el
@@ -132,6 +134,8 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
       _tipo = detalle.programa.tipo;
       _requierePasantia = detalle.programa.requierePasantia;
       _publicar = detalle.programa.activo;
+      _duracionValor = detalle.programa.duracionValor;
+      _duracionUnidad = detalle.programa.duracionUnidad ?? 'MESES';
 
       for (final grupo in detalle.pensum) {
         for (final materia in grupo.materias) {
@@ -329,6 +333,8 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
               pensum: _pensum,
               requierePasantia: _requierePasantia,
               publicar: _publicar,
+              duracionValor: _duracionValor,
+              duracionUnidad: _duracionValor != null ? _duracionUnidad : null,
             ),
           );
 
@@ -582,6 +588,94 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.timelapse_outlined,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Duración Estimada (Planificación)',
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Configura la duración prevista del trayecto (ej. Soldadura = 3 meses). Se usará para calcular automáticamente la fecha de fin de los períodos académicos.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 140,
+                            child: TextFormField(
+                              initialValue: _duracionValor?.toString() ?? '',
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              decoration: const InputDecoration(
+                                labelText: 'Duración',
+                                hintText: 'Ej. 3',
+                                isDense: true,
+                              ),
+                              onChanged: (val) {
+                                final n = int.tryParse(val.trim());
+                                setState(
+                                  () => _duracionValor =
+                                      (n != null && n > 0) ? n : null,
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              initialValue: _duracionUnidad,
+                              decoration: const InputDecoration(
+                                labelText: 'Unidad',
+                                isDense: true,
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'MESES',
+                                  child: Text('Meses'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'SEMANAS',
+                                  child: Text('Semanas'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'DIAS',
+                                  child: Text('Días'),
+                                ),
+                              ],
+                              onChanged: (u) {
+                                if (u != null) {
+                                  setState(() => _duracionUnidad = u);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -748,6 +842,13 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                       valor: _requierePasantia ? 'Sí' : 'No',
                       icono: Icons.work_outline,
                     ),
+                    if (_duracionValor != null)
+                      _DatoResumen(
+                        etiqueta: 'Duración',
+                        valor:
+                            '$_duracionValor ${_duracionUnidad.toLowerCase()}',
+                        icono: Icons.timelapse_outlined,
+                      ),
                   ],
                 ),
               ],

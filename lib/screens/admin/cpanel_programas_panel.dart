@@ -547,6 +547,11 @@ class _TarjetaPrograma extends StatelessWidget {
                           texto: 'Con pasantía',
                           tono: TonoEstado.info,
                         ),
+                      if (programa.duracionLegible != null)
+                        _Etiqueta(
+                          texto: programa.duracionLegible!,
+                          tono: TonoEstado.info,
+                        ),
                       Text(
                         '${programa.totalMaterias} '
                         '${programa.totalMaterias == 1 ? 'materia' : 'materias'}'

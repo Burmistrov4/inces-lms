@@ -45,6 +45,8 @@ class Programa {
     required this.tipo,
     required this.requierePasantia,
     required this.activo,
+    this.duracionValor,
+    this.duracionUnidad,
     this.creadoEn,
     this.actualizadoEn,
   });
@@ -58,9 +60,27 @@ class Programa {
   final String nombre;
   final TipoPrograma tipo;
   final bool requierePasantia;
+  final int? duracionValor;
+  final String? duracionUnidad;
   final bool activo;
   final DateTime? creadoEn;
   final DateTime? actualizadoEn;
+
+  /// Texto legible de la duración (ej. «3 meses», «12 semanas», «45 días»).
+  String? get duracionLegible {
+    if (duracionValor == null || duracionUnidad == null) return null;
+    final u = duracionUnidad!.toUpperCase();
+    if (u == 'MESES') {
+      return duracionValor == 1 ? '1 mes' : '$duracionValor meses';
+    }
+    if (u == 'SEMANAS') {
+      return duracionValor == 1 ? '1 semana' : '$duracionValor semanas';
+    }
+    if (u == 'DIAS') {
+      return duracionValor == 1 ? '1 día' : '$duracionValor días';
+    }
+    return '$duracionValor $duracionUnidad';
+  }
 
   factory Programa.fromJson(Map<String, dynamic> json) {
     return Programa(
@@ -69,6 +89,8 @@ class Programa {
       nombre: json['nombre'] as String? ?? '',
       tipo: TipoPrograma.desdeApi(json['tipo'] as String?),
       requierePasantia: json['requierePasantia'] as bool? ?? false,
+      duracionValor: json['duracionValor'] as int?,
+      duracionUnidad: json['duracionUnidad'] as String?,
       activo: json['activo'] as bool? ?? false,
       creadoEn: DateTime.tryParse(json['creadoEn']?.toString() ?? ''),
       actualizadoEn: DateTime.tryParse(json['actualizadoEn']?.toString() ?? ''),
@@ -95,6 +117,8 @@ class ProgramaConTotales extends Programa {
     required super.activo,
     required this.totalMaterias,
     required this.totalPeriodos,
+    super.duracionValor,
+    super.duracionUnidad,
     super.creadoEn,
     super.actualizadoEn,
   });
@@ -113,6 +137,8 @@ class ProgramaConTotales extends Programa {
       nombre: base.nombre,
       tipo: base.tipo,
       requierePasantia: base.requierePasantia,
+      duracionValor: base.duracionValor,
+      duracionUnidad: base.duracionUnidad,
       activo: base.activo,
       totalMaterias: json['totalMaterias'] as int? ?? 0,
       totalPeriodos: json['totalPeriodos'] as int? ?? 0,

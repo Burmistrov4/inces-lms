@@ -149,3 +149,52 @@ String nombreDeDocente(String? nombre) {
   final limpio = nombre?.trim() ?? '';
   return limpio.isEmpty ? 'Docente sin nombre' : limpio;
 }
+
+/// Suma una duración en días, semanas o meses a una fecha en formato ISO `AAAA-MM-DD`.
+///
+/// Regla de saturación para meses: Si el día original no existe en el mes destino
+/// (ej. 31 de enero + 1 mes), la fecha se satura al último día del mes resultante
+/// (28 de febrero, o 29 en año bisiesto), en lugar de desbordar a marzo.
+String sumarDuracion(
+  String fechaInicio,
+  int valor,
+  String unidad,
+) {
+  if (!esFechaISO(fechaInicio)) {
+    throw ArgumentError('Fecha inicial inválida: $fechaInicio');
+  }
+  if (valor < 0) {
+    throw ArgumentError('El valor de duración debe ser un entero positivo o cero: $valor');
+  }
+  if (valor == 0) return fechaInicio;
+
+  final partes = fechaInicio.split('-').map(int.parse).toList();
+  final anio = partes[0];
+  final mes = partes[1];
+  final dia = partes[2];
+
+  final unidadNormalizada = unidad.trim().toUpperCase();
+  if (unidadNormalizada == 'DIAS' || unidadNormalizada == 'SEMANAS') {
+    final diasASumar = unidadNormalizada == 'SEMANAS' ? valor * 7 : valor;
+    final fecha = DateTime.utc(anio, mes, dia + diasASumar);
+    final a = fecha.year.toString().padLeft(4, '0');
+    final m = fecha.month.toString().padLeft(2, '0');
+    final d = fecha.day.toString().padLeft(2, '0');
+    return '$a-$m-$d';
+  }
+
+  if (unidadNormalizada == 'MESES') {
+    final nuevoIndiceMes = (mes - 1) + valor;
+    final nuevoAnio = anio + (nuevoIndiceMes ~/ 12);
+    final mesDestino = ((nuevoIndiceMes % 12) + 12) % 12; // 0..11
+    final ultimoDia = DateTime.utc(nuevoAnio, mesDestino + 2, 0).day;
+    final diaFinal = dia < ultimoDia ? dia : ultimoDia;
+
+    final a = nuevoAnio.toString().padLeft(4, '0');
+    final m = (mesDestino + 1).toString().padLeft(2, '0');
+    final d = diaFinal.toString().padLeft(2, '0');
+    return '$a-$m-$d';
+  }
+
+  throw ArgumentError('Unidad no soportada: $unidad');
+}

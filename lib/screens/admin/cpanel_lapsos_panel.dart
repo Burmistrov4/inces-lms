@@ -458,26 +458,6 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
     super.dispose();
   }
 
-  String _sumarMeses(String fechaInicio, int meses) {
-    try {
-      final partes = fechaInicio.split('-').map(int.parse).toList();
-      final anio = partes[0];
-      final mes = partes[1];
-      final dia = partes[2];
-
-      final nuevoIndiceMes = (mes - 1) + meses;
-      final nuevoAnio = anio + (nuevoIndiceMes ~/ 12);
-      final mesDestino = ((nuevoIndiceMes % 12) + 12) % 12;
-      final ultimoDia = DateTime.utc(nuevoAnio, mesDestino + 2, 0).day;
-      final diaFinal = dia < ultimoDia ? dia : ultimoDia;
-
-      return '${nuevoAnio.toString().padLeft(4, '0')}-'
-          '${(mesDestino + 1).toString().padLeft(2, '0')}-'
-          '${diaFinal.toString().padLeft(2, '0')}';
-    } catch (_) {
-      return fechaInicio;
-    }
-  }
 
   Future<void> _elegirFecha({required bool esInicio}) async {
     final actual = esInicio ? _inicio : _fin;
@@ -621,17 +601,22 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
                       label: const Text('+3 meses (Soldadura)'),
                       avatar: const Icon(Icons.bolt_rounded, size: 14),
                       visualDensity: VisualDensity.compact,
-                      onPressed: () => setState(() => _fin = _sumarMeses(_inicio!, 3)),
+                      onPressed: () => setState(() => _fin = sumarDuracion(_inicio!, 3, 'MESES')),
+                    ),
+                    ActionChip(
+                      label: const Text('+12 semanas'),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => setState(() => _fin = sumarDuracion(_inicio!, 12, 'SEMANAS')),
                     ),
                     ActionChip(
                       label: const Text('+1 mes'),
                       visualDensity: VisualDensity.compact,
-                      onPressed: () => setState(() => _fin = _sumarMeses(_inicio!, 1)),
+                      onPressed: () => setState(() => _fin = sumarDuracion(_inicio!, 1, 'MESES')),
                     ),
                     ActionChip(
                       label: const Text('+6 meses'),
                       visualDensity: VisualDensity.compact,
-                      onPressed: () => setState(() => _fin = _sumarMeses(_inicio!, 6)),
+                      onPressed: () => setState(() => _fin = sumarDuracion(_inicio!, 6, 'MESES')),
                     ),
                   ],
                 ),

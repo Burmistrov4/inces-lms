@@ -304,6 +304,44 @@ void main() {
       expect(nombreDeDocente(null), 'Docente sin nombre');
     });
   });
+
+  group('sumarDuracion con saturación institucional', () {
+    test('devuelve la misma fecha si el valor es 0', () {
+      expect(sumarDuracion('2026-03-15', 0, 'MESES'), '2026-03-15');
+      expect(sumarDuracion('2026-03-15', 0, 'SEMANAS'), '2026-03-15');
+      expect(sumarDuracion('2026-03-15', 0, 'DIAS'), '2026-03-15');
+    });
+
+    test('suma días correctamente', () {
+      expect(sumarDuracion('2026-01-10', 5, 'DIAS'), '2026-01-15');
+      expect(sumarDuracion('2026-01-30', 5, 'DIAS'), '2026-02-04');
+    });
+
+    test('suma semanas multiplicando por 7', () {
+      expect(sumarDuracion('2026-01-01', 2, 'SEMANAS'), '2026-01-15');
+      expect(sumarDuracion('2026-01-01', 12, 'SEMANAS'), '2026-03-26');
+    });
+
+    test('suma meses regulares y cruza año', () {
+      expect(sumarDuracion('2026-02-15', 3, 'MESES'), '2026-05-15');
+      expect(sumarDuracion('2026-11-15', 3, 'MESES'), '2027-02-15');
+    });
+
+    test('satupa al último día de mes si el día original excede los días del mes destino', () {
+      // 31 de enero + 1 mes en año 2026 (no bisiesto) debe saturar al 28 de febrero
+      expect(sumarDuracion('2026-01-31', 1, 'MESES'), '2026-02-28');
+      // 31 de enero en año bisiesto 2028 debe saturar al 29 de febrero
+      expect(sumarDuracion('2028-01-31', 1, 'MESES'), '2028-02-29');
+      // 31 de marzo + 1 mes debe saturar al 30 de abril
+      expect(sumarDuracion('2026-03-31', 1, 'MESES'), '2026-04-30');
+    });
+
+    test('rechaza fechas inválidas o duraciones negativas', () {
+      expect(() => sumarDuracion('fecha-rara', 3, 'MESES'), throwsArgumentError);
+      expect(() => sumarDuracion('2026-01-01', -1, 'MESES'), throwsArgumentError);
+      expect(() => sumarDuracion('2026-01-01', 3, 'HORAS'), throwsArgumentError);
+    });
+  });
 }
 
 // -----------------------------------------------------------------------------

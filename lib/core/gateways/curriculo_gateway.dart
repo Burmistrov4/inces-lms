@@ -58,6 +58,8 @@ class EntradaCrearPrograma {
     required this.pensum,
     this.requierePasantia = false,
     this.publicar = false,
+    this.duracionValor,
+    this.duracionUnidad,
   });
 
   final String codigo;
@@ -69,6 +71,10 @@ class EntradaCrearPrograma {
   /// borrador y no aparece en el catálogo del aspirante.
   final bool publicar;
 
+  /// Duración configurable del programa.
+  final int? duracionValor;
+  final String? duracionUnidad;
+
   /// Al menos una materia: el esquema del backend lo exige.
   final List<EntradaPensum> pensum;
 
@@ -78,6 +84,8 @@ class EntradaCrearPrograma {
         'tipo': tipo.valorApi,
         'requierePasantia': requierePasantia,
         'publicar': publicar,
+        if (duracionValor != null) 'duracionValor': duracionValor,
+        if (duracionUnidad != null) 'duracionUnidad': duracionUnidad,
         'pensum': [for (final entrada in pensum) entrada.toJson()],
       };
 }
@@ -88,19 +96,33 @@ class EntradaCrearPrograma {
 /// esquema del backend es `.strict()` y rechaza los campos que no reconoce, y
 /// mandar `null` donde no se quiere escribir nada sería un intento de borrar.
 class CambiosPrograma {
-  const CambiosPrograma({this.nombre, this.requierePasantia, this.activo});
+  const CambiosPrograma({
+    this.nombre,
+    this.requierePasantia,
+    this.activo,
+    this.duracionValor,
+    this.duracionUnidad,
+  });
 
   final String? nombre;
   final bool? requierePasantia;
   final bool? activo;
+  final int? duracionValor;
+  final String? duracionUnidad;
 
   bool get vacio =>
-      nombre == null && requierePasantia == null && activo == null;
+      nombre == null &&
+      requierePasantia == null &&
+      activo == null &&
+      duracionValor == null &&
+      duracionUnidad == null;
 
   Map<String, dynamic> toJson() => {
         if (nombre != null) 'nombre': nombre,
         if (requierePasantia != null) 'requierePasantia': requierePasantia,
         if (activo != null) 'activo': activo,
+        if (duracionValor != null) 'duracionValor': duracionValor,
+        if (duracionUnidad != null) 'duracionUnidad': duracionUnidad,
       };
 }
 
