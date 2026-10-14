@@ -1,8 +1,8 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — Fase 2 (Aula Virtual, Calificaciones y Bloque E), 2026-10-14 10:10 -04:00
+## Fotografía operativa vigente — Fase 2 (Aula Virtual, Google Classroom & Bloque E), 2026-10-14 11:05 -04:00
 
-Sección actualizada tras la ejecución autónoma de la Fase 2 autorizada por Lorenzo. **Zona horaria: Venezuela (UTC−4).** Medido contra `main` y verificado en GitHub Actions. Las fotografías de Fase 1 (2026-10-13) y anteriores se conservan más abajo como registro histórico.
+Sección actualizada tras la ejecución autónoma de la Fase 2 autorizada por Lorenzo. **Zona horaria: Venezuela (UTC−4).** Medido contra `main` y verificado en GitHub Actions y Cloudflare Pages. Las fotografías de Fase 1 (2026-10-13) y anteriores se conservan más abajo como registro histórico.
 
 ### Repositorio inspeccionado
 
@@ -10,23 +10,23 @@ Sección actualizada tras la ejecución autónoma de la Fase 2 autorizada por Lo
 |---|---|
 | Raíz | `C:/Users/Loro/.gemini/antigravity/worktrees/INCES-LMS-PROJECT/analyze_project_status_inces` |
 | Rama | `main` |
-| HEAD | `ad73ce3` · 2026-10-14 · «feat(classroom): add upcoming assignments widget, interactive teacher stream box, and vocational cards in mis aulas» |
-| HEAD vs `origin/main` | **idénticos** (`ad73ce3`): 100 % sincronizado con GitHub |
+| HEAD | `11bf7c8` · 2026-10-14 · «feat(periodos): implement configurable duration in programs, lapsos panel and pure rules with saturation» |
+| Despliegue Producción | **Cloudflare Pages:** `https://inces-lms.pages.dev` (Deployment ID: `f4d18f8e-d451-4aed-af72-0240ff424154`, HTTP 200 OK) |
 | `git diff --check` | **exit 0** |
 
 ### Commits integrados y certificados en `main`
 
-1. [`624c216`](https://github.com/Burmistrov4/inces-lms/commit/624c216): Cierre de Bloque E (períodos, duración y caducidad) + Centro de Calificaciones Docente (`DocenteCalificacionesPanel`) + Hub To-Do de Aprendiz (`EstudianteTareasPanel`).
-2. [`c1a6f5c`](https://github.com/Burmistrov4/inces-lms/commit/c1a6f5c): Galería visual de especialidades en Landing Page (`_TarjetaEspecialidad`) + Atajo rápido a calificaciones en resumen docente.
-3. [`ad73ce3`](https://github.com/Burmistrov4/inces-lms/commit/ad73ce3): Widgets interactivos estilo Google Classroom en el Tablón (`AulaVirtualDashboardScreen`) + Tarjetas con identidad cromática multi-área en `PanelMisAulas`.
+1. [`4ede808`](https://github.com/Burmistrov4/inces-lms/commit/4ede808): Integración de activos fotográficos vocacionales reales de alta resolución (metalmecánica, alimentos, estética, gestión y formación juvenil) en el Hero desktop y móvil de la Landing Page + Despliegue en Cloudflare Pages.
+2. [`11bf7c8`](https://github.com/Burmistrov4/inces-lms/commit/11bf7c8): Implementación del Bloque E (duración configurable en Programas y Lapsos, función pura `sumarDuracion` con saturación de fin de mes en Dart y backend, chips de cálculo rápido de fin de lapso, 100% de tests pasando).
+3. `feat(classroom)`: Cabecera fotográfica inmersiva para el Aula Virtual (`AulaVirtualDashboardScreen`) y tarjetas de clase estilo Google Classroom con foto vocacional en `PanelMisAulas` y catálogo público.
 
 ### Verificación en la nube (GitHub Actions)
 
 | Flujo | Run ID | Estado | Duración | Cobertura |
 |---|---|---|---|---|
-| **Flutter CI** | `38577064599` | ✅ **SUCCESS** | 2m 11s | 1022+ pruebas unitarias y de widgets pasando; 0 lints en 232 archivos analizados. |
-| **E2E (Playwright)** | `38577064417` | ✅ **SUCCESS** | 4m 27s | 27/27 pruebas de punta a punta en navegador real Chromium. |
-| **Backend CI** | `38538438905` | ✅ **SUCCESS** | 1m 45s | 700/700 pruebas vitest pasando; 0 errores de TypeScript. |
+| **Flutter CI** | `38581781009` | ✅ **SUCCESS** | 2m 14s | 1022+ pruebas pasando; 0 lints en 232 archivos analizados. |
+| **E2E (Playwright)** | `38581780978` | ✅ **SUCCESS** | 4m 23s | 27/27 pruebas de punta a punta en navegador real Chromium. |
+| **Web bundle (Prod)** | `38581861339` | ✅ **SUCCESS** | 2m 45s | Artefacto web de producción desplegado a Cloudflare Pages. |
 
 ---
 

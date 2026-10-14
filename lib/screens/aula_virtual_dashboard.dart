@@ -578,97 +578,127 @@ class _AulaVirtualDashboardScreenState
   Widget _cabeceraGoogleClassroom() {
     final area = AreaFormativa.resolver(widget.seccionNombre);
 
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 110),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      decoration: BoxDecoration(
-        gradient: area.degradadoBanner,
-        borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
-        boxShadow: [
-          BoxShadow(
-            color: area.colorPrimario.withValues(alpha: 0.22),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            right: -10,
-            bottom: -22,
-            child: Opacity(
-              opacity: 0.18,
-              child: Icon(
-                area.icono,
-                size: 130,
-                color: Colors.white,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+      child: Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(minHeight: 125),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+          boxShadow: [
+            BoxShadow(
+              color: area.colorPrimario.withValues(alpha: 0.22),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Fotografía vocacional de fondo de alta resolución
+            Positioned.fill(
+              child: Image.asset(
+                area.rutaImagenAsset,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
               ),
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            // Degradado institucional de alto contraste para legibilidad perfecta
+            Positioned.fill(
+              child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.22),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.35),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.black.withValues(alpha: 0.88),
+                      Colors.black.withValues(alpha: 0.70),
+                      area.colorPrimario.withValues(alpha: 0.55),
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(area.icono, size: 14, color: Colors.white),
-                    const SizedBox(width: 6),
-                    Text(
-                      area.etiqueta,
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+              ),
+            ),
+            Positioned(
+              right: -10,
+              bottom: -22,
+              child: Opacity(
+                opacity: 0.20,
+                child: Icon(
+                  area.icono,
+                  size: 130,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.22),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.35),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Espacio de Aprendizaje Virtual',
-                style: GoogleFonts.inter(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: -0.4,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.location_on_outlined,
-                    size: 14,
-                    color: Colors.white70,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'CFS Nacional de Soldadura «Rafael Urdaneta» · La Isabelica',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white.withValues(alpha: 0.85),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(area.icono, size: 14, color: Colors.white),
+                        const SizedBox(width: 6),
+                        Text(
+                          area.etiqueta,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Espacio de Aprendizaje Virtual',
+                    style: GoogleFonts.inter(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 14,
+                        color: Colors.white70,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'CFS Nacional de Soldadura «Rafael Urdaneta» · La Isabelica',
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

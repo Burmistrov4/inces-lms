@@ -1361,70 +1361,102 @@ class _TarjetaCurso extends StatelessWidget {
     final area = AreaFormativa.resolver(curso.etiqueta);
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+        side: BorderSide(color: theme.colorScheme.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: 75,
+            width: double.infinity,
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  alignment: Alignment.center,
+                Image.asset(
+                  area.rutaImagenAsset,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Container(color: area.colorPrimario),
+                ),
+                DecoratedBox(
                   decoration: BoxDecoration(
-                    color: area.colorPrimario.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(IncesTheme.radioControl),
-                  ),
-                  child: Icon(
-                    area.icono,
-                    size: 20,
-                    color: area.colorPrimario,
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.black.withValues(alpha: 0.75),
+                        Colors.black.withValues(alpha: 0.35),
+                      ],
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                    ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: area.colorPrimario.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    area.etiqueta,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: area.colorPrimario,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 10,
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(area.icono, size: 12, color: Colors.white),
+                        const SizedBox(width: 4),
+                        Text(
+                          area.etiqueta,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            Text(curso.etiqueta, style: theme.textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text(
-              'Formación continua y capacitación productiva.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: onInscribir,
-                icon: const Icon(Icons.arrow_forward, size: 16),
-                label: const Text('Inscribirme'),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  minimumSize: const Size(0, 32),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  curso.etiqueta,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 6),
+                Text(
+                  'Formación técnica continua y capacitación productiva certificada por el INCES.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FilledButton.tonalIcon(
+                    onPressed: onInscribir,
+                    icon: const Icon(Icons.how_to_reg_rounded, size: 16),
+                    label: const Text('Inscribirme'),
+                    style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
