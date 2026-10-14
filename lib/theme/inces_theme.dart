@@ -141,6 +141,25 @@ class IncesTheme {
   /// suficiente sobre `#1E293B`; este tono sí y sigue leyéndose como apagado.
   static const Color textoApagadoOscuro = Color(0xFF94A3B8);
 
+  // --- Colores temáticos de áreas formativas (Google Classroom & Landing) -----
+  static const Color areaMetalmecanica = Color(0xFF0284C7);
+  static const Color areaAlimentos = Color(0xFF15803D);
+  static const Color areaServicios = Color(0xFF7E22CE);
+  static const Color areaGestion = Color(0xFFD97706);
+  static const Color areaJuvenil = Color(0xFF2563EB);
+
+  // Tonos de degradado para cabeceras tipo Google Classroom
+  static const Color bannerMetalmecanicaOscuro = Color(0xFF0C4A6E);
+  static const Color bannerMetalmecanicaMedio = Color(0xFF0369A1);
+  static const Color bannerAlimentosOscuro = Color(0xFF14532D);
+  static const Color bannerAlimentosClaro = Color(0xFF16A34A);
+  static const Color bannerServiciosOscuro = Color(0xFF581C87);
+  static const Color bannerServiciosClaro = Color(0xFF9333EA);
+  static const Color bannerGestionOscuro = Color(0xFF78350F);
+  static const Color bannerGestionMedio = Color(0xFFB45309);
+  static const Color bannerJuvenilOscuro = Color(0xFF1E3A8A);
+  static const Color bannerJuvenilMedio = Color(0xFF1D4ED8);
+
   // ---------------------------------------------------------------------------
   //  Métricas compartidas
   // ---------------------------------------------------------------------------

@@ -436,7 +436,7 @@ class _AulaVirtualDashboardScreenState
               ),
               const SizedBox(height: 10),
               Text(
-                widget.seccionNombre,
+                'Espacio de Aprendizaje Virtual',
                 style: GoogleFonts.inter(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,

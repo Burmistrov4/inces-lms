@@ -53,15 +53,15 @@ enum AreaFormativa {
   Color get colorPrimario {
     switch (this) {
       case AreaFormativa.metalmecanica:
-        return const Color(0xFF0284C7);
+        return IncesTheme.areaMetalmecanica;
       case AreaFormativa.alimentos:
-        return const Color(0xFF15803D);
+        return IncesTheme.areaAlimentos;
       case AreaFormativa.serviciosPersonales:
-        return const Color(0xFF7E22CE);
+        return IncesTheme.areaServicios;
       case AreaFormativa.comunicacionYGestion:
-        return const Color(0xFFD97706);
+        return IncesTheme.areaGestion;
       case AreaFormativa.juvenilYBasica:
-        return const Color(0xFF2563EB);
+        return IncesTheme.areaJuvenil;
       case AreaFormativa.tecnicaGeneral:
         return IncesTheme.azulPrimario;
     }
@@ -72,31 +72,51 @@ enum AreaFormativa {
     switch (this) {
       case AreaFormativa.metalmecanica:
         return const LinearGradient(
-          colors: [Color(0xFF0C4A6E), Color(0xFF0369A1), Color(0xFF0284C7)],
+          colors: [
+            IncesTheme.bannerMetalmecanicaOscuro,
+            IncesTheme.bannerMetalmecanicaMedio,
+            IncesTheme.areaMetalmecanica,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         );
       case AreaFormativa.alimentos:
         return const LinearGradient(
-          colors: [Color(0xFF14532D), Color(0xFF15803D), Color(0xFF16A34A)],
+          colors: [
+            IncesTheme.bannerAlimentosOscuro,
+            IncesTheme.areaAlimentos,
+            IncesTheme.bannerAlimentosClaro,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         );
       case AreaFormativa.serviciosPersonales:
         return const LinearGradient(
-          colors: [Color(0xFF581C87), Color(0xFF7E22CE), Color(0xFF9333EA)],
+          colors: [
+            IncesTheme.bannerServiciosOscuro,
+            IncesTheme.areaServicios,
+            IncesTheme.bannerServiciosClaro,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         );
       case AreaFormativa.comunicacionYGestion:
         return const LinearGradient(
-          colors: [Color(0xFF78350F), Color(0xFFB45309), Color(0xFFD97706)],
+          colors: [
+            IncesTheme.bannerGestionOscuro,
+            IncesTheme.bannerGestionMedio,
+            IncesTheme.areaGestion,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         );
       case AreaFormativa.juvenilYBasica:
         return const LinearGradient(
-          colors: [Color(0xFF1E3A8A), Color(0xFF1D4ED8), Color(0xFF2563EB)],
+          colors: [
+            IncesTheme.bannerJuvenilOscuro,
+            IncesTheme.bannerJuvenilMedio,
+            IncesTheme.areaJuvenil,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         );
