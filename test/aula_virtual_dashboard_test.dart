@@ -372,4 +372,56 @@ void main() {
       await cerrarAvisos(tester);
     });
   });
+
+  group('Aula Virtual · Widgets Google Classroom en Tablón', () {
+    testWidgets('el estudiante ve el bloque de próximas entregas y puede navegar a trabajo',
+        (tester) async {
+      final gateway = FakeAulaGateway()
+        ..tareas = [
+          tareaEjemplo(
+            id: 't1',
+            titulo: 'Práctica de arco eléctrico',
+            fechaLimite: '2026-12-31T23:59:59.000Z',
+          ),
+        ]
+        ..entregas = [
+          entregaEjemplo(id: 'e1', tareaId: 't1', estado: EstadoEntrega.asignada),
+        ];
+
+      await montar(tester, gateway: gateway);
+      await asentar(tester);
+
+      expect(find.text('Próximas entregas'), findsOneWidget);
+      expect(find.text('Revisar'), findsOneWidget);
+
+      await tester.tap(find.text('Revisar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Práctica de arco eléctrico'), findsOneWidget);
+    });
+
+    testWidgets('el docente ve la caja de anunciar a la sección y el resumen de actividades',
+        (tester) async {
+      final gateway = FakeAulaGateway()
+        ..tareas = [
+          tareaEjemplo(id: 't1', titulo: 'Práctica TIG'),
+          tareaEjemplo(
+            id: 'mat-1',
+            titulo: 'Manual de seguridad',
+            tipo: TipoTarea.material,
+          ),
+        ];
+
+      await montar(tester, gateway: gateway, esDocente: true);
+      await asentar(tester);
+
+      expect(find.text('Actividades del Curso'), findsOneWidget);
+      expect(
+        find.textContaining('1 tarea(s) evaluativa(s) · 1 material(es) de lectura'),
+        findsOneWidget,
+      );
+      expect(find.text('Anuncia algo a tu sección...'), findsOneWidget);
+      expect(find.text('Nuevo anuncio'), findsOneWidget);
+    });
+  });
 }

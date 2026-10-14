@@ -93,6 +93,8 @@ void main() {
       expect(gateway.llamadas, contains('misAulas'));
       expect(texto(etiquetaA), findsOneWidget);
       expect(texto('Electricidad · Sección B'), findsOneWidget);
+      expect(find.text('Metalmecánica e Industria'), findsOneWidget);
+      expect(find.text('Formación Técnica Profesional'), findsOneWidget);
     });
 
     testWidgets('sin aulas explica por qué, en vez de dejar la pantalla vacía',

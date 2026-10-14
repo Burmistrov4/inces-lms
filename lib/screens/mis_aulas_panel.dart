@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/gateways/aula_gateway.dart';
 import '../core/result.dart';
 import '../theme/inces_theme.dart';
+import '../theme/temas_formacion.dart';
 import '../widgets/andamiaje.dart';
 import '../widgets/comunes.dart';
 import 'aula_virtual_dashboard.dart';
@@ -206,26 +207,97 @@ class _PanelMisAulasState extends State<PanelMisAulas> {
   Widget _tarjeta(AulaResumen aula) {
     final theme = Theme.of(context);
     final abrible = widget.aulaGateway != null;
-    // El icono cae sobre un tinte de su propio color. `colorScheme.primary`
-    // servía en claro (8.29:1) pero **no en oscuro**: ahí el primario es
-    // `#0059B3` y sobre su propio tinte da 1.99:1. Medido el 2026-09-30.
-    final par = PaletaInces.de(context).etiquetaDe(TonoEstado.info);
+    final area = AreaFormativa.resolver(aula.etiqueta);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        leading: CircleAvatar(
-          backgroundColor: par.fondo,
-          child: Icon(Icons.class_outlined, size: 20, color: par.texto),
-        ),
-        title: Text(aula.etiqueta, style: theme.textTheme.titleSmall),
-        trailing:
-            abrible ? const Icon(Icons.chevron_right_rounded) : null,
-        // Sin puerta de contenido la tarjeta **no** se puede pulsar: un toque
-        // que abre una pantalla incapaz de cargar nada es peor que un toque que
-        // no hace nada, porque promete algo que no cumple.
+      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+        side: BorderSide(color: theme.colorScheme.outline),
+      ),
+      child: InkWell(
+        // Sin puerta de contenido la tarjeta no se puede pulsar: un toque que
+        // abre una pantalla incapaz de cargar nada promete algo que no cumple.
         onTap: abrible ? () => setState(() => _abierta = aula) : null,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              height: 5,
+              decoration: BoxDecoration(gradient: area.degradadoBanner),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: area.colorPrimario.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: area.colorPrimario.withValues(alpha: 0.22),
+                      ),
+                    ),
+                    child: Icon(
+                      area.icono,
+                      size: 22,
+                      color: area.colorPrimario,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          aula.etiqueta,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: area.colorPrimario.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                area.etiqueta,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: area.colorPrimario,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (abrible) ...[
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 22,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

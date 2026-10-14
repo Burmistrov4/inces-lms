@@ -128,6 +128,12 @@ rango → 200 con página vacía».
   directo a postulación para todas las ramas formativas del CFS Nacional de Soldadura.
 - **Acceso Directo a Calificaciones Docente (2026-10-14)**: acción prioritaria en el
   resumen docente conectando con el centro de calificaciones y el libro de notas.
+- **Tarjetas Temáticas en «Mis aulas» (2026-10-14)**: listado de cursos con franja de
+  degradado institucional, icono por área formativa e insignia de especialidad técnica.
+- **Widgets de Tablón Estilo Google Classroom (2026-10-14)**: en el Aula Virtual, bloque
+  responsivo de «Próximas entregas» con cálculo automático de vencimientos y navegación
+  directa al trabajo de clase para el estudiante, y caja interactiva de publicación rápida
+  de anuncios para el docente.
 
 ## 5. Abierto — pendientes reales (con su criterio de cierre)
 

@@ -337,7 +337,10 @@ class _AulaVirtualDashboardScreenState
               const SizedBox(height: 12),
               Expanded(
                 child: TabBarView(
-                  children: [_tablon(), _trabajoDeClase()],
+                  children: [
+                    Builder(builder: (tabCtx) => _tablon(tabCtx)),
+                    _trabajoDeClase(),
+                  ],
                 ),
               ),
             ] else
@@ -350,25 +353,225 @@ class _AulaVirtualDashboardScreenState
 
   // ── Tablón ─────────────────────────────────────────────────────────────────
 
-  Widget _tablon() {
+  Widget _tablon(BuildContext tabContext) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _cabeceraGoogleClassroom(),
-        const SizedBox(height: 16),
-        if (widget.esDocente) ...[
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton.icon(
-              onPressed: _cargandoTablon ? null : _crearAnuncio,
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Nuevo anuncio'),
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
+        const SizedBox(height: 14),
+        _bloqueProximasEntregas(tabContext),
+        if (widget.esDocente) _cajaNuevoAnuncio(),
         Expanded(child: _contenidoTablon()),
       ],
+    );
+  }
+
+  Widget _bloqueProximasEntregas(BuildContext tabContext) {
+    final theme = Theme.of(tabContext);
+    final area = AreaFormativa.resolver(widget.seccionNombre);
+
+    if (widget.esDocente) {
+      final totalTareas = _tareas.where((t) => t.tipo.seCalifica).length;
+      final totalMateriales = _tareas.where((t) => !t.tipo.seCalifica).length;
+
+      return Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+          side: BorderSide(color: theme.colorScheme.outline),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: area.colorPrimario.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.assignment_outlined,
+                  size: 20,
+                  color: area.colorPrimario,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Actividades del Curso',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$totalTareas tarea(s) evaluativa(s) · $totalMateriales material(es) de lectura',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => DefaultTabController.of(tabContext).animateTo(1),
+                icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                label: const Text('Ver trabajo'),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final tareasCalificables = _tareas.where((t) => t.tipo.seCalifica).toList();
+    final pendientes = tareasCalificables.where((t) {
+      final entrega = _entregasPorTarea[t.id];
+      return entrega == null ||
+          entrega.estado == EstadoEntrega.asignada ||
+          entrega.estado == EstadoEntrega.reclamada;
+    }).toList();
+
+    DateTime? proximoVencimiento;
+    for (final t in pendientes) {
+      if (t.fechaLimite != null) {
+        final f = DateTime.tryParse(t.fechaLimite!);
+        if (f != null && f.isAfter(DateTime.now())) {
+          if (proximoVencimiento == null || f.isBefore(proximoVencimiento)) {
+            proximoVencimiento = f;
+          }
+        }
+      }
+    }
+
+    final hayPendientes = pendientes.isNotEmpty;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+        side: BorderSide(color: theme.colorScheme.outline),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: (hayPendientes
+                        ? IncesTheme.advertencia
+                        : IncesTheme.exito)
+                    .withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                hayPendientes
+                    ? Icons.pending_actions_rounded
+                    : Icons.task_alt_rounded,
+                size: 20,
+                color: hayPendientes
+                    ? IncesTheme.advertencia
+                    : IncesTheme.exito,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Próximas entregas',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    hayPendientes
+                        ? (proximoVencimiento != null
+                            ? 'Próximo vencimiento: ${formatearFechaHora(proximoVencimiento)}'
+                            : '${pendientes.length} asignación(es) pendiente(s)')
+                        : '¡Todo al día! No tienes entregas pendientes',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () => DefaultTabController.of(tabContext).animateTo(1),
+              icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+              label: Text(hayPendientes ? 'Revisar' : 'Consultar'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _cajaNuevoAnuncio() {
+    final theme = Theme.of(context);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+        side: BorderSide(color: theme.colorScheme.outline),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+        onTap: _cargandoTablon ? null : _crearAnuncio,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: theme.colorScheme.primaryContainer,
+                child: Icon(
+                  Icons.campaign_outlined,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  'Anuncia algo a tu sección...',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: _cargandoTablon ? null : _crearAnuncio,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Nuevo anuncio'),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
