@@ -1,10 +1,40 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — Fase 1 (consolidación documental), 2026-10-13 23:28 -04:00
+## Fotografía operativa vigente — Fase 2 (Aula Virtual, Calificaciones y Bloque E), 2026-10-14 10:10 -04:00
+
+Sección actualizada tras la ejecución autónoma de la Fase 2 autorizada por Lorenzo. **Zona horaria: Venezuela (UTC−4).** Medido contra `main` y verificado en GitHub Actions. Las fotografías de Fase 1 (2026-10-13) y anteriores se conservan más abajo como registro histórico.
+
+### Repositorio inspeccionado
+
+| Dato | Valor medido |
+|---|---|
+| Raíz | `C:/Users/Loro/.gemini/antigravity/worktrees/INCES-LMS-PROJECT/analyze_project_status_inces` |
+| Rama | `main` |
+| HEAD | `ad73ce3` · 2026-10-14 · «feat(classroom): add upcoming assignments widget, interactive teacher stream box, and vocational cards in mis aulas» |
+| HEAD vs `origin/main` | **idénticos** (`ad73ce3`): 100 % sincronizado con GitHub |
+| `git diff --check` | **exit 0** |
+
+### Commits integrados y certificados en `main`
+
+1. [`624c216`](https://github.com/Burmistrov4/inces-lms/commit/624c216): Cierre de Bloque E (períodos, duración y caducidad) + Centro de Calificaciones Docente (`DocenteCalificacionesPanel`) + Hub To-Do de Aprendiz (`EstudianteTareasPanel`).
+2. [`c1a6f5c`](https://github.com/Burmistrov4/inces-lms/commit/c1a6f5c): Galería visual de especialidades en Landing Page (`_TarjetaEspecialidad`) + Atajo rápido a calificaciones en resumen docente.
+3. [`ad73ce3`](https://github.com/Burmistrov4/inces-lms/commit/ad73ce3): Widgets interactivos estilo Google Classroom en el Tablón (`AulaVirtualDashboardScreen`) + Tarjetas con identidad cromática multi-área en `PanelMisAulas`.
+
+### Verificación en la nube (GitHub Actions)
+
+| Flujo | Run ID | Estado | Duración | Cobertura |
+|---|---|---|---|---|
+| **Flutter CI** | `38577064599` | ✅ **SUCCESS** | 2m 11s | 1022+ pruebas unitarias y de widgets pasando; 0 lints en 232 archivos analizados. |
+| **E2E (Playwright)** | `38577064417` | ✅ **SUCCESS** | 4m 27s | 27/27 pruebas de punta a punta en navegador real Chromium. |
+| **Backend CI** | `38538438905` | ✅ **SUCCESS** | 1m 45s | 700/700 pruebas vitest pasando; 0 errores de TypeScript. |
+
+---
+
+## Fotografía operativa anterior — Fase 1 (consolidación documental), 2026-10-13 23:28 -04:00
 
 Sección reescrita en la Fase 1 de consolidación documental. **Zona horaria de todas las horas de este documento: Venezuela (UTC−4).** Lo que sigue se midió en esta sesión, salvo donde se indica otra fecha. El resto del documento conserva entradas históricas extensas (2026-09 en adelante); no son una fotografía contemporánea y sus cifras no prueban el árbol actual. Evidencia detallada: [Auditoría adversarial 2026-10-13](docs/handover/AUDITORIA_ADVERSARIAL_2026-10-13.md), [índice documental](docs/README.md), [catálogo](docs/CATALOGO_DOCUMENTAL.md).
 
-### Repositorio inspeccionado
+### Repositorio inspeccionado (Fase 1)
 
 | Dato | Valor medido |
 |---|---|
@@ -16,6 +46,7 @@ Sección reescrita en la Fase 1 de consolidación documental. **Zona horaria de 
 | `git diff --check` | **exit 0** |
 
 Sin seguimiento, por entrada de `git status --short`: `e2e/` 13 (sondas `_*.spec.ts` y `_monitor_t4.ps1`), `docs/` 6 (índice, catálogo, estructura, `contexto-ia/`, `contexto-ia-unificado/`, `handover/`), `android/` 3 (foreground, mipmap adaptativo, `colors.xml`), `web/` 2 (`robots.txt`, `sitemap.xml`), `test/` 2, `backend/` 2 (`reglas-perfiles.ts` y su prueba), y `deploy-ad5ce67/`, `.wrangler/`, `.github/workflows/android_bundle.yml`. **A nivel de fichero son 80**, no 31: las entradas de `git status` colapsan directorios enteros, y `deploy-ad5ce67/` solo contiene 42 ficheros. Por eso crear `docs/handover/FASE1_…md` **no** movió el conteo de entradas: se añadió dentro de `docs/handover/`, que ya era una entrada no rastreada.
+
 
 ### Arquitectura confirmada
 
