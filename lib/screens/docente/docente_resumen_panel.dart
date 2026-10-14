@@ -210,6 +210,13 @@ class DocenteResumenPanel extends StatelessWidget {
         color: paleta.enlace,
       ),
       _DocenteAccionData(
+        titulo: 'Revisar Calificaciones',
+        descripcion: 'Asentar notas en borrador, revisar entregas y devolver calificaciones oficiales.',
+        icono: Icons.grading_rounded,
+        seccionDestino: 'Calificaciones',
+        color: paleta.info,
+      ),
+      _DocenteAccionData(
         titulo: 'Material de Apoyo',
         descripcion: 'Subir guías pedagógicas y diagramas técnicos directamente a Cloudflare R2.',
         icono: Icons.folder_open_outlined,

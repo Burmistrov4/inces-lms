@@ -97,6 +97,7 @@ class _LandingPageState extends State<LandingPage> {
           children: [
             _construirHero(),
             _construirPilares(),
+            _construirGaleriaEspecialidades(),
             _construirRoles(),
             _construirOferta(),
             _construirCompromiso(),
@@ -620,6 +621,166 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Galería de Especialidades y Talleres Productivos
+  // ---------------------------------------------------------------------------
+
+  Widget _construirGaleriaEspecialidades() {
+    final theme = Theme.of(context);
+
+    final especialidades = [
+      _EspecialidadData(
+        area: AreaFormativa.metalmecanica,
+        titulo: 'Metalmecánica y Soldadura',
+        descripcion:
+            'Talleres industriales con cabinas individuales de soldadura por arco (SMAW), '
+            'semiautomática (GMAW/MIG-MAG), argón (GTAW/TIG), oxicorte y conformado en forja.',
+        competencias: const [
+          'Soldadura SMAW / GMAW',
+          'Herrería y Forja',
+          'Torno Mecánico',
+          'Normas AWS D1.1',
+        ],
+        modalidad: '100% Práctico en Taller',
+      ),
+      _EspecialidadData(
+        area: AreaFormativa.alimentos,
+        titulo: 'Alimentación y Gastronomía',
+        descripcion:
+            'Formación integral en higiene y manipulación de alimentos, panificación artesanal, '
+            'pastelería y técnicas culinarias con certificación sanitaria oficial del MPPS.',
+        competencias: const [
+          'Manipulación Sanitaria',
+          'Panadería Artesanal',
+          'Pastelería Básica',
+          'Inocuidad Bromatológica',
+        ],
+        modalidad: 'Prácticas de Cocina y Aulas',
+      ),
+      _EspecialidadData(
+        area: AreaFormativa.serviciosPersonales,
+        titulo: 'Servicios Personales y Estética',
+        descripcion:
+            'Técnicas avanzadas de diseño de cejas y pestañas, visagismo facial, '
+            'barbería clásica y urbana, corte y protocolos de bioseguridad estética.',
+        competencias: const [
+          'Cejas y Pestañas',
+          'Barbería Moderna',
+          'Colorimetría y Estilo',
+          'Bioseguridad Cosmética',
+        ],
+        modalidad: 'Prácticas con Modelos Reales',
+      ),
+      _EspecialidadData(
+        area: AreaFormativa.comunicacionYGestion,
+        titulo: 'Comunicación, Gestión y Oratoria',
+        descripcion:
+            'Desarrollo de competencias en expresión oral, oratoria, liderazgo productivo, '
+            'computación básica, ofimática y administración de proyectos socio-productivos.',
+        competencias: const [
+          'Oratoria y Expresión',
+          'Liderazgo Productivo',
+          'Computación Básica',
+          'Ofimática Aplicada',
+        ],
+        modalidad: 'Laboratorios y Salones Multimedia',
+      ),
+      _EspecialidadData(
+        area: AreaFormativa.juvenilYBasica,
+        titulo: 'Formación Juvenil y Aprendices (PNA)',
+        descripcion:
+            'Programa Nacional de Aprendizaje (PNA) e inducción para adolescentes '
+            'de 15 a 16 años, combinando valores, formación técnica vocacional y desarrollo humano.',
+        competencias: const [
+          'Adolescentes 15 a 16 años',
+          'Orientación Vocacional',
+          'Formación Dual PNA',
+          'Inserción Ocupacional',
+        ],
+        modalidad: 'Acompañamiento Pedagógico Integral',
+      ),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: IncesTheme.azulPrimario.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'TALLERES Y ÁREAS FORMATIVAS',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.primary,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Especialidades Productivas del Centro',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Formación gratuita y certificada en talleres equipados para el trabajo industrial, '
+                'servicios, alimentación y emprendimiento en Carabobo.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 28),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final columnas = constraints.maxWidth > 900
+                      ? 3
+                      : constraints.maxWidth > 600
+                          ? 2
+                          : 1;
+                  const separacion = 18.0;
+                  final ancho =
+                      (constraints.maxWidth - separacion * (columnas - 1)) /
+                          columnas;
+
+                  return Wrap(
+                    spacing: separacion,
+                    runSpacing: separacion,
+                    children: [
+                      for (final esp in especialidades)
+                        SizedBox(
+                          width: ancho,
+                          child: _TarjetaEspecialidad(
+                            data: esp,
+                            onExplorar: _irAInscripcion,
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _construirRoles() {
     final theme = Theme.of(context);
 
@@ -1033,6 +1194,182 @@ class _TarjetaCurso extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _EspecialidadData {
+  const _EspecialidadData({
+    required this.area,
+    required this.titulo,
+    required this.descripcion,
+    required this.competencias,
+    required this.modalidad,
+  });
+
+  final AreaFormativa area;
+  final String titulo;
+  final String descripcion;
+  final List<String> competencias;
+  final String modalidad;
+}
+
+class _TarjetaEspecialidad extends StatelessWidget {
+  const _TarjetaEspecialidad({
+    required this.data,
+    required this.onExplorar,
+  });
+
+  final _EspecialidadData data;
+  final VoidCallback onExplorar;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+        side: BorderSide(color: theme.colorScheme.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Banner temático con degradado y marca de agua
+          Container(
+            constraints: const BoxConstraints(minHeight: 90),
+            decoration: BoxDecoration(
+              gradient: data.area.degradadoBanner,
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  right: -10,
+                  bottom: -18,
+                  child: Opacity(
+                    opacity: 0.20,
+                    child: Icon(
+                      data.area.icono,
+                      size: 96,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          data.modalidad,
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Icon(data.area.icono, size: 18, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              data.titulo,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Cuerpo
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data.descripcion,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final c in data.competencias)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: data.area.colorPrimario.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color:
+                                data.area.colorPrimario.withValues(alpha: 0.22),
+                          ),
+                        ),
+                        child: Text(
+                          c,
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: data.area.colorPrimario,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: onExplorar,
+                    icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                    label: const Text('Postularme a esta área'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -123,6 +123,11 @@ rango → 200 con página vacía».
 - **Tematización multi-área formativa (2026-10-14)**: catalogador semántico `AreaFormativa`
   para Metalmecánica, Alimentos, Estética/Servicios, Gestión/Oratoria y Juventud,
   con degradados oficiales y marca de agua institucional en el aula.
+- **Galería Visual de Especialidades en Landing Page (2026-10-14)**: sección institucional
+  con tarjetas adaptativas, insignias de modalidad, competencias técnicas clave y CTA
+  directo a postulación para todas las ramas formativas del CFS Nacional de Soldadura.
+- **Acceso Directo a Calificaciones Docente (2026-10-14)**: acción prioritaria en el
+  resumen docente conectando con el centro de calificaciones y el libro de notas.
 
 ## 5. Abierto — pendientes reales (con su criterio de cierre)
 
