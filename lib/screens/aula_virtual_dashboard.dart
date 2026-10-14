@@ -7,6 +7,7 @@ import '../core/result.dart';
 import '../models/archivo.dart';
 import '../repositories/archivos_repository.dart';
 import '../theme/inces_theme.dart';
+import '../theme/temas_formacion.dart';
 import '../widgets/andamiaje.dart';
 import '../widgets/comunes.dart';
 import 'crear_anuncio_panel.dart';
@@ -350,25 +351,122 @@ class _AulaVirtualDashboardScreenState
   // ── Tablón ─────────────────────────────────────────────────────────────────
 
   Widget _tablon() {
-    final contenido = _contenidoTablon();
-    if (!widget.esDocente) return contenido;
-
-    // El docente ve un botón de «Nuevo anuncio» sobre el feed: el tablón es suyo
-    // y la acción de crear va donde está el contenido, no escondida en otro menú.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: FilledButton.icon(
-            onPressed: _cargandoTablon ? null : _crearAnuncio,
-            icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('Nuevo anuncio'),
+        _cabeceraGoogleClassroom(),
+        const SizedBox(height: 16),
+        if (widget.esDocente) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              onPressed: _cargandoTablon ? null : _crearAnuncio,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Nuevo anuncio'),
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        Expanded(child: contenido),
+          const SizedBox(height: 12),
+        ],
+        Expanded(child: _contenidoTablon()),
       ],
+    );
+  }
+
+  Widget _cabeceraGoogleClassroom() {
+    final area = AreaFormativa.resolver(widget.seccionNombre);
+
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 110),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      decoration: BoxDecoration(
+        gradient: area.degradadoBanner,
+        borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+        boxShadow: [
+          BoxShadow(
+            color: area.colorPrimario.withValues(alpha: 0.22),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            right: -10,
+            bottom: -22,
+            child: Opacity(
+              opacity: 0.18,
+              child: Icon(
+                area.icono,
+                size: 130,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(area.icono, size: 14, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Text(
+                      area.etiqueta,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                widget.seccionNombre,
+                style: GoogleFonts.inter(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -0.4,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.location_on_outlined,
+                    size: 14,
+                    color: Colors.white70,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'CFS Nacional de Soldadura «Rafael Urdaneta» · La Isabelica',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withValues(alpha: 0.85),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

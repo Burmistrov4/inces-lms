@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/inscripcion_campo.dart';
 import '../repositories/aspirante_repository.dart';
 import '../theme/inces_theme.dart';
+import '../theme/temas_formacion.dart';
 
 /// Página pública de aterrizaje: la raíz `/` cuando **no** hay sesión.
 ///
@@ -260,7 +261,7 @@ class _LandingPageState extends State<LandingPage> {
 
   Widget _construirInsigniaIndustrial3D() {
     return Container(
-      width: 340,
+      width: 360,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.08),
@@ -281,8 +282,8 @@ class _LandingPageState extends State<LandingPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 80,
-            height: 80,
+            width: 76,
+            height: 76,
             decoration: BoxDecoration(
               gradient: RadialGradient(
                 colors: [
@@ -297,14 +298,15 @@ class _LandingPageState extends State<LandingPage> {
               ),
             ),
             child: const Icon(
-              Icons.precision_manufacturing_rounded,
+              Icons.school_rounded,
               color: Colors.white,
-              size: 42,
+              size: 40,
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           Text(
-            'CFS Soldadura Industrial',
+            'Formación Técnica y Profesional',
+            textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -313,7 +315,7 @@ class _LandingPageState extends State<LandingPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Capacitación técnica productiva homologada bajo normas industriales.',
+            'Capacitación integral en metalmecánica, gastronomía, servicios y desarrollo personal homologada por el Estado.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 13,
@@ -321,7 +323,19 @@ class _LandingPageState extends State<LandingPage> {
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              _chipArea(Icons.precision_manufacturing_rounded, 'Metalmecánica'),
+              _chipArea(Icons.restaurant_menu_rounded, 'Alimentos'),
+              _chipArea(Icons.spa_rounded, 'Estética'),
+              _chipArea(Icons.record_voice_over_rounded, 'Oratoria'),
+            ],
+          ),
+          const SizedBox(height: 18),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
@@ -346,6 +360,31 @@ class _LandingPageState extends State<LandingPage> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _chipArea(IconData icono, String texto) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icono, size: 13, color: Colors.white),
+          const SizedBox(width: 5),
+          Text(
+            texto,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
             ),
           ),
         ],
@@ -401,16 +440,16 @@ class _LandingPageState extends State<LandingPage> {
         titulo: 'Aula Virtual y Talleres Prácticos',
         modulo: 'Formación',
         descripcion:
-            'Tablón de clase interactivo, asignaciones técnicas de soldadura '
-            'y calificaciones formativas continuas.',
+            'Tablón de clase interactivo, asignaciones formativas para talleres y aulas '
+            'y calificaciones continuas.',
       ),
       (
         icono: Icons.qr_code_scanner_rounded,
         titulo: 'Asistencia Segura con QR',
-        modulo: 'Talleres',
+        modulo: 'Control',
         descripcion:
-            'Registro de presencialidad en talleres con códigos dinámicos efímeros '
-            'y verificación presencial de guardias.',
+            'Registro de presencialidad en talleres y aulas con códigos dinámicos efímeros '
+            'y verificación presencial.',
       ),
       (
         icono: Icons.how_to_reg_outlined,
@@ -418,14 +457,14 @@ class _LandingPageState extends State<LandingPage> {
         modulo: 'Admisión',
         descripcion:
             'Postulación en línea con asignación automática por orden de llegada (FIFO) '
-            'y aforo controlado por taller.',
+            'y aforo controlado por curso.',
       ),
       (
         icono: Icons.cloud_done_outlined,
-        titulo: 'Biblioteca Digital de Planos y Guías',
+        titulo: 'Biblioteca Digital y Guías de Estudio',
         modulo: 'Recursos',
         descripcion:
-            'Biblioteca de manuales técnicos, planos y guías de seguridad industrial '
+            'Manuales técnicos, recetarios, guías de estética, planos y normas '
             'disponibles 24/7 sin límite de transferencia.',
       ),
     ];
@@ -927,31 +966,53 @@ class _TarjetaCurso extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final area = AreaFormativa.resolver(curso.etiqueta);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(IncesTheme.radioControl),
-              ),
-              child: Icon(
-                Icons.handyman_outlined,
-                size: 20,
-                color: theme.colorScheme.primary,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: area.colorPrimario.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(IncesTheme.radioControl),
+                  ),
+                  child: Icon(
+                    area.icono,
+                    size: 20,
+                    color: area.colorPrimario,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: area.colorPrimario.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    area.etiqueta,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: area.colorPrimario,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 14),
             Text(curso.etiqueta, style: theme.textTheme.titleMedium),
             const SizedBox(height: 6),
             Text(
-              'Curso de formación continua',
+              'Formación continua y capacitación productiva.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
