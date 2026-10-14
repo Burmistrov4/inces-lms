@@ -472,7 +472,23 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
                                 DataCell(
                                   SizedBox(
                                     width: 210,
-                                    child: Text(u.nombreCompleto),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(u.nombreCompleto),
+                                        // Distinción demo/real sin borrar
+                                        // nada: las cuentas de la siembra
+                                        // (`@semilla.invalid`) se etiquetan.
+                                        if (u.esCuentaDemo) ...[
+                                          const SizedBox(height: 4),
+                                          const Etiqueta(
+                                            texto: 'Cuenta de demostración',
+                                          ),
+                                        ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                                 DataCell(Text(u.email)),

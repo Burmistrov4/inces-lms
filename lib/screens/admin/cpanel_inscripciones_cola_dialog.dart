@@ -169,10 +169,25 @@ class _ListaCola extends StatelessWidget {
               ),
             ),
           ),
-          title: Text(c.estudianteNombre ?? c.estudianteId),
-          subtitle: Text(
-            c.estudianteEmail ??
-                'Inscripción ${c.id.substring(0, c.id.length < 8 ? c.id.length : 8)}',
+          // La etiqueta sale del modelo (`etiquetaEstudiante`): nombre →
+          // correo → «Sin nombre registrado». El UUID no es etiqueta de
+          // usuario, y con un nombre vacío la fila se quedaba en blanco
+          // porque `??` no salta con una cadena vacía.
+          title: Text(c.etiquetaEstudiante),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                c.estudianteEmail ??
+                    'Inscripción ${c.id.substring(0, c.id.length < 8 ? c.id.length : 8)}',
+              ),
+              // Igual que en inscritos: las cuentas de la siembra se
+              // etiquetan, no se borran ni se esconden.
+              if (c.esCuentaDemo) ...[
+                const SizedBox(height: 4),
+                const Etiqueta(texto: 'Cuenta de demostración'),
+              ],
+            ],
           ),
         );
       },

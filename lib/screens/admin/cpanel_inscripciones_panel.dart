@@ -148,7 +148,12 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel> {
       success: (promovida) {
         mostrarAviso(
           context,
-          'Promovido ${promovida.estudianteId}: ya tiene su asiento.',
+          // La etiqueta la resuelve el modelo (`etiquetaEstudiante`): antes aquí
+          // se interpolaba `estudianteId` y el aviso salía con un UUID crudo
+          // («Promovido 3f2a9c61-…: ya tiene su asiento.»), que es la misma
+          // clase de ruido que se quitó de las listas. Con un nombre vacío la
+          // cadena cae al correo, no a la clave interna.
+          'Promovido ${promovida.etiquetaEstudiante}: ya tiene su asiento.',
           exito: true,
         );
         _cargar();
@@ -678,11 +683,11 @@ class _DialogoReincorporarState extends State<_DialogoReincorporar> {
     );
   }
 
-  /// Etiqueta de un candidato: el nombre si lo hay, el correo si no, y el id
-  /// sólo como último recurso —nunca como primera opción, que es justo lo que
-  /// este diálogo viene a quitar de encima—.
-  static String _etiquetaCandidato(InscripcionDetallada i) =>
-      i.estudianteNombre ?? i.estudianteEmail ?? i.estudianteId;
+  /// Etiqueta de un candidato: la resuelve el modelo (`etiquetaEstudiante`):
+  /// nombre → correo → «Sin nombre registrado». El UUID nunca es etiqueta de
+  /// usuario, y con un nombre vacío la fila se quedaba en blanco porque `??`
+  /// no salta con una cadena vacía.
+  static String _etiquetaCandidato(InscripcionDetallada i) => i.etiquetaEstudiante;
 
   @override
   Widget build(BuildContext context) {

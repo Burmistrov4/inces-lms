@@ -1,8 +1,111 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
+## Fotografía operativa vigente — Fase 1 (consolidación documental), 2026-10-13 23:28 -04:00
+
+Sección reescrita en la Fase 1 de consolidación documental. **Zona horaria de todas las horas de este documento: Venezuela (UTC−4).** Lo que sigue se midió en esta sesión, salvo donde se indica otra fecha. El resto del documento conserva entradas históricas extensas (2026-09 en adelante); no son una fotografía contemporánea y sus cifras no prueban el árbol actual. Evidencia detallada: [Auditoría adversarial 2026-10-13](docs/handover/AUDITORIA_ADVERSARIAL_2026-10-13.md), [índice documental](docs/README.md), [catálogo](docs/CATALOGO_DOCUMENTAL.md).
+
+### Repositorio inspeccionado
+
+| Dato | Valor medido |
+|---|---|
+| Raíz | `C:/Users/Loro/Desktop/Cuarto Semestre/1. Servicio Comunitario/INCES-LMS-PROJECT` |
+| Rama | `main` (sin rama local desalineada) |
+| HEAD | `ad5ce67105f53e0316e156e9bd0c962f9ffdd454` · 2026-10-10 10:24:47 -04:00 · «fix responsive mobile navigation drawer» |
+| HEAD vs `origin/main` | **idénticos** (`ad5ce67`): la noche del 2026-10-13 no dejó commits |
+| Estado | **26 modificados sin escenificar · 31 entradas sin seguimiento · 0 en escena** (verificado al cierre de la Fase 1; el detalle de la transición desde 24 está en [la auditoría de Fase 1](docs/handover/FASE1_CONSOLIDACION_DOCUMENTAL_2026-10-13.md)) |
+| `git diff --check` | **exit 0** |
+
+Sin seguimiento, por entrada de `git status --short`: `e2e/` 13 (sondas `_*.spec.ts` y `_monitor_t4.ps1`), `docs/` 6 (índice, catálogo, estructura, `contexto-ia/`, `contexto-ia-unificado/`, `handover/`), `android/` 3 (foreground, mipmap adaptativo, `colors.xml`), `web/` 2 (`robots.txt`, `sitemap.xml`), `test/` 2, `backend/` 2 (`reglas-perfiles.ts` y su prueba), y `deploy-ad5ce67/`, `.wrangler/`, `.github/workflows/android_bundle.yml`. **A nivel de fichero son 80**, no 31: las entradas de `git status` colapsan directorios enteros, y `deploy-ad5ce67/` solo contiene 42 ficheros. Por eso crear `docs/handover/FASE1_…md` **no** movió el conteo de entradas: se añadió dentro de `docs/handover/`, que ya era una entrada no rastreada.
+
+### Arquitectura confirmada
+
+Frontend **Flutter Web** (Cloudflare Pages, `inces-lms.pages.dev`) · backend **Node.js + TypeScript con Fastify 5 + Zod**, ESM (Render, `inces-lms-api.onrender.com`, health `/salud`) · base de datos **Supabase/PostgreSQL** con RLS y 46 migraciones en `supabase/migrations/` · almacenamiento **Cloudflare R2** · repositorio `github.com/Burmistrov4/inces-lms`. Tres roles. La frontera de autorización es la RLS, no la API (ADR-003).
+
+Servicios y entornos: producción (Pages + Render + Supabase) y local (backend 3001, frontend 8090). `render.yaml` versiona sólo el blueprint del backend; los secretos viven en el Dashboard de Render y no están en el repositorio.
+
+### Pruebas ejecutadas realmente en esta sesión
+
+| Comprobación | Comando | Resultado | Limitación |
+|---|---|---|---|
+| Typecheck + lint + tests backend | `npm run verify` (en `backend/`) | **685/685 en 33 archivos, exit 0**, 125,5 s | Sustituye al analizador real de Dart, no lo iguala |
+| Compilación backend | `npm run build` (evidencia heredada de la auditoría del 2026-10-13) | exit 0 | No se reejecutó en esta sesión |
+| Resolución de dependencias Dart | `dart pub get` con `FLUTTER_ROOT` | **exit 0**, «Got dependencies!» | `flutter pub get` muere con `231` (spawnea `git.exe`/`where.exe`); esta vía es el sustituto honesto |
+| Análisis estático de Dart | `node devops/analizar-dart.mjs` | **226 archivos, 0 errores/avisos/infos, exit 0** | No es `dart analyze`: no ejecuta el analysis server |
+| Espacio en blanco / diff | `git diff --check` | **exit 0** | — |
+
+`dart pub get` volvió a resolverse después de la corrección de `intl` (^0.19.0 → ^0.20.3) que hizo la auditoría del 2026-10-13: la resolución real sigue en pie.
+
+### Bloqueos vigentes (reproducidos el 2026-10-13)
+
+- **`CreateFile failed 231` (`ERROR_PIPE_BUSY`)**: tumba cualquier VM de Dart que spawnee un proceso hijo. Medido contra `flutter pub get`, `flutter analyze`, `flutter build web` y `node` con `execSync`. **No es un defecto del proyecto**: el sandbox no deja crear la tubería nombrada.
+- **Suite Dart, `dart analyze` y `flutter build web`**: BLOCKED. La verificación real es CI (`flutter_ci.yml`, `e2e.yml`, `web_bundle.yml`).
+- **Build Android local**: BLOCKED (`231` + sólo JRE 1.8.0_501; Android Studio ausente). La vía es `android_bundle.yml`.
+- **E2E contra bundle fresco**: NOT RUN. En esta sesión no se compiló bundle; los tres casos de SEO pasaron contra los archivos fuente y dos corridas se mataron en el teardown sin código de salida limpio.
+
+### Situación de commit, push y despliegue
+
+**Sin commit, sin push, sin migración y sin despliegue.** Nada de lo inspeccionado aquí cambia producción. Los 26 archivos modificados y las 31 entradas sin seguimiento siguen en el árbol de trabajo. Publicar exige autorización explícita.
+
+**Cómo se pasó de 24 a 26 modificados (verificado, no supuesto).** Los 24 iniciales siguen modificados, sin excepción. Los dos que se sumaron son `MEMORY.md` y `docs/AI_AGENT_BLOCKERS.md`: archivos **rastreados** que estaban limpios al empezar y que la Fase 1 editó. **Ningún archivo cambió de categoría**: un fichero no pasa de «sin seguimiento» a «modificado» sin un `git add`, y `git diff --cached` está vacío; `.gitignore` no se tocó (0 líneas de diff), así que tampoco se ocultó nada con una regla nueva. Del lado sin seguimiento, el único fichero añadido fue `docs/handover/FASE1_CONSOLIDACION_DOCUMENTAL_2026-10-13.md`, creado dentro de un directorio que ya aparecía como entrada única.
+
+### Inventario Markdown, reconciliado el 2026-10-14
+
+**218 archivos Markdown** en el árbol (recorrido que excluye `.git`, `node_modules`, `.dart_tool`, `build`, `.wrangler`, `venv`, `__pycache__` y `deploy-ad5ce67`). Desglose con git como autoridad, cada ruta contada una sola vez:
+
+| Categoría | Nº | Comando |
+|---|---|---|
+| Rastreados | **72** | `git ls-files '*.md'` |
+| No rastreados y no ignorados | **16** | `git ls-files --others --exclude-standard '*.md'` |
+| Ignorados por `.gitignore` | **130** | `git ls-files --others --ignored --exclude-standard '*.md'` + 1 confirmado con `git check-ignore` (ruta demasiado larga para git) |
+
+El catálogo lista **217** porque se excluye a sí mismo. La cifra anterior de «145 sin rastrear» mezclaba las dos últimas categorías y quedó corregida en `docs/CATALOGO_DOCUMENTAL.md` y `docs/ESTRUCTURA_DOCUMENTAL.md`. Los 16 Markdown sin seguimiento **no** son los 80 archivos sin seguimiento de cualquier extensión.
+
+### Lo local frente a lo publicado en GitHub (consultado el 2026-10-14)
+
+`origin/main` está en `ad5ce67`, igual que HEAD: **los cambios de la noche y de la Fase 1 no están publicados**. En la rama remota consultada **no existen** `docs/README.md`, `docs/CATALOGO_DOCUMENTAL.md`, `docs/ESTRUCTURA_DOCUMENTAL.md`, `docs/handover/FASE1_CONSOLIDACION_DOCUMENTAL_2026-10-13.md`, `web/robots.txt`, `web/sitemap.xml` ni `.github/workflows/android_bundle.yml`; y su `pubspec.yaml` mantiene `intl: ^0.19.0`, no la corrección local a `^0.20.3`.
+
+Las ejecuciones verdes de Flutter CI, E2E y web bundle (p. ej. las corridas 38059440596, 38059440637, 38059450137 y 38405997276) están asociadas al commit `ad5ce67`, así que **no verifican ninguno de estos cambios locales**. Documentar no publica.
+
+### Riesgos vigentes
+
+1. Los cambios de la noche (localizaciones, Android, robots/sitemap) **nunca se compilaron en CI**: el push es el que los verifica.
+2. `.wrangler/` y `deploy-ad5ce67/` son artefactos locales; no deben subirse en bloque.
+3. Las 13 sondas de `e2e/tests/_*.spec.ts` son andamiaje de depuración, no regresión.
+4. `flutter_localizations` exige `intl ^0.20.3`: cualquier pin hacia abajo rompe los cuatro workflows en su primer paso.
+5. Restricciones externas sin resolver: clave de firma para Play, SMTP/Resend (401), `SUPABASE_JWT_SECRET`, los 6 secretos del barrido D9 y la lista de campos de HACER (D17).
+
+### Próximas acciones, por prioridad
+
+1. Revisar el diff completo y clasificar los 31 sin seguimiento (especialmente `.wrangler/`, `deploy-ad5ce67/` y las sondas `e2e/`). **No borrar ni subir en bloque.**
+2. Obtener autorización para commit + push: con el push corren `flutter_ci.yml`, `e2e.yml` y, a mano, `web_bundle.yml` y `android_bundle.yml`. Sus códigos de salida son la verificación que aquí no se pudo hacer.
+3. Desplegar el artefacto `web-produccion` con el procedimiento oficial y comprobar en producción que `robots.txt` se sirva como `text/plain` y `sitemap.xml` como XML.
+4. Cerrar las restricciones externas de la lista de riesgos con el propietario.
+
+---
+
+## Fotografía operativa anterior — 2026-10-13 (auditoría adversarial)
+
+> Conservada como registro fechado. La diferencia con la sección vigente es el resultado del trabajo de la Fase 1 (documentación) y la reejecución de `dart pub get`, `analizar-dart.mjs` y `npm run verify` del backbone. Las conclusiones de bloqueo son las mismas.
+
+| Comprobación | Estado observado | Alcance honesto |
+|---|---|---|
+| Git | Rama main, HEAD ad5ce67; cambios sin commit ni push | 24 archivos rastreados modificados y 31 entradas no rastreadas en git status; varias son artefactos/sondas que requieren clasificación, no publicación automática. |
+| Backend | PASS: npm run verify 685/685; npm run build exit 0 | Ejecutado según auditoría adversarial del 2026-10-13. |
+| Dependencias Dart | PASS: dart pub get exit 0 | Resolución real; intl se elevó a ^0.20.3 para satisfacer flutter_localizations del SDK. |
+| Flutter analyze/test/build web | BLOCKED | Error CreateFile failed 231 al crear procesos hijos del toolchain. El análisis sustituto de imports no equivale a dart analyze. |
+| E2E SEO | NOT RUN como PASS final | Las tres pruebas dieron ok contra los archivos fuente, pero dos ejecuciones quedaron colgadas en teardown sin código de salida limpio; contra bundle fresco no se ejecutó. |
+| Android release | BLOCKED localmente | Error 231 y sólo JRE 1.8.0_501, sin JDK 17+ verificado. El workflow existe, pero no ha producido un artefacto demostrado en CI. |
+| Publicación | NO AUTORIZADA / NO REALIZADA | No hay commit, push ni despliegue de estos cambios. No afirmar preparación para producción. |
+
+---
+
+> **Última actualización histórica:** los registros que siguen incluyen el estado medido al 2026-10-09. Se conservan para trazabilidad, no como sustituto de la fotografía vigente anterior.
+>
+> **⚠️ Corrección de precedencia (Fase 1, 2026-10-13).** La frase «si algo aquí contradice a otro archivo, manda este», que cierra el bloque siguiente, fue la regla de este documento hasta el 2026-10-12 y **ya no es válida**: el propio documento se desincronizó cuatro veces entre el 2026-09-14 y el 2026-09-18 (él mismo lo registra en su nota de más abajo). La precedencia vigente está en [ESTRUCTURA_DOCUMENTAL.md](docs/ESTRUCTURA_DOCUMENTAL.md): **ganan el código, la configuración y los workflows**; después, la medición reproducible con comando, salida y fecha; después, la auditoría fechada más reciente; y sólo entonces este documento. Este párrafo queda como contexto histórico de por qué se cambió la regla.
+
 > **Documento puente vivo.** Describe el estado **real** del proyecto: lo que está
 > construido, lo que está verificado y lo que falta. Se actualiza al cerrar cada
-> fase. Si algo aquí contradice a otro archivo, manda este.
+> fase. Si algo aquí contradice a otro archivo, manda este. *(Regla histórica: ver la corrección de precedencia que precede a este bloque, añadida en la Fase 1 del 2026-10-13.)*
 >
 > **Última actualización:** 2026-10-09 (sesión 2) · Las 46 migraciones locales están registradas en Supabase remoto: 0 pendientes y 0 con deriva, verificado con `supabase/apply-migrations.mjs --check`. **El toolchain de Flutter funciona en esta sesión** (medido: `flutter build web` → `√ Built build\web`; `flutter test` → 974 pruebas, exit 0): el histórico `CreateFile failed 231` **no se reproduce** y no debe citarse sin volver a medirlo.
 >

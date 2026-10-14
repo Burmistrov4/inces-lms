@@ -111,3 +111,11 @@ backend/dist/
 .continue/
 .hermes/
 skills-lock.json
+
+# --- Artefactos locales y cachés de despliegue ------------------------------
+deploy-*/
+.wrangler/
+
+# --- Sondas y diagnósticos E2E locales (no forman parte de la suite oficial) ---
+e2e/_monitor_*.ps1
+e2e/tests/_*.spec.ts

@@ -1,6 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+// Localización en español de los widgets de Material (selector de fecha,
+// diálogos, tooltips). Es un paquete del SDK de Flutter (`sdk: flutter`), no
+// una dependencia de pub: lo resuelve `flutter pub get` desde el SDK.
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -144,6 +148,26 @@ class IncesLmsApp extends StatelessWidget {
         return MaterialApp(
           title: 'INCES LMS — Sistema de Gestión Académica',
           debugShowCheckedModeBanner: false,
+
+          // Localización en español, registrada una sola vez aquí. Sin estos
+          // delegados, `MaterialApp` sólo cargaba la localización por defecto
+          // (inglés): el selector de fecha del formulario de inscripción
+          // mostraba el calendario con meses y botones en inglés
+          // (`CANCEL`/`SAVE`), y `helpText` salía sin traducir. La dirección es
+          // `MaterialApp` → delegados → `supportedLocales`: los widgets de
+          // Material ya resuelven sus textos por `Localizations.of` contra el
+          // ambiente, así que **no** hace falta pasar `locale` en cada
+          // `showDatePicker`. Pedirlo sin tenerlos registrados lanzaría en
+          // tiempo de ejecución («locale was not specified»/delegado ausente),
+          // que es justo lo que explicaba el comentario que antes vivía en
+          // `campo_planilla.dart`.
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('es')],
+          locale: const Locale('es'),
 
           // El tema se delega en `IncesTheme`. Tenerlo centralizado es lo que
           // impide que cada pantalla vuelva a inventarse sus propios colores, que

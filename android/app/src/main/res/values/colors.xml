@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fondo del icono adaptativo. Blanco, el mismo sobre el que se
+         lee la marca en la web (favicon e iconos PWA): la marca es azul
+         y morada, y sobre el fondo oscuro de algunos lanzadores perderÌa
+         contraste. -->
+    <color name="ic_launcher_background">#FFFFFFFF</color>
+</resources>

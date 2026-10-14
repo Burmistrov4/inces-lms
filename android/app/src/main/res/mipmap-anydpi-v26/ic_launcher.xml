@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icono adaptativo (API 26+): la marca INCES sobre blanco, con el fondo
+     plano declarado en values/colors.xml. Los lanzadores modernos enmascaran
+     este par fondo/primer plano según su forma (círculo, cuadrado redondeado,
+     lágrima…), y la marca va en la zona segura del 66 % para que ningún
+     recorte la corte. Por debajo de API 26 se usan los PNG de mipmap-*. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background"/>
+    <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+</adaptive-icon>

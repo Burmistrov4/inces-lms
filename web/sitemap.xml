@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sitemap del INCES LMS. Sólo contiene URLs públicas e indexables: la portada.
+  El resto de la aplicación está detrás de autenticación (paneles, aulas,
+  administración, datos de estudiantes) y NO debe indexarse; listarlas aquí
+  sería pedir rastreo de contenido privado.
+
+  Cloudflare Pages sirve los archivos estáticos tal cual; sin este archivo,
+  /sitemap.xml devolvía el index.html de la SPA (medido el 2026-10-13).
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://inces-lms.pages.dev/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>

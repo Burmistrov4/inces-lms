@@ -33,6 +33,13 @@ const TIPOS = {
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
   '.csv': 'text/csv; charset=utf-8',
+  // `robots.txt` y `sitemap.xml` son archivos estáticos del bundle. Sin estas
+  // dos entradas caían a `application/octet-stream`, y la suite de SEO público
+  // mediría en local un tipo de contenido que Cloudflare Pages no devuelve
+  // ( allí son `text/plain` y `application/xml`). El servidor de pruebas tiene
+  // que parecerse al de producción en lo que mide.
+  '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
   '.symbols': 'text/plain; charset=utf-8',
   '.map': 'application/json; charset=utf-8',
 };

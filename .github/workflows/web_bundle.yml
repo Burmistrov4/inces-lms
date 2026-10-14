@@ -17,10 +17,11 @@
 # 3. Las credenciales de Supabase ya existen como secretos del repositorio (los
 #    usa la CI de E2E). **No se añade ningún secreto nuevo.**
 #
-# La validación del artefacto es la del procedimiento (§5.1): los tres archivos
-# presentes, la API de producción dentro del bundle y `localhost` ausente. Se
-# hace aquí, antes de publicar el artefacto, para que nadie descargue un bundle
-# que no pasaría el control.
+# La validación del artefacto es la del procedimiento (§5.1): los cinco archivos
+# presentes (index.html, main.dart.js, _headers, robots.txt, sitemap.xml), la API
+# de producción dentro del bundle y `localhost` ausente. Se hace aquí, antes de
+# publicar el artefacto, para que nadie descargue un bundle que no pasaría el
+# control.
 
 name: Web bundle de producción
 
@@ -88,13 +89,23 @@ jobs:
           test -f build/web/index.html   || { echo "::error::Falta build/web/index.html"; exit 1; }
           test -f build/web/main.dart.js || { echo "::error::Falta build/web/main.dart.js"; exit 1; }
           test -f build/web/_headers     || { echo "::error::Falta build/web/_headers"; exit 1; }
+          # SEO público: sin estos dos archivos, Cloudflare Pages responde a
+          # /robots.txt y /sitemap.xml con el index.html de la SPA (medido el
+          # 2026-10-13 en producción: 200 text/html de 2775 B). La ausencia se
+          # comprueba aquí para que un bundle sin ellos no llegue a publicarse.
+          test -f build/web/robots.txt   || { echo "::error::Falta build/web/robots.txt"; exit 1; }
+          test -f build/web/sitemap.xml  || { echo "::error::Falta build/web/sitemap.xml"; exit 1; }
+          grep -q "Sitemap: https://inces-lms.pages.dev/sitemap.xml" build/web/robots.txt \
+            || { echo "::error::robots.txt no declara el sitemap"; exit 1; }
+          grep -q "<urlset" build/web/sitemap.xml \
+            || { echo "::error::sitemap.xml no parece un sitemap"; exit 1; }
           grep -q "$API_PRODUCCION" build/web/main.dart.js \
             || { echo "::error::El bundle no contiene la API de producción"; exit 1; }
           if grep -q "localhost:3001" build/web/main.dart.js; then
             echo "::error::El bundle contiene una API local; se cancela la publicación"
             exit 1
           fi
-          ls -la build/web/index.html build/web/main.dart.js build/web/_headers
+          ls -la build/web/index.html build/web/main.dart.js build/web/_headers build/web/robots.txt build/web/sitemap.xml
 
       - name: Publicar el bundle
         uses: actions/upload-artifact@v4

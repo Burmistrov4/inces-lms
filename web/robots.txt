@@ -1,0 +1,16 @@
+# robots.txt — INCES LMS (La Isabelica)
+#
+# La aplicación es una SPA: todas sus rutas devuelven el mismo index.html, así
+# que sin este archivo Cloudflare Pages respondería a /robots.txt con la portada
+# (medido el 2026-10-13: /robots.txt y /sitemap.xml devolvían 200 text/html).
+#
+# Qué se indexa: sólo la portada pública (`/$`). Los paneles autenticados, los
+# datos de estudiantes y cualquier ruta privada NO se indexan — son aplicación,
+# no contenido, y rastrearlas sólo gasta presupuesto de rastreo y arriesga
+# filtrar rutas internas.
+
+User-agent: *
+Allow: /$
+Disallow: /
+
+Sitemap: https://inces-lms.pages.dev/sitemap.xml

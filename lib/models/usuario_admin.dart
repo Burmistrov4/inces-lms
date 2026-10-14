@@ -21,6 +21,17 @@ class UsuarioAdmin {
     return n.isEmpty ? email : n;
   }
 
+  /// ¿Es una cuenta de demostración de la siembra?
+  ///
+  /// Mismo criterio que `InscripcionDetallada.esCuentaDemo`: el dominio
+  /// `semilla.invalid` está reservado para dominios inválidos (RFC 2606), y es
+  /// la marca que la siembra dejó en sus cuentas. Medido el 2026-10-13: 56 de
+  /// los 64 perfiles de producción la usan. Etiquetar distingue demo de real
+  /// **sin borrar ni ocultar**: algunas fichas de demostración dependen de
+  /// ellas.
+  bool get esCuentaDemo =>
+      email.trim().toLowerCase().endsWith('@semilla.invalid');
+
   factory UsuarioAdmin.fromJson(Map<String, dynamic> j) => UsuarioAdmin(
     id: j['id'] as String,
     email: j['email'] as String,

@@ -1,22 +1,48 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Cámara (M7 · D21, segunda mitad): leer el QR de asistencia que el docente
-         proyecta en el aula. La pide el propio sistema al abrir el escáner, no al
-         arrancar la app: quien no escanee nunca no ve el diálogo. -->
+    <!-- INTERNET, y en el manifiesto **main** a propÃÂ³sito.
+
+         Medido el 2026-10-13 antes de escribir esta lÃÂ­nea: ni el plugin de
+         Gradle de Flutter (revisado su cÃÂ³digo fuente en
+         `packages/flutter_tools/gradle/src/main/kotlin/`) ni ninguno de los
+         plugins que usa la app declaran este permiso Ã¢ÂÂ `mobile_scanner` pide
+         sÃÂ³lo CAMERA, `shared_preferences_android` no pide nada, y el resto
+         (Supabase, provider, http, web_socket_channel, crypto, qr_flutterÃ¢ÂÂ¦) es
+         Dart puro sin carpeta `android`. El **ÃÂºnico** sitio donde existÃÂ­a era
+         `src/debug/AndroidManifest.xml`, que Flutter trae de plantilla para el
+         hot reload.
+
+         Consecuencia de no tenerlo aquÃÂ­: el APK de release se instala, arranca,
+         pinta el loginÃ¢ÂÂ¦ y **no puede abrir un solo socket**. Sin `INTERNET`,
+         Android deniega cualquier conexiÃÂ³n a nivel de sistema Ã¢ÂÂno es un error
+         de cÃÂ³digo, es el permisoÃ¢ÂÂ, asÃÂ­ que Supabase Auth no responde, el
+         backend en Render no responde, y el sÃÂ­ntoma es ÃÂ«el formulario se envÃÂ­a
+         y no pasa nadaÃÂ». El mismo sÃÂ­ntoma que ya costÃÂ³ nueve discriminadores
+         con el bundle de la plantilla, pero por una causa distinta.
+
+         ÃÂ¿Por quÃÂ© no se vio nunca? Porque todo el desarrollo se probÃÂ³ con
+         `flutter run`, que corre en **debug**, y debug sÃÂ­ tiene el permiso.
+         Ninguna prueba de este repositorio compilaba release hasta que existiÃÂ³
+         el flujo `android_bundle.yml`. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- CÃÂ¡mara (M7 ÃÂ· D21, segunda mitad): leer el QR de asistencia que el docente
+         proyecta en el aula. La pide el propio sistema al abrir el escÃÂ¡ner, no al
+         arrancar la app: quien no escanee nunca no ve el diÃÂ¡logo. -->
     <uses-permission android:name="android.permission.CAMERA"/>
 
     <!-- `required="false"` NO es un descuido: es lo que evita un autogol silencioso.
          Declarar CAMERA hace que Android asuma `android.hardware.camera` como
          REQUERIDO, y Google Play entonces **oculta la app** a todo dispositivo sin
-         cámara —Chromebooks y buena parte de las tablets—. Un LMS institucional no
-         puede excluir a nadie por eso: sin cámara se sigue marcando con los seis
-         dígitos, que es el camino que ya funciona y que el escáner no sustituye.
-         `autofocus` tampoco se exige: hay cámaras fijas que enfocan solas, y
-         exigirlo recortaría la lista de dispositivos otra vez. -->
+         cÃÂ¡mara Ã¢ÂÂChromebooks y buena parte de las tabletsÃ¢ÂÂ. Un LMS institucional no
+         puede excluir a nadie por eso: sin cÃÂ¡mara se sigue marcando con los seis
+         dÃÂ­gitos, que es el camino que ya funciona y que el escÃÂ¡ner no sustituye.
+         `autofocus` tampoco se exige: hay cÃÂ¡maras fijas que enfocan solas, y
+         exigirlo recortarÃÂ­a la lista de dispositivos otra vez. -->
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
 
     <application
-        android:label="inces_lms_app"
+        android:label="INCES LMS"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

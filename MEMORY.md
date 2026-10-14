@@ -4,6 +4,11 @@
 
 ## 0. Lectura obligatoria
 
+> **Entrada canónica (2026-10-13):** `AGENT_START_HERE.md` → `docs/README.md`. La lista
+> de abajo es el índice de memoria de este proyecto, no la ruta de trabajo: la ruta es la
+> de `AGENT_START_HERE.md`, y qué documento manda cuando dos se contradicen está en
+> `docs/ESTRUCTURA_DOCUMENTAL.md`.
+
 1. MEMORY.md
 2. docs/AUDITORIA_RENDIMIENTO_2026-10-08.md
 3. PLAN_MAESTRO.md

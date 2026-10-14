@@ -145,4 +145,39 @@ class InscripcionDetallada {
         estudianteNombre: json['estudianteNombre'] as String?,
         estudianteEmail: json['estudianteEmail'] as String?,
       );
+
+  /// Cómo se nombra a esta persona en las listas del administrador.
+  ///
+  /// El orden es nombre → correo → «Sin nombre registrado», y **el UUID nunca
+  /// es una etiqueta de usuario**: es la clave interna, y en pantalla sólo
+  /// produce ruido («3f2a…») que nadie puede verificar. Antes esta cadena se
+  /// repetía en tres pantallas con distinto extremo (`?? id` en dos de ellas), y
+  /// con un [[estudianteNombre]] vacío —que el backend ya no emite, ver
+  /// `nombreVisible`— la fila se quedaba en blanco: `??` no salta con una
+  /// cadena vacía. Centralizarla aquí es lo que impide arreglar una copia y
+  /// olvidar las otras.
+  String get etiquetaEstudiante {
+    final nombre = estudianteNombre?.trim() ?? '';
+    if (nombre.isNotEmpty) return nombre;
+    final correo = estudianteEmail?.trim() ?? '';
+    if (correo.isNotEmpty) return correo;
+    return 'Sin nombre registrado';
+  }
+
+  /// ¿Es una cuenta de demostración de la siembra?
+  ///
+  /// **Medido el 2026-10-13 contra la nube (lectura, agregados):** de 64
+  /// perfiles, 57 tenían nombres y apellidos vacíos; 56 de ellos usan el
+  /// dominio `semilla.invalid`, que es un TLD **reservado para dominios
+  /// inválidos** (RFC 2606). Existe precisamente para que nadie pueda
+  /// registrarlo ni recibir correo: es la marca que la siembra dejó para sus
+  /// propias cuentas, y ninguna cuenta real la tiene.
+  ///
+  /// Etiquetarlas es la separación que la operación necesita: las fichas de
+  /// demo conviven con la oferta real y hay que poder distinguirlas de un
+  /// vistazo. **No se borran ni se ocultan** — algunas fichas de demostración
+  /// dependen de ellas—, y la detección es por dato, no por una lista manual
+  /// que envejece.
+  bool get esCuentaDemo =>
+      (estudianteEmail ?? '').trim().toLowerCase().endsWith('@semilla.invalid');
 }

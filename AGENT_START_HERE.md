@@ -2,155 +2,94 @@
 
 ## Misión
 
-Tomar el estado real del repositorio y continuar autónomamente hasta cerrar todo lo técnicamente posible.
+Tomar el estado real del repositorio y avanzar hasta cerrar lo que se pueda cerrar con evidencia. No depender del historial conversacional ni de un resumen de otra sesión: **el disco manda**.
 
-No depender del historial conversacional.
+Este archivo es una ruta de trabajo, no un mandato de proyecto. Si te pidieron algo concreto, hazlo; si te pidieron «cerrar todo», usa como alcance [PLAN_MAESTRO.md](PLAN_MAESTRO.md) y [TODO_CIERRE_INTEGRAL_INCES_LMS.md](TODO_CIERRE_INTEGRAL_INCES_LMS.md).
 
-## Lectura obligatoria
+## Ruta obligatoria — nueve pasos, en este orden
 
-Leer en este orden:
+Para una tarea sencilla, los pasos 1–5 son lectura corta: **no hace falta leer todo lo que hay enlazado abajo**.
 
-1. ESTADO_DEL_SISTEMA.md
-2. PLAN_MAESTRO.md
-3. PLAN_CIERRE_100_FUNCIONAL_2026.md
-4. docs/AI_AGENT_OPERATING_PROTOCOL.md
-5. docs/AI_AGENT_AUTONOMY_AND_ENVIRONMENT_RECOVERY.md
-6. AUTONOMOUS_AGENT_MASTER_PROMPT.md
-7. PROMPT_MAESTRO_CICLO_VIDA_COMPLETO_AGENTE_IA.md (prompt universal de requisitos de ciclo de vida)
-8. PROMPT_MAESTRO_CONTINUACION_CIERRE_INTEGRAL_2026-10-09.md (megaprompt operativo de continuación inmediata; leer y ejecutar)
-9. PROMPT_ANTIGRAVITY_AUTONOMOUS_CLOSURE.md (complemento operativo específico de Antigravity)
-10. MEMORY.md, si existe
-11. auditorías/documentos de la fase activa
+1. **Reglas y restricciones del repositorio.** Lee §2 de [docs/ESTRUCTURA_DOCUMENTAL.md](docs/ESTRUCTURA_DOCUMENTAL.md) (precedencia) y las reglas no negociables de [docs/PROCEDIMIENTO_DESPLIEGUE_PRODUCCION.md](docs/PROCEDIMIENTO_DESPLIEGUE_PRODUCCION.md) §2. Sin `git reset --hard`, sin `git clean -fd`, sin borrar datos, sin publicar secretos, sin commit/push/despliegue sin autorización.
+2. **Índice documental central.** [docs/README.md](docs/README.md): qué existe y para quién. Si necesitas un contrato, un runbook o una auditoría, sal de ahí.
+3. **Estado del sistema y handover vigente.** La sección superior de [ESTADO_DEL_SISTEMA.md](ESTADO_DEL_SISTEMA.md) y la auditoría fechada más reciente (`docs/handover/`). Las entradas antiguas de ese archivo son historia, no fotografía.
+4. **`git status` antes de tocar nada.** `git status --short`, `git rev-parse HEAD`, `git log -1 --oneline`. Puede haber otro agente editando los mismos documentos: **relee justo antes de editar** y prefiere ediciones aditivas y acotadas. Comprueba también procesos y puertos en uso, y si la base está al día: `node supabase/apply-migrations.mjs --check`.
+5. **Investiga el código y reproduce el problema.** «No está» se mide, no se deduce. Si no puedes reproducirlo, ese hecho es el primer hallazgo, no una excusa para seguir.
+6. **Implementa cambios pequeños, con su prueba.** Un cambio por ciclo, con la prueba que lo fije. Si el cambio es de comportamiento, la prueba tiene que poder fallar: verifícala por mutación si el riesgo lo justifica.
+7. **Ejecuta las verificaciones y documenta el resultado real.** Abajo está el banco de pruebas de este entorno, con lo que **sí** corre y lo que está bloqueado. Un BLOCKED se declara BLOCKED con su causa y su código de salida; nunca se convierte en PASS por un sustituto, un log parcial o un verde antiguo.
+8. **Actualiza la documentación afectada.** El mismo día. Si corriges una cifra, corrige también el documento que la citaba; si un documento queda obsoleto, márcalo como histórico con su fecha en lugar de borrarlo.
+9. **Entrega un resumen** con: archivos tocados, evidencia (comando + código de salida), riesgos, bloqueos H1–H4 y estado de Git. Nunca dejes sólo «continuar».
 
-## Verificación inicial
+## Banco de pruebas de este entorno (medido el 2026-10-13)
 
-Ejecutar y medir:
+| Comprobación | Comando | Estado |
+|---|---|---|
+| Backend completo | `npm run verify` en `backend/` (typecheck + lint + vitest) | **PASS**: 685/685 en 33 archivos, exit 0 |
+| Compilación backend | `npm run build` en `backend/` | exit 0 (medido en la auditoría adversarial del 2026-10-13, no en cada sesión: **revisalo si tu cambio toca TypeScript**) |
+| Resolución de dependencias Dart | `dart pub get` con `FLUTTER_ROOT=/c/Users/Loro/develop/flutter` | **PASS**: exit 0 |
+| Análisis estático de Dart | `node devops/analizar-dart.mjs` | 226 archivos, 0 issues, exit 0 (**no** es `dart analyze`) |
+| `flutter test` / `flutter analyze` / `flutter build web` / build Android local | — | **BLOCKED** con `CreateFile failed 231` (el VM de Dart no puede crear la tubería de su hijo en este sandbox). Más JRE 1.8.0_501, sin JDK 17+ |
+| E2E contra bundle fresco | — | **NOT RUN**: no hay bundle fresco en el árbol |
+| Suite E2E de SEO | — | pruebas verdes contra los fuentes, salida no verificada (teardown colgado) |
 
-- git status --short
-- rama actual
-- últimos commits
-- procesos y puertos relevantes
-- estado del backend
-- estado del frontend/build
-- migraciones aplicadas vs escritas
-- pruebas de la fase activa
+**Consecuencia:** la verificación real del lado Flutter es CI (`flutter_ci.yml`, `e2e.yml`, `web_bundle.yml`, `android_bundle.yml`). Si el `231` algún día no se reproduce, **mídelo y regístralo con su fecha**; no borres la entrada anterior. Este bloqueo ha ido y vuelto entre sesiones.
 
-No confiar en números históricos sin volver a medirlos.
+Detalle, causas y alternativas: [docs/AI_AGENT_BLOCKERS.md](docs/AI_AGENT_BLOCKERS.md) y [docs/handover/AUDITORIA_ADVERSARIAL_2026-10-13.md](docs/handover/AUDITORIA_ADVERSARIAL_2026-10-13.md).
 
 ## Regla de autonomía
 
-No preguntar qué hacer cuando el siguiente paso sea deducible.
+No preguntes qué hacer cuando el siguiente paso sea deducible del estado. Cerrar un hito no termina el trabajo.
 
-Cerrar un hito no termina la sesión.
+    ESTADO → SIGUIENTE DISCRIMINADOR → IMPLEMENTAR → PROBAR → REGRESAR → DOCUMENTAR → REPETIR
 
-Después de cada cierre:
-
-ESTADO → SIGUIENTE DISCRIMINADOR → IMPLEMENTAR → PROBAR → REGRESAR → DOCUMENTAR → REPETIR.
-
-## Si una herramienta falla
-
-No declarar imposibilidad.
-
-Usar esta escalera:
-
-1. cambiar herramienta;
-2. reducir el caso;
-3. bajar de capa;
-4. inspeccionar artefactos propios;
-5. utilizar ingeniería inversa del sistema propio;
-6. crear un adaptador reversible;
-7. probar equivalencia;
-8. documentar.
+Si algo falla, no declares imposibilidad. Escalera: cambiar de herramienta · reducir el caso · bajar de capa · inspeccionar artefactos propios · usar ingeniería inversa del sistema propio · crear un adaptador reversible · probar equivalencia · documentar.
 
 ## Ingeniería inversa
 
-Permitida para código, artefactos, bundles propios, sourcemaps, OpenAPI, migraciones, contratos, trazas, APIs legítimamente accesibles y artefactos CI.
-
-No utilizarla para evadir autenticación, MFA, CAPTCHA, RLS, autorización, secretos o controles de terceros.
+Permitida sobre código, artefactos, bundles propios, sourcemaps, OpenAPI, migraciones, contratos, trazas y APIs legítimamente accesibles. **Prohibida** para evadir autenticación, MFA, CAPTCHA, RLS, autorización, secretos o controles de terceros.
 
 ## Únicos bloqueadores humanos
 
-H1 — credencial externa que sólo el propietario puede proporcionar.
+| Id | Situación |
+|---|---|
+| **H1** | Credencial externa que sólo el propietario puede proporcionar |
+| **H2** | Autorización para una acción irreversible |
+| **H3** | Decisión de producto genuinamente ambigua y no deducible |
+| **H4** | Infraestructura externa que exige login interactivo, MFA, CAPTCHA o aprobación física |
 
-H2 — autorización para una acción irreversible.
-
-H3 — decisión de producto genuinamente ambigua y no deducible.
-
-H4 — infraestructura externa que exige login interactivo, MFA, CAPTCHA o aprobación física.
-
-Un H1–H4 no detiene el resto del proyecto.
+Un H1–H4 no detiene el resto del proyecto: se registra y se sigue con lo independiente. Los que están abiertos ahora están en [docs/AI_AGENT_BLOCKERS.md](docs/AI_AGENT_BLOCKERS.md).
 
 ## Evidencia
 
-Nunca declarar PASS por:
-- pantalla abierta;
-- HTTP 200 aislado;
-- mock;
-- retry;
-- prueba sin precondición;
-- no-op.
+Nunca declares PASS por: pantalla abierta · HTTP 200 aislado · mock · reintento · prueba sin precondición · no-op · un verde heredado de otra sesión. La prueba debe demostrar la operación real que afirma medir.
 
-La prueba debe demostrar la operación real que afirma medir.
+---
 
-## Estado conocido al 2026-10-09 (sesión 2)
+## Estado conocido al 2026-10-09 (sesión 2) — HISTÓRICO, no lo uses como actual
 
-- **El `231` NO se reproduce en esta sesión — el toolchain de Flutter funciona.** `flutter test --no-pub` → **974 pruebas, `All tests passed!`, exit 0**; `flutter build web --release --dart-define-from-file=.env.json` → **`√ Built build\web`**; `flutter.bat --version` OK. El bloqueo histórico era **del sandbox de la sesión anterior**, no del proyecto. **No volver a citarlo sin medirlo otra vez.** → `docs/AI_AGENT_BLOCKERS.md`.
-- **Autenticación SIN Resend: CERRADA y VERIFICADA contra el motor real.** Recuperación interna (código temporal de un solo uso emitido por un administrador, canjeado por el titular que fija su propia contraseña, con **cierre de las sesiones previas**) y ciclo de vida completo de la invitación docente (consumo atómico, revocar, renovar, listado con estado real y sin exponer el hash). Evidencia: `supabase/humo-invitaciones.mjs` → **34 OK / 0 fallos**; `supabase/humo-recuperacion.mjs` → **27 OK / 0 fallos**; residuo `0/0/0` en ambos. Migraciones `202610090001`/`202610090002` aplicadas a la nube. → `docs/AI_AGENT_BLOCKERS.md`.
-- **Defecto real corregido en esta sesión:** la emisión de códigos escribía `password_resets` con el cliente del llamante (sólo tiene `SELECT`) → 403 en la nube. Ahora va por `reposAdmin`, y el arnés de pruebas **bloquea** esa vía para que el defecto no vuelva a pasar inadvertido.
-- **P0 / E2E: CERRADO por medición.** El bundle local estaba compilado con `dart-define.example.json` (la plantilla) → la app apuntaba a `https://<project-ref>.supabase.co` y el login fallaba **antes de emitir ninguna petición**. Guardia añadida en `e2e/playwright.config.ts`.
-- **E2E completo contra bundle FRESCO: 24/24 passed (2,2 min), exit 0** — con `flutter build web` local, no con un artefacto de CI ni una copia parcheada.
-- Migraciones Supabase: **46 registradas, 0 pendientes, 0 con deriva** (medido 2026-10-09 con `apply-migrations.mjs --check`).
-- Backend `npm run verify`: **675/675 PASS** (32 archivos) · PGlite `validate.mjs`: **546/546** · Dart `analizar-dart.mjs`: **219 archivos, sin errores/avisos/infos**.
-- P-02: CERRADO. · P-01: ABIERTO hasta despliegue real + HEAD. · Performance: EN CURSO. · Responsive: no iniciar hasta cumplir el gate de Performance.
-- F1: Resend HTTP 401 sigue bloqueando **únicamente** notificaciones externas opcionales. · F2 planilla oficial: CERRADA. · F4 R2: 52/52 PASS en humo real. · Aula Virtual E2E específico: 7/7 PASS. · Producción Pages: HTTP 200. · API Render: HTTP 200 tras cold start. · CORS Pages → API: verificado.
+> **Aviso:** este bloque es una fotografía del 2026-10-09 y **contradice** la medición del 2026-10-13 que está más arriba (allí el `231` sí bloquea). Se conserva por su fecha y por las decisiones que registra; **la cifra vigente es la de la tabla del banco de pruebas.** Lee esta sección sólo si necesitas el contexto de aquella sesión.
+
+- **Autenticación SIN Resend: CERRADA y VERIFICADA contra el motor real (2026-10-09).** Recuperación interna (código temporal de un solo uso emitido por un administrador, canjeado por el titular que fija su propia contraseña, con **cierre de las sesiones previas**) y ciclo de vida completo de la invitación docente (consumo atómico, revocar, renovar, listado con estado real y sin exponer el hash). Evidencia de aquella sesión: `supabase/humo-invitaciones.mjs` → **34 OK / 0 fallos**; `supabase/humo-recuperacion.mjs` → **27 OK / 0 fallos**; residuo `0/0/0` en ambos. Migraciones `202610090001`/`202610090002` aplicadas a la nube.
+- **Defecto real corregido en aquella sesión:** la emisión de códigos escribía `password_resets` con el cliente del llamante (sólo tiene `SELECT`) → 403 en la nube. Ahora va por `reposAdmin`, y el arnés de pruebas **bloquea** esa vía para que el defecto no vuelva a pasar inadvertido.
+- **P0 / E2E de aquella sesión:** el bundle local estaba compilado con `dart-define.example.json` (la plantilla) → la app apuntaba a una URL inválida y el login fallaba **antes de emitir ninguna petición**. Guardia añadida en `e2e/playwright.config.ts`, que sigue vigente.
+- **Rendimiento (G3, 2026-10-09):** el hook de autenticación hacía **dos viajes de red en serie en cada petición autenticada** (verificar token en GoTrue + leer perfil en PostgREST = **421 ms fijos**), y cada consulta adicional sumaba ~190 ms. Paralelizados esos dos viajes y tres pares de lecturas independientes: `admin/usuarios` **−64 %** (1.462 → 521 ms), `aula/trabajo` −47 %, `aula/mis-entregas` −43 %, `mi-horario` −32 %. Detalle y tablas en [docs/AUDITORIA_RENDIMIENTO_2026-10-08.md](docs/AUDITORIA_RENDIMIENTO_2026-10-08.md).
+- Restricciones externas que siguen abiertas: clave de firma para Play, SMTP/Resend (401), `SUPABASE_JWT_SECRET`, los 6 secretos del barrido D9 y la lista de campos de HACER (D17).
 
 Estos datos son una fotografía, no una fuente superior al código o a una medición nueva.
 
-## Siguiente trabajo esperado
-
-Cerrado en esta sesión: build web local, `flutter test` completo, los dos flujos de identidad (invitación y recuperación) con evidencia contra el motor real, y **el ciclo E2E docente→aprendiz→entrega→calificación→devolución**, que ya se ejecutó con limpieza verificada (`supabase/limpiar-ciclo-aula.mjs`; conteos devueltos a la línea base exacta).
-
-Lo que queda, por orden de dependencia:
-
-1. **C7 estabilizado:** se cambió la aserción obsoleta por el título real `Calificaciones`. La corrida mutante terminó **7/7 PASS, 0 flaky** y la limpieza devolvió la base a 76 tareas / 225 entregas, 0 huérfanas. Evidencia en `TODO_CIERRE_INTEGRAL_INCES_LMS.md` y `docs/AI_AGENT_BLOCKERS.md`.
-2. Continuar con regresión de operaciones principales por rol (Mis Aulas, Aula Virtual, Inscripciones, cPanel) más allá de la carga de pantallas.
-3. **G3 performance — causa raíz medida y cuatro cambios mínimos aplicados (2026-10-09, sesión 2).** El hook de autenticación hacía **dos viajes de red en serie en cada petición** (verificar token en GoTrue 239 ms + leer perfil en PostgREST 216 ms = **421 ms fijos**; `/yo` y `/modulos` no consultan nada propio y tardaban eso), y cada consulta adicional sumaba ~190 ms. Paralelizados esos dos viajes (`Promise.allSettled` en `plugins/autenticacion.ts`) y tres pares de lecturas independientes (`PerfilesSupabase.listar`, `InscripcionesSupabase.detallar`, `listarOcupacionCon`): `admin/usuarios` **−64 %** (1.462 → 521 ms), `aula/trabajo` −47 %, `aula/mis-entregas` −43 %, `mi-horario` −32 %, `admin/secciones/:id/inscripciones` −33 %. Verificado sin regresión: backend **675/675**, smokes de identidad **34 y 27 OK**, E2E completo verde, casos límite del contrato (incluido desplazamiento más allá del final → 200 con página vacía). Detalle y tablas en `docs/AUDITORIA_RENDIMIENTO_2026-10-08.md`.
-   - **Siguiente discriminador:** `admin/cuadrante` (899 ms), `admin/aulas` (820 ms), `admin/programas` (718 ms), `admin/acceso` (718 ms) siguen >700 ms — medir sus viajes antes de tocar código.
-   - **Bloqueo acotado:** falta `SUPABASE_JWT_SECRET` en `backend/.env` para verificar el JWT en local y eliminar el viaje a GoTrue. Es una credencial del propietario.
-4. Cerrar P-01 con despliegue real y verificación de HEAD, sin hacer commit/push/despliegue sin autorización.
-5. Después: responsive, UI/UX, accesibilidad, Android si sigue en alcance, regresión integral y documentación final.
-
-No se considera cerrada la aplicación completa por aprobar la matriz P0.
-
 ## Handoff
 
-Al detenerse por límite real del entorno, escribir:
+Al detenerte por un límite real del entorno, escribe en `docs/handover/` un registro con: fecha · fase · hito · estado · evidencia (comando y código de salida) · archivos · comandos · resultados · regresiones · H1/H2/H3/H4 · deudas · siguiente discriminador · comando exacto · criterio de cierre.
 
-- fecha;
-- fase;
-- hito;
-- estado;
-- evidencia;
-- archivos;
-- comandos;
-- resultados;
-- regresiones;
-- H1/H2/H3/H4;
-- deudas;
-- siguiente discriminador;
-- comando exacto;
-- criterio de cierre.
+Nunca dejes únicamente «continuar».
 
-Nunca dejar únicamente "continuar".
+## Continuidad de agentes
 
-## Continuidad de agentes — actualizado el 2026-10-09
+- [docs/AI_AGENT_TOKEN_EFFICIENT_AUTONOMY.md](docs/AI_AGENT_TOKEN_EFFICIENT_AUTONOMY.md) — continuidad económica de contexto.
+- [docs/PROJECT_PHASE_GATES.md](docs/PROJECT_PHASE_GATES.md) — puertas de aceptación.
+- [docs/AI_AGENT_OPERATING_PROTOCOL.md](docs/AI_AGENT_OPERATING_PROTOCOL.md) — protocolo de trabajo.
+- [docs/AI_AGENT_AUTONOMY_AND_ENVIRONMENT_RECOVERY.md](docs/AI_AGENT_AUTONOMY_AND_ENVIRONMENT_RECOVERY.md) — recuperación de entorno.
 
-Documentos operativos:
-- docs/AI_AGENT_TOKEN_EFFICIENT_AUTONOMY.md — continuidad económica de contexto.
-- docs/PROJECT_PHASE_GATES.md — puertas de aceptación.
-- PROMPT_MAESTRO_CICLO_VIDA_COMPLETO_AGENTE_IA.md — especificación transversal para Antigravity/Gemini y otros agentes.
-- PROMPT_ANTIGRAVITY_AUTONOMOUS_CLOSURE.md — instrucciones operativas específicas para Antigravity.
-
-Uso recomendado: abre el repositorio correcto en Antigravity y pega/carga PROMPT_MAESTRO_CICLO_VIDA_COMPLETO_AGENTE_IA.md como misión principal. Indica que debe leer AGENT_START_HERE.md y todos los documentos canónicos, y ejecutar el prompt operativo específico de Antigravity como complemento. No copies únicamente el prompt si el agente no tiene acceso al repositorio: los documentos y el código son la memoria persistente necesaria.
+**Prompts legados de la raíz** (`PROMPT_*`, `MEGA_PROMPT_*`, `ULTRA_MEGA_PROMPT_*`, `INSTRUCCION_ANTIGRAVITY_*`, `AUTONOMOUS_AGENT_MASTER_PROMPT.md`): no se leen ni se ejecutan en bloque. Son mandatos de sesiones pasadas; comprueba que su objetivo sigue vigente contra [ESTADO_DEL_SISTEMA.md](ESTADO_DEL_SISTEMA.md) antes de usarlos. Para trabajo con otro agente (Antigravity, Gemini), [PROMPT_MAESTRO_CICLO_VIDA_COMPLETO_AGENTE_IA.md](PROMPT_MAESTRO_CICLO_VIDA_COMPLETO_AGENTE_IA.md) y [PROMPT_ANTIGRAVITY_AUTONOMOUS_CLOSURE.md](PROMPT_ANTIGRAVITY_AUTONOMOUS_CLOSURE.md) son la especificación transversal y las instrucciones operativas: cárgalos **junto con** este archivo, no en su lugar.
 
 El agente debe continuar por ciclos verificables, guardar checkpoints y cambiar de método ante bloqueos; no debe intentar evadir cuotas, controles de seguridad ni límites legítimos del proveedor.

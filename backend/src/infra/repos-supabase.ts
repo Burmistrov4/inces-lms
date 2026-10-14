@@ -68,6 +68,7 @@ import {
   pensumEditable,
 } from '../dominio/reglas-curriculo.js';
 import { esChoqueDeAgenda, turnoDeBloque } from '../dominio/reglas-cuadrante.js';
+import { nombreVisible } from '../dominio/reglas-perfiles.js';
 import {
   esAcaparamientoDeMateria,
   esEstadoInscripcion,
@@ -3229,7 +3230,7 @@ class InscripcionesSupabase implements PuertaInscripciones {
 
   private async resolverEstudiantes(
     ids: string[],
-  ): Promise<Map<string, { nombre: string; email: string | null }>> {
+  ): Promise<Map<string, { nombre: string | null; email: string | null }>> {
     const unicos = [...new Set(ids)];
     const respuesta = await this.cliente
       .from(TABLA_PERFILES)
@@ -3242,9 +3243,12 @@ class InscripcionesSupabase implements PuertaInscripciones {
       filas.map((fila) => [
         textoObligatorio(fila.id),
         {
-          nombre: [textoObligatorio(fila.nombres), textoObligatorio(fila.apellidos)]
-            .filter((parte) => parte.length > 0)
-            .join(' '),
+          // `nombreVisible` y no la composición a mano: con los dos campos
+          // vacíos devolvía `''`, y `nombre ?? emergencia` **no salta** con una
+          // cadena vacía (`??` sólo mira `null`/`undefined`), así que la fila
+          // del inscrito se quedaba en blanco en el panel. `null` aquí es lo
+          // que permite que el cliente muestre el correo o «Sin nombre».
+          nombre: nombreVisible(texto(fila.nombres), texto(fila.apellidos)),
           email: texto(fila.email),
         },
       ]),

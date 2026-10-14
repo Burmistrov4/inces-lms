@@ -130,6 +130,28 @@ void main() {
       expect(find.text('Nadie en la sección'), findsOneWidget);
     });
 
+    testWidgets('etiqueta las cuentas de demostración y no las borra',
+        (tester) async {
+      // Las cuentas de la siembra existen en producción (medido el 2026-10-13:
+      // 56 de 64 perfiles son `@semilla.invalid`). La pantalla las **etiqueta**,
+      // no las oculta ni las borra: algunas fichas de demo dependen de ellas.
+      inscripciones.inscripcionesDeSeccionDevueltas = [
+        inscripcionDetalladaEjemplo(
+          id: 'i-1',
+          estudianteId: 'est-A',
+          estado: EstadoInscripcion.enrolled,
+          estudianteNombre: null,
+          estudianteEmail: 'aspirante7@semilla.invalid',
+        ),
+      ];
+
+      await montar(tester);
+
+      expect(find.text('Cuenta de demostración'), findsOneWidget);
+      // La persona sigue en la lista, con su correo por etiqueta.
+      expect(find.text('aspirante7@semilla.invalid'), findsOneWidget);
+    });
+
     testWidgets('un fallo de la consulta ofrece reintentar', (tester) async {
       inscripciones.errorAlObtenerInscripcionesDeSeccion =
           AppException.validacion('No autenticado', code: 'NO_AUTENTICADO');

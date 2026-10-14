@@ -1,0 +1,147 @@
+# Compila el APK de Android para distribución institucional.
+#
+# POR QUÉ EXISTE
+# --------------
+# El APK **no se puede compilar en el equipo de desarrollo**, y las dos causas
+# están medidas, no supuestas:
+#
+# 1. `flutter build apk` muere con `CreateFile failed 231` (`ERROR_PIPE_BUSY`):
+#    el VM de Dart no puede crear su primera tubería nombrada en el sandbox de
+#    Windows. Medido el 2026-10-13 con **tres estrategias distintas** (Git Bash
+#    directo, con la receta de dos piezas del entorno, y desde PowerShell), y
+#    vuelto a medir el mismo día contra `flutter pub get`, `dart pub get` sin
+#    `FLUTTER_ROOT`, `dart analyze` y `node` spawneando `git`: muere cualquier
+#    VM de Dart que lance un proceso hijo. El mismo síntoma bloquea
+#    `flutter build web` —por eso el bundle web se compila en CI—.
+# 2. No hay JDK 17+ en el equipo: `java -version` da **1.8.0_501** (JRE 8),
+#    `/c/Program Files/Java/latest` apunta a `jre-1.8`, y Android Studio no
+#    está instalado. Gradle no arranca con JRE 8, y `flutter.minSdkVersion`
+#    exige 24 (ver los comentarios de `android/app/build.gradle.kts`).
+#
+# La respuesta es la misma que para el bundle web: **compilar en CI**, donde
+# `ubuntu-latest` trae JDK y el `231` no existe.
+#
+# QUÉ PRODUCE
+# -----------
+# - `inces-lms-apk`: APK release, firmado con la **clave de depuración** (es lo
+#   que declara `android/app/build.gradle.kts`: `signingConfig = debug`). Sirve
+#   para instalar y probar en dispositivos del centro; **no** para publicar en
+#   Google Play, que exige la clave de distribución de Lorenzo (pendiente, ver
+#   `docs/AI_AGENT_BLOCKERS.md`).
+# - `inces-lms-aab`: Android App Bundle, mismo esquema de firma. Para cuando
+#   exista la clave real, subirlo tal cual a Play.
+#
+# Las credenciales de Supabase son los **mismos secretos** que ya usa
+# `web_bundle.yml` (`SUPABASE_URL`, `SUPABASE_ANON_KEY`). No se añade ninguno
+# nuevo.
+
+name: APK Android
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  API_PRODUCCION: https://inces-lms-api.onrender.com
+
+jobs:
+  apk:
+    name: Compilar APK release
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Traer el repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Instalar Flutter 3.47.0
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.0
+          channel: stable
+          cache: true
+
+      - name: Resolver dependencias
+        run: flutter pub get
+
+      # `.env.json` está en .gitignore. Flutter resuelve `String.fromEnvironment`
+      # **al compilar**: sin este archivo el APK arranca sin URL de Supabase y
+      # falla al iniciar sesión sin una pista de la causa. Mismo mecanismo que
+      # `web_bundle.yml` y los mismos secretos.
+      - name: Escribir .env.json desde los secretos
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error title=Faltan secretos::El build de Android necesita SUPABASE_URL y SUPABASE_ANON_KEY en Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          cat > .env.json <<JSON
+          {
+            "_comentario": "Generado por .github/workflows/android_bundle.yml. No se edita a mano.",
+            "SUPABASE_URL": "${SUPABASE_URL}",
+            "SUPABASE_ANON_KEY": "${SUPABASE_ANON_KEY}",
+            "API_BASE_URL": "${API_PRODUCCION}"
+          }
+          JSON
+
+      - name: Compilar APK release
+        run: |
+          flutter build apk --release \
+            --dart-define-from-file=.env.json \
+            --dart-define=API_BASE_URL="$API_PRODUCCION"
+
+      # El AAB es lo que Google Play consume; con la clave de depuración no se
+      # puede publicar, pero tenerlo compilado deja el paso a medias hecho.
+      - name: Compilar App Bundle
+        run: |
+          flutter build appbundle --release \
+            --dart-define-from-file=.env.json \
+            --dart-define=API_BASE_URL="$API_PRODUCCION"
+
+      - name: Validar los artefactos
+        run: |
+          test -f build/app/outputs/flutter-apk/app-release.apk \
+            || { echo "::error::No se produjo app-release.apk"; exit 1; }
+          test -f build/app/outputs/bundle/release/app-release.aab \
+            || { echo "::error::No se produjo app-release.aab"; exit 1; }
+          # La API de producción dentro del artefacto nativo. `strings` sobre el
+          # .apk directamente no sirve: el zip está comprimido. Se extrae
+          # `libapp.so` (donde vive el snapshot AOT con los `--dart-define`) y
+          # se busca ahí. Si el snapshot algún día comprime sus literales, esta
+          # comprobación hay que moverla, no borrarla.
+          unzip -p build/app/outputs/flutter-apk/app-release.apk lib/arm64-v8a/libapp.so \
+            | strings | grep -q "$API_PRODUCCION" \
+            || { echo "::error::El APK no contiene la API de producción"; exit 1; }
+          if unzip -p build/app/outputs/flutter-apk/app-release.apk lib/arm64-v8a/libapp.so \
+            | strings | grep -q "localhost:3001"; then
+            echo "::error::El APK contiene una API local; se cancela la publicación"
+            exit 1
+          fi
+          ls -la build/app/outputs/flutter-apk/app-release.apk \
+                 build/app/outputs/bundle/release/app-release.aab
+
+      - name: Publicar el APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: inces-lms-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Publicar el App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: inces-lms-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30
+          if-no-files-found: error

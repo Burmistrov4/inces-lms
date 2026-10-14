@@ -15,9 +15,27 @@
 | Health check | https://inces-lms-api.onrender.com/salud |
 | Base de datos | Supabase PostgreSQL |
 | Configuración Render | render.yaml en la raíz |
-| CI | .github/workflows/backend_ci.yml, flutter_ci.yml, e2e.yml, supabase_ci.yml y limpiar-pendientes.yml |
 
 El frontend debe usar la API https://inces-lms-api.onrender.com. No publiques un bundle que use localhost, una IP LAN o un servidor de desarrollo.
+
+### 1.1 Workflows reales (`/.github/workflows/`)
+
+Siete archivos, verificados uno por uno el 2026-10-13. **Ninguno de ellos publica en Cloudflare Pages ni en Render por sí solo**: los que disparan con `push` construyen y prueban; el despliegue del frontend es la §6 y el del backend lo decide Render.
+
+| Workflow | Disparo | Función real | ¿Despliega? |
+|---|---|---|---|
+| `backend_ci.yml` (Backend CI) | push · pull_request · manual | typecheck + lint + tests del backend (`npm run verify`) | No |
+| `flutter_ci.yml` (Flutter CI) | push · pull_request · manual | `flutter pub get`, `flutter analyze` y la suite de `flutter test`: el analizador real que el sandbox de Windows no puede ejecutar | No |
+| `e2e.yml` (E2E Playwright) | push a `main` (rutas `e2e/**`, `lib/**`) · cron diario `0 6 * * *` · manual | Compila el bundle web y corre Playwright contra él, con backend vivo | No |
+| `supabase_ci.yml` (Supabase CI) | push · pull_request | Valida las migraciones contra PostgreSQL real; **no las aplica** a producción | No |
+| `limpiar-pendientes.yml` | cron `07:17 UTC` (03:17 Venezuela) · manual | Reloj del barrido de subidas abandonadas de M5 (D9) | No |
+| `web_bundle.yml` (Web bundle de producción) | **manual** (`workflow_dispatch`) | Compila el bundle con la API de producción, lo valida (§5.1) y sube el artefacto `web-produccion` | **No**: sólo produce el artefacto |
+| `android_bundle.yml` (APK Android) | **manual** (`workflow_dispatch`) | Compila APK y AAB en `ubuntu-latest` porque el equipo local no puede (JRE 8 y `ERROR_PIPE_BUSY`) | No: sube artefactos `inces-lms-apk` / `inces-lms-aab` |
+
+Dos advertencias que evitan un falso positivo:
+
+- **`web_bundle.yml` no publica.** Su último paso es `actions/upload-artifact` con el nombre `web-produccion`. Publicar en Cloudflare es la §6, a mano.
+- **El APK de `android_bundle.yml` está firmado con la clave de depuración** (`signingConfig = debug` en `android/app/build.gradle.kts`). Sirve para instalar y probar en dispositivos del centro; **no** para Google Play, que exige la clave de distribución real del propietario (pendiente, `docs/AI_AGENT_BLOCKERS.md`).
 
 ## 2. Reglas no negociables
 
@@ -112,9 +130,13 @@ El override de API de producción debe prevalecer sobre cualquier valor local de
     $index = Join-Path $root 'build\web\index.html'
     $jsPath = Join-Path $root 'build\web\main.dart.js'
     $headers = Join-Path $root 'build\web\_headers'
+    $robots = Join-Path $root 'build\web\robots.txt'
+    $sitemap = Join-Path $root 'build\web\sitemap.xml'
     if (!(Test-Path $index))  { throw 'Falta build/web/index.html' }
     if (!(Test-Path $jsPath)) { throw 'Falta build/web/main.dart.js' }
     if (!(Test-Path $headers)) { throw 'Falta build/web/_headers' }
+    if (!(Test-Path $robots)) { throw 'Falta build/web/robots.txt' }
+    if (!(Test-Path $sitemap)) { throw 'Falta build/web/sitemap.xml' }
     $js = Get-Content $jsPath -Raw
     if (!$js.Contains('https://inces-lms-api.onrender.com')) {
         throw 'El bundle no contiene la API de producción'
@@ -122,10 +144,28 @@ El override de API de producción debe prevalecer sobre cualquier valor local de
     if ($js.Contains('http://localhost:3001') -or $js.Contains('localhost:3001')) {
         throw 'El bundle contiene una API local; se cancela el despliegue'
     }
-    Get-Item $index, $jsPath, $headers | Select-Object FullName, Length, LastWriteTime
+    if (!(Get-Content $robots -Raw).Contains('Sitemap: https://inces-lms.pages.dev/sitemap.xml')) {
+        throw 'robots.txt no declara el sitemap'
+    }
+    if (!(Get-Content $sitemap -Raw).Contains('<urlset')) {
+        throw 'sitemap.xml no parece un sitemap'
+    }
+    Get-Item $index, $jsPath, $headers, $robots, $sitemap | Select-Object FullName, Length, LastWriteTime
     Get-Content $headers
 
 Si una comprobación falla, no publiques. Diagnostica, vuelve a compilar y repite. Comprueba también que web/_headers sea el archivo fuente esperado y que las cabeceras de seguridad/cache estén presentes.
+
+Los cinco archivos salen de `web/` y los copia `flutter build web` a `build/web/`. `robots.txt` y `sitemap.xml` existen porque sin ellos Cloudflare Pages responde a esas rutas con el `index.html` de la SPA (medido el 2026-10-13: `200 text/html`, 2775 B) y ningún rastreador recibe instrucciones reales.
+
+### 5.2 Vía alternativa: el artefacto de CI `web-produccion`
+
+Si el build local está bloqueado por el entorno (`CreateFile failed 231`), el bundle se compila en `web_bundle.yml`, que ya aplica las comprobaciones de la §5.1 dentro del job:
+
+    gh run list --repo Burmistrov4/inces-lms --workflow web_bundle.yml --limit 5
+    gh run view <RUN_ID> --repo Burmistrov4/inces-lms
+    gh run download <RUN_ID> --repo Burmistrov4/inces-lms --name web-produccion --dir C:/tmp/web-produccion
+
+Antes de publicar el directorio descargado, repite a mano la §5.1 sobre `C:/tmp/web-produccion`. Un artefacto de CI es una compilación, **no** un despliegue: la §6 sigue siendo obligatoria.
 
 ## 6. Publicación en Cloudflare Pages
 
@@ -153,6 +193,8 @@ Guarda el URL, identificador, rama, entorno y resultado que devuelve Wrangler. L
     npx --yes wrangler pages deployment list --project-name=inces-lms
 
 Confirma que la nueva publicación figura como Production en main. Un URL de preview no demuestra que el dominio principal esté actualizado.
+
+**Wrangler no está fijado en este repositorio.** Los comandos usan `npx --yes wrangler`, que resuelve la última versión publicada en el momento de ejecutarse: el comportamiento puede cambiar entre dos despliegues sin que cambie el repositorio. La versión con la que se redactó esta sección es la 4.151.0 (comprobada el 2026-10-14). Si una GUI o un script necesita reproducibilidad, fija la versión (`npx --yes wrangler@4.151.0 …`) o declárala como dependencia de desarrollo.
 
 ## 7. Render: backend
 
@@ -239,7 +281,7 @@ E2E en CI es evidencia valiosa, pero no sustituye verificar la versión desplega
 
 Guarda el SHA de GitHub, enlaces/estados CI, deployment ID/URL y rama de Cloudflare, deployment ID/commit/estado de Render, respuestas HTTP, resultado de Supabase --check y pruebas funcionales. Anota claramente lo que no se pudo verificar.
 
-## 10. Diagnóstico y recuperación
+## 10. Diagnóstico, rollback y recuperación
 
 - **Build Flutter lento:** inspecciona logs, CPU/RAM y procesos Flutter/Dart; no ejecutes builds simultáneos. Detén solo un proceso obsoleto identificado y vuelve a compilar una vez.
 - **Wrangler sin autenticación:** no publiques; autentica por el procedimiento autorizado y confirma cuenta/proyecto.
@@ -248,12 +290,43 @@ Guarda el SHA de GitHub, enlaces/estados CI, deployment ID/URL y rama de Cloudfl
 - **CI falla:** inspecciona el job del SHA exacto y repite CI tras corregirlo.
 - **Supabase muestra drift o pendientes:** detente y presenta diagnóstico; no migres ni reviertas sin autorización.
 - **Frontend y backend desincronizados:** revisa compatibilidad API y orden; prioriza cambios compatibles hacia atrás y verifica ambos servicios.
-- **Deploy fallido:** conserva logs, deployment ID y SHA. Rollback solo a una versión conocida como buena y tras revisar implicaciones.
+- **Deploy fallido:** conserva logs, deployment ID y SHA. Aplica el rollback de la **§10.1** sólo a una versión conocida como buena y tras revisar implicaciones.
+
+### 10.1 Rollback y recuperación
+
+Un rollback es un despliegue más: se ejecuta con el mismo procedimiento y se verifica igual.
+
+**Frontend (Cloudflare Pages).** Pages conserva los despliegues anteriores, así que volver atrás es elegir uno conocido como bueno. **Advertencia medida: Wrangler no tiene comando de rollback.** El 2026-10-14 se comprobó con Wrangler 4.151.0 (`npx --yes wrangler@latest pages deployment --help`, exit 0): los únicos subcomandos son `list`, `create`, `tail` y `delete`. No existe `pages deployment rollback`, y `--project-name` tampoco es una opción de esos subcomandos. La guía anterior documentaba ese comando; **se retira porque no existe**.
+
+*Procedimiento principal — panel de Cloudflare* (documentación oficial de [Rollbacks](https://developers.cloudflare.com/pages/configuration/rollbacks/), vigente a la fecha de esta revisión):
+
+1. Entra al panel de Cloudflare → **Workers & Pages** → proyecto **inces-lms** → pestaña **Deployments**.
+2. En **All deployments**, abre el menú de tres puntos del despliegue destino y elige **Rollback to this deployment**.
+3. Confirma la ventana. El despliegue de producción cambia **al instante**.
+4. Sólo los despliegues de producción construidos con éxito son objetivos válidos; **los de preview no lo son**.
+
+Para identificar el despliegue correcto antes de tocar nada, Wrangler sí sirve para listar (comando verificado):
+
+    npx --yes wrangler pages deployment list --project-name=inces-lms
+
+*Alternativa — API de Cloudflare* (para quien no tenga acceso al panel). Endpoint documentado: `POST /accounts/{account_id}/pages/projects/{project_name}/deployments/{deployment_id}/rollback`. Prerrequisitos: el **account ID**, un **API token con permiso de edición de Pages** y el **deployment ID** objetivo. No guardes tokens en el repositorio ni en esta guía.
+
+Después del rollback repite la §9.1 completa: HTTP 200 en `/`, bundle con la API de producción y **sin** `localhost:3001`, `robots.txt` como `text/plain` y `sitemap.xml` como XML. Confirma además en el panel que el despliegue activo es el que elegiste y que su commit o artefacto es el esperado.
+
+**Backend (Render).** En el Dashboard de `inces-lms-api`, abre el despliegue anterior conocido como bueno y usa *Rollback to this deploy*. Confirma que el commit mostrado es el esperado y espera el estado Live; luego comprueba `/salud` y el preflight CORS de la §7.
+
+**Reglas del rollback.**
+
+1. Sólo a una versión **conocida como buena**, nunca a la anterior por descarte.
+2. Antes de tocar nada, guarda el SHA, el deployment ID y los logs del despliegue que falla.
+3. Si el fallo viene de la base de datos (drift, columna ausente), el rollback del código **no** lo arregla: detente, documenta y espera autorización. No reviertas migraciones por instinto.
+4. Si el fallo es de esquema y ya se aplicó una migración, la recuperación es una migración nueva compatible hacia atrás, no un borrado.
+5. Tras el rollback, `git status` y el diff tienen que explicar por qué el árbol quedó como quedó. Un rollback sin explicación escrita es un incidente sin cierre.
 
 ## 11. Formato obligatorio del informe final
 
 - **GitHub:** rama, SHA y coincidencia de HEAD con origin/main.
-- **CI:** estado y enlaces de Backend, Flutter, E2E y Supabase.
+- **CI:** estado y enlaces de los siete workflows de la §1.1 (Backend, Flutter, E2E, Supabase, limpiar-pendientes y, si se usaron, web bundle y APK Android).
 - **Flutter:** comando, código de salida y verificaciones del artefacto.
 - **Cloudflare:** deployment ID/URL, entorno Production y bundle público validado.
 - **Render:** deployment ID/commit, estado y health check.
@@ -275,4 +348,4 @@ Nunca digas “todo está en producción” si solo se hizo push, si hay deploym
 
 ---
 
-Última revisión documental: 2026-10-10. Antes de cada despliegue, verifica los nombres de servicios, dominios, workflows, comandos y estado actual de cada plataforma. Actualiza esta guía si la infraestructura cambia.
+Última revisión documental: **2026-10-14 (cierre de Fase 1)**: se sustituyó el comando de rollback de Wrangler, que no existe, por el procedimiento del panel y la API (§10.1), y se documentó que Wrangler no está fijado (§6.2). Revisión anterior: **2026-10-13** (Fase 1): inventario de workflows verificado contra `.github/workflows/` (§1.1), vía del artefacto de CI (§5.2) y rollback (§10.1). Revisión anterior: 2026-10-10. Antes de cada despliegue, verifica los nombres de servicios, dominios, workflows, comandos y estado actual de cada plataforma. Actualiza esta guía si la infraestructura cambia.

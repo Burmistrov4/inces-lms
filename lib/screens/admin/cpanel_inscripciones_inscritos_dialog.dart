@@ -142,11 +142,11 @@ class _InscritosSeccionDialogState extends State<InscritosSeccionDialog> {
     }
   }
 
-  /// Nombre de una persona: el nombre si lo hay, el correo si no, y el id sólo
-  /// como último recurso —nunca como primera opción, que es justo lo que esta
-  /// pantalla viene a quitar de encima—.
-  static String _etiqueta(InscripcionDetallada i) =>
-      i.estudianteNombre ?? i.estudianteEmail ?? i.estudianteId;
+  /// Nombre de una persona, resuelto por el modelo: nombre → correo →
+  /// «Sin nombre registrado». El UUID quedó fuera a propósito —es la clave
+  /// interna, no una etiqueta—, y con un nombre vacío la fila se quedaba en
+  /// blanco porque `??` no salta con una cadena vacía.
+  static String _etiqueta(InscripcionDetallada i) => i.etiquetaEstudiante;
 
   @override
   Widget build(BuildContext context) {
@@ -309,8 +309,10 @@ class _ListaInscritos extends StatelessWidget {
       separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, i) {
         final inscrito = inscritos[i];
-        final nombre =
-            inscrito.estudianteNombre ?? inscrito.estudianteId;
+        // Un solo lugar decide la etiqueta (ver `etiquetaEstudiante` en el
+        // modelo): antes aquí caía a `estudianteId`, y un UUID no es un
+        // nombre que un administrador pueda reconocer.
+        final nombre = inscrito.etiquetaEstudiante;
 
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -325,12 +327,25 @@ class _ListaInscritos extends StatelessWidget {
             ),
           ),
           title: Text(nombre, overflow: TextOverflow.ellipsis),
-          subtitle: Text(
-            [
-              _descripcionEstado(inscrito.estado),
-              if (inscrito.estudianteEmail != null) inscrito.estudianteEmail!,
-            ].join(' · '),
-            overflow: TextOverflow.ellipsis,
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                [
+                  _descripcionEstado(inscrito.estado),
+                  if (inscrito.estudianteEmail != null) inscrito.estudianteEmail!,
+                ].join(' · '),
+                overflow: TextOverflow.ellipsis,
+              ),
+              // Distinción demo/real sin borrar nada: las cuentas de la
+              // siembra (`@semilla.invalid`, medido el 2026-10-13: 56 de 64
+              // perfiles) se etiquetan para que la operación no las lea como
+              // oferta real.
+              if (inscrito.esCuentaDemo) ...[
+                const SizedBox(height: 4),
+                const Etiqueta(texto: 'Cuenta de demostración'),
+              ],
+            ],
           ),
           // Dos botones y no uno con menú: son dos descargas que se usan en
           // momentos distintos —el PDF se imprime y se entrega, el Excel se

@@ -1,5 +1,7 @@
 # INCES LMS — CFS Nacional de Soldadura "Rafael Urdaneta"
 
+> **Documentación y continuidad:** el mapa oficial está en [docs/README.md](docs/README.md); el estado medido está en [ESTADO_DEL_SISTEMA.md](ESTADO_DEL_SISTEMA.md), y los agentes deben comenzar por [AGENT_START_HERE.md](AGENT_START_HERE.md). Las cifras históricas dentro de reportes fechados no sustituyen la evidencia más reciente.
+
 Sistema de gestión de aprendizaje a la medida del **INCES** (Instituto Nacional de
 Capacitación y Educación Socialista), sede La Isabelica. Nace como Trabajo Especial
 de Grado de Análisis de Sistemas (IUTEPI, 4.º semestre, período SA26-2) con un
@@ -156,13 +158,16 @@ cd backend && npm run typecheck && npm run lint && npm test && npm run build
 node backend/test-humo.mjs
 ```
 
-| Red de seguridad | Comprobaciones |
-| --- | --- |
-| `flutter test` | 88 |
-| `supabase/tests` (PGlite) | 49 |
-| `npm test` (backend) | 138 |
-| `verificar-esquema.mjs` (nube) | 30 |
-| `test-humo.mjs` (nube) | 24 |
+| Cadena | Resultado más reciente disponible | Interpretación correcta |
+| --- | --- | --- |
+| Backend: npm run verify | 685/685 PASS, exit 0 (2026-10-13) | Medido durante la auditoría adversarial; volver a ejecutar antes de una publicación. |
+| Backend: npm run build | PASS, exit 0 (2026-10-13) | Artefacto backend fresco. |
+| Resolución Dart: dart pub get | PASS, exit 0 (2026-10-13) | Resolución real de dependencias; intl ^0.20.3 satisface flutter_localizations. |
+| Flutter analyze / test / build web | BLOCKED (2026-10-13) | CreateFile failed 231; un análisis sustituto no equivale al analizador oficial. |
+| E2E SEO | 3 cuerpos de prueba dieron ok, pero sin salida limpia | Ejecutado contra fuentes de web/; no declarar PASS de la suite ni afirmar validación del bundle. |
+| E2E completo sobre bundle fresco | NOT RUN para los cambios actuales | 24/24 fue una medición anterior (2026-10-09), no evidencia del árbol actual. |
+| Smokes de identidad contra nube | Invitaciones 34 OK; recuperación 27 OK; residuo 0/0/0 (2026-10-13) | Cuentas desechables, sin fallos; validar de nuevo si cambian rutas/contratos. |
+| Esquema/migraciones Supabase | Última medición registrada: 46, 0 pendientes/deriva (2026-10-09) | Dato histórico; ejecutar el verificador antes de declarar sincronización actual. |
 
 ---
 
@@ -203,16 +208,11 @@ prueban sin montar nada, y por eso se puede cambiar de proveedor sin tocar la l�
 ---
 ## Protocolo para agentes autónomos
 
-Para continuar el proyecto sin depender del historial conversacional, leer primero:
+La ruta de trabajo obligatoria es la de **[AGENT_START_HERE.md](AGENT_START_HERE.md)**: nueve pasos, lectura corta, verificación con código de salida y entrega documentada. No hace falta leer planes ni prompts para una tarea sencilla.
 
-1. ESTADO_DEL_SISTEMA.md
-2. PLAN_MAESTRO.md
-3. PLAN_CIERRE_100_FUNCIONAL_2026.md
-4. docs/AI_AGENT_OPERATING_PROTOCOL.md
-5. docs/AI_AGENT_AUTONOMY_AND_ENVIRONMENT_RECOVERY.md
-6. AUTONOMOUS_AGENT_MASTER_PROMPT.md
+El mapa completo de documentación está en **[docs/README.md](docs/README.md)**, y qué documento manda cuando dos se contradicen, en **[docs/ESTRUCTURA_DOCUMENTAL.md](docs/ESTRUCTURA_DOCUMENTAL.md)** (ganan el código y los workflows; después la medición reproducible; después el estado y las auditorías fechadas).
 
-El último documento establece la misión de cierre; el contrato de autonomía define cómo recuperarse ante limitaciones de herramientas y cómo continuar sin supervisión.
+Los prompts de misión de la raíz (`AUTONOMOUS_AGENT_MASTER_PROMPT.md`, `PROMPT_*`, `MEGA_PROMPT_*`, `ULTRA_MEGA_PROMPT_*`) son históricos: **no se leen en bloque ni se ejecutan sin comprobar** que su objetivo sigue vigente contra [ESTADO_DEL_SISTEMA.md](ESTADO_DEL_SISTEMA.md).
 
 ### Entrada rápida para un agente nuevo
 

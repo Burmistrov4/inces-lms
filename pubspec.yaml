@@ -33,7 +33,19 @@ dependencies:
   supabase_flutter: ^2.8.0      # Cliente oficial de Supabase
   provider: ^6.1.2              # GestiÃ³n de estado ligera y limpia
   google_fonts: ^6.2.1          # TipografÃ­as modernas (ej. Inter o Poppins para el cPanel)
-  intl: ^0.19.0                 # Formateo de fechas
+  # `intl` NO puede quedarse en ^0.19.0: `flutter_localizations` (del SDK de
+  # Flutter, mas abajo) depende de `intl ^0.20.3`, y con el pin antiguo la
+  # resolucion falla entera —medido el 2026-10-13 con `dart pub get`:
+  # «every version of flutter_localizations from sdk depends on intl ^0.20.3».
+  # El unico uso del proyecto es `DateFormat('dd/MM/yyyy')`, identico en ambas
+  # versiones, asi que subir la restriccion no cambia comportamiento.
+  intl: ^0.20.3                 # Formateo de fechas
+  # Localizacion en espanol de los widgets de Material: sin estos delegados el
+  # selector de fecha del formulario de inscripcion muestra el calendario con
+  # meses y botones CANCEL/SAVE en ingles. Se registran en MaterialApp (main.dart).
+  # CI resuelve la dependencia con `flutter pub get` antes de construir.
+  flutter_localizations:
+    sdk: flutter
   uuid: ^4.0.0                  # GeneraciÃ³n de UUIDs
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

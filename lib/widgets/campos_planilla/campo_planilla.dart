@@ -393,11 +393,12 @@ class _FechaState extends State<_Fecha> {
   /// mínimo de 15 no es arbitrario —el CFS tiene un «Curso Introductorio» para
   /// 15 y 16 años—, y el máximo de 80 sólo evita que el selector abra en 1900.
   ///
-  /// **No se pasa `locale`.** El proyecto no registra
-  /// `GlobalMaterialLocalizations`, así que pedir el selector en español
-  /// lanzaría en tiempo de ejecución por una localización que no está cargada.
-  /// Traducir el calendario es una tarea propia —con sus `localizationsDelegates`
-  /// en `MaterialApp`—, no un parámetro suelto.
+  /// **El selector sale en español sin pasar `locale`.** `MaterialApp` registra
+  /// `GlobalMaterialLocalizations` y compañía (ver `main.dart`), y
+  /// `showDatePicker` resuelve sus textos por `Localizations.of` contra el
+  /// ambiente: la localización viaja desde la raíz. Pasarla aquí además sería
+  /// redundante, y antes era imposible —sin los delegados registrados, pedir
+  /// `locale: Locale('es')` lanzaba en tiempo de ejecución.
   Future<void> _elegir(BuildContext context) async {
     final hoy = DateTime.now();
     final elegida = await showDatePicker(

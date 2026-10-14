@@ -2,9 +2,47 @@
 
 > Regla: un bloqueo afecta sólo la subtarea correspondiente. El agente continúa con todo trabajo independiente. Revalidar estos estados contra evidencia nueva antes de actuar.
 
+## ⚠️ Revalidación del 2026-10-13 — lee esto antes de usar las entradas de abajo
+
+Este archivo contiene una **contradicción documental resuelta por medición**, y conviene saber cuál de las dos versiones manda:
+
+| Fecha | Afirmación | Evidencia |
+|---|---|---|
+| 2026-10-09 (sesión 2) | «El `CreateFile failed 231` **no se reproduce**; el toolchain de Flutter funciona; `flutter test` → 974 pruebas, `flutter build web` → `√ Built`» | Verdadero **en aquella sesión y con aquel entorno** |
+| 2026-10-13 | El `231` **sí bloquea** cualquier VM de Dart que spawnee un hijo, y `flutter build web` no se puede compilar en local | `docs/handover/AUDITORIA_ADVERSARIAL_2026-10-13.md` §4 |
+
+**Registrado como contradicción, no borrado.** La entrada del 2026-10-09 se conserva tal cual, con su fecha. **El estado vigente es el del 2026-10-13**: el bloqueo es del entorno/sandbox de Windows, no del proyecto, y se reproduce de forma sostenida. Un bloqueo que aparece y desaparece entre sesiones se mide **cada vez** que se va a citar; nunca se hereda de un párrafo.
+
+Comandos medidos el 2026-10-13, con su código de salida:
+
+| Comando | Resultado | Qué demuestra |
+|---|---|---|
+| `dart pub get` (con `FLUTTER_ROOT`) | **exit 0**, «Got dependencies!» | La resolución de dependencias sí funciona; es la vía segura |
+| `node devops/analizar-dart.mjs` | **exit 0**, 226 archivos, 0 issues | El sustituto del analizador corre; **no** equivale a `dart analyze` |
+| `npm run verify` (en `backend/`) | **exit 0**, 685/685 en 33 archivos | El backend se verifica completo en local |
+| `flutter pub get` | muere con `231` | El wrapper de Flutter spawnea `git.exe`/`where.exe` |
+| `dart analyze` | muere con `231` | Lanza el analysis server |
+| `flutter build web` | muere con `231` | — |
+| `flutter test` | muere con `231` | — |
+
+**Consecuencia operativa:** la verificación real del lado Flutter es CI (`flutter_ci.yml`, `e2e.yml`, `web_bundle.yml`, `android_bundle.yml`). Un análisis sustituto o un bundle antiguo **no** se declaran como PASS de `flutter test`/`analyze`/`build`.
+
+**Bloqueos reproducidos y pendientes al 2026-10-13** (todos ellos requieren acción del propietario, no del agente):
+
+1. Clave de firma de distribución para Google Play (el APK actual es de depuración).
+2. SMTP/Resend: HTTP 401; sólo afecta notificaciones externas opcionales.
+3. `SUPABASE_JWT_SECRET` en `backend/.env` para verificar el JWT en local y quitar el viaje a GoTrue.
+4. Los 6 secretos del barrido D9 (`limpiar-pendientes.yml` falla seguro sin ellos).
+5. La lista de campos de HACER (D17): falta el archivo de ejemplo.
+6. Cuenta de prueba autorizada para verificar «Invitar docente» y la promoción de administradores **en producción**.
+
+---
+
 ## Resueltos — 2026-10-09 (sesión 2: build local y flujos de identidad)
 
 ### El `CreateFile failed 231` NO se reproduce — el toolchain de Flutter funciona en esta sesión
+
+> **Superado el 2026-10-13:** el `231` volvió a reproducirse de forma sostenida en el sandbox de Windows. Esta entrada es histórica; el estado vigente está en la revalidación de la cabecera.
 - **Medición (no deducción):** `flutter.bat --version` → OK; `flutter build web --release --dart-define-from-file=.env.json` → **`√ Built build\web`** (157 s, exit 0); `flutter.bat test --no-pub` → ejecuta la suite completa (924+ casos observados) sin el `231`.
 - **Consecuencia:** el bloqueo histórico **no es un defecto del proyecto ni de la configuración**: es del entorno/sandbox de la sesión anterior. No se debe volver a citarlo como «bloqueado por el 231» sin volver a medirlo.
 - **Bundle fresco verificado:** `build/web/main.dart.js` (3.773.331 B, 2026-10-09 12:23) contiene la URL real (`twdppwnxlnmxkiejbrei`), **cero** marcadores de plantilla, `restablecer-codigo` y `mobile_scanner`. Es decir: el artefacto corresponde al código actual, incluido lo no commiteado.
@@ -63,6 +101,8 @@
 - **Siguiente acción:** no queda un bloqueo C7. Continuar con medición de performance por rol y gates posteriores.
 
 ### Flutter test runner completo — entorno Windows — RESUELTO (2026-10-09, sesión 2)
+
+> **Superado el 2026-10-13:** el cierre sólo es válido para la sesión del 2026-10-09. En la sesión del 2026-10-13 `flutter test --no-pub` y `flutter build web` vuelven a morir con `231`. Ver la revalidación de la cabecera.
 - **Estado: cerrado.** La causa citada antes (`CreateFile failed 231` al lanzar el hijo) **no se reproduce** en esta sesión.
 - **Medición:** `flutter.bat test --no-pub` ejecuta la suite completa (924+ casos observados en una corrida, `+N` creciente) sin el `231`; `flutter build web --release` terminó en `√ Built build\web` (157 s). El `231` era una limitación **del sandbox de la sesión anterior**, no del proyecto ni de una variable ausente.
 - **Cómo usarlo ahora:** `flutter test --no-pub` y `flutter build web --release --dart-define-from-file=.env.json` son la vía normal. `node devops/analizar-dart.mjs` sigue siendo útil para tipos/lints y como contraste independiente.
