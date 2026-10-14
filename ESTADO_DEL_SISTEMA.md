@@ -1,6 +1,6 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — Fase 2 (Aula Virtual, Google Classroom & Bloque E), 2026-10-14 11:05 -04:00
+## Fotografía operativa vigente — Fase 2 (Aula Virtual, Google Classroom, PWA No-Cache & Bloque E), 2026-10-14 11:42 -04:00
 
 Sección actualizada tras la ejecución autónoma de la Fase 2 autorizada por Lorenzo. **Zona horaria: Venezuela (UTC−4).** Medido contra `main` y verificado en GitHub Actions y Cloudflare Pages. Las fotografías de Fase 1 (2026-10-13) y anteriores se conservan más abajo como registro histórico.
 
@@ -10,23 +10,25 @@ Sección actualizada tras la ejecución autónoma de la Fase 2 autorizada por Lo
 |---|---|
 | Raíz | `C:/Users/Loro/.gemini/antigravity/worktrees/INCES-LMS-PROJECT/analyze_project_status_inces` |
 | Rama | `main` |
-| HEAD | `11bf7c8` · 2026-10-14 · «feat(periodos): implement configurable duration in programs, lapsos panel and pure rules with saturation» |
-| Despliegue Producción | **Cloudflare Pages:** `https://inces-lms.pages.dev` (Deployment ID: `f4d18f8e-d451-4aed-af72-0240ff424154`, HTTP 200 OK) |
+| HEAD | `eda57be` · 2026-10-14 · «fix(web): set strict no-cache revalidation headers for service worker and entrypoints» |
+| Despliegue Producción | **Cloudflare Pages:** `https://inces-lms.pages.dev` (Deployment ID: `2148ca95-02c8-452d-a736-7d7d9727eaac`, HTTP 200 OK, `Cache-Control: no-cache, no-store, must-revalidate`) |
 | `git diff --check` | **exit 0** |
 
 ### Commits integrados y certificados en `main`
 
 1. [`4ede808`](https://github.com/Burmistrov4/inces-lms/commit/4ede808): Integración de activos fotográficos vocacionales reales de alta resolución (metalmecánica, alimentos, estética, gestión y formación juvenil) en el Hero desktop y móvil de la Landing Page + Despliegue en Cloudflare Pages.
 2. [`11bf7c8`](https://github.com/Burmistrov4/inces-lms/commit/11bf7c8): Implementación del Bloque E (duración configurable en Programas y Lapsos, función pura `sumarDuracion` con saturación de fin de mes en Dart y backend, chips de cálculo rápido de fin de lapso, 100% de tests pasando).
-3. `feat(classroom)`: Cabecera fotográfica inmersiva para el Aula Virtual (`AulaVirtualDashboardScreen`) y tarjetas de clase estilo Google Classroom con foto vocacional en `PanelMisAulas` y catálogo público.
+3. [`035abcd`](https://github.com/Burmistrov4/inces-lms/commit/035abcd): Cabecera fotográfica inmersiva para el Aula Virtual (`AulaVirtualDashboardScreen`) y tarjetas de clase estilo Google Classroom con foto vocacional en `PanelMisAulas` y catálogo público.
+4. [`39b868f`](https://github.com/Burmistrov4/inces-lms/commit/39b868f): Integración de miniaturas fotográficas por especialidad técnica con semántica web limpia en `PanelMisAulas`.
+5. [`eda57be`](https://github.com/Burmistrov4/inces-lms/commit/eda57be): Corrección de política de caché en `web/_headers` con cabeceras estrictas `no-cache, no-store, must-revalidate` para Service Worker y puntos de entrada de Flutter Web, garantizando refresco inmediato en móviles.
 
 ### Verificación en la nube (GitHub Actions)
 
 | Flujo | Run ID | Estado | Duración | Cobertura |
 |---|---|---|---|---|
-| **Flutter CI** | `38581781009` | ✅ **SUCCESS** | 2m 14s | 1022+ pruebas pasando; 0 lints en 232 archivos analizados. |
-| **E2E (Playwright)** | `38581780978` | ✅ **SUCCESS** | 4m 23s | 27/27 pruebas de punta a punta en navegador real Chromium. |
-| **Web bundle (Prod)** | `38581861339` | ✅ **SUCCESS** | 2m 45s | Artefacto web de producción desplegado a Cloudflare Pages. |
+| **Flutter CI** | `38590557255` | ✅ **SUCCESS** | 2m 53s | 1030 pruebas pasando; 0 errores, avisos ni infos en 232 archivos analizados. |
+| **E2E (Playwright)** | `38587429266` | ✅ **SUCCESS** | 5m 17s | 27/27 pruebas de punta a punta en navegador real Chromium. |
+| **Web bundle (Prod)** | `38590590656` | ✅ **SUCCESS** | 1m 31s | Artefacto web de producción desplegado a Cloudflare Pages (`2148ca95`). |
 
 ---
 
