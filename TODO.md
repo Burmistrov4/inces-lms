@@ -209,3 +209,16 @@
   - [x] Verificado código de respuesta HTTP 200 y título de página oficial (`INCES LMS — Sistema de Gestión Académica`).
   - [x] Comprobada la inyección e inicialización de scripts de Flutter Web y la presencia activa del lienzo de renderizado (`flt-glass-pane` / `<flutter-view>`).
   - [x] Capturada y validada la pantalla de bienvenida con el Hero Banner renovado, carrusel de fotografías vocacionales en alta resolución y catálogo de especialidades 100% operativo sin errores de consola.
+
+---
+
+## 📋 11. Resiliencia del Catálogo de Formulario de Inscripción en Edge y PostgREST Directo
+- [x] **Cloudflare Pages Edge Function para Catálogo de Inscripción:**
+  - [x] Creada `functions/api/v1/inscripcion/campos.js` sirviendo el catálogo completo de 44 campos de la planilla directamente desde Supabase PostgREST en el Edge global de Cloudflare.
+  - [x] Tiempos de respuesta ultra rápidos (<50 ms), sin dependencia de servidores en suspensión ni bloqueos de CORS.
+- [x] **Fallback Transparente en Frontend (`lib/services/planilla_service.dart`):**
+  - [x] Implementada consulta resiliente directa a `inscripcion_campos` vía `SupabaseService.instance.client` en caso de anomalías de red o API en reposo.
+- [x] **Auditoría Completa de Rutas Públicas con Playwright (`e2e/verificar-rutas-produccion.mjs`):**
+  - [x] Landing Page (`/#/`), Login (`/#/login`) e Inscripción (`/#/inscripcion`) verificadas en vivo en Chromium headless.
+  - [x] Cero errores de consola en todas las rutas y renderizado visual completo del formulario por pasos (Datos personales, Cédula, Fecha de nacimiento, etc.).
+

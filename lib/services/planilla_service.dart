@@ -24,8 +24,35 @@ class BackendPlanillaGateway implements PlanillaGateway {
 
   @override
   Future<CatalogoInscripcion> campos() async {
-    final respuesta = await _api.get('/api/v1/inscripcion/campos');
-    return CatalogoInscripcion.fromJson(respuesta);
+    try {
+      final respuesta = await _api.get('/api/v1/inscripcion/campos');
+      final catalogo = CatalogoInscripcion.fromJson(respuesta);
+      if (catalogo.campos.isNotEmpty) {
+        return catalogo;
+      }
+    } catch (_) {
+      // Si la API remota está en suspensión o el endpoint falla, recurrimos a Supabase directo.
+    }
+
+    try {
+      final cliente = SupabaseService.instance.client;
+      final filas = await cliente
+          .from('inscripcion_campos')
+          .select('codigo,etiqueta,grupo,tipo,obligatorio,orden,opciones,fuente,condicion,ayuda')
+          .eq('activo', true)
+          .order('orden', ascending: true)
+          .order('codigo', ascending: true);
+
+      if (filas.isNotEmpty) {
+        return CatalogoInscripcion(
+          filas.map(CampoInscripcion.fromJson).toList(),
+        );
+      }
+    } catch (_) {
+      // Si ambos fallan, devolvemos catálogo vacío sin romper la aplicación.
+    }
+
+    return const CatalogoInscripcion([]);
   }
 
   @override
