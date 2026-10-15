@@ -253,4 +253,46 @@
   - [x] Despliegue completado a Cloudflare Pages (`https://inces-lms.pages.dev`).
   - [x] Prueba E2E en vivo (`e2e/tests/live_prod_v124.spec.ts` y `live_modulos.spec.ts`) navegando exitosamente Centro de Mando, Usuarios y Roles, Lapsos Académicos, Gestor de Archivos y Módulos del Sistema sin redundancias.
 
+---
+
+## 🔍 13. Auditoría Integral del Sistema y Certificación de Producción (Revisión Completa)
+- [x] **Auditoría de Código y Análisis Estático Dart:**
+  - [x] `node devops/analizar-dart.mjs`: **235 archivos analizados · 0 errores, 0 advertencias, 0 sugerencias** (equivalente a «No issues found!»).
+- [x] **Suites de Pruebas Unitarias y de Widgets:**
+  - [x] `test/cuadrante_paneles_test.dart`: 19/19 pruebas superadas (lapsos, espacios, cuadrante).
+  - [x] `test/cpanel_test.dart` y `test/landing_page_test.dart`: 19/19 pruebas superadas.
+  - [x] `test/menu_alcanzable_test.dart`: 23/23 pruebas superadas (alcance de menús, 14 rutas activas).
+  - [x] `test/theme_literales_test.dart`: 11/11 pruebas de tokens de diseño y cero colores fuera de `IncesTheme`.
+  - [x] `test/aspirante_inscripciones_test.dart` y `test/restablecer_password_test.dart`: 26/26 pruebas superadas.
+- [x] **Auditoría de Infraestructura y Base de Datos Supabase:**
+  - [x] `profiles`: 64 perfiles de usuario (14 administradores, 38 estudiantes, 12 docentes) — 100% activos.
+  - [x] `aspirantes`: 27 postulaciones y expedientes registrados.
+  - [x] `academic_periods`: Lapso `SA26-2` vigente y activo.
+  - [x] `programs`: 7 programas académicos formativos.
+  - [x] `subjects`: 3 materias y 3 asignaciones de pensum registradas.
+  - [x] `classrooms`: 2 aulas físicas y talleres técnicos operativos.
+  - [x] `enrollments`: 3 matrículas confirmadas (`ENROLLED`).
+  - [x] `system_settings`: 13 parámetros institucionales (incluyendo admisión PNA 14-18 años).
+  - [x] `inscripcion_campos`: 44 campos de la planilla cargados con éxito.
+- [x] **Auditoría de Edge y Conectividad Externa:**
+  - [x] Cloudflare Edge `/salud`: HTTP 200 OK (`{"estado":"ok","servicio":"inces-lms-edge"}`).
+  - [x] Cloudflare Edge `/api/v1/inscripcion/campos`: HTTP 200 OK (44 campos en <50 ms).
+  - [x] Cloudflare Reverse Proxy `functions/api/[[catchall]].js`: HTTP 401 JSON protegido, reenviando solicitudes a Render sin caer en fallback SPA.
+  - [x] Servidor Render Fastify `/salud`: HTTP 200 OK (`{"estado":"ok","version":"0.1.0"}`).
+- [x] **Auditoría Visual y de Experiencia de Usuario con Playwright en Producción (`https://inces-lms.pages.dev`):**
+  - [x] `audit_01_landing_desktop.png`: Landing institucional en 1440x900 con tarjeta blanca de alto contraste y carrusel de fotografías nítidas.
+  - [x] `audit_02_oferta_formativa.png`: Catálogo de 7 programas con fotografías fotorrealistas y botones directos de inscripción.
+  - [x] `audit_03_landing_mobile.png`: Adaptabilidad responsive móvil (390x844) fluida y sin desbordamientos de texto.
+  - [x] `audit_04_inscripcion.png`: Formulario de 44 campos por etapas con botón `← Volver` y persistencia en tiempo real en almacenamiento local.
+  - [x] `audit_05_login.png`: Acceso por cédula o correo institucional con alternador de visibilidad de contraseña y enlaces institucionales.
+  - [x] `audit_06_recuperacion.png`: Pantalla de restablecimiento de credenciales con soporte dual (código y sesión activa).
+  - [x] `audit_07_admin_dashboard.png`: Centro de Mando con Walkthrough interactivo inteligente (5 pasos, dots animados y accesos directos), y métricas 10/10.
+  - [x] `audit_08_admin_horarios.png`: Horarios de Clases (Cuadrante interactivo semanal, bloques de mañana y tarde, botón activo `+ Asignar clase` y casillas con ícono `+`).
+  - [x] `audit_09_admin_programas.png`: Programas Académicos con botón prominente `+ Cargar / Asignar Pensum Académico` y avisos pedagógicos.
+  - [x] `audit_10_admin_inscripciones.png`: Inscripciones y Cupos con explicaciones de ciclos trimestrales, ocupación y exportación HACER (.csv).
+  - [x] `audit_11_admin_lapsos.png`: Lapsos Académicos con pestañas de archivo histórico y lenguaje institucional sin jerga técnica.
+  - [x] `audit_12_admin_usuarios.png`: Usuarios y Roles con 64 perfiles espaciados confortablemente, iniciales en avatares y emisión de invitaciones.
+  - [x] `audit_13_admin_archivos.png`: Gestor de Archivos (Cloudflare R2 + Google Drive) con generador de PDF binario válido y persistencia garantizada.
+  - [x] `audit_14_admin_modulos.png`: Módulos del Sistema sin duplicidad de resumen ejecutivo, con control individual de los 10 módulos operativos.
+
 

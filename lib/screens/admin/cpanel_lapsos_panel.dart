@@ -225,9 +225,10 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
 
     if (_periodos.isEmpty) {
       return const PanelVacio(
-        titulo: 'Todavía no hay lapsos académicos registrados',
+        titulo: 'Todavía no hay lapsos registrados',
         mensaje: 'Aquí se organizan los períodos de formación técnica (trimestres o semestres) '
-            'del CFS Rafael Urdaneta. Puedes registrar un nuevo lapso para comenzar a planificar clases.',
+            'del CFS Rafael Urdaneta. Cada horario y sección pertenece siempre a un lapso académico. '
+            'Puedes registrar un nuevo lapso para comenzar a planificar clases.',
         icono: Icons.event_note_outlined,
         nota: 'El Lapso Académico en curso es el ciclo oficial donde aprendices y facilitadores '
             'asisten a clases y registran actividades formativas.',

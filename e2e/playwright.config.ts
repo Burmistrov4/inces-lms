@@ -119,10 +119,11 @@ const DIRECTORIO_WEB = process.env.E2E_WEB_DIR ?? 'build/web';
  * Se puede apagar con `E2E_ARRANCAR_BACKEND=0` cuando ya está corriendo a mano.
  */
 const ARRANCAR_BACKEND = process.env.E2E_ARRANCAR_BACKEND !== '0';
+const ES_REMOTO = BASE_URL.startsWith('https://') || process.env.E2E_NO_WEBSERVER === '1';
 
-const servidores = [
+const servidores = ES_REMOTO ? [] : [
   {
-    command: `node serve.mjs "${DIRECTORIO_WEB}" ${new URL(BASE_URL).port}`,
+    command: `node serve.mjs "${DIRECTORIO_WEB}" ${new URL(BASE_URL).port || 8090}`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
@@ -243,5 +244,5 @@ export default defineConfig({
 
   // Sirve el bundle ya compilado y levanta el backend. En local, si ya hay algo
   // escuchando en esos puertos, se reutiliza.
-  webServer: servidores,
+  webServer: servidores.length > 0 ? servidores : undefined,
 });

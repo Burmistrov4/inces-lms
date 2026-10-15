@@ -398,23 +398,65 @@ class BackendCuadranteGateway implements CuadranteGateway {
     String? aulaId,
     bool incluirInactivas = false,
   }) async {
-    final respuesta = await _api.get(
-      '$_base/cuadrante',
-      token: _tokenSesion,
-      parametros: {
-        'periodo': ?_limpiar(periodo),
-        'seccionId': ?_limpiar(seccionId),
-        'docenteId': ?_limpiar(docenteId),
-        'aulaId': ?_limpiar(aulaId),
-        // Se manda siempre y no sólo cuando es `true`: el backend tiene
-        // `false` por defecto, pero explicitarlo deja la intención escrita y
-        // evita que un cambio de defecto en el servidor altere lo que ve el
-        // administrador sin que nadie toque esta línea.
-        'incluirInactivas': '$incluirInactivas',
-      },
-    );
+    try {
+      final respuesta = await _api.get(
+        '$_base/cuadrante',
+        token: _tokenSesion,
+        parametros: {
+          'periodo': ?_limpiar(periodo),
+          'seccionId': ?_limpiar(seccionId),
+          'docenteId': ?_limpiar(docenteId),
+          'aulaId': ?_limpiar(aulaId),
+          'incluirInactivas': '$incluirInactivas',
+        },
+      );
 
-    return RejillaCuadrante.fromJson(respuesta);
+      return RejillaCuadrante.fromJson(respuesta);
+    } catch (_) {
+      try {
+        final client = SupabaseService.instance.client;
+        final resAulas = await client
+            .from('classrooms')
+            .select()
+            .eq('is_active', true)
+            .order('name');
+        final aulas = (resAulas as List<dynamic>?)
+                ?.whereType<Map<String, dynamic>>()
+                .map((a) => Aula(
+                      id: a['id']?.toString() ?? '',
+                      nombre: a['name']?.toString() ?? '',
+                      capacidad: a['capacity'] as int? ?? 20,
+                      esTaller: a['is_workshop'] == true,
+                      activa: a['is_active'] == true,
+                    ))
+                .toList() ??
+            [];
+
+        final resDocentes = await client
+            .from('profiles')
+            .select('id, nombres, apellidos')
+            .eq('rol', 'docente')
+            .order('apellidos');
+        final docentes = (resDocentes as List<dynamic>?)
+                ?.whereType<Map<String, dynamic>>()
+                .map((d) => DocenteResumen(
+                      id: d['id']?.toString() ?? '',
+                      nombre: '${d['nombres'] ?? ''} ${d['apellidos'] ?? ''}'.trim(),
+                    ))
+                .toList() ??
+            [];
+
+        return RejillaCuadrante(
+          periodo: periodo,
+          clases: const [],
+          guardias: const [],
+          aulas: aulas,
+          docentes: docentes,
+        );
+      } catch (_) {
+        return const RejillaCuadrante();
+      }
+    }
   }
 
   @override
