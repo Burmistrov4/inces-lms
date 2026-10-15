@@ -370,11 +370,19 @@ class AuthService {
       } catch (e) {
         final eStr = e.toString().toLowerCase();
         // Si Supabase falla al intentar enviar el correo de confirmación (ej. 500
-        // Error sending confirmation email o límite de tasa), acudimos al backend
-        // para dar de alta al aspirante con confirmación inmediata sin revertir la transacción.
-        if (eStr.contains('confirmation email') ||
+        // Error sending confirmation email, rate limits o problemas de red),
+        // acudimos al backend/edge para dar de alta al aspirante con confirmación
+        // inmediata sin revertir la transacción.
+        final esErrorCorreoOServidor = eStr.contains('confirmation email') ||
             eStr.contains('servidor de correo') ||
-            eStr.contains('unexpected_failure')) {
+            eStr.contains('unexpected_failure') ||
+            eStr.contains('rate limit') ||
+            eStr.contains('over_email_send_rate_limit') ||
+            eStr.contains('500') ||
+            eStr.contains('authretryablefetchexception') ||
+            eStr.contains('clientexception');
+
+        if (esErrorCorreoOServidor) {
           try {
             final api = ApiClient();
             final res = await api.post(
@@ -404,7 +412,11 @@ class AuthService {
                 requiereTutorLegal: aspirante.requiresLegalTutor,
               );
             }
-          } catch (_) {}
+          } catch (fallbackError) {
+            if (fallbackError is AppException) {
+              rethrow;
+            }
+          }
         }
         rethrow;
       }

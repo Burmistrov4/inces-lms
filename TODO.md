@@ -155,3 +155,22 @@
   - [x] Suite de Pruebas Frontend / Flutter: 1034 tests pasando exitosamente (`flutter test`).
   - [x] Despliegue a Cloudflare Pages completado con éxito (`https://inces-lms.pages.dev` y `https://befa332a.inces-lms.pages.dev`).
 
+---
+
+## 🚀 8. Resolución Definitiva de Inscripción de Aspirantes y Cloudflare Edge Functions
+- [x] **Diagnóstico del Fallo de Correo en Registro:**
+  - [x] Supabase GoTrue revertía la creación del usuario cuando el servidor de correo por defecto no lograba despachar la confirmación (límite de envíos por hora alcanzado o SMTP no configurado en el panel de Supabase).
+  - [x] El frontend intentaba un fallback a `https://inces-lms-api.onrender.com`, pero la instancia en Render estaba dormida o inaccesible, provocando que se re-lanzara el error original de confirmación de correo.
+- [x] **Implementación de Cloudflare Pages Functions (Edge API):**
+  - [x] Creada función Edge `functions/api/v1/auth/registro-aspirante.js` que utiliza la API de administración de Supabase (`/auth/v1/admin/users`) con `email_confirm: true`, ejecutando atómicamente el trigger `handle_new_user()` y creando el usuario y la ficha de aspirante sin depender de servidores de correo externos.
+  - [x] Creada función Edge `functions/salud.js` para monitorización de estado en el Edge con respuesta instantánea.
+  - [x] Creada función Edge `functions/api/v1/auth/solicitar-recuperacion.js` para gestión transparente de solicitudes de restablecimiento de contraseña.
+- [x] **Enrutamiento Inteligente en `AppConfig` (`lib/core/config/app_config.dart`):**
+  - [x] Actualizado `apiBaseUrl` para que en cualquier despliegue web de Cloudflare Pages (`*.pages.dev`) resuelva al origen actual (`$esquema://$hostActual`), conectando de inmediato con las Edge Functions locales (0 ms cold start, sin bloqueos de CORS ni servidores caídos).
+- [x] **Resiliencia Ampliada en `AuthService` (`lib/services/auth_service.dart`):**
+  - [x] Añadida detección para errores 500, rate limits de GoTrue y excepciones de red, activando de inmediato el registro directo por Edge Function e iniciando sesión automáticamente.
+- [x] **Verificación y Pruebas en Vivo en Producción:**
+  - [x] Probado el endpoint en producción `https://inces-lms.pages.dev/api/v1/auth/registro-aspirante`: HTTP 200 con confirmación instantánea.
+  - [x] Verificado el endpoint de salud `https://inces-lms.pages.dev/salud`: HTTP 200 `{ estado: 'ok', servicio: 'inces-lms-edge' }`.
+
+

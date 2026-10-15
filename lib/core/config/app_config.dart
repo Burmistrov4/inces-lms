@@ -24,11 +24,12 @@ class AppConfig {
     final uriActual = Uri.base;
     final hostActual = uriActual.host.trim();
 
-    // Cloudflare Pages no recibe automáticamente --dart-define desde sus
-    // variables de entorno. Si API_BASE_URL no se inyectó en el bundle público,
-    // usa la API de producción conocida; una definición explícita siempre gana.
-    if (configurada.isEmpty && hostActual.endsWith('.pages.dev')) {
-      return 'https://inces-lms-api.onrender.com';
+    // En dominios de Cloudflare Pages (*.pages.dev): se delega de forma nativa a
+    // las Cloudflare Pages Functions del mismo origen para garantizar respuesta
+    // inmediata en el Edge (0 ms cold start) y compatibilidad total con CORS.
+    if (hostActual.endsWith('.pages.dev')) {
+      final esquema = uriActual.scheme.isNotEmpty ? uriActual.scheme : 'https';
+      return '$esquema://$hostActual';
     }
 
     if (esHostPrivadoLan(hostActual)) {

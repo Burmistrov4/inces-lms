@@ -2,6 +2,18 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.2.4] - 2026-10-15
+### Registro Resiliente en Cloudflare Edge y Autonomía de Envío de Correos
+- **Funciones Edge en Cloudflare Pages (`functions/`):**
+  - Implementada `functions/api/v1/auth/registro-aspirante.js` desplegada en los nodos globales de Cloudflare, ejecutando la creación del aspirante con `email_confirm: true` mediante la API de administración de Supabase (`/auth/v1/admin/users`).
+  - La transacción atómica de PostgreSQL (`handle_new_user()`) se ejecuta con éxito inmediato, garantizando la creación del perfil y la ficha del aspirante sin depender del servidor SMTP ni verse afectada por rate-limits de correo en GoTrue.
+  - Implementados endpoints adicionales de Edge: `functions/salud.js` y `functions/api/v1/auth/solicitar-recuperacion.js`.
+- **Enrutamiento Inteligente en Frontend (`lib/core/config/app_config.dart`):**
+  - Actualizada la resolución de `apiBaseUrl`: en despliegues sobre `*.pages.dev` se enlaza automáticamente al origen actual (`$esquema://$hostActual`), eliminando la dependencia del servidor dormido en Render y logrando tiempos de respuesta de 0 ms cold-start.
+- **Resiliencia Ampliada en Servicio de Autenticación (`lib/services/auth_service.dart`):**
+  - Detección exhaustiva de errores de correo (códigos 500, `Error sending confirmation email`, `unexpected_failure`, `rate limit`, etc.).
+  - Ante cualquier anomalía en el envío de correos, se invoca transparentemente la Edge Function, se confirma la cuenta, se inicia la sesión del nuevo aspirante y se transiciona sin interrupciones a la pantalla de éxito.
+
 ## [1.2.3] - 2026-10-15
 ### Humanización, Interactividad de Horarios, Gestor Documental R2/Drive y Claridad Pedagógica
 - **Usuarios y Roles sin Amontonamiento (`lib/screens/admin/cpanel_usuarios_roles_panel.dart`):**
