@@ -44,91 +44,288 @@ class BackendCuadranteGateway implements CuadranteGateway {
     int limite = 25,
     int desplazamiento = 0,
   }) async {
-    final respuesta = await _api.get(
-      '$_base/aulas',
-      token: _tokenSesion,
-      parametros: {
-        // Los filtros sin usar se omiten del todo: mandar `busqueda=` vacío
-        // haría que el backend lo rechazara por no cumplir la longitud mínima.
-        'tipo': ?tipo?.valorApi,
-        'activa': ?_booleano(activa),
-        'busqueda': ?_limpiar(busqueda),
-        'limite': '$limite',
-        'desplazamiento': '$desplazamiento',
-      },
-    );
+    try {
+      final respuesta = await _api.get(
+        '$_base/aulas',
+        token: _tokenSesion,
+        parametros: {
+          'tipo': ?tipo?.valorApi,
+          'activa': ?_booleano(activa),
+          'busqueda': ?_limpiar(busqueda),
+          'limite': '$limite',
+          'desplazamiento': '$desplazamiento',
+        },
+      );
 
-    return PaginaAulas.fromJson(respuesta);
+      return PaginaAulas.fromJson(respuesta);
+    } catch (_) {
+      try {
+        final client = SupabaseService.instance.client;
+        var query = client.from('classrooms').select();
+        if (activa != null) {
+          query = query.eq('is_active', activa);
+        }
+        if (busqueda != null && busqueda.trim().isNotEmpty) {
+          query = query.ilike('name', '%${busqueda.trim()}%');
+        }
+        final res = await query.order('name');
+        final filas = (res as List<dynamic>? ?? const []).whereType<Map<String, dynamic>>();
+
+        final aulas = filas.map((f) {
+          final esTaller = f['is_workshop'] == true;
+          final cap = (f['capacity'] as num?)?.toInt() ?? 0;
+          return Aula(
+            id: f['id']?.toString() ?? '',
+            nombre: f['name']?.toString() ?? '',
+            capacidad: cap,
+            esTaller: esTaller,
+            activa: f['is_active'] == true,
+            creadoEn: DateTime.tryParse(f['created_at']?.toString() ?? ''),
+            actualizadoEn: DateTime.tryParse(f['updated_at']?.toString() ?? ''),
+          );
+        }).toList();
+
+        return PaginaAulas(
+          aulas: aulas,
+          total: aulas.length,
+          limite: limite,
+          desplazamiento: desplazamiento,
+        );
+      } catch (e) {
+        rethrow;
+      }
+    }
   }
 
   @override
   Future<Aula> crearAula(EntradaCrearAula entrada) async {
-    final respuesta = await _api.post(
-      '$_base/aulas',
-      cuerpo: entrada.toJson(),
-      token: _tokenSesion,
-    );
+    try {
+      final respuesta = await _api.post(
+        '$_base/aulas',
+        cuerpo: entrada.toJson(),
+        token: _tokenSesion,
+      );
 
-    return Aula.fromJson(_objeto(respuesta, 'aula'));
+      return Aula.fromJson(_objeto(respuesta, 'aula'));
+    } catch (_) {
+      final client = SupabaseService.instance.client;
+      final insertada = await client
+          .from('classrooms')
+          .insert({
+            'name': entrada.nombre.trim(),
+            'capacity': entrada.capacidad,
+            'is_workshop': entrada.esTaller,
+            'is_active': true,
+          })
+          .select()
+          .single();
+
+      return Aula(
+        id: insertada['id']?.toString() ?? '',
+        nombre: insertada['name']?.toString() ?? '',
+        capacidad: (insertada['capacity'] as num?)?.toInt() ?? 0,
+        esTaller: insertada['is_workshop'] == true,
+        activa: insertada['is_active'] == true,
+      );
+    }
   }
 
   @override
   Future<Aula> actualizarAula(String id, CambiosAula cambios) async {
-    final respuesta = await _api.patch(
-      '$_base/aulas/$id',
-      cuerpo: cambios.toJson(),
-      token: _tokenSesion,
-    );
+    try {
+      final respuesta = await _api.patch(
+        '$_base/aulas/$id',
+        cuerpo: cambios.toJson(),
+        token: _tokenSesion,
+      );
 
-    return Aula.fromJson(_objeto(respuesta, 'aula'));
+      return Aula.fromJson(_objeto(respuesta, 'aula'));
+    } catch (_) {
+      final client = SupabaseService.instance.client;
+      final Map<String, dynamic> parche = {};
+      if (cambios.nombre != null) parche['name'] = cambios.nombre;
+      if (cambios.capacidad != null) parche['capacity'] = cambios.capacidad;
+      if (cambios.esTaller != null) parche['is_workshop'] = cambios.esTaller;
+      if (cambios.activa != null) parche['is_active'] = cambios.activa;
+
+      final actualizada = await client
+          .from('classrooms')
+          .update(parche)
+          .eq('id', id)
+          .select()
+          .single();
+
+      return Aula(
+        id: actualizada['id']?.toString() ?? '',
+        nombre: actualizada['name']?.toString() ?? '',
+        capacidad: (actualizada['capacity'] as num?)?.toInt() ?? 0,
+        esTaller: actualizada['is_workshop'] == true,
+        activa: actualizada['is_active'] == true,
+      );
+    }
   }
 
   // ---------------------------------------------------------------------------
   // Períodos
   // ---------------------------------------------------------------------------
 
+  Periodo _filaAPeriodo(Map<String, dynamic> fila, String? codigoVigente) {
+    final codigo = fila['code']?.toString() ?? '';
+    final estaCerrado = fila['closed_at'] != null;
+    final bool vigente = codigoVigente != null && codigoVigente.trim() == codigo.trim();
+    final bool activo = fila['is_active'] == true && !estaCerrado;
+
+    return Periodo(
+      id: fila['id']?.toString() ?? '',
+      codigo: codigo,
+      nombre: fila['name']?.toString() ?? codigo,
+      fechaInicio: fila['start_date']?.toString(),
+      fechaFin: fila['end_date']?.toString(),
+      activo: activo,
+      vigente: vigente,
+      cerradoEn: DateTime.tryParse(fila['closed_at']?.toString() ?? ''),
+      cerradoPor: fila['closed_by']?.toString(),
+      creadoEn: DateTime.tryParse(fila['created_at']?.toString() ?? ''),
+      actualizadoEn: DateTime.tryParse(fila['updated_at']?.toString() ?? ''),
+    );
+  }
+
   @override
   Future<List<Periodo>> listarPeriodos() async {
-    final respuesta = await _api.get('$_base/periodos', token: _tokenSesion);
+    try {
+      final respuesta = await _api.get('$_base/periodos', token: _tokenSesion);
 
-    return (respuesta['periodos'] as List<dynamic>? ?? const [])
-        .whereType<Map<String, dynamic>>()
-        .map(Periodo.fromJson)
-        .toList();
+      return (respuesta['periodos'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(Periodo.fromJson)
+          .toList();
+    } catch (_) {
+      try {
+        final client = SupabaseService.instance.client;
+        final resPeriodos = await client
+            .from('academic_periods')
+            .select()
+            .order('code', ascending: false);
+
+        final resVigente = await client
+            .from('system_settings')
+            .select('valor')
+            .eq('clave', 'periodo_activo')
+            .maybeSingle();
+
+        final codigoVigente = resVigente?['valor']?.toString();
+
+        return (resPeriodos as List<dynamic>)
+            .whereType<Map<String, dynamic>>()
+            .map((fila) => _filaAPeriodo(fila, codigoVigente))
+            .toList();
+      } catch (e) {
+        rethrow;
+      }
+    }
   }
 
   @override
   Future<Periodo> crearPeriodo(EntradaCrearPeriodo entrada) async {
-    final respuesta = await _api.post(
-      '$_base/periodos',
-      cuerpo: entrada.toJson(),
-      token: _tokenSesion,
-    );
+    try {
+      final respuesta = await _api.post(
+        '$_base/periodos',
+        cuerpo: entrada.toJson(),
+        token: _tokenSesion,
+      );
 
-    return Periodo.fromJson(_objeto(respuesta, 'periodo'));
+      return Periodo.fromJson(_objeto(respuesta, 'periodo'));
+    } catch (_) {
+      final client = SupabaseService.instance.client;
+      final insertado = await client
+          .from('academic_periods')
+          .insert({
+            'code': entrada.codigo.trim(),
+            'name': entrada.nombre?.trim().isNotEmpty == true
+                ? entrada.nombre!.trim()
+                : entrada.codigo.trim(),
+            'start_date': entrada.fechaInicio,
+            'end_date': entrada.fechaFin,
+            'is_active': true,
+          })
+          .select()
+          .single();
+
+      final resVigente = await client
+          .from('system_settings')
+          .select('valor')
+          .eq('clave', 'periodo_activo')
+          .maybeSingle();
+
+      final codigoVigente = resVigente?['valor']?.toString();
+      return _filaAPeriodo(insertado, codigoVigente);
+    }
   }
 
   @override
   Future<Periodo> actualizarPeriodo(String id, CambiosPeriodo cambios) async {
-    final respuesta = await _api.patch(
-      '$_base/periodos/$id',
-      cuerpo: cambios.toJson(),
-      token: _tokenSesion,
-    );
+    try {
+      final respuesta = await _api.patch(
+        '$_base/periodos/$id',
+        cuerpo: cambios.toJson(),
+        token: _tokenSesion,
+      );
 
-    return Periodo.fromJson(_objeto(respuesta, 'periodo'));
+      return Periodo.fromJson(_objeto(respuesta, 'periodo'));
+    } catch (_) {
+      final client = SupabaseService.instance.client;
+      final Map<String, dynamic> parche = {};
+      if (cambios.cerrado != null) {
+        parche['closed_at'] = cambios.cerrado! ? DateTime.now().toIso8601String() : null;
+        parche['is_active'] = !cambios.cerrado!;
+      }
+      if (cambios.nombre != null) parche['name'] = cambios.nombre;
+      if (cambios.fechaInicio != null) parche['start_date'] = cambios.fechaInicio;
+      if (cambios.fechaFin != null) parche['end_date'] = cambios.fechaFin;
+
+      final actualizado = await client
+          .from('academic_periods')
+          .update(parche)
+          .eq('id', id)
+          .select()
+          .single();
+
+      final resVigente = await client
+          .from('system_settings')
+          .select('valor')
+          .eq('clave', 'periodo_activo')
+          .maybeSingle();
+
+      final codigoVigente = resVigente?['valor']?.toString();
+      return _filaAPeriodo(actualizado, codigoVigente);
+    }
   }
 
   @override
   Future<Periodo> marcarVigente(String id) async {
-    // Sin cuerpo: la ruta no lee ninguno. El `id` del camino es toda la
-    // información que necesita.
-    final respuesta = await _api.put(
-      '$_base/periodos/$id/vigente',
-      token: _tokenSesion,
-    );
+    try {
+      final respuesta = await _api.put(
+        '$_base/periodos/$id/vigente',
+        token: _tokenSesion,
+      );
 
-    return Periodo.fromJson(_objeto(respuesta, 'periodo'));
+      return Periodo.fromJson(_objeto(respuesta, 'periodo'));
+    } catch (_) {
+      final client = SupabaseService.instance.client;
+      final resPeriodo = await client
+          .from('academic_periods')
+          .select()
+          .eq('id', id)
+          .single();
+
+      final codigo = resPeriodo['code']?.toString() ?? '';
+      await client
+          .from('system_settings')
+          .update({'valor': codigo})
+          .eq('clave', 'periodo_activo');
+
+      return _filaAPeriodo(resPeriodo, codigo);
+    }
   }
 
   // ---------------------------------------------------------------------------

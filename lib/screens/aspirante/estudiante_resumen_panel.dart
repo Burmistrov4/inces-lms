@@ -566,7 +566,7 @@ class EstudianteResumenPanel extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Text(
-          'CFS Nacional de Soldadura «Rafael Urdaneta» · Portal del Aprendiz · v0.1.0',
+          'CFS Nacional de Soldadura «Rafael Urdaneta» · Portal del Aprendiz · v1.2.4 · Prod 2026',
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
           ),

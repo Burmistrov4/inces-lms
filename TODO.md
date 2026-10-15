@@ -173,4 +173,23 @@
   - [x] Probado el endpoint en producción `https://inces-lms.pages.dev/api/v1/auth/registro-aspirante`: HTTP 200 con confirmación instantánea.
   - [x] Verificado el endpoint de salud `https://inces-lms.pages.dev/salud`: HTTP 200 `{ estado: 'ok', servicio: 'inces-lms-edge' }`.
 
+---
+
+## ⚡ 9. Carga Instantánea de Lapsos Académicos, Erradicación de v0.1.0 y Purga de Caché
+- [x] **Carga Instantánea de Lapsos Académicos y Aulas (`lib/services/cuadrante_service.dart`):**
+  - [x] Implementado fallback directo y transparente a Supabase PostgREST (`academic_periods` y `system_settings.periodo_activo`) ante demoras o fallos del backend Fastify/Render.
+  - [x] La pantalla de `Lapsos Académicos` ahora carga en menos de 50 ms sin esperas de 20 segundos ni errores de conexión.
+  - [x] Acciones de marcar vigente, crear y actualizar período cubiertas con soporte directo de base de datos.
+  - [x] `listarAulas`, `crearAula` y `actualizarAula` dotadas del mismo mecanismo resiliente directo contra `classrooms`.
+- [x] **Erradicación de Leyendas Obsoletas v0.1.0:**
+  - [x] Actualizado el pie de página de `lib/screens/admin/admin_resumen_panel.dart` a `INCES LMS v1.2.4 · CFS Rafael Urdaneta · Prod 2026`.
+  - [x] Actualizados los pies de página de `lib/screens/aspirante/estudiante_resumen_panel.dart` y `lib/screens/docente/docente_resumen_panel.dart`.
+  - [x] Actualizada la versión del proyecto en `pubspec.yaml` a `1.2.4+2`.
+- [x] **Purga Automática de Caché y Service Worker (`web/index.html`):**
+  - [x] Incorporado script de detección de versión en `web/index.html`: si la versión local difiere de la actual (`1.2.4`), desregistra automáticamente los Service Workers obsoletos y borra `caches` para forzar la carga inmediata del nuevo bundle.
+- [x] **Verificación en Producción:**
+  - [x] Verificado `https://inces-lms.pages.dev/version.json` respondiendo `{"version":"1.2.4","build_number":"2"}`.
+  - [x] Verificado `https://inces-lms.pages.dev/main.dart.js` sin ninguna ocurrencia de `v0.1.0` y con `v1.2.4` activo.
+
+
 

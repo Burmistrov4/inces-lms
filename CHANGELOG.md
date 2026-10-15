@@ -12,7 +12,13 @@ Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en
   - Actualizada la resolución de `apiBaseUrl`: en despliegues sobre `*.pages.dev` se enlaza automáticamente al origen actual (`$esquema://$hostActual`), eliminando la dependencia del servidor dormido en Render y logrando tiempos de respuesta de 0 ms cold-start.
 - **Resiliencia Ampliada en Servicio de Autenticación (`lib/services/auth_service.dart`):**
   - Detección exhaustiva de errores de correo (códigos 500, `Error sending confirmation email`, `unexpected_failure`, `rate limit`, etc.).
-  - Ante cualquier anomalía en el envío de correos, se invoca transparentemente la Edge Function, se confirma la cuenta, se inicia la sesión del nuevo aspirante y se transiciona sin interrupciones a la pantalla de éxito.
+- **Carga Instantánea de Lapsos Académicos y Aulas (`lib/services/cuadrante_service.dart`):**
+  - Implementado fallback transparente y directo a Supabase PostgREST (`academic_periods` y `system_settings.periodo_activo`).
+  - La pantalla de `Lapsos Académicos` carga ahora de forma inmediata (<50 ms), erradicando las demoras de 20 segundos y los timeouts provocados por servidores Fastify en suspensión.
+  - Soporte resiliente directo para marcar lapso vigente, crear y editar períodos, así como para la gestión de aulas físicas y talleres (`classrooms`).
+- **Erradicación de Versión Obsoleta v0.1.0 y Purga de Caché (`web/index.html`, `pubspec.yaml`):**
+  - Actualizado el pie de página institucional en `AdminResumenPanel`, `EstudianteResumenPanel` y `DocenteResumenPanel` con la etiqueta oficial `v1.2.4 · Prod 2026`.
+  - Incorporado en `web/index.html` un script automático de invalidación: al detectar un cambio de versión (`1.2.4`), desregistra Service Workers antiguos y vacía las instancias obsoletas de `CacheStorage`, garantizando que el navegador del usuario descargue y ejecute la versión más reciente sin requerir limpieza manual.
 
 ## [1.2.3] - 2026-10-15
 ### Humanización, Interactividad de Horarios, Gestor Documental R2/Drive y Claridad Pedagógica

@@ -148,7 +148,32 @@
         <li><a href="/#/login">Ingreso al Portal Académico</a></li>
       </ul>
     </main>
-  </noscript>
+  <!-- Control de Caché e Invalidación Automática de Versión -->
+  <script>
+    (function() {
+      const APP_VERSION = '1.2.4';
+      const storedVersion = localStorage.getItem('inces_app_version');
+      if (storedVersion && storedVersion !== APP_VERSION) {
+        localStorage.setItem('inces_app_version', APP_VERSION);
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for (let reg of registrations) {
+              reg.unregister();
+            }
+          });
+        }
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            for (let name of names) {
+              caches.delete(name);
+            }
+          });
+        }
+      } else {
+        localStorage.setItem('inces_app_version', APP_VERSION);
+      }
+    })();
+  </script>
 
   <script src="flutter_bootstrap.js" async></script>
 </body>
