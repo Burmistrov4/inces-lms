@@ -595,11 +595,13 @@ class TarjetaMetrica extends StatelessWidget {
     required this.valor,
     required this.icono,
     this.tono = TonoEstado.info,
+    this.onTap,
   });
 
   final String etiqueta;
   final String valor;
   final IconData icono;
+  final VoidCallback? onTap;
 
   /// El **tono** del icono, no su color.
   ///
@@ -619,48 +621,63 @@ class TarjetaMetrica extends StatelessWidget {
     final theme = Theme.of(context);
     final par = PaletaInces.de(context).etiquetaDe(tono);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: par.fondo,
-                borderRadius: BorderRadius.circular(IncesTheme.radioControl),
-              ),
-              child: Icon(icono, size: 19, color: par.texto),
+    final cuerpo = Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: par.fondo,
+              borderRadius: BorderRadius.circular(IncesTheme.radioControl),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    valor,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: theme.colorScheme.onSurface,
-                    ),
+            child: Icon(icono, size: 19, color: par.texto),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  valor,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: theme.colorScheme.onSurface,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    etiqueta,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w400,
-                    ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  etiqueta,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w400,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          if (onTap != null)
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            ),
+        ],
       ),
+    );
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: onTap != null
+          ? InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+              child: cuerpo,
+            )
+          : cuerpo,
     );
   }
 }

@@ -42,6 +42,17 @@ class IncesTheme {
   /// cPanel» competiría con el color de un icono cualquiera.
   static const Color rojoInces = Color(0xFFD32F2F);
 
+  // --- Gestor documental y servicios integrados -----------------------------
+
+  /// Verde identificador de la suite Google (Drive / Classroom).
+  static const Color verdeGoogleDrive = Color(0xFF0F9D58);
+
+  /// Colores estándar de carpetas personalizables en el explorador documental.
+  static const Color carpetaTeal = Color(0xFF0D9488);
+  static const Color carpetaVioleta = Color(0xFF7C3AED);
+  static const Color carpetaNaranja = Color(0xFFEA580C);
+  static const Color carpetaPizarra = Color(0xFF475569);
+
   // --- Superficies, modo claro -------------------------------------------------
 
   /// Gris frío de fondo. Deliberadamente no blanco puro: las tarjetas blancas

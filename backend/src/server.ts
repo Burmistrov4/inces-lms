@@ -1,7 +1,7 @@
 import { construirApp, VERSION_API } from './app.js';
 import { cargarEnv } from './config/env.js';
 import { crearRepositorios, crearVerificadorDeTokens } from './infra/repos-supabase.js';
-import { crearRemitenteResend } from './infra/correo.js';
+import { crearRemitenteResend, crearRemitenteSMTP, type EnvioCorreo } from './infra/correo.js';
 import {
   crearClienteAdmin,
   crearClienteAnonimo,
@@ -22,10 +22,20 @@ async function main(): Promise<void> {
   const clienteAnonimo = crearClienteAnonimo(env);
   const reposAdmin = crearRepositorios(crearClienteAdmin(env));
 
-  const enviarCorreo = crearRemitenteResend({
-    apiKey: env.RESEND_API_KEY,
-    from: env.RESEND_FROM ?? 'onboarding@resend.dev',
-  });
+  // Prioriza Gmail SMTP (Nodemailer) sobre Resend cuando las credenciales están definidas
+  const enviarCorreo: EnvioCorreo = (env.SMTP_USER && env.SMTP_PASS)
+    ? crearRemitenteSMTP({
+        host: env.SMTP_HOST,
+        port: env.SMTP_PORT,
+        secure: env.SMTP_SECURE,
+        user: env.SMTP_USER,
+        pass: env.SMTP_PASS,
+        from: env.SMTP_FROM,
+      })
+    : crearRemitenteResend({
+        apiKey: env.RESEND_API_KEY,
+        from: env.RESEND_FROM ?? 'onboarding@resend.dev',
+      });
 
   const app = construirApp(env, {
     verificarToken: crearVerificadorDeTokens(clienteAnonimo),

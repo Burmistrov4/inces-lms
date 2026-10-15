@@ -1642,6 +1642,13 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       revisar('perfiles.porId');
       return estado.perfiles.find((p) => p.id === id) ?? null;
     },
+    async porIdentificador(identificador) {
+      revisar('perfiles.porIdentificador');
+      const limpio = identificador.trim().toLowerCase();
+      return estado.perfiles.find((p) =>
+        p.email.toLowerCase() === limpio || (p.cedula && p.cedula.toLowerCase() === limpio)
+      ) ?? null;
+    },
     async listar(opciones) {
       revisar('perfiles.listar');
 

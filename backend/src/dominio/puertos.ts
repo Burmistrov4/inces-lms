@@ -60,6 +60,8 @@ export interface PuertaAuth {
 
 export interface PuertaPerfiles {
   porId(id: string): Promise<Perfil | null>;
+  /** Busca un perfil por correo electrónico o por cédula. */
+  porIdentificador(identificador: string): Promise<Perfil | null>;
   /**
    * Listado de usuarios para la pantalla «Usuarios y Roles».
    *

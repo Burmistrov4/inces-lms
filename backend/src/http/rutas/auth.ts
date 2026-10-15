@@ -3,9 +3,17 @@ import { ErrorApi } from '../../dominio/errores.js';
 import { estadoDeCodigoRecuperacion } from '../../dominio/reglas-recuperacion.js';
 import { estadoDeInvitacion } from '../../dominio/reglas-invitaciones.js';
 import type { DependenciasRutas } from '../dependencias.js';
-import { esquemaActivarCuenta, esquemaCanjearCodigo } from '../esquemas.js';
+import {
+  esquemaActivarCuenta,
+  esquemaCanjearCodigo,
+  esquemaSolicitarRecuperacion,
+} from '../esquemas.js';
 import { crearLimitador } from '../limitador.js';
-import { hashearToken, normalizarCodigo } from '../../infra/tokens.js';
+import {
+  generarCodigoRecuperacion,
+  hashearToken,
+  normalizarCodigo,
+} from '../../infra/tokens.js';
 
 /**
  * Rutas de autenticación públicas.
@@ -139,6 +147,89 @@ export function rutasAuth(app: FastifyInstance, deps: DependenciasRutas): void {
           });
           throw error;
         }
+      });
+
+      /**
+       * Solicita el restablecimiento de contraseña vía correo electrónico (Gmail SMTP / Nodemailer).
+       *
+       * Busca el perfil por email o cédula. Si existe y tiene correo, genera un código
+       * seguro de recuperación (válido por 30 minutos), lo persiste en la base y lo envía
+       * formateado profesionalmente por correo electrónico.
+       *
+       * Aplica principio anti-enumeración: siempre devuelve respuesta exitosa para evitar
+       * revelar qué cuentas existen a atacantes externos.
+       */
+      aut.post('/solicitar-recuperacion', async (request) => {
+        if (!limitador.permitir(`solicitar:${request.ip}`)) {
+          throw ErrorApi.demasiadasPeticiones();
+        }
+
+        const { identificador } = esquemaSolicitarRecuperacion.parse(request.body);
+        const limpio = identificador.trim();
+
+        // Buscar el perfil por email o cédula
+        const perfiles = deps.reposAdmin.perfiles;
+        const perfil = await perfiles.porIdentificador(limpio);
+
+        if (perfil && perfil.email && perfil.activo) {
+          const codigo = generarCodigoRecuperacion();
+          const hash = hashearToken(normalizarCodigo(codigo));
+          const expiraEn = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+          await deps.reposAdmin.recuperacion.emitir({
+            userId: perfil.id,
+            codeHash: hash,
+            expiresAt: expiraEn,
+            createdBy: null,
+          });
+
+          const urlRestablecer = `${deps.urlFrente}/#/restablecer-codigo?codigo=${encodeURIComponent(codigo)}`;
+
+          const htmlCorreo = [
+            '<div style="font-family:Inter,Segoe UI,Arial,sans-serif;max-width:540px;margin:0 auto;padding:24px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;">',
+            '  <div style="background:linear-gradient(135deg, #0b5cab 0%, #003366 100%);padding:20px;border-radius:8px;text-align:center;margin-bottom:24px;">',
+            '    <h1 style="color:#ffffff;margin:0;font-size:20px;font-weight:700;">INCES LMS · Gestión Académica</h1>',
+            '    <p style="color:#e2e8f0;margin:4px 0 0;font-size:13px;">CFS Nacional de Soldadura «Rafael Urdaneta»</p>',
+            '  </div>',
+            `  <h2 style="color:#1e293b;font-size:18px;margin-bottom:12px;">Hola, ${perfil.nombres || 'Usuario'}:</h2>`,
+            '  <p style="color:#475569;font-size:14px;line-height:1.5;">Hemos recibido una solicitud para restablecer la contraseña de acceso a tu cuenta en la plataforma del INCES.</p>',
+            '  <div style="background-color:#f1f5f9;border-left:4px solid #0b5cab;padding:16px;border-radius:6px;margin:20px 0;text-align:center;">',
+            '    <span style="display:block;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Tu código de seguridad temporal:</span>',
+            `    <strong style="font-size:26px;color:#0b5cab;letter-spacing:3px;font-family:monospace;">${codigo}</strong>`,
+            '    <span style="display:block;font-size:12px;color:#64748b;margin-top:6px;">Válido durante los próximos 30 minutos (un solo uso).</span>',
+            '  </div>',
+            '  <p style="color:#475569;font-size:14px;line-height:1.5;">Puedes ingresar este código directamente en la pantalla de restablecimiento o pulsar en el siguiente enlace directo:</p>',
+            '  <div style="text-align:center;margin:24px 0;">',
+            `    <a href="${urlRestablecer}" style="background-color:#0b5cab;color:#ffffff;padding:12px 28px;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;display:inline-block;">Restablecer mi contraseña</a>`,
+            '  </div>',
+            '  <p style="color:#94a3b8;font-size:12px;line-height:1.4;margin-top:24px;border-top:1px solid #e2e8f0;padding-top:16px;">Si no solicitaste este cambio, puedes ignorar este mensaje de forma segura.</p>',
+            '</div>',
+          ].join('\n');
+
+          const resultadoEnvio = await deps.enviarCorreo.enviar({
+            para: perfil.email,
+            asunto: 'Código de recuperación de contraseña — INCES LMS',
+            html: htmlCorreo,
+          });
+
+          return {
+            exito: true,
+            correoEnviado: resultadoEnvio.entregado,
+            metodo: resultadoEnvio.entregado ? ('smtp' as const) : ('supabase' as const),
+            ...(perfil.email ? { email: perfil.email } : {}),
+            mensaje: resultadoEnvio.entregado
+              ? 'Si los datos coinciden con un usuario registrado, hemos enviado las instrucciones y el código a tu correo electrónico.'
+              : 'El servidor SMTP no tiene entrega activa. Se recomienda el flujo de recuperación de Supabase.',
+          };
+        }
+
+        return {
+          exito: true,
+          correoEnviado: false,
+          metodo: 'ninguno' as const,
+          mensaje:
+            'Si los datos coinciden con un usuario registrado, hemos enviado las instrucciones y el código a tu correo electrónico.',
+        };
       });
 
       /**

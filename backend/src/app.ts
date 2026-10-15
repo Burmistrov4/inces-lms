@@ -121,8 +121,19 @@ export function construirApp(env: Env, deps: DependenciasApp): FastifyInstance {
   registrarManejadorDeErrores(app);
 
   // CORS, helmet y rate limit se registran primero para que envuelvan a todo.
+  const corsOrigenes = origenesCors(env);
   void app.register(cors, {
-    origin: origenesCors(env),
+    origin:
+      corsOrigenes === true
+        ? true
+        : [
+            ...corsOrigenes,
+            /^https:\/\/([a-zA-Z0-9_-]+\.)?inces-lms\.pages\.dev$/,
+            /^https:\/\/[a-zA-Z0-9_-]+\.pages\.dev$/,
+            /^http:\/\/localhost(:\d+)?$/,
+            /^http:\/\/127\.0\.0\.1(:\d+)?$/,
+            /^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/,
+          ],
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: false,

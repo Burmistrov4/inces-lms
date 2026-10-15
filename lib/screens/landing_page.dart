@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -272,355 +274,16 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   Widget _construirInsigniaIndustrial3D() {
-    return Container(
-      width: 380,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.22),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 30,
-            offset: const Offset(0, 15),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            height: 190,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.asset(
-                  'assets/images/hero_soldadura.jpg',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    child: const Icon(
-                      Icons.precision_manufacturing_rounded,
-                      size: 48,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.70),
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 12,
-                  left: 14,
-                  right: 14,
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: IncesTheme.advertencia,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          'TALLER INDUSTRIAL',
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: IncesTheme.azulPrimario,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white24),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.check_circle_rounded,
-                              color: IncesTheme.exito,
-                              size: 12,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Presencial y Homologado',
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Formación Técnica y Profesional',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Capacitación integral en metalmecánica, gastronomía, servicios y desarrollo personal homologada por el Estado.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: Colors.white.withValues(alpha: 0.8),
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    _chipArea(Icons.precision_manufacturing_rounded, 'Metalmecánica'),
-                    _chipArea(Icons.restaurant_menu_rounded, 'Alimentos'),
-                    _chipArea(Icons.spa_rounded, 'Estética'),
-                    _chipArea(Icons.record_voice_over_rounded, 'Oratoria'),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.verified_rounded,
-                        color: IncesTheme.advertencia,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Certificación INCES Valedera',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return _CarruselHeroOfertas(
+      esMovil: false,
+      onInscribirse: _irAInscripcion,
     );
   }
 
   Widget _construirHeroVisualMovil() {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.22),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            height: 180,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.asset(
-                  'assets/images/hero_soldadura.jpg',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    child: const Icon(
-                      Icons.precision_manufacturing_rounded,
-                      size: 40,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.70),
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: IncesTheme.advertencia,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'CFS NACIONAL DE SOLDADURA',
-                      style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: IncesTheme.azulPrimario,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 12,
-                  left: 12,
-                  right: 12,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.verified_rounded,
-                        color: IncesTheme.advertencia,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          'Sede La Isabelica • Carabobo',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white24),
-                        ),
-                        child: Text(
-                          '100% Gratuito',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                _chipArea(Icons.precision_manufacturing_rounded, 'Metalmecánica'),
-                _chipArea(Icons.restaurant_menu_rounded, 'Alimentos'),
-                _chipArea(Icons.spa_rounded, 'Estética'),
-                _chipArea(Icons.record_voice_over_rounded, 'Oratoria'),
-                _chipArea(Icons.school_rounded, 'Jóvenes PNA'),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _chipArea(IconData icono, String texto) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icono, size: 13, color: Colors.white),
-          const SizedBox(width: 5),
-          Text(
-            texto,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
+    return _CarruselHeroOfertas(
+      esMovil: true,
+      onInscribirse: _irAInscripcion,
     );
   }
 
@@ -1659,3 +1322,414 @@ class _TarjetaEspecialidad extends StatelessWidget {
     );
   }
 }
+
+/// Carrusel interactivo y rotativo de ofertas formativas del Hero institucional.
+class _CarruselHeroOfertas extends StatefulWidget {
+  const _CarruselHeroOfertas({
+    required this.esMovil,
+    required this.onInscribirse,
+  });
+
+  final bool esMovil;
+  final VoidCallback onInscribirse;
+
+  @override
+  State<_CarruselHeroOfertas> createState() => _CarruselHeroOfertasState();
+}
+
+class _DatoSlideHero {
+  final String imagen;
+  final String badge;
+  final String tag;
+  final String titulo;
+  final String descripcion;
+  final List<String> tags;
+  final IconData icono;
+
+  const _DatoSlideHero({
+    required this.imagen,
+    required this.badge,
+    required this.tag,
+    required this.titulo,
+    required this.descripcion,
+    required this.tags,
+    required this.icono,
+  });
+}
+
+class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
+  int _indice = 0;
+  Timer? _timer;
+
+  static const List<_DatoSlideHero> _slides = [
+    _DatoSlideHero(
+      imagen: 'assets/images/area_metalmecanica.jpg',
+      badge: 'METALMECÁNICA Y SOLDADURA',
+      tag: 'Homologación AWS D1.1',
+      titulo: 'Soldadura Universal y Forja Industrial',
+      descripcion:
+          'Cabinas individuales con equipos para procesos SMAW, GMAW/MIG, argón GTAW/TIG y oxicorte.',
+      tags: ['Soldadura TIG/MIG', 'Herrería Estructural', 'Torno Mecánico'],
+      icono: Icons.precision_manufacturing_rounded,
+    ),
+    _DatoSlideHero(
+      imagen: 'assets/images/area_alimentos.jpg',
+      badge: 'GASTRONOMÍA Y ALIMENTOS',
+      tag: 'Certificado Sanitario MPPS',
+      titulo: 'Cocina Industrial y Panificación',
+      descripcion:
+          'Talleres culinarios profesionales, técnicas de panadería artesanal, repostería e inocuidad alimentaria.',
+      tags: ['Panadería Artesanal', 'Pastelería', 'Bromatología'],
+      icono: Icons.restaurant_menu_rounded,
+    ),
+    _DatoSlideHero(
+      imagen: 'assets/images/area_gestion.jpg',
+      badge: 'INFORMÁTICA Y GESTIÓN',
+      tag: 'Laboratorio Tecnológico',
+      titulo: 'Administración, Sistemas y Oratoria',
+      descripcion:
+          'Capacitación en software administrativo, tributación, soporte técnico de redes y liderazgo productivo.',
+      tags: ['Ofimática y Redes', 'Gestión Tributaria', 'Oratoria'],
+      icono: Icons.laptop_chromebook_rounded,
+    ),
+    _DatoSlideHero(
+      imagen: 'assets/images/area_servicios.jpg',
+      badge: 'SERVICIOS PERSONALES',
+      tag: 'Práctica con Modelos Reales',
+      titulo: 'Estética Integral y Barbería Clásica',
+      descripcion:
+          'Técnicas modernas de corte y barbería, visagismo, diseño de cejas y pestañas con bioseguridad.',
+      tags: ['Barbería Urbana', 'Cejas y Pestañas', 'Estilismo'],
+      icono: Icons.spa_rounded,
+    ),
+    _DatoSlideHero(
+      imagen: 'assets/images/area_juvenil.jpg',
+      badge: 'PROGRAMA JUVENIL PNA',
+      tag: 'Jóvenes de 15 a 18 años',
+      titulo: 'Aprendices INCES e Inserción Laboral',
+      descripcion:
+          'Programa Nacional de Aprendizaje con orientación vocacional integral, formación técnica dual y valores.',
+      tags: ['Formación Dual PNA', 'Orientación Técnica', 'Inserción'],
+      icono: Icons.school_rounded,
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _iniciarTimer();
+  }
+
+  void _iniciarTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(milliseconds: 4500), (_) {
+      if (mounted) {
+        setState(() {
+          _indice = (_indice + 1) % _slides.length;
+        });
+      }
+    });
+  }
+
+  void _pausar() {
+    _timer?.cancel();
+  }
+
+  void _irA(int indice) {
+    _pausar();
+    setState(() {
+      _indice = indice.clamp(0, _slides.length - 1);
+    });
+    _iniciarTimer();
+  }
+
+  void _siguiente() {
+    _irA((_indice + 1) % _slides.length);
+  }
+
+  void _anterior() {
+    _irA((_indice - 1 + _slides.length) % _slides.length);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final slide = _slides[_indice];
+    final esMovil = widget.esMovil;
+
+    return MouseRegion(
+      onEnter: (_) => _pausar(),
+      onExit: (_) => _iniciarTimer(),
+      child: Container(
+        width: esMovil ? double.infinity : 400,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(esMovil ? 20 : 24),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.22),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.28),
+              blurRadius: 30,
+              offset: const Offset(0, 15),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: esMovil ? 190 : 210,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 500),
+                    child: Image.asset(
+                      slide.imagen,
+                      key: ValueKey<String>(slide.imagen),
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (_, _, _) => Container(
+                        color: IncesTheme.azulPrimario,
+                        child: Icon(slide.icono, size: 48, color: Colors.white70),
+                      ),
+                    ),
+                  ),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.35),
+                          Colors.black.withValues(alpha: 0.75),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    right: 12,
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: IncesTheme.advertencia,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            slide.badge,
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: IncesTheme.azulPrimario,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.55),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: Text(
+                            slide.tag,
+                            style: GoogleFonts.inter(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Controles de navegación anterior / siguiente
+                  Positioned(
+                    left: 8,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: InkWell(
+                        onTap: _anterior,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.45),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white30),
+                          ),
+                          child: const Icon(
+                            Icons.chevron_left_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 8,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: InkWell(
+                        onTap: _siguiente,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.45),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white30),
+                          ),
+                          child: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Indicadores de puntos inferiores en la imagen
+                  Positioned(
+                    bottom: 10,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(_slides.length, (index) {
+                        final esActivo = index == _indice;
+                        return GestureDetector(
+                          onTap: () => _irA(index),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            width: esActivo ? 22 : 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: esActivo
+                                  ? IncesTheme.advertencia
+                                  : Colors.white.withValues(alpha: 0.45),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    slide.titulo,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    slide.descripcion,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 12.5,
+                      color: Colors.white.withValues(alpha: 0.85),
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final tag in slide.tags)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 3.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            tag,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.tonal(
+                    onPressed: widget.onInscribirse,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: IncesTheme.azulPrimario,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.assignment_turned_in_outlined, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Inscribirme en esta área',
+                          style: GoogleFonts.inter(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

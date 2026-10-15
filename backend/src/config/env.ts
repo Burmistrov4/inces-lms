@@ -105,6 +105,18 @@ const esquema = z.object({
   RESEND_FROM: textoOpcional,
 
   /**
+   * Gmail SMTP (Nodemailer).
+   * Configuración para envío real vía smtp.gmail.com (465 SSL o 587 TLS)
+   * usando Contraseña de Aplicación de Google.
+   */
+  SMTP_HOST: z.string().default('smtp.gmail.com'),
+  SMTP_PORT: z.coerce.number().int().positive().default(465),
+  SMTP_USER: textoOpcional,
+  SMTP_PASS: textoOpcional,
+  SMTP_SECURE: z.coerce.boolean().optional(),
+  SMTP_FROM: textoOpcional,
+
+  /**
    * Origen del frontend (Flutter web). Se usa para construir el enlace de
    * activación que se envía por correo y se devuelve en la respuesta.
    */
@@ -146,6 +158,7 @@ export function cargarEnv(origen: NodeJS.ProcessEnv = process.env): Env {
 export function origenesCors(env: Env): string[] | true {
   const bruto = env.CORS_ORIGINS.trim();
   if (bruto === '*' || bruto === '') return true;
+
   return bruto
     .split(',')
     .map((o) => o.trim())

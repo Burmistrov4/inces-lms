@@ -25,6 +25,7 @@ import 'admin/cpanel_lapsos_panel.dart';
 import 'admin/cpanel_inscripcion_campos_panel.dart';
 import 'admin/cpanel_inscripciones_panel.dart';
 import 'admin/cpanel_secciones_panel.dart';
+import 'admin/cpanel_explorador_archivos_panel.dart';
 import 'perfil_panel.dart';
 
 /// cPanel del Administrador Maestro.
@@ -98,13 +99,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     ),
     ItemNavegacion(
       icono: Icons.history_outlined,
-      titulo: 'Auditoría',
+      titulo: 'Historial de Configuración',
       categoria: 'Administración del sistema',
       modulo: 'm0_cpanel',
     ),
     ItemNavegacion(
       icono: Icons.fingerprint_outlined,
-      titulo: 'Auditoría de Accesos',
+      titulo: 'Registro de Inicios de Sesión / Accesos',
       categoria: 'Administración del sistema',
       modulo: 'm0_cpanel',
     ),
@@ -170,6 +171,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       categoria: 'Gestión académica',
       disponible: true,
       modulo: 'm3_cuadrante',
+    ),
+    ItemNavegacion(
+      icono: Icons.folder_shared_outlined,
+      titulo: 'Gestor de Archivos (R2)',
+      categoria: 'Gestión académica',
+      disponible: true,
+      modulo: 'm0_cpanel',
     ),
     ItemNavegacion(
       icono: Icons.calendar_month_outlined,
@@ -250,7 +258,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     final idx = _items.indexWhere(
       (it) =>
           it.titulo.toLowerCase() == destino.toLowerCase() ||
-          it.titulo.toLowerCase().contains(destino.toLowerCase()),
+          it.titulo.toLowerCase().contains(destino.toLowerCase()) ||
+          (destino.toLowerCase().contains('auditor') &&
+              it.titulo.toLowerCase().contains('configuraci')) ||
+          (destino.toLowerCase().contains('accesos') &&
+              it.titulo.toLowerCase().contains('accesos')),
     );
     if (idx != -1) {
       setState(() => _seleccionada = idx);
@@ -328,12 +340,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           migas: ['Inicio', 'Administración del sistema', 'Parámetros'],
           child: CpanelParametrosPanel(),
         );
-      case 'Auditoría':
+      case 'Historial de Configuración':
         return const ContenidoSeccion(
-          migas: ['Inicio', 'Administración del sistema', 'Auditoría'],
+          migas: ['Inicio', 'Administración del sistema', 'Historial de Configuración'],
           child: CpanelAuditoriaPanel(),
         );
-      case 'Auditoría de Accesos':
+      case 'Registro de Inicios de Sesión / Accesos':
         return const ContenidoSeccion(
           migas: ['Inicio', 'Administración del sistema', 'Accesos'],
           child: CpanelAuditoriaAccesosPanel(),
@@ -367,6 +379,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
         return const ContenidoSeccion(
           migas: ['Inicio', 'Gestión académica', 'Lapsos'],
           child: CpanelLapsosPanel(),
+        );
+      case 'Gestor de Archivos (R2)':
+        return const ContenidoSeccion(
+          migas: ['Inicio', 'Gestión académica', 'Gestor de Archivos'],
+          child: CpanelExploradorArchivosPanel(),
         );
       case 'Cuadrante y Horarios':
         return const ContenidoSeccion(

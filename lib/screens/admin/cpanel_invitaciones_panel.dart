@@ -259,37 +259,10 @@ class _CpanelInvitacionesPanelState extends State<CpanelInvitacionesPanel> {
                 ],
               ),
               const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _emailController,
-                      focusNode: _emailFocus,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.send,
-                      onFieldSubmitted: (_) => _enviar(),
-                      style: theme.textTheme.bodyMedium,
-                      decoration: const InputDecoration(
-                        labelText: 'Correo del docente',
-                        prefixIcon: Icon(Icons.mail_outline, size: 20),
-                        hintText: 'nombre@dominio.edu.ve',
-                      ),
-                      validator: (valor) {
-                        final texto = valor?.trim() ?? '';
-                        if (texto.isEmpty) {
-                          return 'Ingresa el correo del docente.';
-                        }
-                        if (!RegExp(r'^[\w\.\-\+]+@[\w\-]+(\.[\w\-]+)+$')
-                            .hasMatch(texto)) {
-                          return 'Formato de correo no válido.';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  SizedBox(
+              LayoutBuilder(
+                builder: (context, restricciones) {
+                  final esEstrecho = restricciones.maxWidth < 520;
+                  final boton = SizedBox(
                     height: 48,
                     child: FilledButton.icon(
                       onPressed: _isLoading ? null : _enviar,
@@ -305,8 +278,53 @@ class _CpanelInvitacionesPanelState extends State<CpanelInvitacionesPanel> {
                           : const Icon(Icons.send_outlined, size: 18),
                       label: const Text('Enviar invitación'),
                     ),
-                  ),
-                ],
+                  );
+
+                  final campoCorreo = TextFormField(
+                    controller: _emailController,
+                    focusNode: _emailFocus,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.send,
+                    onFieldSubmitted: (_) => _enviar(),
+                    style: theme.textTheme.bodyMedium,
+                    decoration: const InputDecoration(
+                      labelText: 'Correo del docente',
+                      prefixIcon: Icon(Icons.mail_outline, size: 20),
+                      hintText: 'nombre@dominio.edu.ve',
+                    ),
+                    validator: (valor) {
+                      final texto = valor?.trim() ?? '';
+                      if (texto.isEmpty) {
+                        return 'Ingresa el correo del docente.';
+                      }
+                      if (!RegExp(r'^[\w\.\-\+]+@[\w\-]+(\.[\w\-]+)+$')
+                          .hasMatch(texto)) {
+                        return 'Formato de correo no válido.';
+                      }
+                      return null;
+                    },
+                  );
+
+                  if (esEstrecho) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        campoCorreo,
+                        const SizedBox(height: 12),
+                        boton,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: campoCorreo),
+                      const SizedBox(width: 12),
+                      boton,
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -357,7 +375,7 @@ class _CpanelInvitacionesPanelState extends State<CpanelInvitacionesPanel> {
 /// interpretación del cliente: «Pendiente de entrega» sólo aparece si el enlace
 /// todavía sirve. No hay un estado «enviada» a propósito, porque el sistema no
 /// puede comprobar que el correo llegó.
-class _ListadoInvitaciones extends StatelessWidget {
+class _ListadoInvitaciones extends StatefulWidget {
   const _ListadoInvitaciones({
     required this.cargando,
     required this.invitaciones,
@@ -373,8 +391,32 @@ class _ListadoInvitaciones extends StatelessWidget {
   final Future<void> Function() onActualizar;
 
   @override
+  State<_ListadoInvitaciones> createState() => _ListadoInvitacionesState();
+}
+
+class _ListadoInvitacionesState extends State<_ListadoInvitaciones> {
+  int _paginaActual = 0;
+  static const int _tamanoPagina = 6;
+
+  @override
+  void didUpdateWidget(covariant _ListadoInvitaciones oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final totalPaginas = (widget.invitaciones.length / _tamanoPagina).ceil();
+    if (_paginaActual >= totalPaginas && totalPaginas > 0) {
+      _paginaActual = totalPaginas - 1;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final totalRegistros = widget.invitaciones.length;
+    final totalPaginas = (totalRegistros / _tamanoPagina).ceil();
+    final inicio = _paginaActual * _tamanoPagina;
+    final fin = (inicio + _tamanoPagina).clamp(0, totalRegistros);
+    final visibles = totalRegistros > 0
+        ? widget.invitaciones.sublist(inicio, fin)
+        : <InvitacionListada>[];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -382,18 +424,23 @@ class _ListadoInvitaciones extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text('Invitaciones emitidas',
-                  style: theme.textTheme.titleSmall),
+              child: Text(
+                totalRegistros > 0
+                    ? 'Invitaciones emitidas ($totalRegistros)'
+                    : 'Invitaciones emitidas',
+                style: theme.textTheme.titleSmall,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             IconButton(
               tooltip: 'Actualizar',
-              onPressed: cargando ? null : onActualizar,
+              onPressed: widget.cargando ? null : widget.onActualizar,
               icon: const Icon(Icons.refresh_outlined, size: 20),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        if (cargando)
+        if (widget.cargando)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Center(
@@ -404,28 +451,75 @@ class _ListadoInvitaciones extends StatelessWidget {
               ),
             ),
           )
-        else if (invitaciones.isEmpty)
+        else if (widget.invitaciones.isEmpty)
           Text(
             'Todavía no se ha emitido ninguna invitación.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           )
-        else
+        else ...[
           Card(
+            clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
-                for (var i = 0; i < invitaciones.length; i++) ...[
+                for (var i = 0; i < visibles.length; i++) ...[
                   if (i > 0) const Divider(height: 1),
                   _FilaInvitacion(
-                    invitacion: invitaciones[i],
-                    onRevocar: onRevocar,
-                    onRenovar: onRenovar,
+                    invitacion: visibles[i],
+                    onRevocar: widget.onRevocar,
+                    onRenovar: widget.onRenovar,
                   ),
                 ],
               ],
             ),
           ),
+          if (totalPaginas > 1) ...[
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Text(
+                    'Mostrando ${inicio + 1}–$fin de $totalRegistros',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left_rounded),
+                      tooltip: 'Página anterior',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: _paginaActual > 0
+                          ? () => setState(() => _paginaActual--)
+                          : null,
+                    ),
+                    Text(
+                      '${_paginaActual + 1} / $totalPaginas',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right_rounded),
+                      tooltip: 'Página siguiente',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: _paginaActual < totalPaginas - 1
+                          ? () => setState(() => _paginaActual++)
+                          : null,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ],
       ],
     );
   }

@@ -860,6 +860,55 @@
         ],
         "additionalProperties": false
       },
+      "RespuestaSolicitarRecuperacion": {
+        "type": "object",
+        "properties": {
+          "exito": {
+            "type": "boolean",
+            "description": "Indica si la solicitud fue recibida."
+          },
+          "mensaje": {
+            "type": "string",
+            "description": "Mensaje descriptivo para el usuario."
+          },
+          "correoEnviado": {
+            "type": "boolean",
+            "description": "Indica si el correo fue despachado exitosamente por SMTP."
+          },
+          "metodo": {
+            "type": "string",
+            "enum": [
+              "smtp",
+              "supabase",
+              "ninguno"
+            ],
+            "description": "Método utilizado o recomendado para la entrega."
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Correo resuelto para el usuario cuando se requiere fallback."
+          }
+        },
+        "required": [
+          "exito",
+          "mensaje"
+        ]
+      },
+      "CuerpoSolicitarRecuperacion": {
+        "type": "object",
+        "properties": {
+          "identificador": {
+            "type": "string",
+            "minLength": 3,
+            "description": "Cédula o correo electrónico del usuario registrado."
+          }
+        },
+        "required": [
+          "identificador"
+        ],
+        "additionalProperties": false
+      },
       "TipoPrograma": {
         "type": "string",
         "enum": [
@@ -4900,6 +4949,67 @@
           },
           "429": {
             "description": "DEMASIADOS_INTENTOS: se superó el límite de intentos por IP.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo interno.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/solicitar-recuperacion": {
+      "post": {
+        "tags": [
+          "Sesión"
+        ],
+        "summary": "Solicita el restablecimiento de contraseña vía correo electrónico (Gmail SMTP)",
+        "description": "Ruta PÚBLICA: busca al usuario por cédula o correo y envía el código de recuperación por correo. Aplica principio anti-enumeración para proteger la privacidad.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuerpoSolicitarRecuperacion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Solicitud procesada con éxito.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaSolicitarRecuperacion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Petición inválida. El cuerpo o los parámetros no pasan la validación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "DEMASIADAS_PETICIONES: se superó el límite de intentos por IP.",
             "content": {
               "application/json": {
                 "schema": {

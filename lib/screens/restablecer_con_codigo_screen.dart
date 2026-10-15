@@ -1,30 +1,33 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../core/errors/app_exception.dart';
 import '../repositories/recuperacion_repository.dart';
+import '../services/auth_service.dart';
 import '../theme/inces_theme.dart';
 
-/// Canje del código de recuperación (ruta `/restablecer-codigo`).
+/// Canje del código de recuperación o enlace por correo (ruta `/restablecer-codigo`).
 ///
-/// ## Por qué existe esta pantalla y no un enlace por correo
-///
-/// El restablecimiento por correo depende de un proveedor externo (Resend) que
-/// hoy devuelve 401 sin dominio verificado. La decisión de producto es que
-/// **recuperar una cuenta no dependa de un proveedor de correo**: el
-/// administrador del centro verifica la identidad por el procedimiento
-/// institucional —presencial, con la cédula a la vista—, emite un código
-/// temporal de un solo uso y se lo entrega a la persona.
-///
-/// Esta pantalla es el otro extremo de ese trámite: donde el titular trae el
-/// código y **elige su propia contraseña**. El administrador no la ve ni puede
-/// elegirla, y el sistema no la guarda en ninguna tabla: la aplica el backend
-/// contra el proveedor de identidad.
+/// Soporta dos vías armónicas:
+/// 1. Vía enlace seguro por correo (Supabase Auth o SMTP): detecta la sesión
+///    activa de recuperación y permite definir la nueva contraseña directamente.
+/// 2. Vía código de 12 caracteres: canjea el código emitido institucionalmente
+///    por el CFS o recibido por correo contra el backend.
 class RestablecerConCodigoScreen extends StatefulWidget {
-  const RestablecerConCodigoScreen({super.key, this.repositorio});
+  const RestablecerConCodigoScreen({
+    super.key,
+    this.repositorio,
+    this.authService,
+    this.codigoInicial,
+  });
 
   /// Inyectable para las pruebas.
   final RecuperacionRepository? repositorio;
+  final AuthService? authService;
+
+  /// Código opcional pre-rellenado (por ejemplo desde el modal o enlace de correo).
+  final String? codigoInicial;
 
   @override
   State<RestablecerConCodigoScreen> createState() =>
@@ -34,6 +37,12 @@ class RestablecerConCodigoScreen extends StatefulWidget {
 class _RestablecerConCodigoScreenState extends State<RestablecerConCodigoScreen> {
   late final RecuperacionRepository _repo =
       widget.repositorio ?? RecuperacionRepository();
+  late final AuthService _authService =
+      widget.authService ?? AuthService();
+
+  StreamSubscription<bool>? _subSesion;
+  bool _sesionRecuperacionActiva = false;
+  bool _mostrarCampoCodigoForzado = false;
 
   final _formKey = GlobalKey<FormState>();
   final _codigoController = TextEditingController();
@@ -49,7 +58,33 @@ class _RestablecerConCodigoScreenState extends State<RestablecerConCodigoScreen>
   bool _listo = false;
 
   @override
+  void initState() {
+    super.initState();
+    _sesionRecuperacionActiva = _authService.tieneSesion;
+    _subSesion = _authService.cambiosDeSesion.listen((tiene) {
+      if (mounted && tiene != _sesionRecuperacionActiva) {
+        setState(() {
+          _sesionRecuperacionActiva = tiene;
+        });
+      }
+    });
+
+    final inicial = widget.codigoInicial?.trim();
+    if (inicial != null && inicial.isNotEmpty) {
+      _codigoController.text = inicial;
+      _mostrarCampoCodigoForzado = true;
+    } else {
+      final paramUrl = Uri.base.queryParameters['codigo']?.trim();
+      if (paramUrl != null && paramUrl.isNotEmpty) {
+        _codigoController.text = paramUrl;
+        _mostrarCampoCodigoForzado = true;
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    _subSesion?.cancel();
     _codigoController.dispose();
     _passwordController.dispose();
     _repetirController.dispose();
@@ -67,6 +102,22 @@ class _RestablecerConCodigoScreenState extends State<RestablecerConCodigoScreen>
       _isLoading = true;
       _error = null;
     });
+
+    if (_sesionRecuperacionActiva &&
+        !_mostrarCampoCodigoForzado &&
+        _codigoController.text.trim().isEmpty) {
+      final res = await _authService.restablecerPassword(
+        _passwordController.text,
+      );
+      if (mounted) setState(() => _isLoading = false);
+      if (!mounted) return;
+
+      res.when(
+        success: (_) => setState(() => _listo = true),
+        failure: (AppException fallo) => setState(() => _error = fallo.message),
+      );
+      return;
+    }
 
     final resultado = await _repo.canjearCodigo(
       codigo: _codigoController.text,
@@ -126,7 +177,13 @@ class _RestablecerConCodigoScreenState extends State<RestablecerConCodigoScreen>
         ),
         const SizedBox(height: 28),
         FilledButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              Navigator.of(context).pushReplacementNamed('/login');
+            }
+          },
           child: const Text('Ir a iniciar sesión'),
         ),
       ],
@@ -143,34 +200,100 @@ class _RestablecerConCodigoScreenState extends State<RestablecerConCodigoScreen>
           Text('Restablecer contraseña', style: theme.textTheme.headlineSmall),
           const SizedBox(height: 6),
           Text(
-            'Escribe el código temporal que te entregó el personal del centro y '
-            'elige tu contraseña nueva.',
+            _sesionRecuperacionActiva && !_mostrarCampoCodigoForzado
+                ? 'Tu enlace de correo ha sido verificado. Ingresa y confirma tu contraseña nueva.'
+                : 'Escribe el código temporal que recibiste o que te entregó el personal del centro y elige tu contraseña nueva.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 24),
-          TextFormField(
-            controller: _codigoController,
-            focusNode: _codigoFocus,
-            autofocus: true,
-            textCapitalization: TextCapitalization.characters,
-            textInputAction: TextInputAction.next,
-            onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
-            style: theme.textTheme.bodyMedium,
-            decoration: const InputDecoration(
-              labelText: 'Código de recuperación',
-              prefixIcon: Icon(Icons.key_outlined, size: 20),
-              hintText: 'ABCD-EFGH-JKMN',
+          if (_sesionRecuperacionActiva && !_mostrarCampoCodigoForzado) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(IncesTheme.radioControl),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.verified_user_outlined,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Enlace de recuperación verificado por correo. Puedes definir tu nueva contraseña directamente.',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            validator: (valor) {
-              final limpio = (valor ?? '').replaceAll(RegExp(r'[\s-]'), '');
-              if (limpio.isEmpty) return 'Escribe el código que te entregaron.';
-              if (limpio.length < 8) return 'El código está incompleto.';
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _mostrarCampoCodigoForzado = true;
+                  });
+                },
+                icon: const Icon(Icons.pin_outlined, size: 16),
+                label: const Text('¿Prefieres usar un código manual de 12 dígitos?'),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ] else ...[
+            TextFormField(
+              controller: _codigoController,
+              focusNode: _codigoFocus,
+              autofocus: true,
+              textCapitalization: TextCapitalization.characters,
+              textInputAction: TextInputAction.next,
+              onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
+              style: theme.textTheme.bodyMedium,
+              decoration: const InputDecoration(
+                labelText: 'Código de recuperación',
+                prefixIcon: Icon(Icons.key_outlined, size: 20),
+                hintText: 'ABCD-EFGH-JKMN',
+              ),
+              validator: (valor) {
+                if (_sesionRecuperacionActiva && !_mostrarCampoCodigoForzado) {
+                  return null;
+                }
+                final limpio = (valor ?? '').replaceAll(RegExp(r'[\s-]'), '');
+                if (limpio.isEmpty) return 'Escribe el código que te entregaron.';
+                if (limpio.length < 8) return 'El código está incompleto.';
+                return null;
+              },
+            ),
+            if (_sesionRecuperacionActiva) ...[
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _mostrarCampoCodigoForzado = false;
+                      _codigoController.clear();
+                    });
+                  },
+                  child: const Text('Volver a verificación por enlace de correo'),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+          ],
           TextFormField(
             controller: _passwordController,
             focusNode: _passwordFocus,

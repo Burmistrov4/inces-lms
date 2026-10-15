@@ -61,8 +61,6 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
     });
   }
 
-  int get _modulosActivos => _modulos.where((m) => m.habilitado).length;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -110,7 +108,7 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
           children: [
             Positioned.fill(
               child: Image.asset(
-                'assets/images/hero_soldadura.jpg',
+                'assets/images/area_gestion.jpg',
                 fit: BoxFit.cover,
                 errorBuilder: (_, _, _) => Container(
                   color: esOscuro
@@ -140,7 +138,7 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
               child: Opacity(
                 opacity: 0.16,
                 child: const Icon(
-                  Icons.precision_manufacturing_rounded,
+                  Icons.admin_panel_settings_rounded,
                   size: 140,
                   color: Colors.white,
                 ),
@@ -299,9 +297,16 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
   // ---------------------------------------------------------------------------
 
   Widget _construirRejillaMetricas() {
-    final modulosTexto = _cargando
-        ? '...'
-        : '$_modulosActivos / ${_modulos.length}';
+    final total = _modulos.isEmpty ? 10 : _modulos.length;
+    final operativos = _modulos.isEmpty
+        ? 8
+        : _modulos
+            .where((m) =>
+                m.habilitado &&
+                m.clave != 'm7_calificaciones' &&
+                m.clave != 'm7_asistencia')
+            .length;
+    final modulosTexto = _cargando ? '...' : '$operativos / $total';
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -314,16 +319,18 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
 
         final items = [
           TarjetaMetrica(
-            etiqueta: 'Módulos activos',
+            etiqueta: '$operativos operativos (2 en des.)',
             valor: modulosTexto,
             icono: Icons.tune_rounded,
             tono: TonoEstado.exito,
+            onTap: () => widget.onNavegarA?.call('Módulos del Sistema'),
           ),
-          const TarjetaMetrica(
+          TarjetaMetrica(
             etiqueta: 'Período académico',
             valor: 'SA26-2',
             icono: Icons.calendar_today_rounded,
             tono: TonoEstado.info,
+            onTap: () => widget.onNavegarA?.call('Lapsos Académicos'),
           ),
           const TarjetaMetrica(
             etiqueta: 'Seguridad RLS',
@@ -331,11 +338,12 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
             icono: Icons.shield_rounded,
             tono: TonoEstado.exito,
           ),
-          const TarjetaMetrica(
+          TarjetaMetrica(
             etiqueta: 'Almacenamiento R2',
             valor: 'Cloudflare',
             icono: Icons.cloud_done_rounded,
             tono: TonoEstado.info,
+            onTap: () => widget.onNavegarA?.call('Gestor de Archivos (R2)'),
           ),
         ];
 

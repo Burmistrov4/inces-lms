@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/gateways/aspirante_gateway.dart';
@@ -99,7 +100,10 @@ class SupabaseService implements AuthGateway, AspiranteGateway, ModulesGateway {
 
   @override
   Future<void> enviarRecuperacion(String email) async {
-    await auth.resetPasswordForEmail(email);
+    final redirectUrl = kIsWeb
+        ? '${Uri.base.origin}/#/restablecer-codigo'
+        : 'https://inces-lms.pages.dev/#/restablecer-codigo';
+    await auth.resetPasswordForEmail(email, redirectTo: redirectUrl);
   }
 
   @override

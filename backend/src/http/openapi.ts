@@ -379,6 +379,35 @@ const RespuestaCodigoRecuperacion = z
   })
   .openapi('RespuestaCodigoRecuperacion');
 
+const CuerpoSolicitarRecuperacion = z
+  .object({
+    identificador: z.string().trim().min(3).openapi({
+      description: 'Cédula o correo electrónico del usuario registrado.',
+    }),
+  })
+  .strict()
+  .openapi('CuerpoSolicitarRecuperacion');
+
+const RespuestaSolicitarRecuperacion = z
+  .object({
+    exito: z.boolean().openapi({ description: 'Indica si la solicitud fue recibida.' }),
+    mensaje: z.string().openapi({ description: 'Mensaje descriptivo para el usuario.' }),
+    correoEnviado: z
+      .boolean()
+      .optional()
+      .openapi({ description: 'Indica si el correo fue despachado exitosamente por SMTP.' }),
+    metodo: z
+      .enum(['smtp', 'supabase', 'ninguno'])
+      .optional()
+      .openapi({ description: 'Método utilizado o recomendado para la entrega.' }),
+    email: z
+      .string()
+      .email()
+      .optional()
+      .openapi({ description: 'Correo resuelto para el usuario cuando se requiere fallback.' }),
+  })
+  .openapi('RespuestaSolicitarRecuperacion');
+
 const RespuestaCanje = z
   .object({
     email: z.string().email().nullable().openapi({
@@ -2288,6 +2317,31 @@ export function construirRegistro(): OpenAPIRegistry {
       400: RESPUESTAS_ERROR[400],
       404: error('CODIGO_INVALIDO: no existe, caducó, fue revocado o ya se usó.'),
       429: error('DEMASIADOS_INTENTOS: se superó el límite de intentos por IP.'),
+      500: RESPUESTAS_ERROR[500],
+    },
+  });
+
+  registro.registerPath({
+    method: 'post',
+    path: '/api/v1/auth/solicitar-recuperacion',
+    tags: ['Sesión'],
+    summary: 'Solicita el restablecimiento de contraseña vía correo electrónico (Gmail SMTP)',
+    description:
+      'Ruta PÚBLICA: busca al usuario por cédula o correo y envía el código de recuperación por correo. ' +
+      'Aplica principio anti-enumeración para proteger la privacidad.',
+    request: {
+      body: {
+        required: true,
+        content: { 'application/json': { schema: CuerpoSolicitarRecuperacion } },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Solicitud procesada con éxito.',
+        content: { 'application/json': { schema: RespuestaSolicitarRecuperacion } },
+      },
+      400: RESPUESTAS_ERROR[400],
+      429: error('DEMASIADAS_PETICIONES: se superó el límite de intentos por IP.'),
       500: RESPUESTAS_ERROR[500],
     },
   });

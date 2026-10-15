@@ -1,5 +1,6 @@
 import '../core/errors/app_exception.dart';
 import '../core/gateways/auth_gateway.dart';
+import '../core/network/api_client.dart';
 import '../core/result.dart';
 import '../models/aspirante_model.dart';
 import '../models/perfil_usuario.dart';
@@ -98,6 +99,109 @@ class AuthService {
       }
       await _gateway.enviarRecuperacion(correo);
       return true;
+    });
+  }
+
+  /// Solicita el código de recuperación por correo vía Fastify / Gmail SMTP (Nodemailer).
+  ///
+  /// Admite cédula o correo. Si la cuenta existe, el backend envía un correo
+  /// institucional con el código de 12 caracteres y un enlace directo.
+  Future<Result<String>> solicitarRecuperacionBackend(String identificador) {
+    return Result.guard(() async {
+      final limpio = identificador.trim();
+      if (limpio.isEmpty) {
+        throw const AppException.validacion(
+          'Ingresa tu cédula o correo electrónico.',
+        );
+      }
+      final api = ApiClient();
+      final res = await api.post(
+        '/api/v1/auth/solicitar-recuperacion',
+        cuerpo: {'identificador': limpio},
+      );
+      return res['mensaje'] as String? ??
+          'Si la cuenta existe, hemos enviado un código a tu correo.';
+    });
+  }
+
+  /// Solicita el restablecimiento de cuenta con fallback automático a Supabase Auth.
+  ///
+  /// Intenta primero la vía institucional Fastify / Gmail SMTP. Si no hay
+  /// `SMTP_PASS` configurado en el servidor o el correo no se pudo entregar,
+  /// activa el despacho nativo de Supabase Auth vía `_gateway.enviarRecuperacion`.
+  Future<Result<ResultadoRecuperacionCuenta>> solicitarRecuperacionConFallback(
+    String identificador,
+  ) {
+    return Result.guard(() async {
+      final limpio = identificador.trim();
+      if (limpio.isEmpty) {
+        throw const AppException.validacion(
+          'Ingresa tu cédula o correo electrónico.',
+        );
+      }
+
+      String? correoDestino = _esEmailValido(limpio) ? limpio : null;
+      if (correoDestino == null) {
+        try {
+          correoDestino = await _gateway.emailPorCedula(limpio);
+        } catch (_) {
+          // Si la búsqueda por cédula no responde, el backend intentará resolverla
+        }
+      }
+
+      // Intento prioritario: Fastify Backend con Gmail SMTP
+      try {
+        final api = ApiClient();
+        final res = await api.post(
+          '/api/v1/auth/solicitar-recuperacion',
+          cuerpo: {'identificador': limpio},
+        );
+
+        final correoEnviado = res['correoEnviado'] as bool? ?? false;
+        final resEmail = res['email'] as String? ?? correoDestino;
+
+        if (correoEnviado) {
+          return ResultadoRecuperacionCuenta(
+            exito: true,
+            metodo: MetodoRecuperacionUsado.smtp,
+            mensaje: res['mensaje'] as String? ??
+                'Hemos enviado un código temporal a tu correo electrónico.',
+            emailDestino: resEmail,
+          );
+        }
+
+        // Si el SMTP no despachó pero tenemos el correo resuelto, disparamos Supabase
+        if (resEmail != null && resEmail.isNotEmpty) {
+          await _gateway.enviarRecuperacion(resEmail);
+          return ResultadoRecuperacionCuenta(
+            exito: true,
+            metodo: MetodoRecuperacionUsado.supabase,
+            mensaje:
+                'Hemos enviado un enlace de recuperación directo a tu correo ($resEmail) a través de Supabase.',
+            emailDestino: resEmail,
+          );
+        }
+      } catch (_) {
+        // En caso de caída de backend o red, intentamos Supabase directamente
+        if (correoDestino != null && correoDestino.isNotEmpty) {
+          await _gateway.enviarRecuperacion(correoDestino);
+          return ResultadoRecuperacionCuenta(
+            exito: true,
+            metodo: MetodoRecuperacionUsado.supabase,
+            mensaje:
+                'Hemos enviado un enlace de recuperación a tu correo ($correoDestino) a través de Supabase.',
+            emailDestino: correoDestino,
+          );
+        }
+        rethrow;
+      }
+
+      return const ResultadoRecuperacionCuenta(
+        exito: true,
+        metodo: MetodoRecuperacionUsado.supabase,
+        mensaje:
+            'Si los datos coinciden con un usuario registrado, hemos procesado tu solicitud.',
+      );
     });
   }
 
@@ -342,4 +446,23 @@ class AuthService {
     if (texto.isEmpty) return false;
     return RegExp(r'^[\w\.\-\+]+@[\w\-]+(\.[\w\-]+)+$').hasMatch(texto);
   }
+}
+
+enum MetodoRecuperacionUsado {
+  smtp,
+  supabase,
+}
+
+class ResultadoRecuperacionCuenta {
+  final bool exito;
+  final MetodoRecuperacionUsado metodo;
+  final String mensaje;
+  final String? emailDestino;
+
+  const ResultadoRecuperacionCuenta({
+    required this.exito,
+    required this.metodo,
+    required this.mensaje,
+    this.emailDestino,
+  });
 }

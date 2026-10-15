@@ -1180,6 +1180,19 @@ class PerfilesSupabase implements PuertaPerfiles {
     return aPerfil(respuesta.data as Fila);
   }
 
+  async porIdentificador(identificador: string): Promise<Perfil | null> {
+    const limpio = identificador.trim().toLowerCase();
+    const query = this.cliente.from(TABLA_PERFILES).select(COLUMNAS_PERFIL);
+    const respuesta = limpio.includes('@')
+      ? await query.ilike('email', limpio).maybeSingle()
+      : await query.eq('cedula', limpio).maybeSingle();
+
+    if (respuesta.error) throw traducirError(respuesta.error, 'buscar perfil por identificador');
+    if (!respuesta.data) return null;
+
+    return aPerfil(respuesta.data as Fila);
+  }
+
   async listar(opciones: OpcionesListadoUsuarios): Promise<PaginaUsuarios> {
     // **El recuento y la página se piden EN PARALELO.** Son dos lecturas
     // independientes con los mismos filtros, y encadenarlas sumaba dos latencias

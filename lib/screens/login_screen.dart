@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:inces_lms_app/core/errors/app_exception.dart';
+import 'package:inces_lms_app/core/result.dart';
 import 'package:inces_lms_app/screens/aspirante_form_screen.dart';
+import 'package:inces_lms_app/screens/landing_page.dart';
 import 'package:inces_lms_app/screens/restablecer_con_codigo_screen.dart';
 import 'package:inces_lms_app/services/auth_service.dart';
 import 'package:inces_lms_app/theme/inces_theme.dart';
@@ -126,49 +128,250 @@ class _LoginScreenState extends State<LoginScreen> {
       );
   }
 
-  /// Explica el procedimiento **interno** de recuperación y ofrece canjear un código.
-  ///
-  /// Antes esta acción pedía un correo y llamaba a `enviarCorreoRecuperacion`. Ya
-  /// no lo hace, y el motivo es medido: el envío depende de Resend y sin dominio
-  /// verificado devuelve HTTP 401, así que la pantalla **prometía un enlace que
-  /// nunca llegaba**. Ahora el restablecimiento es un trámite interno: el
-  /// personal del centro verifica la identidad en persona, emite un código
-  /// temporal y el titular lo canjea aquí para elegir su propia contraseña.
-  ///
-  /// El diálogo dice la verdad sobre lo que hay que hacer. Si el usuario ya trae
-  /// el código, salta directo a la pantalla de canje.
+  void _volverAlInicio() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      navigator.pushReplacement(
+        MaterialPageRoute(builder: (_) => const LandingPage()),
+      );
+    }
+  }
+
+  /// Gestiona la recuperación de contraseña por correo electrónico vía SMTP
+  /// o de forma alternativa mediante código temporal entregado en coordinación.
   Future<void> _handleRecuperacion() async {
-    final irACanjear = await showDialog<bool>(
-      context: context,
-      builder: (contexto) => AlertDialog(
-        title: const Text('Recuperar tu contraseña'),
-        content: const Text(
-          'El restablecimiento lo hace el personal del centro, en persona:\n\n'
-          '1. Acércate a coordinación con tu cédula.\n'
-          '2. Verifican tu identidad y te entregan un código temporal.\n'
-          '3. Escribes ese código aquí y eliges tu contraseña nueva.\n\n'
-          'El código caduca a los 30 minutos y sólo sirve una vez. Nadie del '
-          'centro puede ver ni elegir la contraseña que pongas.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(contexto).pop(false),
-            child: const Text('Cerrar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(contexto).pop(true),
-            child: const Text('Ya tengo el código'),
-          ),
-        ],
-      ),
+    final controllerIdentificador = TextEditingController(
+      text: _identifierController.text.trim(),
     );
+    String? errorModal;
+    bool enviandoCorreo = false;
+    bool correoEnviado = false;
+    MetodoRecuperacionUsado? metodoUsado;
+    String? mensajeExito;
 
-    if (irACanjear != true || !mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: !enviandoCorreo,
+      builder: (contextoDialogo) {
+        return StatefulBuilder(
+          builder: (contexto, setModalState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: IncesTheme.azulPrimario.withValues(alpha: 0.1),
+                      borderRadius:
+                          BorderRadius.circular(IncesTheme.radioControl),
+                    ),
+                    child: const Icon(
+                      Icons.lock_reset_rounded,
+                      color: IncesTheme.azulPrimario,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Recuperar contraseña',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: SizedBox(
+                  width: 420,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (correoEnviado) ...[
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: IncesTheme.exito.withValues(alpha: 0.12),
+                            borderRadius:
+                                BorderRadius.circular(IncesTheme.radioControl),
+                            border: Border.all(
+                              color: IncesTheme.exito.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.check_circle_rounded,
+                                color: IncesTheme.exito,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  mensajeExito ??
+                                      (metodoUsado == MetodoRecuperacionUsado.supabase
+                                          ? 'Hemos enviado un enlace de recuperación a tu correo electrónico vía Supabase Auth.'
+                                          : 'Si la cuenta está registrada, hemos enviado el código de restablecimiento a tu dirección de correo electrónico.'),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: IncesTheme.exito,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          metodoUsado == MetodoRecuperacionUsado.supabase
+                              ? 'Revisa tu bandeja de entrada o la carpeta de spam y pulsa en el enlace recibido en el correo para crear tu nueva contraseña.'
+                              : 'Revisa tu bandeja de entrada o la carpeta de spam. Luego presiona el botón inferior para ingresar tu código y crear una contraseña nueva.',
+                          style: GoogleFonts.inter(fontSize: 13, height: 1.4),
+                        ),
+                      ] else ...[
+                        Text(
+                          'Ingresa tu correo electrónico registrado o número de cédula para enviarte un código o enlace de recuperación:',
+                          style: GoogleFonts.inter(
+                            fontSize: 13.5,
+                            color: Theme.of(contexto).colorScheme.onSurfaceVariant,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: controllerIdentificador,
+                          autofocus: true,
+                          decoration: InputDecoration(
+                            labelText: 'Correo o Cédula',
+                            hintText: 'ej. V-12345678 o usuario@gmail.com',
+                            prefixIcon:
+                                const Icon(Icons.person_outline, size: 20),
+                            errorText: errorModal,
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 18),
+                        FilledButton.icon(
+                          onPressed: enviandoCorreo
+                              ? null
+                              : () async {
+                                  final id =
+                                      controllerIdentificador.text.trim();
+                                  if (id.isEmpty) {
+                                    setModalState(() {
+                                      errorModal =
+                                          'Ingresa tu correo o cédula';
+                                    });
+                                    return;
+                                  }
+                                  setModalState(() {
+                                    enviandoCorreo = true;
+                                    errorModal = null;
+                                  });
 
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const RestablecerConCodigoScreen(),
-      ),
+                                  final resultado = await _authService
+                                      .solicitarRecuperacionConFallback(id);
+
+                                  if (!mounted) return;
+                                  switch (resultado) {
+                                    case Success(value: final resp):
+                                      setModalState(() {
+                                        enviandoCorreo = false;
+                                        correoEnviado = true;
+                                        metodoUsado = resp.metodo;
+                                        mensajeExito = resp.mensaje;
+                                      });
+                                    case Failure(error: final fallo):
+                                      setModalState(() {
+                                        enviandoCorreo = false;
+                                        errorModal = fallo.message;
+                                      });
+                                  }
+                                },
+                          icon: enviandoCorreo
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.mail_outline, size: 18),
+                          label: Text(
+                            enviandoCorreo
+                                ? 'Enviando recuperación...'
+                                : 'Enviar recuperación por correo',
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const Divider(),
+                        const SizedBox(height: 10),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.apartment_outlined,
+                              size: 16,
+                              color: Theme.of(contexto)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Método presencial en coordinación:\nSi no tienes acceso a tu correo, puedes solicitar un código temporal en la coordinación del centro presentando tu cédula de identidad.',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: Theme.of(contexto)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: enviandoCorreo
+                      ? null
+                      : () => Navigator.of(contextoDialogo).pop(),
+                  child: const Text('Cerrar'),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: enviandoCorreo
+                      ? null
+                      : () {
+                          Navigator.of(contextoDialogo).pop();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const RestablecerConCodigoScreen(),
+                            ),
+                          );
+                        },
+                  icon: const Icon(Icons.pin_outlined, size: 18),
+                  label: const Text('Ingresar código'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -180,7 +383,8 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Row(
         children: [
-          if (!esAngosto) const Expanded(flex: 5, child: _PanelMarca()),
+          if (!esAngosto)
+            Expanded(flex: 5, child: _PanelMarca(onVolver: _volverAlInicio)),
           Expanded(
             flex: 6,
             child: Center(
@@ -203,47 +407,68 @@ class _LoginScreenState extends State<LoginScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: _volverAlInicio,
+            icon: const Icon(Icons.arrow_back, size: 18),
+            label: const Text('Volver al inicio'),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              foregroundColor: theme.colorScheme.primary,
+              textStyle: GoogleFonts.inter(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
         // En móvil el panel de marca no se ve, así que la identidad tiene que
         // aparecer aquí. Se muestra sólo cuando el panel está oculto para no
         // repetir el nombre del centro dos veces en la misma pantalla.
         if (MediaQuery.sizeOf(context).width < _anchoConPanelMarca) ...[
-          Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  gradient: IncesTheme.degradadoAzul,
-                  borderRadius: BorderRadius.circular(IncesTheme.radioControl),
-                ),
-                child: Text(
-                  'I',
-                  style: GoogleFonts.inter(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+          InkWell(
+            onTap: _volverAlInicio,
+            borderRadius: BorderRadius.circular(IncesTheme.radioControl),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    gradient: IncesTheme.degradadoAzul,
+                    borderRadius: BorderRadius.circular(IncesTheme.radioControl),
+                  ),
+                  child: Text(
+                    'I',
+                    style: GoogleFonts.inter(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('INCES LMS', style: theme.textTheme.titleMedium),
-                    Text(
-                      'La Isabelica',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w400,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('INCES LMS', style: theme.textTheme.titleMedium),
+                      Text(
+                        'La Isabelica',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 28),
         ],
@@ -430,7 +655,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
 /// Panel de marca: identidad institucional a la izquierda del formulario.
 class _PanelMarca extends StatelessWidget {
-  const _PanelMarca();
+  const _PanelMarca({this.onVolver});
+
+  final VoidCallback? onVolver;
 
   @override
   Widget build(BuildContext context) {
@@ -449,23 +676,30 @@ class _PanelMarca extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.24),
-                    ),
-                  ),
-                  child: Text(
-                    'I',
-                    style: GoogleFonts.inter(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                InkWell(
+                  onTap: onVolver,
+                  borderRadius: BorderRadius.circular(14),
+                  child: Tooltip(
+                    message: 'Volver a la portada',
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.24),
+                        ),
+                      ),
+                      child: Text(
+                        'I',
+                        style: GoogleFonts.inter(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                 ),

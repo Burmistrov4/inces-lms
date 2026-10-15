@@ -196,11 +196,18 @@ export const esquemaCanjearCodigo = z
   })
   .strict();
 
+export const esquemaSolicitarRecuperacion = z
+  .object({
+    identificador: z.string().trim().min(3, 'Ingresa tu cédula o correo electrónico.'),
+  })
+  .strict();
+
 export type CambiosModuloEntrada = z.infer<typeof esquemaCambiosModulo>;
 export type ValorParametroEntrada = z.infer<typeof esquemaValorParametro>;
 export type CambioRolEntrada = z.infer<typeof esquemaCambioRol>;
 export type CorreoInvitacionEntrada = z.infer<typeof esquemaCorreoInvitacion>;
 export type ActivarCuentaEntrada = z.infer<typeof esquemaActivarCuenta>;
+export type SolicitarRecuperacionEntrada = z.infer<typeof esquemaSolicitarRecuperacion>;
 export type ListadoAccesoEntrada = z.infer<typeof esquemaListadoAcceso>;
 
 // --- Módulo 2: currículo y pensum -------------------------------------------

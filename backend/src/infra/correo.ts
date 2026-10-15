@@ -1,17 +1,17 @@
 /**
  * Envío de correo transaccional.
  *
- * El backend NO guarda contraseñas ni reimplanta un SMTP propio: delega en
- * Resend, que ya está conectado a Supabase Auth (ver `supabase/configurar-smtp.mjs`).
- * Aquí sólo necesitamos enviar el enlace de invitación del profesor.
+ * Soporta dos vías de entrega:
+ *  1. SMTP de Gmail (Nodemailer): vía prioritaria y sin restricciones de dominio,
+ *     usando `smtp.gmail.com` (465 SSL o 587 TLS) con Contraseña de Aplicación de Google.
+ *  2. API REST de Resend: vía secundaria cuando se configura `RESEND_API_KEY`.
  *
- * Sin dominio verificado en Resend, el correo SÓLO se entrega a la cuenta dueña
- * del proyecto (Lorenzo: `lorenzoroca333@gmail.com`). Por eso el endpoint de
- * invitación **siempre** devuelve el enlace de activación en la respuesta: el
- * administrador puede usarlo o repartirlo aunque el correo no llegue. El envío
- * real es, en este momento, la vía de lujo; el enlace en la respuesta es la vía
- * que siempre funciona para probar el flujo.
+ * El envío nunca es bloqueante ni lanza excepciones no controladas: si el proveedor
+ * falla o no está configurado, devuelve `{ entregado: false }` para que el flujo
+ * de negocio continúe de forma íntegra.
  */
+
+import nodemailer from 'nodemailer';
 
 export interface MensajeCorreo {
   para: string;
@@ -20,12 +20,66 @@ export interface MensajeCorreo {
 }
 
 export interface ResultadoEnvio {
-  /** `true` si Resend aceptó el mensaje. */
+  /** `true` si el proveedor aceptó el mensaje. */
   entregado: boolean;
 }
 
 export interface EnvioCorreo {
   enviar(mensaje: MensajeCorreo): Promise<ResultadoEnvio>;
+}
+
+export interface OpcionesRemitenteSMTP {
+  host: string;
+  port: number;
+  secure?: boolean;
+  user?: string;
+  pass?: string;
+  from?: string;
+}
+
+/**
+ * Remitente basado en SMTP (Nodemailer), ideal para Gmail.
+ */
+export function crearRemitenteSMTP(opciones: OpcionesRemitenteSMTP): EnvioCorreo {
+  const { host, port, user, pass, from } = opciones;
+
+  if (!user || !pass) {
+    return {
+      async enviar(): Promise<ResultadoEnvio> {
+        return { entregado: false };
+      },
+    };
+  }
+
+  const secure = opciones.secure ?? (port === 465);
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: {
+      user,
+      pass,
+    },
+  });
+
+  const remitente = from ?? `"INCES LMS" <${user}>`;
+
+  return {
+    async enviar(mensaje: MensajeCorreo): Promise<ResultadoEnvio> {
+      try {
+        await transporter.sendMail({
+          from: remitente,
+          to: mensaje.para,
+          subject: mensaje.asunto,
+          html: mensaje.html,
+        });
+        return { entregado: true };
+      } catch (error) {
+        console.error('Error al enviar correo vía SMTP:', error);
+        return { entregado: false };
+      }
+    },
+  };
 }
 
 export interface OpcionesRemitenteResend {
@@ -37,11 +91,6 @@ export interface OpcionesRemitenteResend {
 
 /**
  * Remitente basado en la API REST de Resend (`https://api.resend.com/emails`).
- *
- * No es bloqueante para el flujo: si Resend falla (sin dominio, sin clave, 403,
- * caída de red) devolvemos `{ entregado: false }` y el llamante decide cómo
- * avisar. Nunca lanzamos: un correo que no llega no debe tumbar la invitación,
- * que ya está persistida y tiene su enlace de respaldo en la respuesta.
  */
 export function crearRemitenteResend(opciones: OpcionesRemitenteResend): EnvioCorreo {
   const { apiKey, from } = opciones;
