@@ -250,6 +250,7 @@ describe('documento OpenAPI generado (D6)', () => {
         'get /salud',
         'get /salud/profundo',
         'post /api/v1/auth/activar',
+        'post /api/v1/auth/registro-aspirante',
         'post /api/v1/auth/restablecer-codigo',
         'post /api/v1/auth/solicitar-recuperacion',
       ].sort(),

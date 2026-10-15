@@ -408,6 +408,23 @@ const RespuestaSolicitarRecuperacion = z
   })
   .openapi('RespuestaSolicitarRecuperacion');
 
+const CuerpoRegistroAspirante = z
+  .object({
+    email: z.string().email().openapi({ description: 'Correo del aspirante.' }),
+    password: z.string().min(8).openapi({ description: 'Contraseña elegida.' }),
+    metadata: z.record(z.unknown()).openapi({ description: 'Datos y ficha de la planilla.' }),
+  })
+  .strict()
+  .openapi('CuerpoRegistroAspirante');
+
+const RespuestaRegistroAspirante = z
+  .object({
+    exito: z.boolean().openapi({ description: 'Indica si el registro fue exitoso.' }),
+    userId: z.string().openapi({ description: 'Identificador del usuario creado.' }),
+    mensaje: z.string().openapi({ description: 'Mensaje descriptivo.' }),
+  })
+  .openapi('RespuestaRegistroAspirante');
+
 const RespuestaCanje = z
   .object({
     email: z.string().email().nullable().openapi({
@@ -2341,6 +2358,32 @@ export function construirRegistro(): OpenAPIRegistry {
         content: { 'application/json': { schema: RespuestaSolicitarRecuperacion } },
       },
       400: RESPUESTAS_ERROR[400],
+      429: error('DEMASIADAS_PETICIONES: se superó el límite de intentos por IP.'),
+      500: RESPUESTAS_ERROR[500],
+    },
+  });
+
+  registro.registerPath({
+    method: 'post',
+    path: '/api/v1/auth/registro-aspirante',
+    tags: ['Sesión'],
+    summary: 'Registra y confirma a un aspirante directamente vía backend (resiliencia)',
+    description:
+      'Ruta PÚBLICA con limitador de IP: crea al aspirante en auth.users con email_confirm: true ' +
+      'para evitar caídas si el proveedor de correos de Supabase está saturado.',
+    request: {
+      body: {
+        required: true,
+        content: { 'application/json': { schema: CuerpoRegistroAspirante } },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Cuenta de aspirante creada y confirmada exitosamente.',
+        content: { 'application/json': { schema: RespuestaRegistroAspirante } },
+      },
+      400: RESPUESTAS_ERROR[400],
+      409: RESPUESTAS_ERROR[409],
       429: error('DEMASIADAS_PETICIONES: se superó el límite de intentos por IP.'),
       500: RESPUESTAS_ERROR[500],
     },

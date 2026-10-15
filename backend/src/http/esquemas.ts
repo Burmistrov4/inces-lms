@@ -202,12 +202,21 @@ export const esquemaSolicitarRecuperacion = z
   })
   .strict();
 
+export const esquemaRegistroAspirante = z
+  .object({
+    email: z.string().trim().email('El correo electrónico no es válido.'),
+    password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres.'),
+    metadata: z.record(z.unknown()),
+  })
+  .strict();
+
 export type CambiosModuloEntrada = z.infer<typeof esquemaCambiosModulo>;
 export type ValorParametroEntrada = z.infer<typeof esquemaValorParametro>;
 export type CambioRolEntrada = z.infer<typeof esquemaCambioRol>;
 export type CorreoInvitacionEntrada = z.infer<typeof esquemaCorreoInvitacion>;
 export type ActivarCuentaEntrada = z.infer<typeof esquemaActivarCuenta>;
 export type SolicitarRecuperacionEntrada = z.infer<typeof esquemaSolicitarRecuperacion>;
+export type RegistroAspiranteEntrada = z.infer<typeof esquemaRegistroAspirante>;
 export type ListadoAccesoEntrada = z.infer<typeof esquemaListadoAcceso>;
 
 // --- Módulo 2: currículo y pensum -------------------------------------------

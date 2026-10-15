@@ -236,6 +236,16 @@ export interface PuertaInvitacionesDocente {
     nombres: string,
     apellidos: string,
   ): Promise<string>;
+
+  /**
+   * Crea un usuario aspirante confirmado directamente en auth.users con su metadata.
+   * Evita fallos si el proveedor de confirmación por correo de Supabase está caído.
+   */
+  crearUsuarioAspirante(
+    email: string,
+    password: string,
+    metadata: Record<string, unknown>,
+  ): Promise<string>;
 }
 
 /**

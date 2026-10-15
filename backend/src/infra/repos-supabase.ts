@@ -1580,6 +1580,38 @@ class InvitacionesSupabase implements PuertaInvitacionesDocente {
 
     return data.user.id;
   }
+
+  async crearUsuarioAspirante(
+    email: string,
+    password: string,
+    metadata: Record<string, unknown>,
+  ): Promise<string> {
+    const { data, error } = await this.cliente.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        ...metadata,
+        rol: 'estudiante',
+      },
+    });
+
+    if (error) {
+      if (/already/i.test(error.message)) {
+        throw ErrorApi.conflicto(
+          'CORREO_YA_REGISTRADO',
+          'Ese correo ya tiene una cuenta registrada en el sistema.',
+        );
+      }
+      throw ErrorApi.interno(`No se pudo registrar el aspirante: ${error.message}`);
+    }
+
+    if (!data.user) {
+      throw ErrorApi.interno('La creación del aspirante no devolvió un identificador.');
+    }
+
+    return data.user.id;
+  }
 }
 
 class RecuperacionSupabase implements PuertaRecuperacionPassword {

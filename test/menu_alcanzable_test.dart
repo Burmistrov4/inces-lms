@@ -48,12 +48,9 @@ import 'package:inces_lms_app/widgets/andamiaje.dart';
 /// archivo, no una estimación: `items` es el total del menú y `ramas` las
 /// secciones que de verdad tienen panel.
 const Map<String, ({int items, int ramas})> _dashboards = {
-  // 16 y 14 desde el 2026-09-27: ese día se cablearon los tres paneles huérfanos
-  // de M3 (lapsos, espacios y guardias) y se añadió «Mi Perfil». El número es el
-  // estado real medido, no una estimación: subirlo es parte del cambio que añade
-  // una sección, y bajarlo sin querer es lo que este suelo existe para que no
-  // pase inadvertido.
-  'admin_dashboard.dart': (items: 16, ramas: 14),
+  // 14 y 14: Todas las 14 secciones del menú de administración están 100%
+  // operativas y disponibles, sin elementos residuales o deshabilitados.
+  'admin_dashboard.dart': (items: 14, ramas: 14),
   'docente_dashboard.dart': (items: 5, ramas: 5),
   'aspirante_dashboard.dart': (items: 8, ramas: 8),
 };

@@ -909,6 +909,54 @@
         ],
         "additionalProperties": false
       },
+      "RespuestaRegistroAspirante": {
+        "type": "object",
+        "properties": {
+          "exito": {
+            "type": "boolean",
+            "description": "Indica si el registro fue exitoso."
+          },
+          "userId": {
+            "type": "string",
+            "description": "Identificador del usuario creado."
+          },
+          "mensaje": {
+            "type": "string",
+            "description": "Mensaje descriptivo."
+          }
+        },
+        "required": [
+          "exito",
+          "userId",
+          "mensaje"
+        ]
+      },
+      "CuerpoRegistroAspirante": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Correo del aspirante."
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "description": "Contraseña elegida."
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Datos y ficha de la planilla."
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "metadata"
+        ],
+        "additionalProperties": false
+      },
       "TipoPrograma": {
         "type": "string",
         "enum": [
@@ -5000,6 +5048,77 @@
           },
           "400": {
             "description": "Petición inválida. El cuerpo o los parámetros no pasan la validación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "DEMASIADAS_PETICIONES: se superó el límite de intentos por IP.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo interno.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/registro-aspirante": {
+      "post": {
+        "tags": [
+          "Sesión"
+        ],
+        "summary": "Registra y confirma a un aspirante directamente vía backend (resiliencia)",
+        "description": "Ruta PÚBLICA con limitador de IP: crea al aspirante en auth.users con email_confirm: true para evitar caídas si el proveedor de correos de Supabase está saturado.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuerpoRegistroAspirante"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cuenta de aspirante creada y confirmada exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaRegistroAspirante"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Petición inválida. El cuerpo o los parámetros no pasan la validación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "La regla de negocio impide la operación.",
             "content": {
               "application/json": {
                 "schema": {

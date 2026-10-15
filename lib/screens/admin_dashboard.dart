@@ -200,22 +200,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       disponible: true,
       modulo: 'm3_cuadrante',
     ),
-    // Las dos de abajo siguen apagadas por **no existir la pantalla**, que es un
-    // hecho del código y no del servidor: por eso **no** llevan `modulo:`.
-    // Ponerles `m7_calificaciones` haría creer que encender ese módulo las
-    // enciende, y no hay nada que encender — la nota se pone dentro del aula.
-    ItemNavegacion(
-      icono: Icons.fact_check_outlined,
-      titulo: 'Asistencia',
-      categoria: 'Control de aulas',
-      disponible: false,
-    ),
-    ItemNavegacion(
-      icono: Icons.assignment_outlined,
-      titulo: 'Calificaciones',
-      categoria: 'Control de aulas',
-      disponible: false,
-    ),
     // «Mi cuenta» es la única categoría que no es del centro sino **de quien
     // está dentro**, y por eso va la última: el administrador entra a
     // administrar, no a mirarse. El mismo ítem existe en el dashboard del

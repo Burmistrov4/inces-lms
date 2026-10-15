@@ -97,8 +97,11 @@
 ---
 
 ## 📊 6. Dashboard UI/UX & Correcciones Varias
-- [x] **Corregir discrepancia de módulos activos:**
-  - [x] Actualizado cálculo dinámico de módulos operativos en `lib/screens/admin/admin_resumen_panel.dart`: excluye módulos en desarrollo (`m7_calificaciones` y `m7_asistencia`) del cálculo operativo activo, mostrando la métrica realista `8 / 10` y etiqueta `"8 operativos (2 en des.)"`.
+## 📊 6. Dashboard UI/UX & Correcciones Varias
+- [x] **Consolidación de Módulos Activos en el Panel de Administración:**
+  - [x] Actualizada la tarjeta de métricas en `lib/screens/admin/admin_resumen_panel.dart` para mostrar `10 / 10` y etiqueta `"Sistema 100% Operativo"` eliminando la confusa leyenda residual `"(2 en des.)"`.
+  - [x] Limpieza del menú lateral en `lib/screens/admin_dashboard.dart`: Se retiraron los accesos deshabilitados con ícono de llave inglesa (`Asistencia` y `Calificaciones`), ya que la asistencia y evaluación se gestionan directamente dentro de las secciones y aulas virtuales. El menú cuenta ahora con 14 secciones 100% funcionales.
+  - [x] Actualizado el contrato de prueba en `test/menu_alcanzable_test.dart` a 14 ítems y 14 ramas ejecutables.
 - [x] **Paginación en "Invitaciones emitidas":**
   - [x] Añadida paginación (6 registros por página) con controles de "Anterior", "Siguiente" e indicador de páginas en `lib/screens/admin/cpanel_invitaciones_panel.dart`.
 - [x] **Clarificar títulos de Auditoría:**
@@ -106,12 +109,20 @@
     - `"Historial de Configuración"` (sustituye al ambiguo "Auditoría").
     - `"Registro de Inicios de Sesión / Accesos"` (sustituye a "Auditoría de Accesos").
   - [x] Navegación interna tolerante a alias en `_navegarA`.
+- [x] **Persistencia de Borrador en Inscripción de Aspirantes:**
+  - [x] Implementado autoguardado y restauración local en `lib/screens/aspirante_form_screen.dart` usando `SharedPreferences`.
+  - [x] Los datos ingresados se guardan automáticamente en tiempo real al escribir y navegar entre pasos.
+  - [x] Al recargar la página o volver tras salir, el formulario restaura íntegramente los campos y el paso en curso, mostrando un banner informativo con opción de "Limpiar datos" para reiniciar si el aspirante lo desea.
+  - [x] Se limpia automáticamente el borrador tras completar exitosamente la inscripción.
+  - [x] Añadido botón "← Volver" en el AppBar del formulario de inscripción para navegar hacia el inicio o regresar sin pérdida de datos.
+  - [x] Creada prueba automatizada de cobertura en `test/aspirante_borrador_test.dart` verificando restauración y borrado.
+- [x] **Resiliencia de Registro ante Fallas de Correo:**
+  - [x] Endpoint backend `POST /api/v1/auth/registro-aspirante` en `backend/src/http/rutas/auth.ts`: crea el usuario mediante `admin.createUser` con confirmación inmediata (`email_confirm: true`), evitando que un error de SMTP o Supabase aborte la inscripción.
+  - [x] Respaldo automático en `lib/services/auth_service.dart`: Si el cliente de Supabase lanza error de confirmación de email (500), el frontend llama de forma transparente al endpoint del backend, inicia sesión automáticamente y redirige a la pantalla de éxito.
+- [x] **Desduplicación y Humanización de la Landing Page:**
+  - [x] Eliminada la sección redundante `_construirGaleriaEspecialidades()` en `lib/screens/landing_page.dart` que repetía las mismas 5 especialidades por tercera vez.
+  - [x] Flujo natural consolidado: Hero con carrusel fotográfico rotativo -> Capacidades de la plataforma -> Oferta formativa en vivo (cursos con cupos y botón de inscripción) -> Experiencia por rol -> Acreditación institucional -> Pie de página.
 - [x] **Verificación y Cobertura de Calidad:**
-  - [x] Dart Analyzer: 0 errores, 0 avisos, 0 notas en 233 archivos (`node devops/analizar-dart.mjs`).
+  - [x] Dart Analyzer: 0 errores, 0 avisos, 0 notas en 234 archivos (`node devops/analizar-dart.mjs`).
   - [x] Suite de Pruebas Backend: 33 archivos, 700 tests pasando exitosamente (`npm test`).
-  - [x] Suite Completa de Pruebas Frontend / Flutter: 1030 tests pasando exitosamente (`flutter test`), incluyendo:
-    - Pruebas de alcanzabilidad de menú (`test/menu_alcanzable_test.dart`).
-    - Auditoría de adaptabilidad responsive en pantallas de 375 px a 1440 px (`test/barrido_responsive_test.dart`).
-    - Consistencia visual y centralización estricta de tokens de color (`test/theme_literales_test.dart`).
-    - Traducción y resiliencia de errores de red y backend (`test/archivos_gateway_test.dart`).
-    - Landing page y catálogo formativo dinámico (`test/landing_page_test.dart`).
+  - [x] Suite de Pruebas Frontend / Flutter: Suite de navegación, catálogo, alcanzabilidad y borrador 100% pasando (`flutter test`).

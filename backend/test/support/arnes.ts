@@ -1852,6 +1852,21 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       estado.perfiles = [...estado.perfiles, perfil];
       return id;
     },
+    async crearUsuarioAspirante(email, _password, metadata) {
+      revisar('invitaciones.crearUsuarioAspirante');
+      const id = `usr-aspirante-${estado.perfiles.length + 1}`;
+      const perfil: Perfil = {
+        id,
+        email,
+        cedula: (metadata.cedula as string) ?? null,
+        nombres: (metadata.nombres as string) ?? '',
+        apellidos: (metadata.apellidos as string) ?? '',
+        rol: 'estudiante',
+        activo: true,
+      };
+      estado.perfiles = [...estado.perfiles, perfil];
+      return id;
+    },
   };
 
   const recuperacion: PuertaRecuperacionPassword = {

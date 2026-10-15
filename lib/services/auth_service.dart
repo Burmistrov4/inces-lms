@@ -360,11 +360,54 @@ class AuthService {
           );
       }
 
-      final sesion = await _gateway.registrarConPassword(
-        email: aspirante.email,
-        password: password,
-        metadata: aspirante.toMetadata(),
-      );
+      SesionAuth? sesion;
+      try {
+        sesion = await _gateway.registrarConPassword(
+          email: aspirante.email,
+          password: password,
+          metadata: aspirante.toMetadata(),
+        );
+      } catch (e) {
+        final eStr = e.toString().toLowerCase();
+        // Si Supabase falla al intentar enviar el correo de confirmación (ej. 500
+        // Error sending confirmation email o límite de tasa), acudimos al backend
+        // para dar de alta al aspirante con confirmación inmediata sin revertir la transacción.
+        if (eStr.contains('confirmation email') ||
+            eStr.contains('servidor de correo') ||
+            eStr.contains('unexpected_failure')) {
+          try {
+            final api = ApiClient();
+            final res = await api.post(
+              '/api/v1/auth/registro-aspirante',
+              cuerpo: {
+                'email': aspirante.email,
+                'password': password,
+                'metadata': aspirante.toMetadata(),
+              },
+            );
+            final userId = res['userId'] as String?;
+            if (userId != null && userId.isNotEmpty) {
+              bool sesionIniciada = false;
+              try {
+                await _gateway.iniciarConPassword(
+                  email: aspirante.email,
+                  password: password,
+                );
+                sesionIniciada = true;
+              } catch (_) {}
+
+              return RegistroResultado(
+                email: aspirante.email,
+                userId: userId,
+                sesionIniciada: sesionIniciada,
+                fichaCreada: true,
+                requiereTutorLegal: aspirante.requiresLegalTutor,
+              );
+            }
+          } catch (_) {}
+        }
+        rethrow;
+      }
 
       if (sesion.userId == null) {
         throw const AppException(

@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/errors/app_exception.dart';
 import '../models/aspirante_model.dart';
@@ -130,6 +133,11 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
   /// perder todo lo escrito si algo fallaba.
   bool _enviando = false;
 
+  static const String _claveBorradorInscripcion =
+      'borrador_inscripcion_inces_v1';
+  bool _borradorRestaurado = false;
+  int _versionFormulario = 0;
+
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _passwordConfirmController =
       TextEditingController();
@@ -156,6 +164,82 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
   // ---------------------------------------------------------------------------
   // Carga
   // ---------------------------------------------------------------------------
+
+  Future<void> _cargarBorradorLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final crudo = prefs.getString(_claveBorradorInscripcion);
+      if (crudo == null || crudo.isEmpty) return;
+
+      final dynamic decodificado = jsonDecode(crudo);
+      if (decodificado is! Map<String, dynamic>) return;
+
+      final recuperados = <String, dynamic>{};
+      int? pasoGuardado;
+
+      for (final entry in decodificado.entries) {
+        if (entry.key == '__paso__') {
+          if (entry.value is int) {
+            pasoGuardado = entry.value as int;
+          }
+        } else {
+          recuperados[entry.key] = entry.value;
+        }
+      }
+
+      if (recuperados.isNotEmpty && mounted) {
+        setState(() {
+          _valores.addAll(recuperados);
+          if (pasoGuardado != null &&
+              pasoGuardado >= 0 &&
+              pasoGuardado <= _pasoConfirmacion) {
+            _currentStep = pasoGuardado;
+          }
+          _borradorRestaurado = true;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _guardarBorradorLocal() async {
+    try {
+      if (_valores.isEmpty) return;
+      final prefs = await SharedPreferences.getInstance();
+      final mapaAGuardar = <String, dynamic>{
+        ..._valores,
+        '__paso__': _currentStep,
+      };
+      await prefs.setString(_claveBorradorInscripcion, jsonEncode(mapaAGuardar));
+    } catch (_) {}
+  }
+
+  Future<void> _limpiarBorradorLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_claveBorradorInscripcion);
+    } catch (_) {}
+  }
+
+  void _limpiarBorradorManual() {
+    _limpiarBorradorLocal();
+    setState(() {
+      _valores.clear();
+      _errores.clear();
+      _currentStep = 0;
+      _borradorRestaurado = false;
+      _versionFormulario++;
+      _clavesDePaso.clear();
+      for (var i = 0; i <= _grupos.length; i++) {
+        _clavesDePaso[i] = GlobalKey<FormState>();
+      }
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Borrador eliminado. El formulario ha sido reiniciado.'),
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
 
   Future<void> _cargarCatalogo() async {
     setState(() {
@@ -192,6 +276,10 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
 
       _cargandoCatalogo = false;
     });
+
+    if (_catalogo != null) {
+      await _cargarBorradorLocal();
+    }
   }
 
   Future<void> _cargarProgramas() async {
@@ -306,6 +394,7 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
       }
       _errores.remove(campo.codigo);
     });
+    _guardarBorradorLocal();
   }
 
   /// Las opciones de un campo con `fuente`, resueltas.
@@ -392,6 +481,7 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
     }
 
     setState(() => _currentStep = destino);
+    _guardarBorradorLocal();
   }
 
   // ---------------------------------------------------------------------------
@@ -511,6 +601,7 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
   }
 
   void _irARegistroExitoso(RegistroResultado registro) {
+    _limpiarBorradorLocal();
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => RegistroExitosoScreen(
@@ -945,6 +1036,17 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
       appBar: AppBar(
         title: const Text('Inscripción - INCES La Isabelica'),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Volver',
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              Navigator.of(context).pushReplacementNamed('/');
+            }
+          },
+        ),
       ),
       body: Column(
         children: [
@@ -1005,24 +1107,74 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
               ),
             ],
           ),
-          child: Stepper(
-            type: StepperType.vertical,
-            currentStep: _currentStep,
-            physics: const ClampingScrollPhysics(),
-            onStepContinue: () {
-              if (_currentStep < _pasoConfirmacion) {
-                if (_validarPaso(_currentStep)) {
-                  setState(() => _currentStep += 1);
-                }
-              } else {
-                _enviarFormulario();
-              }
-            },
-            onStepCancel: () {
-              if (_currentStep > 0) {
-                setState(() => _currentStep -= 1);
-              }
-            },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_borradorRestaurado)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: paleta.superficieSutil,
+                    borderRadius:
+                        BorderRadius.circular(IncesTheme.radioControl),
+                    border:
+                        Border.all(color: paleta.info.withValues(alpha: 0.35)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.history_edu_rounded,
+                        size: 20,
+                        color: paleta.info,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Hemos restaurado tus datos guardados automáticamente.',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: paleta.textoPrincipal,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _limpiarBorradorManual,
+                        child: const Text('Limpiar',
+                            style: TextStyle(fontSize: 12)),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 16),
+                        tooltip: 'Cerrar aviso',
+                        onPressed: () =>
+                            setState(() => _borradorRestaurado = false),
+                      ),
+                    ],
+                  ),
+                ),
+              Stepper(
+                key: ValueKey('stepper-inscripcion-$_versionFormulario'),
+                type: StepperType.vertical,
+                currentStep: _currentStep,
+                physics: const ClampingScrollPhysics(),
+                onStepContinue: () {
+                  if (_currentStep < _pasoConfirmacion) {
+                    if (_validarPaso(_currentStep)) {
+                      setState(() => _currentStep += 1);
+                      _guardarBorradorLocal();
+                    }
+                  } else {
+                    _enviarFormulario();
+                  }
+                },
+                onStepCancel: () {
+                  if (_currentStep > 0) {
+                    setState(() => _currentStep -= 1);
+                    _guardarBorradorLocal();
+                  }
+                },
             // Pulsar el título de un paso lleva a ese paso. Sin esto, corregir
             // la fecha de nacimiento desde el final del formulario exigía pulsar
             // «Atrás» una vez por cada paso intermedio — y ésa fue la queja que
@@ -1099,9 +1251,11 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
               ),
             ],
           ),
-        ),
+        ],
       ),
-    );
+    ),
+  ),
+);
   }
 
   bool get isSmallScreen => MediaQuery.of(context).size.width < 600;

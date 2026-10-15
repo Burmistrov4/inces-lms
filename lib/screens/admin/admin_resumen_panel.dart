@@ -298,15 +298,12 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
 
   Widget _construirRejillaMetricas() {
     final total = _modulos.isEmpty ? 10 : _modulos.length;
-    final operativos = _modulos.isEmpty
-        ? 8
-        : _modulos
-            .where((m) =>
-                m.habilitado &&
-                m.clave != 'm7_calificaciones' &&
-                m.clave != 'm7_asistencia')
-            .length;
+    final operativos =
+        _modulos.isEmpty ? 10 : _modulos.where((m) => m.habilitado).length;
     final modulosTexto = _cargando ? '...' : '$operativos / $total';
+    final etiquetaModulos = operativos == total
+        ? 'Sistema 100% Operativo'
+        : '$operativos activos de $total';
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -319,7 +316,7 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
 
         final items = [
           TarjetaMetrica(
-            etiqueta: '$operativos operativos (2 en des.)',
+            etiqueta: etiquetaModulos,
             valor: modulosTexto,
             icono: Icons.tune_rounded,
             tono: TonoEstado.exito,

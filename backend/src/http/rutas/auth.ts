@@ -6,6 +6,7 @@ import type { DependenciasRutas } from '../dependencias.js';
 import {
   esquemaActivarCuenta,
   esquemaCanjearCodigo,
+  esquemaRegistroAspirante,
   esquemaSolicitarRecuperacion,
 } from '../esquemas.js';
 import { crearLimitador } from '../limitador.js';
@@ -327,6 +328,43 @@ export function rutasAuth(app: FastifyInstance, deps: DependenciasRutas): void {
             userId: registro.userId,
             email: null,
             ip,
+            estado: 'FAILED',
+          });
+          throw error;
+        }
+      });
+
+      aut.post('/registro-aspirante', async (request) => {
+        if (!limitador.permitir(`registro:${request.ip}`)) {
+          throw ErrorApi.demasiadasPeticiones();
+        }
+
+        const { email, password, metadata } = esquemaRegistroAspirante.parse(request.body);
+
+        try {
+          const userId = await deps.reposAdmin.invitaciones.crearUsuarioAspirante(
+            email,
+            password,
+            metadata,
+          );
+
+          await deps.reposAdmin.acceso.registrar({
+            userId,
+            email,
+            ip: request.ip,
+            estado: 'SUCCESS',
+          });
+
+          return {
+            exito: true,
+            userId,
+            mensaje: 'Cuenta de aspirante creada y confirmada exitosamente.',
+          };
+        } catch (error) {
+          await deps.reposAdmin.acceso.registrar({
+            userId: null,
+            email,
+            ip: request.ip,
             estado: 'FAILED',
           });
           throw error;

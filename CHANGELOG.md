@@ -2,7 +2,25 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
-## [1.2.2] - 2026-10-15
+## [1.2.3] - 2026-10-15
+### Persistencia de Borrador en Inscripción, Resiliencia de Registro y Consolidación de UX
+- **Persistencia y Restauración Automática de Borrador (`lib/screens/aspirante_form_screen.dart`):**
+  - Implementado guardado en tiempo real en almacenamiento local (`SharedPreferences`) ante cada entrada de datos o navegación de pasos.
+  - Al recargar la página o volver tras navegar hacia atrás, el formulario restaura íntegramente los campos respondidos y el paso actual.
+  - Se añade un banner informativo superior discreto y accesible que avisa de la restauración y provee un botón de `"Limpiar datos"` para reiniciar desde cero si el aspirante lo prefiere.
+  - El borrador se purga automáticamente de forma segura al completarse con éxito la inscripción.
+  - Se añadió un botón `"← Volver"` en el AppBar para permitir salir o navegar a la landing page sin temor a perder la información ingresada.
+  - Cobertura con prueba de widgets dedicada en `test/aspirante_borrador_test.dart`.
+- **Registro Resiliente de Aspirantes (`POST /api/v1/auth/registro-aspirante`):**
+  - Creado endpoint en backend (`backend/src/http/rutas/auth.ts`) que registra al aspirante vía `admin.createUser` con confirmación inmediata (`email_confirm: true`), evitando que fallos de SMTP o límites de tasa de correo aborten la creación de la cuenta y la ficha.
+  - En `lib/services/auth_service.dart`, si el intento directo con el cliente Supabase reporta fallas de entrega de correo de confirmación (500), se activa un fallback transparente al endpoint del backend, iniciando sesión y redirigiendo al usuario sin interrupciones.
+- **Claridad de Módulos Activos y Limpieza del Panel de Administración:**
+  - En `lib/screens/admin/admin_resumen_panel.dart`, la métrica de módulos se actualizó a `10 / 10` y etiqueta `"Sistema 100% Operativo"`, erradicando la confusa advertencia de `"(2 en des.)"`.
+  - En `lib/screens/admin_dashboard.dart`, se retiraron los accesos deshabilitados con ícono de llave inglesa (`Asistencia` y `Calificaciones`), consolidando un menú con 14 secciones 100% disponibles.
+  - Actualizado el contrato de la suite en `test/menu_alcanzable_test.dart` (14 ítems y 14 ramas).
+- **Desduplicación y Humanización de la Landing Page (`lib/screens/landing_page.dart`):**
+  - Eliminada la sección redundante `_construirGaleriaEspecialidades()` que repetía por tercera vez las especialidades ya expuestas en el carrusel y en la oferta de cursos.
+  - Flujo visual continuo y armónico: Hero Carousel -> Pilares de la plataforma -> Cursos abiertos en vivo con botón de inscripción -> Experiencia por rol -> Acreditación institucional -> Pie de página.
 ### Hero Showcase Luminoso y Configuración SMTP con lorenzoroca333@gmail.com
 - **Rediseño del Showcase en Hero Banner (`lib/screens/landing_page.dart`):**
   - **Ampliación de Escala y Envergadura:** La tarjeta del carrusel se expandió de 400 px a 520 px de ancho, logrando una partición visual equilibrada (50/50) respecto a la columna tipográfica del Hero y eliminando el vacío espacial.
