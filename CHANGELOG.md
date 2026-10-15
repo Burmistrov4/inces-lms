@@ -19,6 +19,13 @@ Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en
 - **Erradicación de Versión Obsoleta v0.1.0 y Purga de Caché (`web/index.html`, `pubspec.yaml`):**
   - Actualizado el pie de página institucional en `AdminResumenPanel`, `EstudianteResumenPanel` y `DocenteResumenPanel` con la etiqueta oficial `v1.2.4 · Prod 2026`.
   - Incorporado en `web/index.html` un script automático de invalidación: al detectar un cambio de versión (`1.2.4`), desregistra Service Workers antiguos y vacía las instancias obsoletas de `CacheStorage`, garantizando que el navegador del usuario descargue y ejecute la versión más reciente sin requerir limpieza manual.
+- **Resolución de Bloqueo de Carga en Navegadores Web (Fix Pantalla Blanca en `web/index.html`):**
+  - Corregida la omisión de la etiqueta de cierre `</noscript>` en `web/index.html`. Al faltar `</noscript>`, los motores basados en Chromium e iOS WebKit interpretaban que la etiqueta `<script src="flutter_bootstrap.js" async>` formaba parte del contenido alternativo para navegadores sin JavaScript, evitando su ejecución e impidiendo el inicio de Flutter Web.
+  - Al restaurar `</noscript>`, el script de arranque y el gestor de caché se ejecutan de inmediato en el ciclo de vida inicial.
+- **Verificación Automatizada End-to-End con Playwright (`e2e/verificar-produccion.mjs`):**
+  - Creada suite de validación en vivo con Chromium headless para el entorno de producción (`https://inces-lms.pages.dev`).
+  - Verificada la respuesta HTTP 200, inicialización limpia de scripts sin excepciones de consola y renderizado activo del lienzo WebGL de Flutter (`flt-glass-pane` / `<flutter-view>`).
+  - Confirmada visualmente la carga del Hero Banner, carrusel de fotografías en alta resolución y catálogo interactivo de especialidades.
 
 ## [1.2.3] - 2026-10-15
 ### Humanización, Interactividad de Horarios, Gestor Documental R2/Drive y Claridad Pedagógica

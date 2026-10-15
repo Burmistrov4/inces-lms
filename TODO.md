@@ -191,5 +191,21 @@
   - [x] Verificado `https://inces-lms.pages.dev/version.json` respondiendo `{"version":"1.2.4","build_number":"2"}`.
   - [x] Verificado `https://inces-lms.pages.dev/main.dart.js` sin ninguna ocurrencia de `v0.1.0` y con `v1.2.4` activo.
 
+---
 
-
+## 🛡️ 10. Restauración de Carga de Aplicación Web (Fix Pantalla en Blanco) y Verificación en Vivo Playwright
+- [x] **Corrección de Sintaxis HTML en `web/index.html`:**
+  - [x] Restaurada la etiqueta de cierre `</noscript>` inmediatamente después de `</main>` en el bloque semántico no-JS.
+  - [x] Se evitó que el navegador Chromium/Edge considere las etiquetas `<script>` y `<script src="flutter_bootstrap.js" async>` como pertenecientes al bloque `noscript`, lo que causaba el bloqueo total de la inicialización de Flutter Web y dejaba la pantalla en blanco con JavaScript habilitado.
+- [x] **Validación Estática y de Temas de Diseño:**
+  - [x] `node devops/analizar-dart.mjs`: 234 archivos analizados con 0 errores, 0 advertencias y 0 notas.
+  - [x] `flutter test test/theme_literales_test.dart`: 11/11 pruebas de consistencia cromática y literales de diseño pasando exitosamente.
+- [x] **Compilación y Despliegue de Producción a Cloudflare Pages:**
+  - [x] Compilación release de Flutter Web optimizada (`flutter build web --release`).
+  - [x] Copia de encabezados `web/_headers` a `build/web/_headers` con control de caché estricto (`no-cache, no-store, must-revalidate` para `index.html`, `flutter_bootstrap.js` y `version.json`).
+  - [x] Despliegue exitoso con Wrangler a `https://inces-lms.pages.dev`.
+- [x] **Verificación Automatizada End-to-End con Playwright:**
+  - [x] Ejecutada prueba en vivo en navegador Chromium headless (`e2e/verificar-produccion.mjs`).
+  - [x] Verificado código de respuesta HTTP 200 y título de página oficial (`INCES LMS — Sistema de Gestión Académica`).
+  - [x] Comprobada la inyección e inicialización de scripts de Flutter Web y la presencia activa del lienzo de renderizado (`flt-glass-pane` / `<flutter-view>`).
+  - [x] Capturada y validada la pantalla de bienvenida con el Hero Banner renovado, carrusel de fotografías vocacionales en alta resolución y catálogo de especialidades 100% operativo sin errores de consola.
