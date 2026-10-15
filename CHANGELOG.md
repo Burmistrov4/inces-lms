@@ -2,6 +2,16 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.2.2] - 2026-10-15
+### Hero Showcase Luminoso y Configuración SMTP con lorenzoroca333@gmail.com
+- **Rediseño del Showcase en Hero Banner (`lib/screens/landing_page.dart`):**
+  - **Ampliación de Escala y Envergadura:** La tarjeta del carrusel se expandió de 400 px a 520 px de ancho, logrando una partición visual equilibrada (50/50) respecto a la columna tipográfica del Hero y eliminando el vacío espacial.
+  - **Eliminación de Filtros Oscuros:** Se retiró el gradiente negro de 75% que cubría las fotos. Las imágenes se muestran ahora al 100% de su luminosidad y color natural, realzando los talleres y aprendices del CFS.
+  - **Tarjeta Blanca de Alto Contraste:** Se transformó el contenedor en una tarjeta de fondo blanco puro (`Colors.white`) con doble sombra ambiental suave, logrando un contraste perfecto y nítido contra el fondo azul institucional (`#003B73`).
+  - **Navegación e Indicadores Mejorados:** Controles de navegación en botones circulares blancos elevados, barras de avance centradas y contador visible de posición (`1 / 5`).
+- **Configuración SMTP con `lorenzoroca333@gmail.com`:**
+  - Actualizado `backend/.env` y `backend/.env.example` fijando `SMTP_USER=lorenzoroca333@gmail.com` y `SMTP_FROM="INCES LMS · CFS Rafael Urdaneta" <lorenzoroca333@gmail.com>`.
+
 ## [1.2.1] - 2026-10-15
 ### Autenticación Resiliente: Fallback a Supabase Auth en Recuperación de Cuentas
 - **Detección Automática de Estado SMTP en Backend (`backend/src/http/rutas/auth.ts`):** Cuando `SMTP_PASS` no está configurado (por ejemplo, imposibilidad temporal del administrador de emitir contraseña de aplicación de Google por verificación de 2 factores/passkey) o la entrega SMTP falla, el endpoint `POST /api/v1/auth/solicitar-recuperacion` responde de forma transparente con `exito: true, correoEnviado: false, metodo: 'supabase'`, facilitando el correo electrónico resuelto del usuario sin exponer errores al aspirante o docente.

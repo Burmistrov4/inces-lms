@@ -57,8 +57,12 @@
 ---
 
 ## 🎨 4. Mejoras en Landing Page, Favicon e Imágenes
-- [x] **Convertir la tarjeta estática del Hero Banner en un Carrusel:**
-  - [x] Implementado `_CarruselHeroOfertas` en `lib/screens/landing_page.dart`: rotación automática cada 4.5 segundos, botones de anterior/siguiente, indicadores de página interactivos, pausa al posar el cursor y llamadas a la acción directas por área formativa.
+- [x] **Convertir la tarjeta estática del Hero Banner en un Carrusel Luminoso y Espacioso:**
+  - [x] Rediseño completo de `_CarruselHeroOfertas` en `lib/screens/landing_page.dart`:
+    - Ampliación de ancho a 520 px (en cuadrícula equilibrada 6:6 con el texto principal), eliminando el espacio vacío alrededor de la tarjeta.
+    - Eliminación de la máscara oscura de 75% sobre las imágenes para que la fotografía vocacional resalte con su luminosidad y color natural.
+    - Sustitución del contenedor translúcido oscuro por una tarjeta blanca nítida (`Colors.white`) con doble sombra ambiental, asegurando máximo contraste contra el fondo azul institucional.
+    - Botones de navegación en círculo blanco elevado, píldora de conteo ("1 / 5"), barras de progreso centradas y botón de acción destacado.
   - [x] Integradas fotografías vocacionales reales de alta resolución para 5 áreas:
     - Metalmecánica y Soldadura (`area_metalmecanica.jpg`).
     - Gastronomía y Alimentación (`area_alimentos.jpg`).

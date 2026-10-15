@@ -119,12 +119,12 @@ class _LandingPageState extends State<LandingPage> {
       decoration: const BoxDecoration(gradient: IncesTheme.degradadoAzul),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
+          constraints: const BoxConstraints(maxWidth: 1200),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 52),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final esEscritorio = constraints.maxWidth > 850;
+                final esEscritorio = constraints.maxWidth > 920;
                 return esEscritorio
                     ? Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -133,10 +133,11 @@ class _LandingPageState extends State<LandingPage> {
                             flex: 6,
                             child: _construirContenidoHero(esEscritorio: true),
                           ),
-                          const SizedBox(width: 32),
+                          const SizedBox(width: 40),
                           Expanded(
-                            flex: 5,
-                            child: Center(
+                            flex: 6,
+                            child: Align(
+                              alignment: Alignment.center,
                               child: _construirInsigniaIndustrial3D(),
                             ),
                           ),
@@ -146,7 +147,7 @@ class _LandingPageState extends State<LandingPage> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _construirContenidoHero(esEscritorio: false),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 32),
                           _construirHeroVisualMovil(),
                         ],
                       );
@@ -1459,6 +1460,7 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final slide = _slides[_indice];
     final esMovil = widget.esMovil;
 
@@ -1466,20 +1468,25 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
       onEnter: (_) => _pausar(),
       onExit: (_) => _iniciarTimer(),
       child: Container(
-        width: esMovil ? double.infinity : 400,
+        width: esMovil ? double.infinity : 520,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(esMovil ? 20 : 24),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.22),
+            color: Colors.white.withValues(alpha: 0.35),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.28),
-              blurRadius: 30,
-              offset: const Offset(0, 15),
+              color: Colors.black.withValues(alpha: 0.22),
+              blurRadius: 36,
+              offset: const Offset(0, 16),
+            ),
+            BoxShadow(
+              color: IncesTheme.azulPrimario.withValues(alpha: 0.15),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -1488,7 +1495,7 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SizedBox(
-              height: esMovil ? 190 : 210,
+              height: esMovil ? 210 : 255,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -1502,65 +1509,97 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
                       height: double.infinity,
                       errorBuilder: (_, _, _) => Container(
                         color: IncesTheme.azulPrimario,
-                        child: Icon(slide.icono, size: 48, color: Colors.white70),
+                        child: Icon(slide.icono, size: 54, color: Colors.white70),
                       ),
                     ),
                   ),
+                  // Gradiente sutil para legibilidad de insignias sin oscurecer la foto
                   DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withValues(alpha: 0.35),
-                          Colors.black.withValues(alpha: 0.75),
+                          Colors.black.withValues(alpha: 0.25),
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.3),
                         ],
+                        stops: const [0.0, 0.45, 1.0],
                       ),
                     ),
                   ),
                   Positioned(
-                    top: 12,
-                    left: 12,
-                    right: 12,
+                    top: 14,
+                    left: 14,
+                    right: 14,
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
+                            horizontal: 11,
+                            vertical: 5,
                           ),
                           decoration: BoxDecoration(
                             color: IncesTheme.advertencia,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          child: Text(
-                            slide.badge,
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: IncesTheme.azulPrimario,
-                              letterSpacing: 0.6,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                slide.icono,
+                                size: 13,
+                                color: IncesTheme.azulPrimario,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                slide.badge,
+                                style: GoogleFonts.inter(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: IncesTheme.azulPrimario,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                            horizontal: 10,
+                            vertical: 4.5,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.55),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white24),
+                            color: Colors.black.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.white30),
                           ),
-                          child: Text(
-                            slide.tag,
-                            style: GoogleFonts.inter(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.verified_outlined,
+                                size: 12,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                slide.tag,
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -1568,96 +1607,118 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
                   ),
                   // Controles de navegación anterior / siguiente
                   Positioned(
-                    left: 8,
+                    left: 12,
                     top: 0,
                     bottom: 0,
                     child: Center(
-                      child: InkWell(
-                        onTap: _anterior,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white30),
-                          ),
-                          child: const Icon(
-                            Icons.chevron_left_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 8,
-                    top: 0,
-                    bottom: 0,
-                    child: Center(
-                      child: InkWell(
-                        onTap: _siguiente,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white30),
-                          ),
-                          child: const Icon(
-                            Icons.chevron_right_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Indicadores de puntos inferiores en la imagen
-                  Positioned(
-                    bottom: 10,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(_slides.length, (index) {
-                        final esActivo = index == _indice;
-                        return GestureDetector(
-                          onTap: () => _irA(index),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            margin: const EdgeInsets.symmetric(horizontal: 3),
-                            width: esActivo ? 22 : 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: esActivo
-                                  ? IncesTheme.advertencia
-                                  : Colors.white.withValues(alpha: 0.45),
-                              borderRadius: BorderRadius.circular(4),
+                      child: Material(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        shape: const CircleBorder(),
+                        elevation: 3,
+                        shadowColor: Colors.black.withValues(alpha: 0.3),
+                        child: InkWell(
+                          onTap: _anterior,
+                          customBorder: const CircleBorder(),
+                          child: const Padding(
+                            padding: EdgeInsets.all(7),
+                            child: Icon(
+                              Icons.chevron_left_rounded,
+                              color: IncesTheme.azulPrimario,
+                              size: 22,
                             ),
                           ),
-                        );
-                      }),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 12,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: Material(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        shape: const CircleBorder(),
+                        elevation: 3,
+                        shadowColor: Colors.black.withValues(alpha: 0.3),
+                        child: InkWell(
+                          onTap: _siguiente,
+                          customBorder: const CircleBorder(),
+                          child: const Padding(
+                            padding: EdgeInsets.all(7),
+                            child: Icon(
+                              Icons.chevron_right_rounded,
+                              color: IncesTheme.azulPrimario,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Contador de láminas en la foto
+                  Positioned(
+                    bottom: 12,
+                    right: 14,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${_indice + 1} / ${_slides.length}',
+                        style: GoogleFonts.inter(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.fromLTRB(22, 18, 22, 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Indicadores de puntos interactivos centrados
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(_slides.length, (index) {
+                      final esActivo = index == _indice;
+                      return GestureDetector(
+                        onTap: () => _irA(index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          width: esActivo ? 26 : 7,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: esActivo
+                                ? IncesTheme.azulPrimario
+                                : const Color(0xFFCBD5E1),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 14),
                   Text(
                     slide.titulo,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
-                      fontSize: 16.5,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.onSurface,
+                      letterSpacing: -0.3,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -1665,9 +1726,9 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
                     slide.descripcion,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
-                      fontSize: 12.5,
-                      color: Colors.white.withValues(alpha: 0.85),
-                      height: 1.35,
+                      fontSize: 13,
+                      color: theme.colorScheme.onSurfaceVariant,
+                      height: 1.4,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -1679,48 +1740,56 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
                       for (final tag in slide.tags)
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 3.5,
+                            horizontal: 10,
+                            vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
+                            color: IncesTheme.azulPrimario.withValues(alpha: 0.07),
                             borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: IncesTheme.azulPrimario.withValues(alpha: 0.18),
+                            ),
                           ),
                           child: Text(
                             tag,
                             style: GoogleFonts.inter(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                              color: IncesTheme.azulPrimario,
                             ),
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  FilledButton.tonal(
-                    onPressed: widget.onInscribirse,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: IncesTheme.azulPrimario,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.assignment_turned_in_outlined, size: 16),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Inscribirme en esta área',
-                          style: GoogleFonts.inter(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                          ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    height: 44,
+                    child: FilledButton(
+                      onPressed: widget.onInscribirse,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: IncesTheme.azulPrimario,
+                        foregroundColor: Colors.white,
+                        elevation: 1,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
                         ),
-                      ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.assignment_turned_in_outlined, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Inscribirme en esta especialidad',
+                            style: GoogleFonts.inter(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.arrow_forward_rounded, size: 16),
+                        ],
+                      ),
                     ),
                   ),
                 ],
