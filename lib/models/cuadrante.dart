@@ -89,6 +89,42 @@ Turno turnoDeBloque(int bloque) =>
 String? diaLegible(int dia) =>
     (dia >= 1 && dia <= diaMaximo) ? diasDeLaSemana[dia] : null;
 
+/// Franjas horarias formales de los bloques académicos del CFS Rafael Urdaneta.
+///
+/// Mañana (Bloques 1 al 6):
+/// - Bloque 1: 07:30 - 08:15 AM
+/// - Bloque 2: 08:15 - 09:00 AM
+/// - Bloque 3: 09:00 - 09:45 AM
+/// - Bloque 4: 09:45 - 10:30 AM
+/// - Bloque 5: 10:30 - 11:15 AM
+/// - Bloque 6: 11:15 - 12:00 PM
+///
+/// Tarde (Bloques 7 al 12):
+/// - Bloque 7: 01:00 - 01:45 PM
+/// - Bloque 8: 01:45 - 02:30 PM
+/// - Bloque 9: 02:30 - 03:15 PM
+/// - Bloque 10: 03:15 - 04:00 PM
+/// - Bloque 11: 04:00 - 04:45 PM
+/// - Bloque 12: 04:45 - 05:30 PM
+const Map<int, String> horasDeBloque = {
+  1: '07:30 - 08:15',
+  2: '08:15 - 09:00',
+  3: '09:00 - 09:45',
+  4: '09:45 - 10:30',
+  5: '10:30 - 11:15',
+  6: '11:15 - 12:00',
+  7: '01:00 - 01:45',
+  8: '01:45 - 02:30',
+  9: '02:30 - 03:15',
+  10: '03:15 - 04:00',
+  11: '04:00 - 04:45',
+  12: '04:45 - 05:30',
+};
+
+/// Devuelve la franja horaria formal de un bloque académico (ej. «07:30 - 08:15»).
+String horaLegibleDeBloque(int bloque) => horasDeBloque[bloque] ?? '';
+
+
 /// Las tres formas que puede tener un espacio, **derivadas** de dos columnas.
 ///
 /// No es una columna de la base: sale de cruzar `is_workshop` con `capacity`
@@ -341,19 +377,21 @@ class Guardia {
   final DateTime? actualizadoEn;
 
   factory Guardia.fromJson(Map<String, dynamic> json) {
-    final bloque = json['bloque'] as int? ?? 0;
+    final bloque = (json['bloque'] ?? json['block']) as int? ?? 0;
     return Guardia(
       id: json['id'] as String? ?? '',
-      docenteId: json['docenteId'] as String? ?? '',
-      aulaId: json['aulaId'] as String? ?? '',
-      periodo: json['periodo'] as String? ?? '',
-      dia: json['dia'] as int? ?? 0,
+      docenteId: (json['docenteId'] ?? json['teacher_id']) as String? ?? '',
+      aulaId: (json['aulaId'] ?? json['classroom_id']) as String? ?? '',
+      periodo: (json['periodo'] ?? json['period_code']) as String? ?? '',
+      dia: (json['dia'] ?? json['day_of_week']) as int? ?? 0,
       bloque: bloque,
       turno: Turno.desdeApi(json['turno'] as String?, bloque: bloque),
-      notas: json['notas'] as String?,
-      activa: json['activa'] as bool? ?? false,
-      creadoEn: DateTime.tryParse(json['creadoEn']?.toString() ?? ''),
-      actualizadoEn: DateTime.tryParse(json['actualizadoEn']?.toString() ?? ''),
+      notas: (json['notas'] ?? json['notes']) as String?,
+      activa: (json['activa'] ?? json['is_active']) as bool? ?? false,
+      creadoEn: DateTime.tryParse(
+          (json['creadoEn'] ?? json['created_at'])?.toString() ?? ''),
+      actualizadoEn: DateTime.tryParse(
+          (json['actualizadoEn'] ?? json['updated_at'])?.toString() ?? ''),
     );
   }
 
@@ -451,24 +489,24 @@ class ClaseCuadrante {
   bool get docenteSinNombre => docente.trim().isEmpty;
 
   factory ClaseCuadrante.fromJson(Map<String, dynamic> json) {
-    final bloque = json['bloque'] as int? ?? 0;
+    final bloque = (json['bloque'] ?? json['block']) as int? ?? 0;
     return ClaseCuadrante(
       id: json['id'] as String? ?? '',
-      seccionId: json['seccionId'] as String? ?? '',
-      docenteId: json['docenteId'] as String? ?? '',
-      aulaId: json['aulaId'] as String? ?? '',
-      dia: json['dia'] as int? ?? 0,
+      seccionId: (json['seccionId'] ?? json['section_id']) as String? ?? '',
+      docenteId: (json['docenteId'] ?? json['teacher_id']) as String? ?? '',
+      aulaId: (json['aulaId'] ?? json['classroom_id']) as String? ?? '',
+      dia: (json['dia'] ?? json['day_of_week']) as int? ?? 0,
       bloque: bloque,
       turno: Turno.desdeApi(json['turno'] as String?, bloque: bloque),
-      activa: json['activa'] as bool? ?? false,
-      periodo: json['periodo'] as String? ?? '',
-      programaId: json['programaId'] as String? ?? '',
-      programa: json['programa'] as String? ?? '',
-      materiaId: json['materiaId'] as String? ?? '',
-      materia: json['materia'] as String? ?? '',
-      seccion: json['seccion'] as String? ?? '',
-      aula: json['aula'] as String? ?? '',
-      docente: json['docente'] as String? ?? '',
+      activa: (json['activa'] ?? json['is_active']) as bool? ?? false,
+      periodo: (json['periodo'] ?? json['period_code']) as String? ?? '',
+      programaId: (json['programaId'] ?? json['program_id']) as String? ?? '',
+      programa: (json['programa'] ?? json['program_name']) as String? ?? '',
+      materiaId: (json['materiaId'] ?? json['subject_id']) as String? ?? '',
+      materia: (json['materia'] ?? json['subject_name']) as String? ?? '',
+      seccion: (json['seccion'] ?? json['section_name']) as String? ?? '',
+      aula: (json['aula'] ?? json['classroom_name']) as String? ?? '',
+      docente: (json['docente'] ?? json['teacher_name']) as String? ?? '',
     );
   }
 

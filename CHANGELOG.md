@@ -2,6 +2,24 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.2.5] - 2026-10-15
+### Horarios de Clases Institucionales (Mañana y Tarde) y Resiliencia en Rejilla
+- **Integración de Horas Reloj y Distinción de Turnos (`lib/models/cuadrante.dart`, `lib/widgets/cuadrante_grid.dart`):**
+  - Mapeo de bloques horarios según el estándar técnico de formación del INCES venezolano:
+    - **Turno Mañana (Bloques 1 al 6):** B1 (`07:30 - 08:15`), B2 (`08:15 - 09:00`), B3 (`09:00 - 09:45`), B4 (`09:45 - 10:30`), B5 (`10:30 - 11:15`), B6 (`11:15 - 12:00`).
+    - **Turno Tarde (Bloques 7 al 12):** B7 (`01:00 - 01:45`), B8 (`01:45 - 02:30`), B9 (`02:30 - 03:15`), B10 (`03:15 - 04:00`), B11 (`04:00 - 04:45`), B12 (`04:45 - 05:30`).
+  - Cabecera y columna de bloques rediseñada (`Bloque / Hora`, ancho 116 px) con insignias estilizadas de bloque (`B1`, `B7`), etiquetas de turno (`Mañana` en tono primario, `Tarde` en tono terciario cálido) y rango de reloj legible.
+- **Diálogos de Asignación y Guardias Humanizados (`lib/screens/admin/cpanel_cuadrante_panel.dart`, `lib/screens/admin/cpanel_guardias_panel.dart`):**
+  - Los selectores de bloque ahora muestran la hora exacta junto al turno (ej. `B1 (07:30 - 08:15) · Mañana`), permitiendo una planificación intuitiva y sin ambigüedades.
+- **Acceso Directo para Docentes a su Horario Semanal (`lib/screens/docente_dashboard.dart`, `lib/screens/mi_horario_panel.dart`):**
+  - Certificado el acceso de los docentes a su horario asignado ("Mi horario" en barra lateral y acceso directo en panel resumen).
+  - La vista consume el componente compartido `CuadranteGrid`, mostrando a cada instructor sus clases y guardias con las mismas horas de reloj y realces pedagógicos.
+- **Carga Ultra-Rápida con Respaldo Nativo de Supabase (`lib/services/cuadrante_service.dart`):**
+  - Reducción del timeout de consulta a 3 segundos con desactivación de reintentos en `_api.get()`, con mutación inmediata a consultas directas sobre `v_cuadrante_clases` y `v_cuadrante_guardias`.
+  - Soporte de columnas `snake_case` y `camelCase` en `ClaseCuadrante.fromJson` y `Guardia.fromJson`.
+- **Despliegue y Purga Automática de Caché (`web/index.html`, `lib/core/config/app_config.dart`):**
+  - Elevada la versión a **v1.2.5** en la configuración de la app y en `web/index.html`. Despliegue completado a la rama de producción `main` en Cloudflare Pages (`https://inces-lms.pages.dev`).
+
 ## [1.2.4] - 2026-10-15
 ### Registro Resiliente en Cloudflare Edge y Autonomía de Envío de Correos
 - **Funciones Edge en Cloudflare Pages (`functions/`):**

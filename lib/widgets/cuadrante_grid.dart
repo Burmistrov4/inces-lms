@@ -42,7 +42,7 @@ class CuadranteGrid extends StatelessWidget {
           color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         ),
         children: [
-          const _CeldaCabecera(texto: ''),
+          const _CeldaCabecera(texto: 'Bloque / Hora'),
           for (final dia in dias)
             _CeldaCabecera(texto: diasDeLaSemana[dia]),
         ],
@@ -75,7 +75,7 @@ class CuadranteGrid extends StatelessWidget {
           border: TableBorder.all(color: borde, width: 1),
           defaultColumnWidth: const FixedColumnWidth(168),
           columnWidths: const {
-            0: FixedColumnWidth(46),
+            0: FixedColumnWidth(116),
           },
           children: hijos,
         ),
@@ -121,32 +121,58 @@ class _CeldaGutter extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final turno = turnoDeBloque(bloque);
-    final esPrimero = bloque == 1 || bloque == bloquesDeManana + 1;
+    final hora = horaLegibleDeBloque(bloque);
+    final esManana = turno == Turno.manana;
+    final colorTurno = esManana ? theme.colorScheme.primary : theme.colorScheme.tertiary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      alignment: Alignment.topCenter,
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      alignment: Alignment.center,
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            '$bloque',
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          if (esPrimero)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: colorTurno.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'B$bloque',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: colorTurno,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
                 turno.etiqueta,
                 style: theme.textTheme.labelSmall?.copyWith(
                   fontSize: 9,
-                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                  color: colorTurno,
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 3),
+          Text(
+            hora,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurface,
+              letterSpacing: -0.2,
             ),
+          ),
         ],
       ),
     );

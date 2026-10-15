@@ -295,4 +295,29 @@
   - [x] `audit_13_admin_archivos.png`: Gestor de Archivos (Cloudflare R2 + Google Drive) con generador de PDF binario válido y persistencia garantizada.
   - [x] `audit_14_admin_modulos.png`: Módulos del Sistema sin duplicidad de resumen ejecutivo, con control individual de los 10 módulos operativos.
 
+---
+
+## 🕒 14. Horarios de Clases con Horas Reloj (Mañana y Tarde) y Visualización Docente (v1.2.5)
+- [x] **Horas Reloj y Bloques Institucionales del INCES:**
+  - [x] `lib/models/cuadrante.dart`: Definidos los 12 bloques con horas oficiales de formación técnica:
+    - Mañana (B1 a B6): `07:30 - 08:15` hasta `11:15 - 12:00`.
+    - Tarde (B7 a B12): `01:00 - 01:45` hasta `04:45 - 05:30`.
+- [x] **Rediseño de Rejilla Semanal (`lib/widgets/cuadrante_grid.dart`):**
+  - [x] Cabecera `Bloque / Hora` con ancho ampliado a 116 px.
+  - [x] Badges de bloque (`B1` a `B12`), etiquetas de turno (`Mañana` / `Tarde`) y rango de reloj con tipografía legible.
+  - [x] Distinción visual y divisor nítido entre turnos.
+- [x] **Humanización de Diálogos (`cpanel_cuadrante_panel.dart` y `cpanel_guardias_panel.dart`):**
+  - [x] Desplegables de bloque con formato `B1 (07:30 - 08:15) · Mañana`.
+- [x] **Certificación de la Vista del Docente (`MiHorarioPanel`):**
+  - [x] Los docentes acceden a su horario semanal mediante "Mi horario" en la barra lateral y en el panel resumen.
+  - [x] Rejilla personalizada renderiza sus clases y guardias asignadas con las mismas horas reloj y badges de turno.
+  - [x] Suite `test/mi_horario_panel_test.dart` superada (4/4 pruebas).
+- [x] **Respaldo Resiliente Inmediato Supabase:**
+  - [x] Timeout de 3s en Fastify y fallback a `v_cuadrante_clases` y `v_cuadrante_guardias`.
+  - [x] Rejilla de horarios carga de inmediato sin spinners prolongados.
+- [x] **Despliegue y Verificación en Vivo:**
+  - [x] Despliegue v1.2.5 completado a Cloudflare Pages rama `main`.
+  - [x] Captura y verificación E2E `audit_08_admin_horarios.png` con la nueva columna de horas y turnos.
+
+
 

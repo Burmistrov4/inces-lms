@@ -442,7 +442,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                 value: bloque,
                 // El turno se enseña junto al bloque porque es lo que el bloque
                 // significa: los seis primeros son la mañana.
-                child: Text('$bloque · ${turnoDeBloque(bloque).etiqueta}'),
+                child: Text('B$bloque (${horaLegibleDeBloque(bloque)}) · ${turnoDeBloque(bloque).etiqueta}'),
               ),
           ],
           onCambiar: (valor) => _refiltrar(() => _bloqueFiltro = valor),
@@ -1011,7 +1011,7 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
                         for (var bloque = 1; bloque <= bloqueMaximo; bloque++)
                           DropdownMenuItem(
                             value: bloque,
-                            child: Text('$bloque'),
+                            child: Text('B$bloque (${horaLegibleDeBloque(bloque)}) · ${turnoDeBloque(bloque).etiqueta}'),
                           ),
                       ],
                       onCambiar: (valor) {

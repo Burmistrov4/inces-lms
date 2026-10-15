@@ -3,6 +3,9 @@ import { LoginPage } from '../src/pages/LoginPage.js';
 
 const BRAIN_DIR = 'C:/Users/Loro/.gemini/antigravity/brain/fc938256-e2cd-45cb-99ec-a6d5c97a5f0e';
 
+test.use({ serviceWorkers: 'block' });
+
+
 test('1. Flujo Público y Responsive (Landing, Oferta, Móvil, Inscripción, Login, Recuperación)', async ({ page }) => {
   test.setTimeout(240_000);
     // A. Landing Page Desktop

@@ -613,7 +613,7 @@ class _DialogoClaseState extends State<_DialogoClase> {
                         for (var b = 1; b <= bloqueMaximo; b++)
                           DropdownMenuItem(
                             value: b,
-                            child: Text('$b · ${turnoDeBloque(b).etiqueta}'),
+                            child: Text('B$b (${horaLegibleDeBloque(b)}) · ${turnoDeBloque(b).etiqueta}'),
                           ),
                       ],
                       onChanged: (v) => setState(() => _bloque = v ?? _bloque),

@@ -55,6 +55,8 @@ class BackendCuadranteGateway implements CuadranteGateway {
           'limite': '$limite',
           'desplazamiento': '$desplazamiento',
         },
+        tiempoEspera: const Duration(seconds: 3),
+        permitirReintento: false,
       );
 
       return PaginaAulas.fromJson(respuesta);
@@ -193,7 +195,12 @@ class BackendCuadranteGateway implements CuadranteGateway {
   @override
   Future<List<Periodo>> listarPeriodos() async {
     try {
-      final respuesta = await _api.get('$_base/periodos', token: _tokenSesion);
+      final respuesta = await _api.get(
+        '$_base/periodos',
+        token: _tokenSesion,
+        tiempoEspera: const Duration(seconds: 3),
+        permitirReintento: false,
+      );
       final raw = respuesta['periodos'];
       if (raw is List && raw.isNotEmpty) {
         return raw
@@ -409,6 +416,8 @@ class BackendCuadranteGateway implements CuadranteGateway {
           'aulaId': ?_limpiar(aulaId),
           'incluirInactivas': '$incluirInactivas',
         },
+        tiempoEspera: const Duration(seconds: 3),
+        permitirReintento: false,
       );
 
       return RejillaCuadrante.fromJson(respuesta);
@@ -425,7 +434,7 @@ class BackendCuadranteGateway implements CuadranteGateway {
                 .map((a) => Aula(
                       id: a['id']?.toString() ?? '',
                       nombre: a['name']?.toString() ?? '',
-                      capacidad: a['capacity'] as int? ?? 20,
+                      capacidad: (a['capacity'] as num?)?.toInt() ?? 20,
                       esTaller: a['is_workshop'] == true,
                       activa: a['is_active'] == true,
                     ))
@@ -441,15 +450,59 @@ class BackendCuadranteGateway implements CuadranteGateway {
                 ?.whereType<Map<String, dynamic>>()
                 .map((d) => DocenteResumen(
                       id: d['id']?.toString() ?? '',
-                      nombre: '${d['nombres'] ?? ''} ${d['apellidos'] ?? ''}'.trim(),
+                      nombre:
+                          '${d['nombres'] ?? ''} ${d['apellidos'] ?? ''}'.trim(),
                     ))
+                .toList() ??
+            [];
+
+        var queryClases = client.from('v_cuadrante_clases').select();
+        if (periodo != null && periodo.trim().isNotEmpty) {
+          queryClases = queryClases.eq('period_code', periodo.trim());
+        }
+        if (!incluirInactivas) {
+          queryClases = queryClases.eq('is_active', true);
+        }
+        if (docenteId != null && docenteId.trim().isNotEmpty) {
+          queryClases = queryClases.eq('teacher_id', docenteId.trim());
+        }
+        if (aulaId != null && aulaId.trim().isNotEmpty) {
+          queryClases = queryClases.eq('classroom_id', aulaId.trim());
+        }
+        if (seccionId != null && seccionId.trim().isNotEmpty) {
+          queryClases = queryClases.eq('section_id', seccionId.trim());
+        }
+        final resClases = await queryClases;
+        final clases = (resClases as List<dynamic>?)
+                ?.whereType<Map<String, dynamic>>()
+                .map(ClaseCuadrante.fromJson)
+                .toList() ??
+            [];
+
+        var queryGuardias = client.from('v_cuadrante_guardias').select();
+        if (periodo != null && periodo.trim().isNotEmpty) {
+          queryGuardias = queryGuardias.eq('period_code', periodo.trim());
+        }
+        if (!incluirInactivas) {
+          queryGuardias = queryGuardias.eq('is_active', true);
+        }
+        if (docenteId != null && docenteId.trim().isNotEmpty) {
+          queryGuardias = queryGuardias.eq('teacher_id', docenteId.trim());
+        }
+        if (aulaId != null && aulaId.trim().isNotEmpty) {
+          queryGuardias = queryGuardias.eq('classroom_id', aulaId.trim());
+        }
+        final resGuardias = await queryGuardias;
+        final guardias = (resGuardias as List<dynamic>?)
+                ?.whereType<Map<String, dynamic>>()
+                .map(Guardia.fromJson)
                 .toList() ??
             [];
 
         return RejillaCuadrante(
           periodo: periodo,
-          clases: const [],
-          guardias: const [],
+          clases: clases,
+          guardias: guardias,
           aulas: aulas,
           docentes: docentes,
         );
@@ -490,13 +543,76 @@ class BackendCuadranteGateway implements CuadranteGateway {
 
   @override
   Future<MiHorario> miHorario({String? periodo}) async {
-    final respuesta = await _api.get(
-      _rutaMiHorario,
-      token: _tokenSesion,
-      parametros: {'periodo': ?_limpiar(periodo)},
-    );
+    try {
+      final respuesta = await _api.get(
+        _rutaMiHorario,
+        token: _tokenSesion,
+        parametros: {'periodo': ?_limpiar(periodo)},
+        tiempoEspera: const Duration(seconds: 3),
+        permitirReintento: false,
+      );
 
-    return MiHorario.fromJson(respuesta);
+      return MiHorario.fromJson(respuesta);
+    } catch (_) {
+      try {
+        final client = SupabaseService.instance.client;
+        final usuario = client.auth.currentUser;
+        if (usuario == null) return const MiHorario(rol: '');
+
+        final resPerfil = await client
+            .from('profiles')
+            .select('rol')
+            .eq('id', usuario.id)
+            .maybeSingle();
+        final rol = resPerfil?['rol']?.toString() ?? '';
+
+        var queryClases = client
+            .from('v_cuadrante_clases')
+            .select()
+            .eq('is_active', true);
+        if (periodo != null && periodo.trim().isNotEmpty) {
+          queryClases = queryClases.eq('period_code', periodo.trim());
+        }
+        if (rol == 'docente') {
+          queryClases = queryClases.eq('teacher_id', usuario.id);
+        }
+        final resClases = await queryClases;
+        final clases = (resClases as List<dynamic>?)
+                ?.whereType<Map<String, dynamic>>()
+                .map(ClaseCuadrante.fromJson)
+                .toList() ??
+            [];
+
+        List<Guardia> guardias = const [];
+        if (rol == 'docente' || rol == 'admin') {
+          var queryGuardias = client
+              .from('v_cuadrante_guardias')
+              .select()
+              .eq('is_active', true);
+          if (periodo != null && periodo.trim().isNotEmpty) {
+            queryGuardias = queryGuardias.eq('period_code', periodo.trim());
+          }
+          if (rol == 'docente') {
+            queryGuardias = queryGuardias.eq('teacher_id', usuario.id);
+          }
+          final resGuardias = await queryGuardias;
+          guardias = (resGuardias as List<dynamic>?)
+                  ?.whereType<Map<String, dynamic>>()
+                  .map(Guardia.fromJson)
+                  .toList() ??
+              [];
+        }
+
+        return MiHorario(
+          rol: rol,
+          periodo: periodo,
+          clases: clases,
+          guardias: guardias,
+        );
+      } catch (_) {
+        return const MiHorario(rol: '');
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
