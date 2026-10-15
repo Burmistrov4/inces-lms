@@ -458,6 +458,8 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: DataTable(
+                      dataRowMinHeight: 68,
+                      dataRowMaxHeight: 84,
                       columns: const [
                         DataColumn(label: Text('Usuario')),
                         DataColumn(label: Text('Correo')),
@@ -471,30 +473,96 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
                               cells: [
                                 DataCell(
                                   SizedBox(
-                                    width: 210,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
+                                    width: 250,
+                                    child: Row(
                                       children: [
-                                        Text(u.nombreCompleto),
-                                        // Distinción demo/real sin borrar
-                                        // nada: las cuentas de la siembra
-                                        // (`@semilla.invalid`) se etiquetan.
-                                        if (u.esCuentaDemo) ...[
-                                          const SizedBox(height: 4),
-                                          const Etiqueta(
-                                            texto: 'Cuenta de demostración',
+                                        CircleAvatar(
+                                          radius: 17,
+                                          backgroundColor: u.esCuentaDemo
+                                              ? Theme.of(context).colorScheme.secondaryContainer
+                                              : Theme.of(context).colorScheme.primaryContainer,
+                                          child: Text(
+                                            (u.nombres.isNotEmpty
+                                                    ? u.nombres[0]
+                                                    : (u.email.isNotEmpty ? u.email[0] : 'U'))
+                                                .toUpperCase(),
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                              color: u.esCuentaDemo
+                                                  ? Theme.of(context).colorScheme.onSecondaryContainer
+                                                  : Theme.of(context).colorScheme.onPrimaryContainer,
+                                            ),
                                           ),
-                                        ],
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                u.nombreCompleto,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                              if (u.cedula != null && u.cedula!.isNotEmpty) ...[
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  'C.I. ${u.cedula}',
+                                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                              ],
+                                              if (u.esCuentaDemo) ...[
+                                                const SizedBox(height: 2),
+                                                const Etiqueta(
+                                                  texto: 'Cuenta de demostración',
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
                                 ),
-                                DataCell(Text(u.email)),
+                                DataCell(
+                                  SizedBox(
+                                    width: 220,
+                                    child: Text(
+                                      u.email,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
                                 DataCell(_RolChip(u.rol)),
                                 DataCell(
-                                  Text(u.activo ? 'Activo' : 'Inactivo'),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: u.activo
+                                              ? Colors.green.shade600
+                                              : Colors.grey.shade500,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(u.activo ? 'Activo' : 'Inactivo'),
+                                    ],
+                                  ),
                                 ),
                                 DataCell(
                                   Row(

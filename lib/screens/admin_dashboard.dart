@@ -181,7 +181,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     ),
     ItemNavegacion(
       icono: Icons.calendar_month_outlined,
-      titulo: 'Cuadrante y Horarios',
+      titulo: 'Horarios de Clases',
       categoria: 'Control de aulas',
       disponible: true,
       modulo: 'm3_cuadrante',
@@ -246,7 +246,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           (destino.toLowerCase().contains('auditor') &&
               it.titulo.toLowerCase().contains('configuraci')) ||
           (destino.toLowerCase().contains('accesos') &&
-              it.titulo.toLowerCase().contains('accesos')),
+              it.titulo.toLowerCase().contains('accesos')) ||
+          (destino.toLowerCase().contains('cuadrante') &&
+              it.titulo.toLowerCase().contains('horarios')),
     );
     if (idx != -1) {
       setState(() => _seleccionada = idx);
@@ -369,9 +371,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           migas: ['Inicio', 'Gestión académica', 'Gestor de Archivos'],
           child: CpanelExploradorArchivosPanel(),
         );
-      case 'Cuadrante y Horarios':
+      case 'Horarios de Clases':
         return const ContenidoSeccion(
-          migas: ['Inicio', 'Control de aulas', 'Cuadrante y Horarios'],
+          migas: ['Inicio', 'Control de aulas', 'Horarios de Clases'],
           child: CpanelCuadrantePanel(),
         );
       case 'Espacios y Aulas':

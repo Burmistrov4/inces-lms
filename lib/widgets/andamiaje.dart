@@ -438,6 +438,74 @@ class _MenuLateral extends StatelessWidget {
                   ),
                 ),
               ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                replegado ? 4 : 16,
+                4,
+                replegado ? 4 : 16,
+                12,
+              ),
+              child: replegado
+                  ? Center(
+                      child: Tooltip(
+                        message: 'INCES LMS v1.2.3 · CFS Rafael Urdaneta (2026)',
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'v1.2',
+                            style: GoogleFonts.inter(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Divider(height: 1),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: const BoxDecoration(
+                                color: IncesTheme.versionActiva,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 7),
+                            Text(
+                              'INCES LMS v1.2.3',
+                              style: GoogleFonts.inter(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 14),
+                          child: Text(
+                            'CFS Rafael Urdaneta · Prod 2026',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
           ],
         ),
       ),

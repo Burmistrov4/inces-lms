@@ -145,7 +145,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
     return null;
   }
 
-  Future<void> _abrirCreacion() async {
+  Future<void> _abrirCreacion({int? diaInicial, int? bloqueInicial}) async {
     final guardado = await showDialog<bool>(
       context: context,
       builder: (_) => _DialogoClase(
@@ -154,6 +154,8 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
         docentes: _docentes,
         secciones: _seccionesDisponibles,
         periodo: _lapso ?? '',
+        diaInicial: diaInicial,
+        bloqueInicial: bloqueInicial,
       ),
     );
     if (guardado != true || !mounted) return;
@@ -206,9 +208,9 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
     );
 
     return TituloSeccion(
-      'Cuadrante y horarios',
-      subtitulo: 'La rejilla del centro: cada día y bloque con su clase y su '
-          'guardia. Toca una clase para moverla o cambiarle el aula.',
+      'Horarios de Clases',
+      subtitulo: 'Planificación y distribución semanal de clases por día y bloque. '
+          'Toca una clase para editarla o pulsa en cualquier bloque libre para asignar una nueva.',
       acciones: [
         if (_periodos.isNotEmpty) _selectorDeLapso(),
         const SizedBox(width: 8),
@@ -343,7 +345,15 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
             ],
           ),
         ),
-        Expanded(child: CuadranteGrid(celdas: celdas)),
+        Expanded(
+          child: CuadranteGrid(
+            celdas: celdas,
+            onCeldaTap: _razonParaNoAsignar() == null
+                ? (dia, bloque) =>
+                    _abrirCreacion(diaInicial: dia, bloqueInicial: bloque)
+                : null,
+          ),
+        ),
       ],
     );
   }
@@ -423,6 +433,8 @@ class _DialogoClase extends StatefulWidget {
     required this.docentes,
     required this.secciones,
     required this.periodo,
+    this.diaInicial,
+    this.bloqueInicial,
   });
 
   final CuadranteRepository repo;
@@ -431,6 +443,8 @@ class _DialogoClase extends StatefulWidget {
   final List<DocenteResumen> docentes;
   final Map<String, String> secciones;
   final String periodo;
+  final int? diaInicial;
+  final int? bloqueInicial;
 
   @override
   State<_DialogoClase> createState() => _DialogoClaseState();
@@ -440,8 +454,8 @@ class _DialogoClaseState extends State<_DialogoClase> {
   late String? _seccionId = widget.clase?.seccionId;
   late String? _aulaId = widget.clase?.aulaId;
   late String? _docenteId = widget.clase?.docenteId;
-  late int _dia = widget.clase?.dia ?? 1;
-  late int _bloque = widget.clase?.bloque ?? 1;
+  late int _dia = widget.clase?.dia ?? widget.diaInicial ?? 1;
+  late int _bloque = widget.clase?.bloque ?? widget.bloqueInicial ?? 1;
   late bool _activa = widget.clase?.activa ?? true;
 
   bool _guardando = false;

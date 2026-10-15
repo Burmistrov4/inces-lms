@@ -566,11 +566,59 @@ class _TarjetaPrograma extends StatelessWidget {
                   ),
                   if (vacio) ...[
                     const SizedBox(height: 10),
-                    const AvisoEnLinea(
-                      tono: TonoAviso.advertencia,
-                      icono: Icons.warning_amber_outlined,
-                      texto: 'Sin materias: no se puede activar hasta que '
-                          'tenga pensum.',
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.errorContainer.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: theme.colorScheme.error.withValues(alpha: 0.35),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                size: 18,
+                                color: theme.colorScheme.error,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Sin materias cargadas: Requiere pensum para poder activarse y recibir inscripciones.',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: theme.colorScheme.onErrorContainer,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          FilledButton.tonalIcon(
+                            onPressed: onEditarPensum,
+                            icon: const Icon(Icons.playlist_add_rounded, size: 18),
+                            label: const Text('Cargar / Asignar Pensum Académico'),
+                            style: FilledButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: onEditarPensum,
+                      icon: const Icon(Icons.menu_book_rounded, size: 16),
+                      label: const Text('Gestionar Pensum / Materias'),
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                      ),
                     ),
                   ],
                 ],

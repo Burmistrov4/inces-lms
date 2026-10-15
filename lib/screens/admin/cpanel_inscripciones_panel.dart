@@ -387,6 +387,12 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel> {
               ),
               const SizedBox(height: 12),
               const AvisoEnLinea(
+                texto: 'Ciclos de Formación y Convocatorias: Para programas con períodos trimestrales (ej. Soldadura Básica de 3 meses), las inscripciones se abren por cohorte. Si una sección llena su cupo, los aspirantes entran automáticamente a la cola de espera para la siguiente apertura.',
+                icono: Icons.calendar_today_outlined,
+                tono: TonoAviso.info,
+              ),
+              const SizedBox(height: 8),
+              const AvisoEnLinea(
                 texto: '«Promover siguiente» se usa tras ampliar la capacidad de '
                     'una sección: sube al primero de la cola a «matriculado». Si '
                     'la sección está llena o ya tiene una oferta en el aire, no '
@@ -448,8 +454,18 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel> {
                     Etiqueta(
                       texto: o.cuposDisponibles > 0
                           ? '${o.cuposDisponibles} disponible(s)'
-                          : 'Sin cupos',
+                          : 'Sin cupos disponibles',
                     ),
+                    if (o.cuposDisponibles > 0)
+                      const Etiqueta(
+                        texto: 'Inscripción Abierta',
+                        destacada: true,
+                      )
+                    else
+                      const Etiqueta(
+                        texto: 'Cupos Agotados / En Espera',
+                        destacada: false,
+                      ),
                     if (o.ofertaVigente)
                       const Etiqueta(
                         texto: 'Oferta en el aire',

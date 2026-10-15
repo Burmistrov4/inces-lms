@@ -3,6 +3,35 @@
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
 ## [1.2.3] - 2026-10-15
+### Humanización, Interactividad de Horarios, Gestor Documental R2/Drive y Claridad Pedagógica
+- **Usuarios y Roles sin Amontonamiento (`lib/screens/admin/cpanel_usuarios_roles_panel.dart`):**
+  - Ajustada la altura vertical de las filas de la tabla (`dataRowMinHeight: 68`, `dataRowMaxHeight: 84`) permitiendo espaciado confortable.
+  - Implementado truncado elíptico controlado (`maxLines: 1`, `TextOverflow.ellipsis`) con tooltip accesible al pasar el cursor sobre correos largos.
+  - Incorporados avatares con las iniciales de cada usuario y badge cromático de estado de cuenta.
+- **Acceso Prominente y Funcional al Pensum Académico (`lib/screens/admin/cpanel_programas_panel.dart`):**
+  - Reemplazada la advertencia pasiva por un botón de acción principal de alto contraste: `FilledButton.tonalIcon(label: 'Cargar / Asignar Pensum Académico')` cuando el programa no tiene materias cargadas, y `OutlinedButton.icon(label: 'Gestionar Pensum / Materias')` cuando ya cuenta con estructura.
+  - Apertura directa e intuitiva del asistente curricular (`AsistenteCurriculoScreen`) sin tener que buscar íconos microscópicos.
+- **Renombramiento Pedagógico e Interactividad en Horarios (`lib/screens/admin_dashboard.dart`, `lib/screens/admin/cpanel_cuadrante_panel.dart`, `lib/widgets/cuadrante_grid.dart`):**
+  - Renombrado de "Cuadrante y Horarios" a **"Horarios de Clases"** en toda la navegación y encabezados.
+  - Las celdas vacías de la grilla semanal son ahora interactivas con indicador visual al pasar el ratón (`+ Asignar`).
+  - Al hacer clic en un bloque vacío, se abre el diálogo de programación pre-seleccionando automáticamente el día y bloque horario pulsado.
+- **Lapsos Académicos con Lenguaje Institucional Claro (`lib/screens/admin/cpanel_lapsos_panel.dart`):**
+  - Erradicada la jerga técnica confusa (*"Abierto significa que se puede planificar en él. No es lo mismo que vigente..."*).
+  - Sustituida por explicaciones pedagógicas: **Lapso Vigente** (en impartición y clases activas), **Lapso en Planificación** (abierto para que directores y coordinadores configuren secciones), y **Cerrado** (histórico archivado).
+  - El interruptor fue renombrado a `"Habilitado para planificación docente y de secciones"`.
+- **Inscripciones y Cupos con Ciclos Formativos Claros (`lib/screens/admin/cpanel_inscripciones_panel.dart`):**
+  - Agregado banner explicativo sobre cohortes formativas (ej. ciclos intensivos trimestrales en Soldadura, Gastronomía y Electricidad).
+  - Etiquetas visuales claras por sección indicando si la inscripción está en período abierto o si los cupos están agotados / en lista de espera.
+- **Gestor de Archivos (R2 + Google Drive) y Vinculación a Aulas Virtuales (`lib/screens/admin/cpanel_explorador_archivos_panel.dart`):**
+  - Corregida la descarga de enlaces externos: los archivos enlazados a Google Drive abren directamente la URL en una nueva pestaña del navegador mediante `SelectorDeArchivosDelNavegador`.
+  - Los archivos almacenados en Cloudflare R2 se descargan de inmediato mediante stream / blob local.
+  - Añadida acción contextual `"Vincular a Aula Virtual"` con diálogo para asignar especialidad (Soldadura, Gastronomía, Informática, etc.) y materia específica.
+  - Chips visuales en cuadrícula y lista identificando a qué aula y materia pertenece cada recurso pedagógico.
+  - Banner informativo permanente explicando el almacenamiento híbrido (archivos < 25 MB en Cloudflare R2 y recursos pesados > 25 MB vía Google Drive institucional).
+- **Identificador de Versión Visible en Navegación (`lib/widgets/andamiaje.dart`, `lib/theme/inces_theme.dart`):**
+  - Incorporado distintivo institucional en el pie del Sidebar/Drawer: `INCES LMS v1.2.3 · CFS Rafael Urdaneta · Prod 2026`.
+  - Muestra un chip de versión y tooltip accesible cuando la barra de navegación se encuentra colapsada.
+
 ### Persistencia de Borrador en Inscripción, Resiliencia de Registro y Consolidación de UX
 - **Persistencia y Restauración Automática de Borrador (`lib/screens/aspirante_form_screen.dart`):**
   - Implementado guardado en tiempo real en almacenamiento local (`SharedPreferences`) ante cada entrada de datos o navegación de pasos.

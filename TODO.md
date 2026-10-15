@@ -126,3 +126,32 @@
   - [x] Dart Analyzer: 0 errores, 0 avisos, 0 notas en 234 archivos (`node devops/analizar-dart.mjs`).
   - [x] Suite de Pruebas Backend: 33 archivos, 700 tests pasando exitosamente (`npm test`).
   - [x] Suite de Pruebas Frontend / Flutter: Suite de navegación, catálogo, alcanzabilidad y borrador 100% pasando (`flutter test`).
+
+---
+
+## 🛠️ 7. Optimización Integral de Usabilidad, Gestión Académica y Archivos
+- [x] **Corrección Visual en Usuarios y Roles (Amontonamiento de Texto en Tabla):**
+  - [x] En `lib/screens/admin/cpanel_usuarios_roles_panel.dart`, se ampliaron las dimensiones de las filas (`dataRowMinHeight: 68`, `dataRowMaxHeight: 84`) y se formateó el texto con `maxLines: 1` y `TextOverflow.ellipsis`, eliminando la colisión vertical entre nombres largos, cédula y la insignia de cuenta de demostración.
+  - [x] Se incorporaron avatares con las iniciales del usuario, círculos de estado activo/inactivo estilizados y una maquetación profesional alineada con estándares modernos de gestión educativa.
+- [x] **Acción Prominente de Carga/Edición de Pensum en Programas Académicos:**
+  - [x] En `lib/screens/admin/cpanel_programas_panel.dart`, se reemplazó el aviso pasivo por un contenedor destacado con botón directo de acción: `FilledButton.tonalIcon(label: 'Cargar / Asignar Pensum Académico')` cuando el programa tiene 0 materias.
+  - [x] Para programas con materias cargadas, se añadió el botón directo `OutlinedButton.icon(label: 'Gestionar Pensum / Materias')`, abriendo inmediatamente el `AsistenteCurriculoScreen`.
+- [x] **Simplificación de Terminología y Asignación Interactiva de Horarios ("Horarios de Clases"):**
+  - [x] Renombrado el módulo de "Cuadrante y Horarios" a "Horarios de Clases" en `lib/screens/admin_dashboard.dart` y en las cabeceras de `lib/screens/admin/cpanel_cuadrante_panel.dart`, manteniendo soporte para alias retrocompatibles en el enrutamiento.
+  - [x] En `lib/widgets/cuadrante_grid.dart`, se implementó interactividad directa mediante el callback `onCeldaTap`. Las celdas vacías ahora muestran un indicador táctil que al pulsarse abre el diálogo de creación `_DialogoClase` prellenando automáticamente el día y el bloque seleccionados.
+- [x] **Clarificación de Conceptos en Lapsos Académicos e Inscripciones:**
+  - [x] En `lib/screens/admin/cpanel_lapsos_panel.dart`, se erradicó la jerga confusa ("Abierto significa que se puede planificar en él. No es lo mismo que vigente..."). Se actualizó el título y el interruptor a "Habilitado para planificación", con explicaciones pedagógicas sobre el período en curso ("Vigente"), períodos en preparación ("En Planificación") y períodos archivados ("Cerrado").
+  - [x] En `lib/screens/admin/cpanel_inscripciones_panel.dart`, se agregó un aviso institucional sobre los ciclos de formación (ej. Soldadura Básica trimestral) y cohortes, junto con insignias explícitas de "Inscripción Abierta" y "Cupos Agotados / En Espera" por cada sección.
+- [x] **Gestor de Archivos (Google Drive + Cloudflare R2) y Vinculación con Aulas Virtuales:**
+  - [x] En `lib/screens/admin/cpanel_explorador_archivos_panel.dart`, se corrigió la acción de descarga/apertura para enlaces de Google Drive y Cloudflare R2. Al pulsar o hacer doble clic en recursos de Drive se abre directamente el enlace externo vía navegador; para archivos de R2 se realiza la descarga inmediata del documento.
+  - [x] Se añadió soporte para `aulaVirtual` y `materia` en `ElementoArchivo`, mostrando insignias de aula en las tarjetas de cuadrícula y lista.
+  - [x] Se implementó el diálogo interactivo `_vincularAulaVirtual` para asignar cualquier archivo o carpeta a un aula virtual o especialidad técnica con sus niveles de acceso correspondientes.
+  - [x] Se integró un banner informativo sobre el almacenamiento híbrido (Cloudflare R2 para documentos <25 MB y Google Drive para videos pesados >25 MB protegiendo la cuota gratuita).
+- [x] **Control de Versión Visible en Frontend:**
+  - [x] En el pie del menú lateral de `lib/widgets/andamiaje.dart`, se integró el indicador de versión visible: `INCES LMS v1.2.3 · CFS Rafael Urdaneta · Prod 2026` con punto luminoso de estado activo en modo expandido y badge `v1.2` con tooltip en modo replegado.
+- [x] **Verificación y Despliegue en Producción:**
+  - [x] Dart Analyzer: 0 errores, 0 avisos, 0 notas en 234 archivos (`node devops/analizar-dart.mjs`).
+  - [x] Suite de Pruebas Backend: 33 archivos, 700 tests pasando exitosamente (`npm test`).
+  - [x] Suite de Pruebas Frontend / Flutter: 1034 tests pasando exitosamente (`flutter test`).
+  - [x] Despliegue a Cloudflare Pages completado con éxito (`https://inces-lms.pages.dev` y `https://befa332a.inces-lms.pages.dev`).
+

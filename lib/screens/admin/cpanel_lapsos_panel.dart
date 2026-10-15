@@ -192,9 +192,10 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TituloSeccion(
-          'Lapsos académicos',
-          subtitulo: 'Puede haber varios abiertos y sólo uno vigente: el '
-              'vigente es el que el cuadrante toma por defecto.',
+          'Lapsos Académicos',
+          subtitulo: 'Períodos de formación técnica del centro. El lapso «Vigente» '
+              'es donde se dictan las clases actualmente; los lapsos en «Planificación» '
+              'permiten organizar materias y horarios con antelación.',
           acciones: [
             FilledButton.icon(
               onPressed: () => _abrirFormulario(),
@@ -644,10 +645,11 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
                   contentPadding: EdgeInsets.zero,
                   value: _activo,
                   onChanged: (valor) => setState(() => _activo = valor),
-                  title: const Text('Lapso abierto'),
+                  title: const Text('Habilitado para planificación'),
                   subtitle: const Text(
-                    'Abierto significa que se puede planificar en él. No es lo '
-                    'mismo que vigente: eso se cambia con «Hacer vigente».',
+                    'Permite programar materias, horarios y cupos para este período. '
+                    'Para que sea el lapso activo en curso del centro, usa el botón '
+                    '«Hacer vigente» en la lista principal.',
                   ),
                 ),
               ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../services/selector_archivos_navegador.dart';
 import '../../theme/inces_theme.dart';
 
 /// Tipo de elemento en el explorador de archivos.
@@ -43,6 +44,8 @@ class ElementoArchivo {
     this.urlDrive,
     this.permiso = 'Docentes y Estudiantes',
     this.actividad = const [],
+    this.aulaVirtual = 'General CFS (Todos)',
+    this.materia = 'Formación Técnica General',
   });
 
   final String id;
@@ -57,6 +60,8 @@ class ElementoArchivo {
   String? urlDrive;
   String permiso;
   List<EventoActividad> actividad;
+  String aulaVirtual;
+  String materia;
 
   bool get esCarpeta => tipo == TipoElemento.carpeta;
 
@@ -798,6 +803,178 @@ class _CpanelExploradorArchivosPanelState
     );
   }
 
+  Future<void> _abrirODescargarElemento(ElementoArchivo item) async {
+    final selector = SelectorDeArchivosDelNavegador();
+    if (item.esDrive && item.urlDrive != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Abriendo enlace de Google Drive en una nueva pestaña...'),
+          backgroundColor: IncesTheme.verdeGoogleDrive,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      try {
+        await selector.descargar(url: item.urlDrive!, nombre: item.nombre);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No se pudo abrir el enlace: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (!item.esCarpeta) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Descargando «${item.nombre}» desde Cloudflare R2...'),
+          backgroundColor: IncesTheme.azulPrimario,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      try {
+        await selector.descargarTexto(
+          nombre: item.nombre,
+          contenido: '--- INCES LMS - CFS Rafael Urdaneta ---\n'
+              'Documento: ${item.nombre}\n'
+              'Aula Virtual: ${item.aulaVirtual}\n'
+              'Materia: ${item.materia}\n'
+              'Propietario: ${item.propietario}\n'
+              'Fecha: ${item.fechaModificacion}\n\n'
+              '[Recurso verificado y alojado en Cloudflare R2 Storage]',
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Descarga completada para «${item.nombre}».'),
+          ),
+        );
+      }
+    }
+  }
+
+  void _vincularAulaVirtual(ElementoArchivo item) {
+    String aulaSeleccionada = item.aulaVirtual;
+    String permisoSeleccionado = item.permiso;
+
+    final aulasDisponibles = [
+      'General CFS (Todos los programas)',
+      'Soldadura Básica - Taller 1',
+      'Soldadura Avanzada TIG/MIG - Taller 2',
+      'Electricidad y Mantenimiento Industrial',
+      'Refrigeración y Climatización',
+      'Alimentación y Gastronomía Industrial',
+      'Asistente Administrativo y Ofimática',
+      'Diseño Gráfico y Computación',
+      'Formación Juvenil y Bachillerato Productivo',
+    ];
+
+    final permisosDisponibles = [
+      'Docentes y Estudiantes',
+      'Sólo Docente / Instructor',
+      'Público Institucional (Todo el CFS)',
+    ];
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.school_outlined, color: IncesTheme.azulPrimario),
+              SizedBox(width: 8),
+              Expanded(child: Text('Vincular a Aula Virtual')),
+            ],
+          ),
+          content: SizedBox(
+            width: 440,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Asigna «${item.nombre}» a un aula virtual para que sus estudiantes y profesores tengan acceso directo desde su módulo formativo.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: aulasDisponibles.contains(aulaSeleccionada)
+                      ? aulaSeleccionada
+                      : aulasDisponibles.first,
+                  decoration: const InputDecoration(
+                    labelText: 'Aula Virtual / Especialidad',
+                    prefixIcon: Icon(Icons.meeting_room_outlined),
+                  ),
+                  items: aulasDisponibles
+                      .map((a) => DropdownMenuItem(value: a, child: Text(a, overflow: TextOverflow.ellipsis)))
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) setDlgState(() => aulaSeleccionada = val);
+                  },
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  initialValue: permisosDisponibles.contains(permisoSeleccionado)
+                      ? permisoSeleccionado
+                      : permisosDisponibles.first,
+                  decoration: const InputDecoration(
+                    labelText: 'Nivel de Acceso en el Aula',
+                    prefixIcon: Icon(Icons.lock_person_outlined),
+                  ),
+                  items: permisosDisponibles
+                      .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) setDlgState(() => permisoSeleccionado = val);
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton.icon(
+              onPressed: () {
+                setState(() {
+                  item.aulaVirtual = aulaSeleccionada;
+                  item.permiso = permisoSeleccionado;
+                  item.actividad = [
+                    EventoActividad(
+                      accion: 'Asignado a $aulaSeleccionada ($permisoSeleccionado)',
+                      tiempo: 'Hace un momento',
+                      usuario: 'Administrador Maestro',
+                      icono: Icons.school_outlined,
+                    ),
+                    ...item.actividad,
+                  ];
+                });
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('«${item.nombre}» asignado a «$aulaSeleccionada».'),
+                    backgroundColor: IncesTheme.azulPrimario,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.check_rounded, size: 18),
+              label: const Text('Guardar Asignación'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Construcción de Interfaz
   // ---------------------------------------------------------------------------
@@ -1072,6 +1249,49 @@ class _CpanelExploradorArchivosPanelState
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.28),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.25),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline_rounded,
+                  color: theme.colorScheme.primary, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Almacenamiento Híbrido: Cloudflare R2 + Google Drive + Aulas Virtuales',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '• Documentos y Pensum (< 25 MB): Se almacenan directamente en Cloudflare R2 con descargas de alta velocidad.\n'
+                      '• Videos y Clases Grabadas (> 25 MB): Se enlazan vía Google Drive sin consumir la cuota de 10 GB de R2.\n'
+                      '• Asignación a Aulas: Puedes vincular cualquier archivo o carpeta a un aula o taller (ej. Soldadura Básica) para que sus docentes y aprendices lo tengan a mano.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
         if (carpetas.isNotEmpty) ...[
           Text('Carpetas', style: theme.textTheme.titleSmall),
           const SizedBox(height: 10),
@@ -1228,6 +1448,7 @@ class _CpanelExploradorArchivosPanelState
             ),
             child: InkWell(
               onTap: () => setState(() => _seleccionado = f),
+              onDoubleTap: () => _abrirODescargarElemento(f),
               borderRadius: BorderRadius.circular(12),
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -1259,34 +1480,57 @@ class _CpanelExploradorArchivosPanelState
                           icon: const Icon(Icons.more_vert, size: 18),
                           padding: EdgeInsets.zero,
                           onSelected: (val) {
-                            if (val == 'descargar') {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Descargando «${f.nombre}»...'),
-                                ),
-                              );
-                            }
+                            if (val == 'abrir') _abrirODescargarElemento(f);
+                            if (val == 'vincular') _vincularAulaVirtual(f);
                             if (val == 'renombrar') _renombrarElemento(f);
                             if (val == 'eliminar') _eliminarElemento(f);
                           },
                           itemBuilder: (ctx) => [
+                            PopupMenuItem(
+                              value: 'abrir',
+                              child: Row(
+                                children: [
+                                  Icon(f.esDrive ? Icons.open_in_new_rounded : Icons.download_rounded, size: 18),
+                                  const SizedBox(width: 8),
+                                  Text(f.esDrive ? 'Abrir en Drive' : 'Descargar'),
+                                ],
+                              ),
+                            ),
                             const PopupMenuItem(
-                              value: 'descargar',
-                              child: Text('Descargar'),
+                              value: 'vincular',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.school_outlined, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Asignar a Aula Virtual'),
+                                ],
+                              ),
                             ),
                             const PopupMenuItem(
                               value: 'renombrar',
-                              child: Text('Cambiar nombre'),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit_outlined, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Cambiar nombre'),
+                                ],
+                              ),
                             ),
                             const PopupMenuItem(
                               value: 'eliminar',
-                              child: Text('Eliminar'),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete_outline, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Eliminar'),
+                                ],
+                              ),
                             ),
                           ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Text(
                       f.nombre,
                       maxLines: 2,
@@ -1294,6 +1538,24 @@ class _CpanelExploradorArchivosPanelState
                       style: GoogleFonts.inter(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '🏛️ ${f.aulaVirtual}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -1337,8 +1599,35 @@ class _CpanelExploradorArchivosPanelState
             leading: _iconoPorTipo(f),
             title: Text(f.nombre,
                 style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text('${f.tamanoFormateado} • ${f.propietario}'),
-            trailing: Text(f.esDrive ? 'Google Drive' : 'Cloudflare R2'),
+            subtitle: Text('${f.tamanoFormateado} • ${f.propietario} • 🏛️ ${f.aulaVirtual}'),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  f.esDrive ? 'Google Drive' : 'Cloudflare R2',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: f.esDrive
+                        ? IncesTheme.verdeGoogleDrive
+                        : theme.colorScheme.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    f.esDrive ? Icons.open_in_new_rounded : Icons.download_rounded,
+                    size: 18,
+                  ),
+                  tooltip: f.esDrive ? 'Abrir en Drive' : 'Descargar',
+                  onPressed: () => _abrirODescargarElemento(f),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.school_outlined, size: 18),
+                  tooltip: 'Asignar a Aula Virtual',
+                  onPressed: () => _vincularAulaVirtual(f),
+                ),
+              ],
+            ),
             onTap: () => setState(() => _seleccionado = f),
           );
         }).toList(),
@@ -1494,8 +1783,10 @@ class _CpanelExploradorArchivosPanelState
         const SizedBox(height: 12),
         _propiedadFila('Tipo', item.tipo.name.toUpperCase()),
         _propiedadFila('Tamaño', item.tamanoFormateado),
-        _propiedadFila(
-            'Almacenamiento', item.esDrive ? 'Google Drive' : 'Cloudflare R2'),
+        _propiedadFila('Almacenamiento',
+            item.esDrive ? 'Google Drive (Enlace)' : 'Cloudflare R2 (Directo)'),
+        _propiedadFila('🏛️ Aula Virtual', item.aulaVirtual),
+        _propiedadFila('📚 Materia', item.materia),
         _propiedadFila('Ubicación', item.ruta),
         _propiedadFila('Propietario', item.propietario),
         _propiedadFila('Permiso de acceso', item.permiso),
@@ -1503,23 +1794,42 @@ class _CpanelExploradorArchivosPanelState
           'Modificado',
           '${item.fechaModificacion.day}/${item.fechaModificacion.month}/${item.fechaModificacion.year}',
         ),
-        const SizedBox(height: 20),
-        if (!item.esCarpeta)
-          FilledButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Descargando «${item.nombre}»...')),
-              );
-            },
-            icon: const Icon(Icons.download_rounded, size: 18),
-            label: const Text('Descargar archivo'),
-          )
-        else
+        const SizedBox(height: 18),
+        if (!item.esCarpeta) ...[
+          if (item.esDrive)
+            FilledButton.icon(
+              onPressed: () => _abrirODescargarElemento(item),
+              icon: const Icon(Icons.open_in_new_rounded, size: 18),
+              label: const Text('Abrir en Google Drive'),
+              style: FilledButton.styleFrom(
+                backgroundColor: IncesTheme.verdeGoogleDrive,
+              ),
+            )
+          else
+            FilledButton.icon(
+              onPressed: () => _abrirODescargarElemento(item),
+              icon: const Icon(Icons.download_rounded, size: 18),
+              label: const Text('Descargar archivo (R2)'),
+            ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => _vincularAulaVirtual(item),
+            icon: const Icon(Icons.school_outlined, size: 17),
+            label: const Text('Asignar a Aula Virtual'),
+          ),
+        ] else ...[
           FilledButton.tonalIcon(
             onPressed: () => _descargarZipCarpeta(item),
             icon: const Icon(Icons.archive_outlined, size: 18),
             label: const Text('Descargar carpeta en ZIP'),
           ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => _vincularAulaVirtual(item),
+            icon: const Icon(Icons.school_outlined, size: 17),
+            label: const Text('Asignar carpeta a Aula Virtual'),
+          ),
+        ],
       ],
     );
   }

@@ -1348,7 +1348,7 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
                           decoration: BoxDecoration(
                             color: esActivo
                                 ? IncesTheme.azulPrimario
-                                : const Color(0xFFCBD5E1),
+                                : IncesTheme.bordeCarruselNeutro,
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),

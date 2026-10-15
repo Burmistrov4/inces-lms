@@ -14,10 +14,17 @@ import '../models/cuadrante.dart';
 /// La franja de la tarde (bloques 7–12) se marca con un divisor y un fondo
 /// tenue, usando [bloquesDeManana] para no escribir la frontera en dos sitios.
 class CuadranteGrid extends StatelessWidget {
-  const CuadranteGrid({super.key, required this.celdas});
+  const CuadranteGrid({
+    super.key,
+    required this.celdas,
+    this.onCeldaTap,
+  });
 
   /// Contenido de cada celda, por clave `'$dia-$bloque'`.
   final Map<String, List<Widget>> celdas;
+
+  /// Acción interactiva al pulsar sobre una celda (ej. celda vacía para asignar clase).
+  final void Function(int dia, int bloque)? onCeldaTap;
 
   static String clave(int dia, int bloque) => '$dia-$bloque';
 
@@ -55,6 +62,7 @@ class CuadranteGrid extends StatelessWidget {
                 hijos: celdas[clave(dia, bloque)] ?? const [],
                 esDivisorTurno: bloque == bloquesDeManana + 1,
                 borde: borde,
+                onTap: onCeldaTap != null ? () => onCeldaTap!(dia, bloque) : null,
               ),
           ],
         ),
@@ -150,15 +158,18 @@ class _CeldaContenido extends StatelessWidget {
     required this.hijos,
     this.esDivisorTurno = false,
     required this.borde,
+    this.onTap,
   });
 
   final List<Widget> hijos;
   final bool esDivisorTurno;
   final Color borde;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final theme = Theme.of(context);
+    final contenedor = Container(
       constraints: const BoxConstraints(minHeight: 52),
       padding: const EdgeInsets.all(5),
       // El divisor de turno es un realce visual, no una regla nueva: separa la
@@ -169,7 +180,18 @@ class _CeldaContenido extends StatelessWidget {
             )
           : null,
       child: hijos.isEmpty
-          ? const SizedBox.shrink()
+          ? (onTap != null
+              ? Center(
+                  child: Tooltip(
+                    message: 'Clic para asignar clase aquí',
+                    child: Icon(
+                      Icons.add_circle_outline_rounded,
+                      size: 16,
+                      color: theme.colorScheme.primary.withValues(alpha: 0.28),
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink())
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -179,6 +201,17 @@ class _CeldaContenido extends StatelessWidget {
                 ],
               ],
             ),
+    );
+
+    if (onTap == null || hijos.isNotEmpty) {
+      return contenedor;
+    }
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      hoverColor: theme.colorScheme.primary.withValues(alpha: 0.08),
+      child: contenedor,
     );
   }
 }

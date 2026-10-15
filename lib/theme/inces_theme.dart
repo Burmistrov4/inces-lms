@@ -53,6 +53,12 @@ class IncesTheme {
   static const Color carpetaNaranja = Color(0xFFEA580C);
   static const Color carpetaPizarra = Color(0xFF475569);
 
+  /// Indicador de versión y estado activo del sistema.
+  static const Color versionActiva = Color(0xFF00B0FF);
+
+  /// Borde neutro para carruseles y tarjetas de inicio.
+  static const Color bordeCarruselNeutro = Color(0xFFCBD5E1);
+
   // --- Superficies, modo claro -------------------------------------------------
 
   /// Gris frío de fondo. Deliberadamente no blanco puro: las tarjetas blancas

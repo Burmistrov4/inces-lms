@@ -34,7 +34,7 @@ void main() {
         theme: IncesTheme.claro(),
         home: Scaffold(
           body: ContenidoSeccion(
-            migas: const ['Inicio', 'Cuadrante y Horarios'],
+            migas: const ['Inicio', 'Horarios de Clases'],
             child: panel,
           ),
         ),
