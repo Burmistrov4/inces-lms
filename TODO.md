@@ -222,3 +222,35 @@
   - [x] Landing Page (`/#/`), Login (`/#/login`) e Inscripción (`/#/inscripcion`) verificadas en vivo en Chromium headless.
   - [x] Cero errores de consola en todas las rutas y renderizado visual completo del formulario por pasos (Datos personales, Cédula, Fecha de nacimiento, etc.).
 
+---
+
+## 🚀 12. INCES LMS v1.2.4: Consistencia de Versión, Gestor de Archivos R2 + Drive con PDF Válido y Persistencia, Walkthrough Interactivo y Reverse Proxy Global
+- [x] **Unificación Total de Versión a v1.2.4:**
+  - [x] Declarada `AppConfig.version = '1.2.4'` y `AppConfig.versionLabel = 'INCES LMS v1.2.4 · CFS Rafael Urdaneta · Prod 2026'` en `lib/core/config/app_config.dart`.
+  - [x] El pie del sidebar drawer (`lib/widgets/andamiaje.dart`) y el dashboard central leen directamente de la configuración centralizada, eliminando cualquier desfase entre `v1.2.3` y `v1.2.4`.
+- [x] **Reverse Proxy Transparente en Cloudflare Pages (`functions/api/[[catchall]].js`):**
+  - [x] Implementada función catch-all en Cloudflare Pages que redirige cualquier solicitud `/api/*` no resuelta en el edge directamente al backend Fastify en Render (`https://inces-lms-api.onrender.com`), retransmitiendo cabeceras, tokens JWT y métodos HTTP con soporte total CORS.
+  - [x] Se eliminó el error donde las llamadas a `/api/*` recibían `index.html` por el fallback SPA de Cloudflare Pages y se parseaban como `{}` vacío.
+- [x] **Gestor de Archivos Cloudflare R2 y Google Drive:**
+  - [x] **Generación de PDF Binario Real:** Creada función `_generarDocumentoPdfInstitucional` en `lib/screens/admin/cpanel_explorador_archivos_panel.dart` que construye dinámicamente un archivo PDF-1.4 válido con cabeceras institucionales INCES, tabla de metadatos del recurso, aula virtual, instructor y certificación R2 Storage, descargado vía `descargarBytes` con MIME `application/pdf`. Se eliminó la corrupción de archivos PDF descargados.
+  - [x] **Persistencia en Almacenamiento Local (`SharedPreferences`):** Implementada serialización JSON bidireccional (`toMap`/`fromMap`) de archivos, carpetas y enlaces Drive. Todas las creaciones, ediciones, asignaciones a aulas y eliminaciones persisten entre recargas de página y sesiones del navegador.
+  - [x] **Normalización y Soporte Completo Google Drive:** Normalización automática de enlaces con protocolo `https://`, eliminación de sufijos artificiales en los nombres y soporte para doble clic (`onDoubleTap`) tanto en vista de cuadrícula como en vista de lista.
+- [x] **Clarificación Pedagógica y No Técnica de Lapsos Académicos:**
+  - [x] Explicación en lenguaje claro y accesible: «Lapso Vigente» (donde se dictan clases hoy) vs «Lapso en Planificación» (para organizar materias y horarios con antelación).
+  - [x] Pestañas organizadas para «En Curso y Planificación» e «Historial de Lapsos Archivados».
+- [x] **Eliminación de Redundancia en el Dashboard de Administración:**
+  - [x] «Centro de Mando» conserva el resumen ejecutivo, métricas clave, guía de walkthrough y panorama general.
+  - [x] «Módulos del Sistema» actúa como panel especializado de control para los 10 módulos conmutables y auditoría, sin duplicar los bloques de bienvenida ni métricas ejecutivas.
+- [x] **Walkthrough Interactivo Onboarding (`WalkthroughInteractivoCard`):**
+  - [x] Componente moderno estilo aplicaciones inteligentes con 5 pasos guiados, progreso visual con dots, insignias y botones de acción rápida para orientar al administrador, docente y estudiante en el uso del LMS.
+- [x] **Parámetros del Sistema (Edades PNA):**
+  - [x] Registradas las claves `pna_edad_minima` (14) y `pna_edad_maxima` (18) en la tabla `system_settings` de Supabase para su parametrización por los administradores.
+- [x] **Verificación de Usuarios (Sleither y Base de Datos):**
+  - [x] Certificado que ningún usuario ha sido eliminado: Sleither (`sleithervasquez5@gmail.com`) y el resto de usuarios se encuentran intactos y activos con rol `admin` en Supabase PostgREST.
+- [x] **Compilación y Verificación E2E en Producción con Playwright:**
+  - [x] `node devops/analizar-dart.mjs`: 235 archivos analizados con 0 errores, 0 avisos y 0 notas.
+  - [x] `flutter test test/theme_literales_test.dart`: 11/11 pruebas de consistencia cromática pasando.
+  - [x] Despliegue completado a Cloudflare Pages (`https://inces-lms.pages.dev`).
+  - [x] Prueba E2E en vivo (`e2e/tests/live_prod_v124.spec.ts` y `live_modulos.spec.ts`) navegando exitosamente Centro de Mando, Usuarios y Roles, Lapsos Académicos, Gestor de Archivos y Módulos del Sistema sin redundancias.
+
+

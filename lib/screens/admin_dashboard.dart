@@ -318,7 +318,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           migas: const ['Inicio', 'Administración del sistema', 'Módulos'],
           child: CpanelModulosPanel(
             onNavegarA: _navegarA,
-            mostrarResumenEjecutivo: true,
+            mostrarResumenEjecutivo: false,
           ),
         );
       case 'Parámetros':

@@ -194,12 +194,16 @@ class BackendCuadranteGateway implements CuadranteGateway {
   Future<List<Periodo>> listarPeriodos() async {
     try {
       final respuesta = await _api.get('$_base/periodos', token: _tokenSesion);
-
-      return (respuesta['periodos'] as List<dynamic>? ?? const [])
-          .whereType<Map<String, dynamic>>()
-          .map(Periodo.fromJson)
-          .toList();
+      final raw = respuesta['periodos'];
+      if (raw is List && raw.isNotEmpty) {
+        return raw
+            .whereType<Map<String, dynamic>>()
+            .map(Periodo.fromJson)
+            .toList();
+      }
     } catch (_) {
+      // Continuar al respaldo de Supabase PostgREST
+    }
       try {
         final client = SupabaseService.instance.client;
         final resPeriodos = await client
@@ -223,7 +227,6 @@ class BackendCuadranteGateway implements CuadranteGateway {
         rethrow;
       }
     }
-  }
 
   @override
   Future<Periodo> crearPeriodo(EntradaCrearPeriodo entrada) async {

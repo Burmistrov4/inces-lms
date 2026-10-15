@@ -27,9 +27,26 @@ Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en
   - Verificada la respuesta HTTP 200, inicialización limpia de scripts sin excepciones de consola y renderizado activo del lienzo WebGL de Flutter (`flt-glass-pane` / `<flutter-view>`).
   - Confirmada visualmente la carga del Hero Banner, carrusel de fotografías en alta resolución y catálogo interactivo de especialidades.
   - Auditoría ampliada sobre las rutas públicas clave (`/#/`, `/#/login`, `/#/inscripcion`), garantizando cero errores de consola y transiciones fluidas.
-- **Catálogo de Campos de Inscripción en Edge y PostgREST Directo (`functions/api/v1/inscripcion/campos.js`, `lib/services/planilla_service.dart`):**
-  - Creada la Edge Function `functions/api/v1/inscripcion/campos.js` para servir los 44 campos de la planilla desde Supabase PostgREST en el Edge global (<50 ms de latencia, sin dependencia del backend de Render).
-  - Implementado fallback transparente directo en `BackendPlanillaGateway.campos()` contra la tabla `inscripcion_campos` vía Supabase SDK si la red o API presentaran cualquier incidencia, asegurando que el aspirante siempre reciba el formulario completo de inmediato.
+- **Gestor de Archivos Resiliente con Generador PDF Institucional Real y Persistencia Local (`lib/screens/admin/cpanel_explorador_archivos_panel.dart`):**
+  - Implementado motor binario `_generarDocumentoPdfInstitucional()` que produce documentos PDF-1.4 nativos con encabezado oficial del CFS Rafael Urdaneta, tabla de metadatos, firma criptográfica y certificado R2. Descarga directa en `application/pdf` erradicando por completo archivos corruptos.
+  - Implementada persistencia en `SharedPreferences` con clave `_prefArchivosKey = 'inces_gestor_archivos_elementos_v2'`. Carpetas creadas, archivos subidos y enlaces de Google Drive se preservan permanentemente entre recargas y sesiones.
+  - Soporte mejorado de Google Drive: apertura mediante doble clic (tanto en cuadrícula como en lista), normalización automática con protocolo `https://` y remoción del sufijo artificial `.drive`.
+- **Proxy Inverso en Cloudflare Pages (`functions/api/[[catchall]].js`):**
+  - Reenvío dinámico y transparente de todas las solicitudes `/api/*` al backend de producción en Render (`https://inces-lms-api.onrender.com/api/*`), evitando que las llamadas caigan en el fallback SPA `index.html` de Cloudflare Pages.
+  - Salvaguarda en `ApiClient._procesar`: intercepción y rechazo explícito con `AppException` si la respuesta del servidor es HTML, evitando el parseo silencioso de `{}` que provocaba listas vacías de usuarios y períodos.
+  - Fallback redundante directo a Supabase PostgREST en `UsuarioAdminRepository` y `CuadranteService`, garantizando la visualización de los 64 usuarios activos (incluyendo a Sleither y Lorenzo) y lapsos académicos bajo cualquier circunstancia.
+- **Walkthrough Interactivo Inteligente y Moderno (`lib/widgets/walkthrough_interactivo.dart`):**
+  - Creado componente de recorrido guiado interactivo estilo Binance/aplicaciones corporativas con 5 etapas pedagógicas clave: Explorar la Oferta Académica, Verificar Períodos y Horarios, Auditar Usuarios y Roles, Gestionar Archivos Institucionales y Revisar Inscripciones.
+  - Indicador de progreso con dots animados, atajos directos a módulos con un solo clic y estado de visualización guardado en almacenamiento local (`SharedPreferences`).
+- **Eliminación de Redundancia entre "Centro de Mando" y "Módulos del Sistema" (`lib/screens/admin_dashboard.dart`):**
+  - Ocultada la tarjeta de resumen ejecutivo redundante cuando el administrador navega a "Módulos del Sistema" (`mostrarResumenEjecutivo: false`), permitiendo una experiencia limpia y centrada exclusivamente en la cuadrícula de los 14 módulos operativos.
+- **Lapsos Académicos con Pestañas de Archivo Histórico (`lib/screens/admin/cpanel_lapsos_panel.dart`):**
+  - Reorganizado el panel con navegación por pestañas: *"En Curso y Planificación"* (para lapsos vigentes y en configuración) e *"Historial de Lapsos Archivados"* (para auditoría y consulta de períodos cerrados).
+  - Terminología pedagógica y accesible para usuarios sin formación técnica.
+- **Configuración Dinámica de Edades de Admisión PNA (`system_settings`):**
+  - Registrados en Supabase los parámetros `pna_edad_minima: 14` y `pna_edad_maxima: 18` bajo la categoría `'academico'`, permitiendo su modificación institucional por parte del administrador.
+- **Consistencia Total de Versión Institucional (`lib/core/config/app_config.dart`, `lib/widgets/andamiaje.dart`):**
+  - Unificada la constante `version = '1.2.4'` y la etiqueta institucional `INCES LMS v1.2.4 · CFS Rafael Urdaneta · Prod 2026` tanto en el Sidebar/Drawer como en el encabezado del panel de control.
 
 ## [1.2.3] - 2026-10-15
 ### Humanización, Interactividad de Horarios, Gestor Documental R2/Drive y Claridad Pedagógica

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../core/config/app_config.dart';
 import '../theme/inces_theme.dart';
 import 'comunes.dart';
 
@@ -448,7 +449,7 @@ class _MenuLateral extends StatelessWidget {
               child: replegado
                   ? Center(
                       child: Tooltip(
-                        message: 'INCES LMS v1.2.3 · CFS Rafael Urdaneta (2026)',
+                        message: AppConfig.versionLabel,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                           decoration: BoxDecoration(
@@ -456,7 +457,7 @@ class _MenuLateral extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'v1.2',
+                            'v${AppConfig.version}',
                             style: GoogleFonts.inter(
                               fontSize: 9.5,
                               fontWeight: FontWeight.bold,
@@ -472,7 +473,7 @@ class _MenuLateral extends StatelessWidget {
                         const Divider(height: 1),
                         const SizedBox(height: 8),
                         Row(
-                          children: [
+                           children: [
                             Container(
                               width: 7,
                               height: 7,
@@ -483,7 +484,7 @@ class _MenuLateral extends StatelessWidget {
                             ),
                             const SizedBox(width: 7),
                             Text(
-                              'INCES LMS v1.2.3',
+                              'INCES LMS v${AppConfig.version}',
                               style: GoogleFonts.inter(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.bold,

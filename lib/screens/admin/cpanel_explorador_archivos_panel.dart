@@ -1,8 +1,13 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../services/selector_archivos_navegador.dart';
 import '../../theme/inces_theme.dart';
+
 
 /// Tipo de elemento en el explorador de archivos.
 enum TipoElemento {
@@ -74,6 +79,69 @@ class ElementoArchivo {
     }
     return '${(tamanoBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'nombre': nombre,
+        'tipo': tipo.name,
+        'tamanoBytes': tamanoBytes,
+        'fechaModificacion': fechaModificacion.toIso8601String(),
+        'propietario': propietario,
+        'ruta': ruta,
+        'colorIndice': _colorAIndice(colorCarpeta),
+        'esDrive': esDrive,
+        'urlDrive': urlDrive,
+        'permiso': permiso,
+        'aulaVirtual': aulaVirtual,
+        'materia': materia,
+      };
+
+  factory ElementoArchivo.fromMap(Map<String, dynamic> map) {
+    final colIndice = (map['colorIndice'] as num?)?.toInt();
+    final col = (colIndice != null &&
+            colIndice >= 0 &&
+            colIndice < _paletaColores.length)
+        ? _paletaColores[colIndice]
+        : null;
+    return ElementoArchivo(
+      id: map['id'] as String? ??
+          'id_${DateTime.now().millisecondsSinceEpoch}',
+      nombre: map['nombre'] as String? ?? 'Archivo',
+      tipo: TipoElemento.values.firstWhere(
+        (t) => t.name == map['tipo'],
+        orElse: () => TipoElemento.documento,
+      ),
+      tamanoBytes: (map['tamanoBytes'] as num?)?.toInt() ?? 0,
+      fechaModificacion:
+          DateTime.tryParse(map['fechaModificacion'] as String? ?? '') ??
+              DateTime.now(),
+      propietario: map['propietario'] as String? ?? 'Administrador',
+      ruta: map['ruta'] as String? ?? 'Mi Unidad (R2)',
+      colorCarpeta: col,
+      esDrive: map['esDrive'] as bool? ?? false,
+      urlDrive: map['urlDrive'] as String?,
+      permiso: map['permiso'] as String? ?? 'Docentes y Estudiantes',
+      aulaVirtual: map['aulaVirtual'] as String? ?? 'General CFS (Todos)',
+      materia: map['materia'] as String? ?? 'Formación Técnica General',
+    );
+  }
+}
+
+const List<Color> _paletaColores = [
+  IncesTheme.azulPrimario,
+  IncesTheme.advertencia,
+  IncesTheme.exito,
+  IncesTheme.rojoInces,
+  IncesTheme.carpetaVioleta,
+  IncesTheme.carpetaTeal,
+  IncesTheme.carpetaNaranja,
+  IncesTheme.carpetaPizarra,
+];
+
+int? _colorAIndice(Color? c) {
+  if (c == null) return null;
+  final idx = _paletaColores.indexOf(c);
+  return idx >= 0 ? idx : null;
 }
 
 /// Explorador de Archivos estilo Google Drive para Cloudflare R2.
@@ -102,18 +170,62 @@ class _CpanelExploradorArchivosPanelState
   static const double _cuotaUsadaGb = 1.84;
   static const double _cuotaTotalGb = 10.0;
 
-  /// Catálogo en memoria de archivos y carpetas del centro.
+  static const String _prefArchivosKey = 'inces_gestor_archivos_elementos_v2';
+
+  /// Catálogo de archivos y carpetas del centro.
   late List<ElementoArchivo> _elementos;
 
   @override
   void initState() {
     super.initState();
     _inicializarDatos();
+    _cargarArchivosPersistidos();
     _busquedaController.addListener(() {
       setState(() {
         _filtroBusqueda = _busquedaController.text.trim().toLowerCase();
       });
     });
+  }
+
+  Future<void> _cargarArchivosPersistidos() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final guardado = prefs.getString(_prefArchivosKey);
+      if (guardado != null && guardado.isNotEmpty) {
+        final List<dynamic> decodificado =
+            jsonDecode(guardado) as List<dynamic>;
+        final listaCargada = decodificado
+            .map((item) =>
+                ElementoArchivo.fromMap(item as Map<String, dynamic>))
+            .toList();
+        if (listaCargada.isNotEmpty && mounted) {
+          setState(() {
+            final idsExistentes = <String>{};
+            final combinados = <ElementoArchivo>[];
+            for (final el in listaCargada) {
+              if (idsExistentes.add(el.id)) {
+                combinados.add(el);
+              }
+            }
+            for (final el in _elementos) {
+              if (idsExistentes.add(el.id)) {
+                combinados.add(el);
+              }
+            }
+            _elementos = combinados;
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _guardarArchivosPersistidos() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final codificado =
+          jsonEncode(_elementos.map((e) => e.toMap()).toList());
+      await prefs.setString(_prefArchivosKey, codificado);
+    } catch (_) {}
   }
 
   @override
@@ -496,6 +608,7 @@ class _CpanelExploradorArchivosPanelState
                       ),
                     );
                   });
+                  _guardarArchivosPersistidos();
                   Navigator.of(ctx).pop();
                 },
                 child: const Text('Crear'),
@@ -565,16 +678,21 @@ class _CpanelExploradorArchivosPanelState
               final nombre = nombreCtrl.text.trim();
               final url = urlCtrl.text.trim();
               if (nombre.isEmpty || url.isEmpty) return;
+              var urlLimpia = url;
+              if (!urlLimpia.startsWith('http://') &&
+                  !urlLimpia.startsWith('https://')) {
+                urlLimpia = 'https://$urlLimpia';
+              }
               setState(() {
                 _elementos.insert(
                   0,
                   ElementoArchivo(
                     id: 'drv_${DateTime.now().millisecondsSinceEpoch}',
-                    nombre: nombre.endsWith('.drive') ? nombre : '$nombre.drive',
+                    nombre: nombre,
                     tipo: TipoElemento.enlaceDrive,
                     tamanoBytes: 0,
                     esDrive: true,
-                    urlDrive: url,
+                    urlDrive: urlLimpia,
                     fechaModificacion: DateTime.now(),
                     propietario: 'Administrador Maestro',
                     ruta: _rutaTexto,
@@ -590,6 +708,7 @@ class _CpanelExploradorArchivosPanelState
                   ),
                 );
               });
+              _guardarArchivosPersistidos();
               Navigator.of(ctx).pop();
             },
             icon: const Icon(Icons.link_rounded, size: 18),
@@ -650,6 +769,7 @@ class _CpanelExploradorArchivosPanelState
                     ),
                   );
                 });
+                _guardarArchivosPersistidos();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Archivo subido con éxito a Cloudflare R2.'),
@@ -742,6 +862,7 @@ class _CpanelExploradorArchivosPanelState
                     ),
                   );
                 });
+                _guardarArchivosPersistidos();
               }
               Navigator.of(ctx).pop();
             },
@@ -772,6 +893,7 @@ class _CpanelExploradorArchivosPanelState
                 _elementos.remove(item);
                 if (_seleccionado == item) _seleccionado = null;
               });
+              _guardarArchivosPersistidos();
               Navigator.of(ctx).pop();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('«${item.nombre}» eliminado.')),
@@ -806,6 +928,11 @@ class _CpanelExploradorArchivosPanelState
   Future<void> _abrirODescargarElemento(ElementoArchivo item) async {
     final selector = SelectorDeArchivosDelNavegador();
     if (item.esDrive && item.urlDrive != null) {
+      var urlLimpia = item.urlDrive!.trim();
+      if (!urlLimpia.startsWith('http://') &&
+          !urlLimpia.startsWith('https://')) {
+        urlLimpia = 'https://$urlLimpia';
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Abriendo enlace de Google Drive en una nueva pestaña...'),
@@ -814,7 +941,7 @@ class _CpanelExploradorArchivosPanelState
         ),
       );
       try {
-        await selector.descargar(url: item.urlDrive!, nombre: item.nombre);
+        await selector.descargar(url: urlLimpia, nombre: item.nombre);
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -836,25 +963,228 @@ class _CpanelExploradorArchivosPanelState
         ),
       );
       try {
-        await selector.descargarTexto(
-          nombre: item.nombre,
-          contenido: '--- INCES LMS - CFS Rafael Urdaneta ---\n'
-              'Documento: ${item.nombre}\n'
-              'Aula Virtual: ${item.aulaVirtual}\n'
-              'Materia: ${item.materia}\n'
-              'Propietario: ${item.propietario}\n'
-              'Fecha: ${item.fechaModificacion}\n\n'
-              '[Recurso verificado y alojado en Cloudflare R2 Storage]',
+        final pdfBytes = _generarDocumentoPdfInstitucional(item);
+        final nombreDescarga = item.nombre.toLowerCase().endsWith('.pdf')
+            ? item.nombre
+            : '${item.nombre}.pdf';
+        await selector.descargarBytes(
+          nombre: nombreDescarga,
+          contenido: pdfBytes,
+          tipoMime: 'application/pdf',
         );
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Descarga completada para «${item.nombre}».'),
+            content: Text('Error al descargar «${item.nombre}»: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
     }
+  }
+
+  Uint8List _generarDocumentoPdfInstitucional(ElementoArchivo item) {
+    String escapePdf(String s) {
+      return s
+          .replaceAll('\\', '\\\\')
+          .replaceAll('(', '\\(')
+          .replaceAll(')', '\\)')
+          .replaceAll('\r', '')
+          .replaceAll('\n', ' ');
+    }
+
+    final buf = BytesBuilder();
+    void writeStr(String s) => buf.add(utf8.encode(s));
+
+    writeStr('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+    final offsets = <int>[];
+
+    void startObj(int num) {
+      while (offsets.length < num) {
+        offsets.add(0);
+      }
+      offsets.add(buf.length);
+      writeStr('$num 0 obj\n');
+    }
+
+    // 1: Catalog
+    startObj(1);
+    writeStr('<<\n  /Type /Catalog\n  /Pages 2 0 R\n>>\nendobj\n');
+
+    // 2: Pages
+    startObj(2);
+    writeStr('<<\n  /Type /Pages\n  /Kids [3 0 R]\n  /Count 1\n>>\nendobj\n');
+
+    // 3: Page
+    startObj(3);
+    writeStr(
+      '<<\n'
+      '  /Type /Page\n'
+      '  /Parent 2 0 R\n'
+      '  /MediaBox [0 0 612 792]\n'
+      '  /Resources <<\n'
+      '    /Font <<\n'
+      '      /F1 4 0 R\n'
+      '      /F2 5 0 R\n'
+      '    >>\n'
+      '  >>\n'
+      '  /Contents 6 0 R\n'
+      '>>\nendobj\n',
+    );
+
+    // 4: Font F1 (Helvetica-Bold)
+    startObj(4);
+    writeStr(
+      '<<\n'
+      '  /Type /Font\n'
+      '  /Subtype /Type1\n'
+      '  /BaseFont /Helvetica-Bold\n'
+      '  /Encoding /WinAnsiEncoding\n'
+      '>>\nendobj\n',
+    );
+
+    // 5: Font F2 (Helvetica)
+    startObj(5);
+    writeStr(
+      '<<\n'
+      '  /Type /Font\n'
+      '  /Subtype /Type1\n'
+      '  /BaseFont /Helvetica\n'
+      '  /Encoding /WinAnsiEncoding\n'
+      '>>\nendobj\n',
+    );
+
+    final fechaStr = '${item.fechaModificacion.day.toString().padLeft(2, '0')}/'
+        '${item.fechaModificacion.month.toString().padLeft(2, '0')}/'
+        '${item.fechaModificacion.year}';
+
+    final sb = StringBuffer();
+    // Header bar (INCES blue)
+    sb.writeln('0.07 0.22 0.44 rg');
+    sb.writeln('36 700 540 56 re f');
+
+    // Header text
+    sb.writeln('1 1 1 rg');
+    sb.writeln('BT');
+    sb.writeln('/F1 14 Tf');
+    sb.writeln('48 732 Td');
+    sb.writeln('(INSTITUTO NACIONAL DE CAPACITACION Y EDUCACION SOCIALISTA) Tj');
+    sb.writeln('/F2 10 Tf');
+    sb.writeln('0 -16 Td');
+    sb.writeln('(CFS Rafael Urdaneta - Centro de Formacion Socialista) Tj');
+    sb.writeln('ET');
+
+    // Document title
+    sb.writeln('0.1 0.1 0.1 rg');
+    sb.writeln('BT');
+    sb.writeln('/F1 14 Tf');
+    sb.writeln('40 650 Td');
+    sb.writeln('(${escapePdf(item.nombre)}) Tj');
+    sb.writeln('ET');
+
+    // Separator line
+    sb.writeln('0.8 0.8 0.8 RG');
+    sb.writeln('1 w');
+    sb.writeln('40 635 m 572 635 l S');
+
+    // Metadata body
+    sb.writeln('BT');
+    sb.writeln('/F1 11 Tf');
+    sb.writeln('0.15 0.15 0.15 rg');
+    sb.writeln('40 605 Td');
+    sb.writeln('(DETALLES Y METADATOS DEL RECURSO FORMATIVO:) Tj');
+    sb.writeln('/F2 10 Tf');
+    sb.writeln('0 -22 Td');
+    sb.writeln('(Aula Virtual / Taller: ${escapePdf(item.aulaVirtual)}) Tj');
+    sb.writeln('0 -18 Td');
+    sb.writeln('(Materia / Especialidad: ${escapePdf(item.materia)}) Tj');
+    sb.writeln('0 -18 Td');
+    sb.writeln('(Propietario / Instructor: ${escapePdf(item.propietario)}) Tj');
+    sb.writeln('0 -18 Td');
+    sb.writeln('(Permiso de acceso: ${escapePdf(item.permiso)}) Tj');
+    sb.writeln('0 -18 Td');
+    sb.writeln('(Fecha de Registro: $fechaStr) Tj');
+    sb.writeln('0 -18 Td');
+    sb.writeln('(Almacenamiento: Cloudflare R2 Object Storage - Edge Global) Tj');
+    sb.writeln('0 -18 Td');
+    sb.writeln('(Tamano Reportado: ${escapePdf(item.tamanoFormateado)}) Tj');
+    sb.writeln('ET');
+
+    // Explanatory note box
+    sb.writeln('0.95 0.96 0.98 rg');
+    sb.writeln('40 370 532 90 re f');
+    sb.writeln('0.85 0.88 0.92 RG');
+    sb.writeln('40 370 532 90 re S');
+
+    sb.writeln('BT');
+    sb.writeln('/F1 10 Tf');
+    sb.writeln('0.07 0.22 0.44 rg');
+    sb.writeln('52 435 Td');
+    sb.writeln('(VALIDEZ INSTITUCIONAL Y CONTROL DE RECURSOS:) Tj');
+    sb.writeln('/F2 9 Tf');
+    sb.writeln('0.2 0.2 0.2 rg');
+    sb.writeln('0 -16 Td');
+    sb.writeln('(Este archivo ha sido verificado por la administracion del CFS Rafael Urdaneta y) Tj');
+    sb.writeln('0 -14 Td');
+    sb.writeln('(asignado al entorno curricular para su uso por estudiantes, aprendices e instructores.) Tj');
+    sb.writeln('0 -14 Td');
+    sb.writeln('(Alojado bajo protocolo de alta disponibilidad con CDN Cloudflare R2.) Tj');
+    sb.writeln('ET');
+
+    // Footer line
+    sb.writeln('0.8 0.8 0.8 RG');
+    sb.writeln('40 60 m 572 60 l S');
+
+    // Footer text
+    sb.writeln('BT');
+    sb.writeln('/F2 8 Tf');
+    sb.writeln('0.5 0.5 0.5 rg');
+    sb.writeln('40 45 Td');
+    sb.writeln('(INCES LMS v1.2.4 - Centro de Formacion Socialista Rafael Urdaneta - Prod 2026) Tj');
+    sb.writeln('ET');
+
+    final streamBytes = utf8.encode(sb.toString());
+
+    // 6: Stream
+    startObj(6);
+    writeStr('<< /Length ${streamBytes.length} >>\nstream\n');
+    buf.add(streamBytes);
+    writeStr('\nendstream\nendobj\n');
+
+    // 7: Info
+    startObj(7);
+    writeStr(
+      '<<\n'
+      '  /Title (${escapePdf(item.nombre)})\n'
+      '  /Author (${escapePdf(item.propietario)})\n'
+      '  /Subject (${escapePdf(item.materia)})\n'
+      '  /Creator (INCES LMS Cloudflare R2 Storage)\n'
+      '  /Producer (INCES CFS Rafael Urdaneta)\n'
+      '>>\nendobj\n',
+    );
+
+    final xrefOffset = buf.length;
+    writeStr('xref\n0 8\n');
+    writeStr('0000000000 65535 f \n');
+    for (var i = 1; i <= 7; i++) {
+      final offStr = offsets[i].toString().padLeft(10, '0');
+      writeStr('$offStr 00000 n \n');
+    }
+
+    writeStr(
+      'trailer\n'
+      '<<\n'
+      '  /Size 8\n'
+      '  /Root 1 0 R\n'
+      '  /Info 7 0 R\n'
+      '>>\n'
+      'startxref\n'
+      '$xrefOffset\n'
+      '%%EOF\n',
+    );
+
+    return buf.toBytes();
   }
 
   void _vincularAulaVirtual(ElementoArchivo item) {
@@ -958,6 +1288,7 @@ class _CpanelExploradorArchivosPanelState
                     ...item.actividad,
                   ];
                 });
+                _guardarArchivosPersistidos();
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -1593,42 +1924,48 @@ class _CpanelExploradorArchivosPanelState
       child: Column(
         children: archivos.map((f) {
           final seleccionada = _seleccionado == f;
-          return ListTile(
-            dense: true,
-            selected: seleccionada,
-            leading: _iconoPorTipo(f),
-            title: Text(f.nombre,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text('${f.tamanoFormateado} • ${f.propietario} • 🏛️ ${f.aulaVirtual}'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  f.esDrive ? 'Google Drive' : 'Cloudflare R2',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: f.esDrive
-                        ? IncesTheme.verdeGoogleDrive
-                        : theme.colorScheme.primary,
-                    fontWeight: FontWeight.w500,
+          return GestureDetector(
+            onDoubleTap: () => _abrirODescargarElemento(f),
+            child: ListTile(
+              dense: true,
+              selected: seleccionada,
+              leading: _iconoPorTipo(f),
+              title: Text(f.nombre,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(
+                  '${f.tamanoFormateado} • ${f.propietario} • 🏛️ ${f.aulaVirtual}'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    f.esDrive ? 'Google Drive' : 'Cloudflare R2',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: f.esDrive
+                          ? IncesTheme.verdeGoogleDrive
+                          : theme.colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    f.esDrive ? Icons.open_in_new_rounded : Icons.download_rounded,
-                    size: 18,
+                  IconButton(
+                    icon: Icon(
+                      f.esDrive
+                          ? Icons.open_in_new_rounded
+                          : Icons.download_rounded,
+                      size: 18,
+                    ),
+                    tooltip: f.esDrive ? 'Abrir en Drive' : 'Descargar',
+                    onPressed: () => _abrirODescargarElemento(f),
                   ),
-                  tooltip: f.esDrive ? 'Abrir en Drive' : 'Descargar',
-                  onPressed: () => _abrirODescargarElemento(f),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.school_outlined, size: 18),
-                  tooltip: 'Asignar a Aula Virtual',
-                  onPressed: () => _vincularAulaVirtual(f),
-                ),
-              ],
+                  IconButton(
+                    icon: const Icon(Icons.school_outlined, size: 18),
+                    tooltip: 'Asignar a Aula Virtual',
+                    onPressed: () => _vincularAulaVirtual(f),
+                  ),
+                ],
+              ),
+              onTap: () => setState(() => _seleccionado = f),
             ),
-            onTap: () => setState(() => _seleccionado = f),
           );
         }).toList(),
       ),

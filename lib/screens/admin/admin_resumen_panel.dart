@@ -6,6 +6,7 @@ import '../../models/system_module.dart';
 import '../../repositories/modulo_repository.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/walkthrough_interactivo.dart';
 
 /// Panel de resumen ejecutivo del Administrador Maestro.
 ///
@@ -74,7 +75,10 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
           _construirCabeceraEjecutiva(theme, esOscuro),
           const SizedBox(height: 20),
           _construirRejillaMetricas(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+          if (widget.onNavegarA != null)
+            WalkthroughInteractivoCard(onNavegarA: widget.onNavegarA!),
+          const SizedBox(height: 4),
           _construirAccionesPrioritarias(theme),
           const SizedBox(height: 24),
           _construirPanelAlertas(theme),

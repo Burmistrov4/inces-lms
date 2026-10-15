@@ -308,6 +308,20 @@ class ApiClient {
     final texto = respuesta.body.trim();
     Map<String, dynamic> cuerpo = <String, dynamic>{};
 
+    final contentType = respuesta.headers['content-type'] ?? '';
+    final esHtml = contentType.contains('text/html') ||
+        texto.startsWith('<!DOCTYPE') ||
+        texto.startsWith('<html');
+
+    if (esHtml) {
+      throw AppException(
+        type: AppErrorType.servidor,
+        message:
+            'El servidor respondió con contenido HTML en lugar de datos JSON en $ruta.',
+        technical: 'Respuesta HTML en $ruta (HTTP ${respuesta.statusCode})',
+      );
+    }
+
     if (texto.isNotEmpty && texto.startsWith('{')) {
       try {
         final decodificado = jsonDecode(texto);

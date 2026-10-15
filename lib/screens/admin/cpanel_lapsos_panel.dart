@@ -217,30 +217,77 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
     );
   }
 
+  int _tabSeleccionado = 0; // 0: Activos y en planificación, 1: Historial archivado
+
   Widget _lista() {
+    final activos = _periodos.where((p) => p.estado != EstadoPeriodo.cerrado).toList();
+    final archivados = _periodos.where((p) => p.estado == EstadoPeriodo.cerrado).toList();
+
     if (_periodos.isEmpty) {
       return const PanelVacio(
-        titulo: 'Todavía no hay lapsos registrados',
-        mensaje: 'Registra el lapso en curso —y los que vienen— para poder '
-            'armar el cuadrante. Un cuadrante pertenece siempre a un lapso.',
+        titulo: 'Todavía no hay lapsos académicos registrados',
+        mensaje: 'Aquí se organizan los períodos de formación técnica (trimestres o semestres) '
+            'del CFS Rafael Urdaneta. Puedes registrar un nuevo lapso para comenzar a planificar clases.',
         icono: Icons.event_note_outlined,
-        nota: 'El lapso vigente vive en los parámetros del sistema '
-            '(`periodo_activo`), y el sistema rechaza un valor que no '
-            'corresponda a un lapso registrado aquí.',
+        nota: 'El Lapso Académico en curso es el ciclo oficial donde aprendices y facilitadores '
+            'asisten a clases y registran actividades formativas.',
       );
     }
 
-    return ListView.separated(
-      padding: EdgeInsets.zero,
-      itemCount: _periodos.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (context, indice) => _FilaLapso(
-        periodo: _periodos[indice],
-        guardando: _guardandoId == _periodos[indice].id,
-        onEditar: () => _abrirFormulario(existente: _periodos[indice]),
-        onMarcarVigente: () => _marcarVigente(_periodos[indice]),
-        onCambiarCierre: () => _cambiarCierre(_periodos[indice]),
-      ),
+    final listaMostrar = _tabSeleccionado == 0 ? activos : archivados;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Selector de pestañas: Activos vs Historial Archivado
+        Row(
+          children: [
+            ChoiceChip(
+              label: Text('En Curso y Planificación (${activos.length})'),
+              selected: _tabSeleccionado == 0,
+              onSelected: (sel) {
+                if (sel) setState(() => _tabSeleccionado = 0);
+              },
+            ),
+            const SizedBox(width: 8),
+            ChoiceChip(
+              label: Text('Historial de Lapsos Archivados (${archivados.length})'),
+              selected: _tabSeleccionado == 1,
+              onSelected: (sel) {
+                if (sel) setState(() => _tabSeleccionado = 1);
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (listaMostrar.isEmpty)
+          Expanded(
+            child: PanelVacio(
+              titulo: _tabSeleccionado == 0
+                  ? 'No hay lapsos activos o en preparación'
+                  : 'No hay períodos archivados en el historial',
+              mensaje: _tabSeleccionado == 0
+                  ? 'Todos los lapsos registrados se encuentran archivados en el historial.'
+                  : 'Cuando culmine un ciclo formativo y cierres un lapso, quedará conservado aquí como referencia histórica.',
+              icono: _tabSeleccionado == 0 ? Icons.event_busy_outlined : Icons.archive_outlined,
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.separated(
+              padding: EdgeInsets.zero,
+              itemCount: listaMostrar.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              itemBuilder: (context, indice) => _FilaLapso(
+                periodo: listaMostrar[indice],
+                guardando: _guardandoId == listaMostrar[indice].id,
+                onEditar: () => _abrirFormulario(existente: listaMostrar[indice]),
+                onMarcarVigente: () => _marcarVigente(listaMostrar[indice]),
+                onCambiarCierre: () => _cambiarCierre(listaMostrar[indice]),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
