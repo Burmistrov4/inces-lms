@@ -7,6 +7,7 @@ import '../../models/cuadrante.dart';
 import '../../repositories/cuadrante_repository.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/guia_contextual_modulo.dart';
 
 /// Panel del catálogo de lapsos académicos (Módulo 3).
 ///
@@ -204,7 +205,32 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
+        const GuiaContextualModulo(
+          claveStorage: 'lapsos_academicos_cpanel',
+          icono: Icons.calendar_month_outlined,
+          titulo: '¿Cómo funcionan los Lapsos Académicos en el CFS?',
+          subtitulo: 'Un Lapso Académico es el período oficial de clases (trimestre, semestre o ciclo formativo). '
+              'Aquí defines cuál ciclo está activo para que docentes y estudiantes vean sus aulas y horarios.',
+          pasos: [
+            PasoGuiaContextual(
+              numero: 1,
+              titulo: 'Registrar nuevo ciclo',
+              descripcion: 'Pulsa «Registrar lapso», escribe el código (ej. SA26-1) y asigna las fechas de inicio y fin.',
+            ),
+            PasoGuiaContextual(
+              numero: 2,
+              titulo: 'Marcar como Vigente',
+              descripcion: 'El lapso marcado como «Vigente» es el que gobierna las aulas virtuales, asistencias y horarios de hoy.',
+            ),
+            PasoGuiaContextual(
+              numero: 3,
+              titulo: 'Cerrar y archivar',
+              descripcion: 'Al culminar las clases, cierra el lapso para que pase al historial archivado y proteja las notas finales.',
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
         Expanded(
           child: EstadoPanel(
             cargando: _cargando,

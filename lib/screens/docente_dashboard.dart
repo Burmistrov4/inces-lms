@@ -107,6 +107,7 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
   );
 
   int _seleccionada = 0;
+  final Map<String, Widget> _panelesCargados = {};
 
   static const List<ItemNavegacion> _items = [
     ItemNavegacion(
@@ -244,63 +245,78 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
       );
     }
 
-    switch (item.titulo) {
-      case 'Mis aulas':
-        // El Aula Virtual (M6) es el destino de «Mis aulas». El listado de
-        // secciones es real —sale de `/mi-horario`, la misma ruta que alimenta
-        // «Mi horario»— y cada tarjeta abre el tablón y el trabajo de clase de
-        // esa sección.
-        //
-        // `_aulaContenido` —y no `widget.aulaGateway`— es lo que hace que en
-        // producción la tarjeta se pueda pulsar: sin inyectar nada resuelve el
-        // servicio real, y con algo inyectado respeta lo que pidió la prueba.
-        return PanelMisAulas(
-          gateway: _aulasPropias,
-          aulaGateway: _aulaContenido,
-          onNavegarA: _navegarA,
-        );
-
-      case 'Asistencia':
-        return ContenidoSeccion(
-          migas: ['Inicio', item.categoria, item.titulo],
-          child: const AsistenciaQrPanel(),
-        );
-
-      case 'Calificaciones':
-        return ContenidoSeccion(
-          migas: ['Inicio', item.categoria, item.titulo],
-          child: DocenteCalificacionesPanel(
+    _panelesCargados.putIfAbsent(item.titulo, () {
+      switch (item.titulo) {
+        case 'Mis aulas':
+          // El Aula Virtual (M6) es el destino de «Mis aulas». El listado de
+          // secciones es real —sale de `/mi-horario`, la misma ruta que alimenta
+          // «Mi horario»— y cada tarjeta abre el tablón y el trabajo de clase de
+          // esa sección.
+          //
+          // `_aulaContenido` —y no `widget.aulaGateway`— es lo que hace que en
+          // producción la tarjeta se pueda pulsar: sin inyectar nada resuelve el
+          // servicio real, y con algo inyectado respeta lo que pidió la prueba.
+          return PanelMisAulas(
             gateway: _aulasPropias,
             aulaGateway: _aulaContenido,
             onNavegarA: _navegarA,
-          ),
-        );
+          );
 
-      case 'Mi horario':
-        return ContenidoSeccion(
-          migas: ['Inicio', item.categoria, item.titulo],
-          child: MiHorarioPanel(),
-        );
+        case 'Asistencia':
+          return ContenidoSeccion(
+            migas: ['Inicio', item.categoria, item.titulo],
+            child: const AsistenciaQrPanel(),
+          );
 
-      case 'Material de apoyo':
-        return ContenidoSeccion(
-          migas: ['Inicio', item.categoria, item.titulo],
-          child: const GestorDocumentalPanel(
-            entityType: TipoEntidadArchivo.teacherGuide,
-            subtitulo: 'Sube guías y material para tus estudiantes. Quedarán '
-                'guardados en el almacenamiento del centro.',
-          ),
-        );
+        case 'Calificaciones':
+          return ContenidoSeccion(
+            migas: ['Inicio', item.categoria, item.titulo],
+            child: DocenteCalificacionesPanel(
+              gateway: _aulasPropias,
+              aulaGateway: _aulaContenido,
+              onNavegarA: _navegarA,
+            ),
+          );
 
-      default:
-        return ContenidoSeccion(
-          migas: ['Inicio', item.categoria, item.titulo],
-          child: PanelVacio(
-            titulo: item.titulo,
-            mensaje: 'Esta sección está pendiente de construir.',
-            icono: item.icono,
+        case 'Mi horario':
+          return ContenidoSeccion(
+            migas: ['Inicio', item.categoria, item.titulo],
+            child: MiHorarioPanel(),
+          );
+
+        case 'Material de apoyo':
+          return ContenidoSeccion(
+            migas: ['Inicio', item.categoria, item.titulo],
+            child: const GestorDocumentalPanel(
+              entityType: TipoEntidadArchivo.teacherGuide,
+              subtitulo: 'Sube guías y material para tus estudiantes. Quedarán '
+                  'guardados en el almacenamiento del centro.',
+            ),
+          );
+
+        default:
+          return ContenidoSeccion(
+            migas: ['Inicio', item.categoria, item.titulo],
+            child: PanelVacio(
+              titulo: item.titulo,
+              mensaje: 'Esta sección está pendiente de construir.',
+              icono: item.icono,
+            ),
+          );
+      }
+    });
+
+    return Stack(
+      children: [
+        for (final entry in _panelesCargados.entries)
+          Offstage(
+            offstage: entry.key != item.titulo,
+            child: TickerMode(
+              enabled: entry.key == item.titulo,
+              child: entry.value,
+            ),
           ),
-        );
-    }
+      ],
+    );
   }
 }

@@ -7,6 +7,7 @@ import '../../models/cuadrante.dart';
 import '../../repositories/cuadrante_repository.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/cuadrante_grid.dart';
+import '../../widgets/guia_contextual_modulo.dart';
 
 /// Rejilla maestra del cuadrante (Módulo 3).
 ///
@@ -187,7 +188,32 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
       children: [
         _cabecera(razon),
         if (_lapso != null && !_hayVigente) _avisoSinVigente(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
+        const GuiaContextualModulo(
+          claveStorage: 'cuadrante_horarios_cpanel',
+          icono: Icons.calendar_month_outlined,
+          titulo: '¿Cómo asignar clases y gestionar los horarios?',
+          subtitulo: 'Esta matriz representa la semana formativa del CFS Rafael Urdaneta. '
+              'Las columnas son los días (Lunes a Sábado) y las filas son los bloques de mañana y tarde.',
+          pasos: [
+            PasoGuiaContextual(
+              numero: 1,
+              titulo: 'Asignar clase en celda libre',
+              descripcion: 'Toca cualquier celda con el icono (+) o pulsa «Asignar clase» arriba a la derecha.',
+            ),
+            PasoGuiaContextual(
+              numero: 2,
+              titulo: 'Elegir sección, aula y facilitador',
+              descripcion: 'Selecciona la sección del curso, el aula o taller asignado y el facilitador responsable.',
+            ),
+            PasoGuiaContextual(
+              numero: 3,
+              titulo: 'Diferenciación de turnos',
+              descripcion: 'Los bloques 1 a 6 corresponden a la mañana (azul) y 7 a 12 a la tarde (ámbar).',
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
         Expanded(
           child: EstadoPanel(
             cargando: _cargando,

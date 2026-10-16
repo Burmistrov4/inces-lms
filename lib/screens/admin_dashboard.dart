@@ -73,6 +73,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   ModuloRepository get repositorioDeModulos => _modulosRepo;
 
   int _seleccionada = 0;
+  final Map<String, Widget> _panelesCargados = {};
 
   /// Las secciones, con su categoría.
   ///
@@ -331,101 +332,116 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       );
     }
 
-    switch (item.titulo) {
-      case 'Centro de Mando':
-        return ContenidoSeccion(
-          migas: const ['Inicio', 'Administración del sistema', 'Centro de Mando'],
-          child: SingleChildScrollView(
-            child: AdminResumenPanel(
-              repositorioModulos: _modulosRepo,
+    _panelesCargados.putIfAbsent(item.titulo, () {
+      switch (item.titulo) {
+        case 'Centro de Mando':
+          return ContenidoSeccion(
+            migas: const ['Inicio', 'Administración del sistema', 'Centro de Mando'],
+            child: SingleChildScrollView(
+              child: AdminResumenPanel(
+                repositorioModulos: _modulosRepo,
+                onNavegarA: _navegarA,
+              ),
+            ),
+          );
+        case 'Módulos del Sistema':
+          return ContenidoSeccion(
+            migas: const ['Inicio', 'Administración del sistema', 'Módulos'],
+            child: CpanelModulosPanel(
               onNavegarA: _navegarA,
+              mostrarResumenEjecutivo: false,
+            ),
+          );
+        case 'Parámetros':
+          return const ContenidoSeccion(
+            migas: ['Inicio', 'Administración del sistema', 'Parámetros'],
+            child: CpanelParametrosPanel(),
+          );
+        case 'Historial de Configuración':
+          return const ContenidoSeccion(
+            migas: ['Inicio', 'Administración del sistema', 'Historial de Configuración'],
+            child: CpanelAuditoriaPanel(),
+          );
+        case 'Registro de Inicios de Sesión / Accesos':
+          return const ContenidoSeccion(
+            migas: ['Inicio', 'Administración del sistema', 'Accesos'],
+            child: CpanelAuditoriaAccesosPanel(),
+          );
+        case 'Usuarios y Roles':
+          return const ContenidoSeccion(
+            migas: ['Inicio', 'Administración del sistema', 'Usuarios y Roles'],
+            child: CpanelUsuariosRolesPanel(),
+          );
+        case 'Programas Académicos':
+          return const ContenidoSeccion(
+            migas: ['Inicio', 'Gestión académica', 'Programas Académicos'],
+            child: CpanelProgramasPanel(),
+          );
+        case 'Inscripciones y Cupos':
+          return const ContenidoSeccion(
+            migas: ['Inicio', 'Gestión académica', 'Inscripciones y Cupos'],
+            child: CpanelInscripcionesPanel(),
+          );
+        case 'Campos de Inscripción':
+          return const ContenidoSeccion(
+            migas: ['Inicio', 'Gestión académica', 'Campos de Inscripción'],
+            child: CpanelInscripcionCamposPanel(),
+          );
+        case 'Secciones':
+          return const ContenidoSeccion(
+            migas: ['Inicio', 'Gestión académica', 'Secciones'],
+            child: CpanelSeccionesPanel(),
+          );
+        case 'Lapsos Académicos':
+          return const ContenidoSeccion(
+            migas: ['Inicio', 'Gestión académica', 'Lapsos'],
+            child: CpanelLapsosPanel(),
+          );
+        case 'Gestor de Archivos (R2)':
+          return const ContenidoSeccion(
+            migas: ['Inicio', 'Gestión académica', 'Gestor de Archivos'],
+            child: CpanelExploradorArchivosPanel(),
+          );
+        case 'Horarios de Clases':
+          return const ContenidoSeccion(
+            migas: ['Inicio', 'Control de aulas', 'Horarios de Clases'],
+            child: CpanelCuadrantePanel(),
+          );
+        case 'Espacios y Aulas':
+          return const ContenidoSeccion(
+            migas: ['Inicio', 'Control de aulas', 'Espacios'],
+            child: CpanelAulasPanel(),
+          );
+        case 'Guardias Docentes':
+          return const ContenidoSeccion(
+            migas: ['Inicio', 'Control de aulas', 'Guardias'],
+            child: CpanelGuardiasPanel(),
+          );
+        case 'Mi Perfil':
+          return const ContenidoSeccion(
+            migas: ['Inicio', 'Mi cuenta', 'Mi Perfil'],
+            child: PerfilPanel(),
+          );
+        default:
+          return Padding(
+            padding: const EdgeInsets.all(24),
+            child: MigasDePan(partes: ['Inicio', _tituloSeccion]),
+          );
+      }
+    });
+
+    return Stack(
+      children: [
+        for (final entry in _panelesCargados.entries)
+          Offstage(
+            offstage: entry.key != item.titulo,
+            child: TickerMode(
+              enabled: entry.key == item.titulo,
+              child: entry.value,
             ),
           ),
-        );
-      case 'Módulos del Sistema':
-        return ContenidoSeccion(
-          migas: const ['Inicio', 'Administración del sistema', 'Módulos'],
-          child: CpanelModulosPanel(
-            onNavegarA: _navegarA,
-            mostrarResumenEjecutivo: false,
-          ),
-        );
-      case 'Parámetros':
-        return const ContenidoSeccion(
-          migas: ['Inicio', 'Administración del sistema', 'Parámetros'],
-          child: CpanelParametrosPanel(),
-        );
-      case 'Historial de Configuración':
-        return const ContenidoSeccion(
-          migas: ['Inicio', 'Administración del sistema', 'Historial de Configuración'],
-          child: CpanelAuditoriaPanel(),
-        );
-      case 'Registro de Inicios de Sesión / Accesos':
-        return const ContenidoSeccion(
-          migas: ['Inicio', 'Administración del sistema', 'Accesos'],
-          child: CpanelAuditoriaAccesosPanel(),
-        );
-      case 'Usuarios y Roles':
-        return const ContenidoSeccion(
-          migas: ['Inicio', 'Administración del sistema', 'Usuarios y Roles'],
-          child: CpanelUsuariosRolesPanel(),
-        );
-      case 'Programas Académicos':
-        return const ContenidoSeccion(
-          migas: ['Inicio', 'Gestión académica', 'Programas Académicos'],
-          child: CpanelProgramasPanel(),
-        );
-      case 'Inscripciones y Cupos':
-        return const ContenidoSeccion(
-          migas: ['Inicio', 'Gestión académica', 'Inscripciones y Cupos'],
-          child: CpanelInscripcionesPanel(),
-        );
-      case 'Campos de Inscripción':
-        return const ContenidoSeccion(
-          migas: ['Inicio', 'Gestión académica', 'Campos de Inscripción'],
-          child: CpanelInscripcionCamposPanel(),
-        );
-      case 'Secciones':
-        return const ContenidoSeccion(
-          migas: ['Inicio', 'Gestión académica', 'Secciones'],
-          child: CpanelSeccionesPanel(),
-        );
-      case 'Lapsos Académicos':
-        return const ContenidoSeccion(
-          migas: ['Inicio', 'Gestión académica', 'Lapsos'],
-          child: CpanelLapsosPanel(),
-        );
-      case 'Gestor de Archivos (R2)':
-        return const ContenidoSeccion(
-          migas: ['Inicio', 'Gestión académica', 'Gestor de Archivos'],
-          child: CpanelExploradorArchivosPanel(),
-        );
-      case 'Horarios de Clases':
-        return const ContenidoSeccion(
-          migas: ['Inicio', 'Control de aulas', 'Horarios de Clases'],
-          child: CpanelCuadrantePanel(),
-        );
-      case 'Espacios y Aulas':
-        return const ContenidoSeccion(
-          migas: ['Inicio', 'Control de aulas', 'Espacios'],
-          child: CpanelAulasPanel(),
-        );
-      case 'Guardias Docentes':
-        return const ContenidoSeccion(
-          migas: ['Inicio', 'Control de aulas', 'Guardias'],
-          child: CpanelGuardiasPanel(),
-        );
-      case 'Mi Perfil':
-        return const ContenidoSeccion(
-          migas: ['Inicio', 'Mi cuenta', 'Mi Perfil'],
-          child: PerfilPanel(),
-        );
-      default:
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: MigasDePan(partes: ['Inicio', _tituloSeccion]),
-        );
-    }
+      ],
+    );
   }
 }
 

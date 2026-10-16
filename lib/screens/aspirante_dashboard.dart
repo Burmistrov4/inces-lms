@@ -126,6 +126,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
   String? _error;
 
   int _seleccionada = 0;
+  final Map<String, Widget> _panelesCargados = {};
 
   static const List<ItemNavegacion> _items = [
     // Sin `modulo:`: la ficha propia no es un módulo que se apague. Si el
@@ -362,115 +363,134 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
       );
     }
 
-    switch (item.titulo) {
-      case 'Mi inscripción':
-        return _panelMiInscripcion();
+    if (item.titulo == 'Mi inscripción') {
+      _panelesCargados['Mi inscripción'] = _panelMiInscripcion();
+    } else {
+      _panelesCargados.putIfAbsent(item.titulo, () {
+        switch (item.titulo) {
+          case 'Mi inscripción':
+            return _panelMiInscripcion();
 
-      // El mismo panel que monta el administrador. Aquí no se le inyecta nada:
-      // resuelve el servicio real, que es lo que un aprendiz necesita.
-      case 'Mi Perfil':
-        return ContenidoSeccion(
-          migas: ['Inicio', item.categoria, item.titulo],
-          child: const PerfilPanel(),
-        );
+          // El mismo panel que monta el administrador. Aquí no se le inyecta nada:
+          // resuelve el servicio real, que es lo que un aprendiz necesita.
+          case 'Mi Perfil':
+            return ContenidoSeccion(
+              migas: ['Inicio', item.categoria, item.titulo],
+              child: const PerfilPanel(),
+            );
 
-      case 'Ofertas de cupos':
-        return PanelOfertas(repositorio: _inscripciones);
+          case 'Ofertas de cupos':
+            return PanelOfertas(repositorio: _inscripciones);
 
-      case 'Mis inscripciones':
-        return PanelMisInscripciones(repositorio: _inscripciones);
+          case 'Mis inscripciones':
+            return PanelMisInscripciones(repositorio: _inscripciones);
 
-      case 'Mis aulas':
-        // Aula Virtual (M6): el listado de secciones viene de `/mi-horario`
-        // —ruta congelada desde M3, una fila por sección— y cada tarjeta abre
-        // el tablón y el trabajo de clase de esa sección, con el gestor
-        // documental incrustado para subir las entregas.
-        //
-        // `_aulaContenido` —y no `widget.aulaGateway`— es lo que hace que en
-        // producción la tarjeta se pueda pulsar: sin inyectar nada resuelve el
-        // servicio real, y con algo inyectado respeta lo que pidió la prueba.
-        return PanelMisAulas(
-          gateway: _aulasPropias,
-          aulaGateway: _aulaContenido,
-        );
+          case 'Mis aulas':
+            // Aula Virtual (M6): el listado de secciones viene de `/mi-horario`
+            // —ruta congelada desde M3, una fila por sección— y cada tarjeta abre
+            // el tablón y el trabajo de clase de esa sección, con el gestor
+            // documental incrustado para subir las entregas.
+            //
+            // `_aulaContenido` —y no `widget.aulaGateway`— es lo que hace que en
+            // producción la tarjeta se pueda pulsar: sin inyectar nada resuelve el
+            // servicio real, y con algo inyectado respeta lo que pidió la prueba.
+            return PanelMisAulas(
+              gateway: _aulasPropias,
+              aulaGateway: _aulaContenido,
+            );
 
-      case 'Mis entregas':
-        return ContenidoSeccion(
-          migas: ['Inicio', item.categoria, item.titulo],
-          child: DefaultTabController(
-            length: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const TabBar(
-                  isScrollable: true,
-                  tabs: [
-                    Tab(
-                      icon: Icon(Icons.assignment_turned_in_outlined),
-                      text: 'Tareas y Calificaciones',
+          case 'Mis entregas':
+            return ContenidoSeccion(
+              migas: ['Inicio', item.categoria, item.titulo],
+              child: DefaultTabController(
+                length: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const TabBar(
+                      isScrollable: true,
+                      tabs: [
+                        Tab(
+                          icon: Icon(Icons.assignment_turned_in_outlined),
+                          text: 'Tareas y Calificaciones',
+                        ),
+                        Tab(
+                          icon: Icon(Icons.folder_shared_outlined),
+                          text: 'Bóveda de Archivos Subidos',
+                        ),
+                      ],
                     ),
-                    Tab(
-                      icon: Icon(Icons.folder_shared_outlined),
-                      text: 'Bóveda de Archivos Subidos',
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          SingleChildScrollView(
+                            child: EstudianteTareasPanel(
+                              aulasGateway: _aulasPropias,
+                              aulaGateway: _aulaContenido,
+                              onNavegarA: _navegarA,
+                            ),
+                          ),
+                          const GestorDocumentalPanel(
+                            entityType: TipoEntidadArchivo.taskSubmission,
+                            subtitulo: 'Sube aquí los trabajos que te pida el docente.',
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      SingleChildScrollView(
-                        child: EstudianteTareasPanel(
-                          aulasGateway: _aulasPropias,
-                          aulaGateway: _aulaContenido,
-                          onNavegarA: _navegarA,
-                        ),
-                      ),
-                      const GestorDocumentalPanel(
-                        entityType: TipoEntidadArchivo.taskSubmission,
-                        subtitulo: 'Sube aquí los trabajos que te pida el docente.',
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
+            );
+
+          // (M7) El estudiante marca su asistencia tecleando el código del QR.
+          case 'Asistencia':
+            return ContenidoSeccion(
+              migas: ['Inicio', item.categoria, item.titulo],
+              child: const MarcarAsistenciaPanel(),
+            );
+
+          case 'Material de apoyo':
+            // Sin `entidadId`: todavía no hay una guía concreta que pedir, porque
+            // M6 no ha creado la tabla que las sostiene. El panel funciona en modo
+            // sólo-subida y lo explica en pantalla. Se monta igualmente para que el
+            // día que M6 exista sólo haya que pasarle el id.
+            return ContenidoSeccion(
+              migas: ['Inicio', item.categoria, item.titulo],
+              child: const GestorDocumentalPanel(
+                entityType: TipoEntidadArchivo.teacherGuide,
+                titulo: 'Material de apoyo',
+                subtitulo: 'Las guías y el material que publique tu docente.',
+              ),
+            );
+
+          default:
+            // Secciones aún no construidas: se muestran atenuadas en el menú y, si
+            // alguien llega aquí, un panel vacío que explica por qué.
+            return ContenidoSeccion(
+              migas: ['Inicio', item.categoria, item.titulo],
+              child: PanelVacio(
+                titulo: item.titulo,
+                mensaje: 'Esta sección se habilitará cuando tu curso esté activo.',
+                icono: item.icono,
+              ),
+            );
+        }
+      });
+    }
+
+    return Stack(
+      children: [
+        for (final entry in _panelesCargados.entries)
+          Offstage(
+            offstage: entry.key != item.titulo,
+            child: TickerMode(
+              enabled: entry.key == item.titulo,
+              child: entry.value,
             ),
           ),
-        );
-
-      // (M7) El estudiante marca su asistencia tecleando el código del QR.
-      case 'Asistencia':
-        return ContenidoSeccion(
-          migas: ['Inicio', item.categoria, item.titulo],
-          child: const MarcarAsistenciaPanel(),
-        );
-
-      case 'Material de apoyo':
-        // Sin `entidadId`: todavía no hay una guía concreta que pedir, porque
-        // M6 no ha creado la tabla que las sostiene. El panel funciona en modo
-        // sólo-subida y lo explica en pantalla. Se monta igualmente para que el
-        // día que M6 exista sólo haya que pasarle el id.
-        return ContenidoSeccion(
-          migas: ['Inicio', item.categoria, item.titulo],
-          child: const GestorDocumentalPanel(
-            entityType: TipoEntidadArchivo.teacherGuide,
-            titulo: 'Material de apoyo',
-            subtitulo: 'Las guías y el material que publique tu docente.',
-          ),
-        );
-
-      default:
-        // Secciones aún no construidas: se muestran atenuadas en el menú y, si
-        // alguien llega aquí, un panel vacío que explica por qué.
-        return ContenidoSeccion(
-          migas: ['Inicio', item.categoria, item.titulo],
-          child: PanelVacio(
-            titulo: item.titulo,
-            mensaje: 'Esta sección se habilitará cuando tu curso esté activo.',
-            icono: item.icono,
-          ),
-        );
-    }
+      ],
+    );
   }
 
   Widget _panelMiInscripcion() {

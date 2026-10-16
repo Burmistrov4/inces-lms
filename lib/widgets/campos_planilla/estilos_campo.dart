@@ -34,11 +34,17 @@ InputDecoration decoracionDeCampo({
   return InputDecoration(
     labelText: etiqueta,
     helperText: ayuda,
-    helperMaxLines: 2,
+    helperMaxLines: 3,
     errorText: error,
-    errorMaxLines: 2,
-    labelStyle: GoogleFonts.inter(color: paleta.textoApagado),
-    helperStyle: GoogleFonts.inter(fontSize: 11, color: paleta.textoApagado),
+    errorMaxLines: 4,
+    labelStyle: GoogleFonts.inter(color: paleta.textoApagado, fontSize: 13),
+    floatingLabelStyle: GoogleFonts.inter(
+      color: IncesTheme.azulPrimario,
+      fontWeight: FontWeight.w600,
+      fontSize: 12,
+    ),
+    helperStyle: GoogleFonts.inter(fontSize: 11, color: paleta.textoApagado, height: 1.25),
+    errorStyle: GoogleFonts.inter(fontSize: 11, color: IncesTheme.error, height: 1.25),
     prefixIcon: icono == null
         ? null
         : Icon(icono, color: paleta.textoApagado, size: 20),

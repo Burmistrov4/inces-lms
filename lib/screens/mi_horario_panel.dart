@@ -5,6 +5,7 @@ import '../models/cuadrante.dart';
 import '../repositories/cuadrante_repository.dart';
 import '../widgets/comunes.dart';
 import '../widgets/cuadrante_grid.dart';
+import '../widgets/guia_contextual_modulo.dart';
 
 /// Horario del que mira: clases y, si es docente, guardias.
 ///
@@ -76,7 +77,37 @@ class _MiHorarioPanelState extends State<MiHorarioPanel> {
               : 'Tus clases y guardias de este lapso, organizadas por día y '
                   'bloque.',
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
+        GuiaContextualModulo(
+          claveStorage: 'mi_horario_usuario',
+          icono: Icons.schedule_rounded,
+          titulo: esEstudiante
+              ? '¿Cómo leer tu horario de clases?'
+              : '¿Cómo leer tu cronograma docente y guardias?',
+          subtitulo: esEstudiante
+              ? 'Aquí encuentras las materias en las que estás inscrito, el aula física donde debes asistir y el facilitador a cargo.'
+              : 'Visualiza tus sesiones de clase programadas, las aulas y talleres técnicos asignados, y los turnos de guardia institucional.',
+          pasos: [
+            const PasoGuiaContextual(
+              numero: 1,
+              titulo: 'Diferenciación de turnos',
+              descripcion: 'Los bloques B1 a B6 son clases matutinas (8:00 AM - 12:00 M). Los bloques B7 a B12 son vespertinos (1:00 PM - 5:00 PM).',
+            ),
+            const PasoGuiaContextual(
+              numero: 2,
+              titulo: 'Identificación por colores',
+              descripcion: 'Cada aula o taller cuenta con una etiqueta de color para reconocer rápidamente tu espacio físico en el centro.',
+            ),
+            PasoGuiaContextual(
+              numero: 3,
+              titulo: esEstudiante ? 'Aulas virtuales' : 'Asistencia y Calificaciones',
+              descripcion: esEstudiante
+                  ? 'Dirígete a «Mis aulas» para entregar tus tareas y consultar materiales de los docentes.'
+                  : 'Desde «Asistencia» y «Calificaciones» puedes generar los códigos QR y asentar las evaluaciones.',
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
         Expanded(
           child: EstadoPanel(
             cargando: _cargando,

@@ -33,47 +33,41 @@ export async function onRequestPost(context) {
       );
     }
 
-    const supabaseUrl = context.env?.SUPABASE_URL || 'https://twdppwnxlnmxkiejbrei.supabase.co';
-    const serviceRoleKey = context.env?.SUPABASE_SERVICE_ROLE_KEY;
+    const backendHost = context.env?.RENDER_BACKEND_URL || 'https://inces-lms-api.onrender.com';
+    const targetUrl = `${backendHost}/api/v1/auth/solicitar-recuperacion`;
 
-    // Determinar correo si es cédula
-    let emailDestino = identificador.trim().toLowerCase();
-    if (!emailDestino.includes('@') && serviceRoleKey) {
-      const respPerfil = await fetch(
-        `${supabaseUrl}/rest/v1/profiles?select=email&cedula=eq.${encodeURIComponent(identificador.trim())}`,
-        {
-          headers: {
-            'apikey': serviceRoleKey,
-            'Authorization': `Bearer ${serviceRoleKey}`,
-          },
-        }
+    const resp = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await resp.json().catch(() => ({}));
+    if (resp.status === 404) {
+      return new Response(
+        JSON.stringify({
+          exito: true,
+          correoEnviado: false,
+          metodo: 'supabase',
+          mensaje: 'Solicitud de recuperación procesada. Si los datos coinciden con una cuenta registrada, recibirás el enlace o código de recuperación.',
+        }),
+        { status: 200, headers: corsHeaders }
       );
-      if (respPerfil.ok) {
-        const perfiles = await respPerfil.json();
-        if (perfiles && perfiles.length > 0 && perfiles[0].email) {
-          emailDestino = perfiles[0].email;
-        }
-      }
     }
-
-    return new Response(
-      JSON.stringify({
-        exito: true,
-        correoEnviado: false,
-        metodo: 'supabase',
-        email: emailDestino.includes('@') ? emailDestino : undefined,
-        mensaje: 'Se despachará la recuperación por Supabase Auth.',
-      }),
-      { status: 200, headers: corsHeaders }
-    );
+    return new Response(JSON.stringify(data), {
+      status: resp.status,
+      headers: corsHeaders,
+    });
   } catch (err) {
     return new Response(
       JSON.stringify({
         exito: false,
-        codigo: 'ERROR_INTERNO',
-        mensaje: err?.message || 'Error en Edge recovery.',
+        codigo: 'ERROR_CONEXION_BACKEND',
+        mensaje: 'No fue posible contactar al servicio de correo del INCES. ' + (err?.message || ''),
       }),
-      { status: 500, headers: corsHeaders }
+      { status: 502, headers: corsHeaders }
     );
   }
 }

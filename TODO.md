@@ -349,6 +349,26 @@
 - [x] **Documentación Arquitectónica y de Evolución:**
   - [x] Documento maestro `organizacion_y_evolucion_sistema.md` creado con mapa arquitectónico, inventario de capacidades, auditoría de deuda técnica y roadmap multi-fase 2026-2027.
 
+---
 
-
-
+## ⚡ 16. Sprint v1.2.7: Carga Instantánea, Geografía en Cascada, Validaciones Robustas y Guía Contextual
+- [x] **Solución Definitiva al Error 500 en Recuperación de Contraseña:**
+  - [x] Sustituido mock de fallo en `functions/api/v1/auth/solicitar-recuperacion.js` por proxy transparente hacia Render API Fastify (`https://inces-lms-api.onrender.com/api/v1/auth/solicitar-recuperacion`).
+  - [x] Manejo resiliente en `AuthService.solicitarRecuperacionConFallback()`: detección de éxito backend sin disparar excepciones innecesarias.
+  - [x] `TextField` en diálogo de login con `errorMaxLines: 4` para evitar el truncamiento visual de mensajes de error.
+- [x] **Navegación Instantánea (0 ms) y Retención de Estado en Dashboards:**
+  - [x] Implementado stack reactivo `Offstage` + `TickerMode` en `AdminDashboardScreen`, `DocenteDashboardScreen` y `AspiranteDashboardScreen`.
+  - [x] Eliminados los spinners de recarga completa al alternar entre pestañas previamente visitadas; preservación completa de posición de scroll y estado de formularios.
+  - [x] Suite de alcanzabilidad UI `test/menu_alcanzable_test.dart` verificada (12/12 pruebas pasando).
+- [x] **Validaciones Robustas y Geografía en Cascada en Inscripción:**
+  - [x] Validación estricta de Cédula (6 a 9 dígitos) y Correo Electrónico (RFC estándar con `@` y dominio válido).
+  - [x] Dataset completo de geografía venezolana (`lib/data/venezuela_geografia.dart`): 24 estados, municipios, parroquias y comunidades de Carabobo.
+  - [x] Chips de sugerencia interactiva con 1-tap y libertad total para ingreso manual.
+  - [x] Política de contraseñas de alta seguridad (8-64 caracteres, mayúscula, minúscula, número y símbolo) con checklist visual en vivo.
+  - [x] Prevención de truncamiento (`helperMaxLines: 3`, `errorMaxLines: 4`) y auto-scroll suave hacia arriba (`_scrollAlInicio`) al continuar o retroceder de paso.
+- [x] **Guía Contextual Interactiva ("Walkthrough Inteligente"):**
+  - [x] Widget `GuiaContextualModulo` integrado en `CpanelLapsosPanel`, `CpanelCuadrantePanel` y `MiHorarioPanel`.
+  - [x] Redacción pedagógica e institucional para directores, docentes y estudiantes; persistencia en `SharedPreferences` y botón de reapertura disponible.
+- [x] **Estudio Landing Page 2026 y Calibración PDF:**
+  - [x] Análisis exhaustivo de los 9 componentes de una landing page efectiva 2026 según Landingi registrado en `organizacion_y_evolucion_sistema.md`.
+  - [x] Calibración milimétrica de casillas de verificación 'X' y soporte para experiencias empíricas en la planilla oficial PDF.

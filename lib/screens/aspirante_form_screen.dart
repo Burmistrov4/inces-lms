@@ -11,6 +11,7 @@ import '../models/registro_resultado.dart';
 import '../repositories/aspirante_repository.dart';
 import '../repositories/planilla_repository.dart';
 import '../services/auth_service.dart';
+import '../data/venezuela_geografia.dart';
 import '../theme/inces_theme.dart';
 import '../widgets/campos_planilla/campo_planilla.dart';
 import '../widgets/campos_planilla/estilos_campo.dart';
@@ -141,6 +142,7 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _passwordConfirmController =
       TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
 
@@ -158,6 +160,7 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
   void dispose() {
     _passwordController.dispose();
     _passwordConfirmController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -393,19 +396,65 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
         _valores[campo.codigo] = valor;
       }
       _errores.remove(campo.codigo);
+
+      // Cascada geográfica: si cambia el estado o municipio, limpiar dependientes
+      final cod = campo.codigo.toLowerCase();
+      if (cod == 'estado') {
+        _valores.remove('municipio');
+        _valores.remove('parroquia');
+        _valores.remove('comunidad');
+      } else if (cod == 'municipio') {
+        _valores.remove('parroquia');
+        _valores.remove('comunidad');
+      }
     });
     _guardarBorradorLocal();
   }
 
+  /// Las opciones de un campo con `fuente` o con sugerencias geográficas dinámicas.
+  List<OpcionCampo>? _obtenerOpcionesParaCampo(CampoInscripcion campo) {
+    if (campo.tieneFuenteExterna) {
+      return _opcionesDeFuente(campo);
+    }
+
+    final codigo = campo.codigo.toLowerCase();
+    final estado = _valores['estado']?.toString();
+    final municipio = _valores['municipio']?.toString();
+    final parroquia = _valores['parroquia']?.toString();
+
+    if (codigo == 'municipio') {
+      final lista = VenezuelaGeografia.municipiosDe(estado);
+      if (lista.isNotEmpty) {
+        return lista.map((m) => OpcionCampo(valor: m, etiqueta: m)).toList();
+      }
+    } else if (codigo == 'parroquia') {
+      final lista = VenezuelaGeografia.parroquiasDe(estado, municipio);
+      if (lista.isNotEmpty) {
+        return lista.map((p) => OpcionCampo(valor: p, etiqueta: p)).toList();
+      }
+    } else if (codigo == 'comunidad') {
+      final lista = VenezuelaGeografia.comunidadesSugeridasDe(
+        estado: estado,
+        municipio: municipio,
+        parroquia: parroquia,
+      );
+      if (lista.isNotEmpty) {
+        return lista.map((c) => OpcionCampo(valor: c, etiqueta: c)).toList();
+      }
+    } else if (codigo == 'direccion') {
+      final lista = VenezuelaGeografia.direccionesSugeridasDe(
+        estado: estado,
+        municipio: municipio,
+        parroquia: parroquia,
+      );
+      if (lista.isNotEmpty) {
+        return lista.map((d) => OpcionCampo(valor: d, etiqueta: d)).toList();
+      }
+    }
+    return null;
+  }
+
   /// Las opciones de un campo con `fuente`, resueltas.
-  ///
-  /// Hoy el único valor es `'programas'`. Una `fuente` desconocida devuelve
-  /// `null` y el campo cae a las opciones del catálogo —que no tiene—, así que
-  /// se vería vacío. Es preferible eso a inventar opciones que no existen.
-  ///
-  /// D14: las opciones llegan ya construidas desde el gateway, con `valor` = uuid
-  /// del programa y `etiqueta` = su nombre. Antes se construían aquí con
-  /// `valor` = `etiqueta` = nombre, y ese nombre era el que acababa en la ficha.
   List<OpcionCampo>? _opcionesDeFuente(CampoInscripcion campo) {
     if (campo.fuente != 'programas') return null;
     return _programasDisponibles;
@@ -482,6 +531,19 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
 
     setState(() => _currentStep = destino);
     _guardarBorradorLocal();
+    _scrollAlInicio();
+  }
+
+  void _scrollAlInicio() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -706,7 +768,7 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
             key: ValueKey('campo-${campo.codigo}'),
             campo: campo,
             valor: _valores[campo.codigo],
-            opciones: campo.tieneFuenteExterna ? _opcionesDeFuente(campo) : null,
+            opciones: _obtenerOpcionesParaCampo(campo),
             error: _errores[campo.codigo],
             onCambio: (valor) => _cambiarValor(campo, valor),
           ),
@@ -936,14 +998,62 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
                   setState(() => _obscurePassword = !_obscurePassword),
             ),
           ),
+          onChanged: (_) => setState(() {}),
           validator: (value) {
             final texto = value ?? '';
             if (texto.isEmpty) return 'Campo obligatorio';
             if (texto.length < 8) return 'Mínimo 8 caracteres';
+            if (texto.length > 64) return 'Máximo 64 caracteres';
+            if (!RegExp(r'[A-Z]').hasMatch(texto)) {
+              return 'Debe incluir al menos una mayúscula (A-Z)';
+            }
+            if (!RegExp(r'[a-z]').hasMatch(texto)) {
+              return 'Debe incluir al menos una minúscula (a-z)';
+            }
+            if (!RegExp(r'[0-9]').hasMatch(texto)) {
+              return 'Debe incluir al menos un número (0-9)';
+            }
+            if (!RegExp(r'[\W_]').hasMatch(texto)) {
+              return 'Debe incluir al menos un carácter especial (@, #, \$, etc.)';
+            }
             return null;
           },
         ),
+        const SizedBox(height: 8),
+        _construirIndicadoresPassword(paleta, _passwordController.text),
         const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: IncesTheme.azulPrimario.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(IncesTheme.radioControl),
+            border: Border.all(
+              color: IncesTheme.azulPrimario.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.shield_outlined,
+                size: 16,
+                color: IncesTheme.azulPrimario,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Seguridad INCES 2026: Tu clave resguarda tus notas y certificados. Las cuentas existentes conservan su acceso habitual.',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: paleta.textoSecundario,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
         TextFormField(
           controller: _passwordConfirmController,
           obscureText: _obscureConfirm,
@@ -975,6 +1085,51 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
           },
         ),
       ],
+    );
+  }
+
+  Widget _construirIndicadoresPassword(PaletaInces paleta, String pass) {
+    final tiene8 = pass.length >= 8 && pass.length <= 64;
+    final tieneMayus = RegExp(r'[A-Z]').hasMatch(pass);
+    final tieneMinus = RegExp(r'[a-z]').hasMatch(pass);
+    final tieneNum = RegExp(r'[0-9]').hasMatch(pass);
+    final tieneEsp = RegExp(r'[\W_]').hasMatch(pass);
+
+    Widget chipRegla(String texto, bool cumplida) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            cumplida ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+            size: 13,
+            color: cumplida ? IncesTheme.exito : paleta.textoApagado,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            texto,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: cumplida ? FontWeight.w600 : FontWeight.w400,
+              color: cumplida ? IncesTheme.exito : paleta.textoApagado,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 6,
+        children: [
+          chipRegla('8-64 caracteres', tiene8),
+          chipRegla('Mayúscula (A-Z)', tieneMayus),
+          chipRegla('Minúscula (a-z)', tieneMinus),
+          chipRegla('Número (0-9)', tieneNum),
+          chipRegla('Especial (!@#)', tieneEsp),
+        ],
+      ),
     );
   }
 
@@ -1088,6 +1243,7 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
     final paleta = PaletaInces.de(context);
 
     return SingleChildScrollView(
+      controller: _scrollController,
       child: Center(
         child: Container(
           width: maxWidth,
@@ -1164,6 +1320,7 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
                     if (_validarPaso(_currentStep)) {
                       setState(() => _currentStep += 1);
                       _guardarBorradorLocal();
+                      _scrollAlInicio();
                     }
                   } else {
                     _enviarFormulario();
@@ -1173,6 +1330,7 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
                   if (_currentStep > 0) {
                     setState(() => _currentStep -= 1);
                     _guardarBorradorLocal();
+                    _scrollAlInicio();
                   }
                 },
             // Pulsar el título de un paso lleva a ese paso. Sin esto, corregir

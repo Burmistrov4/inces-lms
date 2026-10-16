@@ -80,6 +80,13 @@ class CampoPlanilla extends StatelessWidget {
             onCambio: onCambio,
             etiqueta: etiqueta,
             error: error,
+            opciones: opciones,
+            tipoTeclado: _esCampoIdentidad(campo.codigo)
+                ? TextInputType.number
+                : TextInputType.text,
+            validadorDeFormato: _esCampoIdentidad(campo.codigo)
+                ? _validarCedula
+                : null,
           ),
         TipoCampoInscripcion.email => _Texto(
             key: claveDeEstado,
@@ -217,20 +224,56 @@ String textoDeValor(
   }
 }
 
-/// El formato de correo que ya usaba el formulario escrito a mano.
+/// Validación estricta y limpia de correo electrónico.
 String? _validarCorreo(String texto) {
-  if (texto.isEmpty) return null;
-  if (!RegExp(r'^[\w\.\-\+]+@[\w\-]+(\.[\w\-]+)+$').hasMatch(texto)) {
-    return 'Ingresa un correo válido';
+  final limpio = texto.replaceAll("'", "").replaceAll('"', '').trim();
+  if (limpio.isEmpty) return null;
+  if (!limpio.contains('@')) {
+    return 'El correo debe incluir "@"';
+  }
+  final partes = limpio.split('@');
+  if (partes.length != 2 || partes[0].isEmpty || partes[1].isEmpty) {
+    return 'Formato de correo incompleto (ej. usuario@gmail.com)';
+  }
+  final dominio = partes[1];
+  if (!dominio.contains('.') || dominio.startsWith('.') || dominio.endsWith('.')) {
+    return 'El dominio del correo debe ser válido (ej. @gmail.com)';
+  }
+  if (!RegExp(r'^[\w\.\-\+]+@[\w\-]+(\.[\w\-]+)+$').hasMatch(limpio)) {
+    return 'Ingresa una dirección de correo válida';
   }
   return null;
+}
+
+bool _esCampoIdentidad(String codigo) {
+  final c = codigo.toLowerCase();
+  return c == 'cedula' || c == 'numero_identidad_tutor' || c.contains('identidad');
+}
+
+/// Validación de cédula venezolana y pasaporte (evita números irreales como 18 dígitos).
+String? _validarCedula(String texto) {
+  final limpio = texto.replaceAll('.', '').replaceAll('-', '').trim();
+  if (limpio.isEmpty) return null;
+  if (RegExp(r'^[0-9]+$').hasMatch(limpio)) {
+    if (limpio.length < 6 || limpio.length > 9) {
+      return 'La cédula debe contener entre 6 y 9 dígitos numéricos';
+    }
+    return null;
+  }
+  if (RegExp(r'^[VEJPGvejpg]-?[0-9]{6,9}$').hasMatch(limpio)) {
+    return null;
+  }
+  if (RegExp(r'^[A-Za-z0-9]{6,14}$').hasMatch(limpio)) {
+    return null;
+  }
+  return 'Formato inválido. Use entre 6 y 9 números para cédula venezolana.';
 }
 
 // ---------------------------------------------------------------------------
 // Campos simples
 // ---------------------------------------------------------------------------
 
-class _Texto extends StatelessWidget {
+class _Texto extends StatefulWidget {
   const _Texto({
     super.key,
     required this.campo,
@@ -238,6 +281,7 @@ class _Texto extends StatelessWidget {
     required this.onCambio,
     required this.etiqueta,
     this.error,
+    this.opciones,
     this.tipoTeclado,
     this.validadorDeFormato,
   });
@@ -247,29 +291,118 @@ class _Texto extends StatelessWidget {
   final ValueChanged<Object?> onCambio;
   final String etiqueta;
   final String? error;
+  final List<OpcionCampo>? opciones;
   final TextInputType? tipoTeclado;
   final String? Function(String texto)? validadorDeFormato;
 
   @override
+  State<_Texto> createState() => _TextoState();
+}
+
+class _TextoState extends State<_Texto> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.valor?.toString() ?? '');
+  }
+
+  @override
+  void didUpdateWidget(covariant _Texto oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.valor != oldWidget.valor) {
+      final nuevoTexto = widget.valor?.toString() ?? '';
+      if (_controller.text != nuevoTexto) {
+        _controller.text = nuevoTexto;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      initialValue: valor?.toString() ?? '',
-      textCapitalization: TextCapitalization.words,
-      keyboardType: tipoTeclado,
-      autocorrect: tipoTeclado != TextInputType.emailAddress,
-      decoration: decoracionDeCampo(
-        etiqueta: etiqueta,
-        paleta: PaletaInces.de(context),
-        icono: iconoDeCampo(campo.codigo),
-        ayuda: campo.ayuda,
-        error: error,
-      ),
-      validator: (texto) {
-        final limpio = (texto ?? '').trim();
-        if (campo.obligatorio && limpio.isEmpty) return 'Campo obligatorio';
-        return validadorDeFormato?.call(limpio);
-      },
-      onChanged: (texto) => onCambio(texto.trim().isEmpty ? null : texto.trim()),
+    final tieneOpciones = widget.opciones != null && widget.opciones!.isNotEmpty;
+    final paleta = PaletaInces.de(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextFormField(
+          controller: _controller,
+          textCapitalization: TextCapitalization.words,
+          keyboardType: widget.tipoTeclado,
+          autocorrect: widget.tipoTeclado != TextInputType.emailAddress,
+          decoration: decoracionDeCampo(
+            etiqueta: widget.etiqueta,
+            paleta: paleta,
+            icono: iconoDeCampo(widget.campo.codigo),
+            ayuda: widget.campo.ayuda,
+            error: widget.error,
+          ),
+          validator: (texto) {
+            final limpio = (texto ?? '').trim();
+            if (widget.campo.obligatorio && limpio.isEmpty) return 'Campo obligatorio';
+            return widget.validadorDeFormato?.call(limpio);
+          },
+          onChanged: (texto) {
+            final limpio = texto.trim();
+            widget.onCambio(limpio.isEmpty ? null : limpio);
+          },
+        ),
+        if (tieneOpciones) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 4),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: widget.opciones!.take(8).map((opcion) {
+                final seleccionada = _controller.text.trim().toLowerCase() ==
+                    opcion.etiqueta.trim().toLowerCase();
+                return InkWell(
+                  onTap: () {
+                    _controller.text = opcion.etiqueta;
+                    widget.onCambio(opcion.etiqueta);
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: seleccionada
+                          ? IncesTheme.azulPrimario.withValues(alpha: 0.12)
+                          : paleta.rellenoDeCampo,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: seleccionada
+                            ? IncesTheme.azulPrimario
+                            : paleta.bordeDeCampo,
+                        width: seleccionada ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Text(
+                      opcion.etiqueta,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: seleccionada ? FontWeight.w600 : FontWeight.w400,
+                        color: seleccionada
+                            ? IncesTheme.azulPrimario
+                            : paleta.textoSecundario,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -378,11 +378,11 @@ void main() {
     Future<void> ponerPassword(WidgetTester tester) async {
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Contraseña (mínimo 8 caracteres)'),
-        'secreto12345',
+        'Secreto12345!',
       );
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Confirmar contraseña'),
-        'secreto12345',
+        'Secreto12345!',
       );
       await tester.pump();
     }
@@ -476,7 +476,7 @@ void main() {
       // El correo no viaja en la metadata —lo pone `auth.users`—, pero sí se usa
       // para el registro y el prechequeo.
       expect(gateway.ultimoEmailRegistro, 'lorenzo@example.com');
-      expect(gateway.ultimaPasswordRegistro, 'secreto12345');
+      expect(gateway.ultimaPasswordRegistro, 'Secreto12345!');
     });
 
     testWidgets('un campo oculto no viaja en la planilla', (tester) async {

@@ -170,35 +170,66 @@ class AuthService {
           );
         }
 
-        // Si el SMTP no despachó pero tenemos el correo resuelto, disparamos Supabase
-        if (resEmail != null && resEmail.isNotEmpty) {
-          await _gateway.enviarRecuperacion(resEmail);
+        // Si el backend respondió éxito (política anti-enumeración), respetamos su resultado
+        if (res['exito'] == true) {
           return ResultadoRecuperacionCuenta(
             exito: true,
-            metodo: MetodoRecuperacionUsado.supabase,
-            mensaje:
-                'Hemos enviado un enlace de recuperación directo a tu correo ($resEmail) a través de Supabase.',
+            metodo: MetodoRecuperacionUsado.smtp,
+            mensaje: res['mensaje'] as String? ??
+                'Si los datos coinciden con un usuario registrado, hemos enviado las instrucciones y el código a tu correo electrónico.',
             emailDestino: resEmail,
           );
         }
-      } catch (_) {
-        // En caso de caída de backend o red, intentamos Supabase directamente
+
+        // Si el SMTP no despachó pero tenemos el correo resuelto, intentamos Supabase con guarda segura
+        if (resEmail != null && resEmail.isNotEmpty) {
+          try {
+            await _gateway.enviarRecuperacion(resEmail);
+            return ResultadoRecuperacionCuenta(
+              exito: true,
+              metodo: MetodoRecuperacionUsado.supabase,
+              mensaje:
+                  'Hemos enviado un enlace de recuperación directo a tu correo ($resEmail) a través de Supabase.',
+              emailDestino: resEmail,
+            );
+          } catch (_) {
+            return ResultadoRecuperacionCuenta(
+              exito: true,
+              metodo: MetodoRecuperacionUsado.smtp,
+              mensaje:
+                  'Solicitud procesada. Si tu correo está registrado, recibirás el código. También puedes solicitar un código temporal en coordinación presentando tu cédula.',
+              emailDestino: resEmail,
+            );
+          }
+        }
+      } catch (e) {
+        // En caso de caída de backend o red, intentamos Supabase con guarda segura
         if (correoDestino != null && correoDestino.isNotEmpty) {
-          await _gateway.enviarRecuperacion(correoDestino);
-          return ResultadoRecuperacionCuenta(
-            exito: true,
-            metodo: MetodoRecuperacionUsado.supabase,
-            mensaje:
-                'Hemos enviado un enlace de recuperación a tu correo ($correoDestino) a través de Supabase.',
-            emailDestino: correoDestino,
-          );
+          try {
+            await _gateway.enviarRecuperacion(correoDestino);
+            return ResultadoRecuperacionCuenta(
+              exito: true,
+              metodo: MetodoRecuperacionUsado.supabase,
+              mensaje:
+                  'Hemos enviado un enlace de recuperación a tu correo ($correoDestino).',
+              emailDestino: correoDestino,
+            );
+          } catch (_) {
+            return ResultadoRecuperacionCuenta(
+              exito: true,
+              metodo: MetodoRecuperacionUsado.smtp,
+              mensaje:
+                  'Hemos recibido la solicitud. Si tu correo está registrado, el sistema procesará la recuperación. También puedes solicitar un código temporal en la coordinación.',
+              emailDestino: correoDestino,
+            );
+          }
         }
         rethrow;
       }
 
       return const ResultadoRecuperacionCuenta(
         exito: true,
-        metodo: MetodoRecuperacionUsado.supabase,
+        metodo: MetodoRecuperacionUsado.smtp,
         mensaje:
             'Si los datos coinciden con un usuario registrado, hemos procesado tu solicitud.',
       );

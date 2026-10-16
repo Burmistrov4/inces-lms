@@ -255,6 +255,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             prefixIcon:
                                 const Icon(Icons.person_outline, size: 20),
                             errorText: errorModal,
+                            errorMaxLines: 4,
                           ),
                           keyboardType: TextInputType.emailAddress,
                         ),

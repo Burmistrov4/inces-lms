@@ -2,6 +2,33 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.2.7] - 2026-10-16
+### Navegación Instantánea, Guías Contextuales Inteligentes, Validaciones de Inscripción y Resiliencia en Recuperación
+- **Recuperación de Contraseña Resiliente y Sin Errores 500:**
+  - Configurado proxy transparente directo en Cloudflare Pages Edge (`functions/api/v1/auth/solicitar-recuperacion.js`) hacia la API de Render Fastify (`/api/v1/auth/solicitar-recuperacion`), delegando el despacho a Gmail SMTP y Resend.
+  - Implementado guard defensivo en `lib/services/auth_service.dart` (`solicitarRecuperacionConFallback`), evitando excepciones 500 en la UI cuando Supabase Auth carece de SMTP personalizado.
+  - Soporte de mensajes de error completos sin truncamiento en el diálogo de acceso (`errorMaxLines: 4` en `lib/screens/login_screen.dart`).
+- **Navegación Instantánea entre Módulos y Retención de Estado (0 ms):**
+  - Implementado patrón de persistencia `Offstage + TickerMode` en `AdminDashboardScreen`, `DocenteDashboardScreen` y `AspiranteDashboardScreen`.
+  - Los módulos visitados se mantienen en memoria conservando sus estados, datos cargados y posiciones de scroll, logrando un cambio entre secciones 100% instantáneo (0 ms, sin bloqueos ni spinners repetitivos).
+- **Validaciones Rigurosas en el Formulario de Inscripción (`lib/widgets/campos_planilla/campo_planilla.dart`, `lib/screens/aspirante_form_screen.dart`):**
+  - Validación de cédula venezolana limitada entre 6 y 9 dígitos numéricos.
+  - Validación de correo electrónico bajo estándar RFC con detección de arroba obligatoria y saneamiento de espacios/comillas accidentales.
+  - Nueva política de contraseñas de alta seguridad: longitud entre 8 y 64 caracteres, al menos 1 mayúscula, 1 minúscula, 1 número y 1 carácter especial, con checklist visual reactivo en tiempo real y cláusula de compatibilidad para cuentas preexistentes.
+  - Auto-desplazamiento suave (`_scrollAlInicio`) hacia la cabecera del siguiente paso al pulsar «Continuar» o «Atrás», evitando que el usuario deba desplazarse manualmente.
+  - Prevención de desbordamientos y truncamiento de textos informativos en pantallas móviles estrechas (`helperMaxLines: 3`, `errorMaxLines: 4`).
+- **División Político-Territorial Venezolana y Sugerencias de Dirección (`lib/data/venezuela_geografia.dart`):**
+  - Creado catálogo geográfico con los 24 estados federales de Venezuela, y municipios, parroquias y comunidades del estado Carabobo.
+  - Cascada dinámica Estado $\rightarrow$ Municipio $\rightarrow$ Parroquia $\rightarrow$ Comunidad, con sugerencias rápidas tipo chip a un solo toque y libertad completa de edición manual.
+- **Guías Contextuales Inteligentes en Módulos («Contextual In-App Guidance»):**
+  - Creado componente `lib/widgets/guia_contextual_modulo.dart` con explicaciones claras, sin tecnicismos innecesarios, para administradores, facilitadores y estudiantes en `Lapsos Académicos`, `Horarios de Clases` y `Mi Horario`.
+  - Persistencia de lectura en `SharedPreferences` y botón de reactivación accesible («¿Cómo usar este módulo?»).
+- **Alineación de Planilla Oficial PDF y Experiencias Empíricas (`backend/src/infra/planilla-oficial-pdf.ts`, `backend/src/infra/planilla-oficial-valores.ts`):**
+  - Calibradas las coordenadas 'X' en casillas de verificación eliminando desviaciones parásitas.
+  - Mapeo robusto de saberes empíricos y previos para impresión oficial.
+- **Sincronización Global de Versión y Purga de Caché:**
+  - Actualizada la versión a **v1.2.7** en `pubspec.yaml`, `lib/core/config/app_config.dart`, `web/index.html`.
+
 ## [1.2.6] - 2026-10-15
 ### Sistema de Correo Transaccional Dual, Barra de Acciones Superiores y Codificación Cromática por Aula
 - **Infraestructura de Correo Transaccional Resiliente (`backend/src/infra/correo.ts`, `backend/src/server.ts`):**
