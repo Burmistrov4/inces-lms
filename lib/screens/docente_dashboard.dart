@@ -186,6 +186,28 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
       onCerrarSesion: _cerrarSesion,
       temaActual: tema?.modo,
       onCambiarTema: tema?.cambiar,
+      accionesEncabezado: [
+        IconButton(
+          tooltip: 'Mis Aulas',
+          icon: const Icon(Icons.class_outlined, size: 20),
+          onPressed: () => _navegarA('Mis aulas'),
+        ),
+        IconButton(
+          tooltip: 'Asistencia QR',
+          icon: const Icon(Icons.fact_check_outlined, size: 20),
+          onPressed: () => _navegarA('Asistencia'),
+        ),
+        IconButton(
+          tooltip: 'Calificaciones',
+          icon: const Icon(Icons.grading_outlined, size: 20),
+          onPressed: () => _navegarA('Calificaciones'),
+        ),
+        IconButton(
+          tooltip: 'Mi Horario',
+          icon: const Icon(Icons.calendar_month_outlined, size: 20),
+          onPressed: () => _navegarA('Mi horario'),
+        ),
+      ],
       contenido: _contenido(),
     );
   }

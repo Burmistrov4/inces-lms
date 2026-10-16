@@ -52,9 +52,14 @@ class CuadranteGrid extends StatelessWidget {
           decoration: bloque > bloquesDeManana
               ? BoxDecoration(
                   color: theme.colorScheme.tertiaryContainer
-                      .withValues(alpha: 0.18),
+                      .withValues(alpha: bloque % 2 == 0 ? 0.22 : 0.14),
                 )
-              : null,
+              : (bloque % 2 == 0
+                  ? BoxDecoration(
+                      color:
+                          theme.colorScheme.primary.withValues(alpha: 0.04),
+                    )
+                  : null),
           children: [
             _CeldaGutter(bloque: bloque),
             for (final dia in dias)
@@ -242,6 +247,37 @@ class _CeldaContenido extends StatelessWidget {
   }
 }
 
+/// Paleta armónica e institucional para diferenciar espacios físicos (aulas, talleres)
+/// y guardias en el cuadrante y horarios.
+class PaletaAulasCuadrante {
+  const PaletaAulasCuadrante._();
+
+  /// Doce colores armoniosos para aulas y talleres, legibles en temas claro y oscuro.
+  static const List<Color> colores = [
+    Color(0xFF0284C7), // Azul Primario INCES (Taller Soldadura 1)
+    Color(0xFF0D9488), // Verde Azulado / Teal (Taller Mecánica)
+    Color(0xFFD97706), // Ámbar / Ocre Técnico (Aula Teórica A1)
+    Color(0xFF7C3AED), // Violeta / Púrpura (Laboratorio Computación)
+    Color(0xFF059669), // Esmeralda Formativo (Aula Magna)
+    Color(0xFFEA580C), // Naranja Industrial (Taller Metalmecánico)
+    Color(0xFF4F46E5), // Índigo Metalúrgico (Laboratorio Ensayos)
+    Color(0xFFDB2777), // Magenta / Rosa Técnico (Aula B2)
+    Color(0xFF0891B2), // Cian CFS (Taller Soldadura 2)
+    Color(0xFF65A30D), // Lima Formación (Aula C1)
+    Color(0xFF9333EA), // Púrpura Institucional (Aula D1)
+    Color(0xFF2563EB), // Azul Real (Taller Electricidad)
+  ];
+
+  /// Color distintivo para las guardias docentes (custodia y presencia institucional).
+  static const Color colorGuardia = Color(0xFF6366F1);
+
+  /// Obtiene el color correspondiente a un identificador o nombre de aula.
+  static Color colorParaAula(String? aulaId) {
+    final idx = indiceColorDeAula(aulaId);
+    return colores[idx];
+  }
+}
+
 /// Chip de una celda: una clase o una guardia.
 ///
 /// `destacado` lo usa la clase (llena el aula de la que es dueña); la guardia va
@@ -254,6 +290,8 @@ class ChipCuadrante extends StatelessWidget {
     required this.titulo,
     required this.subtitulo,
     this.color,
+    this.etiquetaAula,
+    this.esGuardia = false,
     this.destacado = false,
     this.onTap,
   });
@@ -261,30 +299,50 @@ class ChipCuadrante extends StatelessWidget {
   final String titulo;
   final String subtitulo;
   final Color? color;
+  final String? etiquetaAula;
+  final bool esGuardia;
   final bool destacado;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final acento = color ?? theme.colorScheme.primary;
+    final esOscuro = theme.brightness == Brightness.dark;
+    final acento = color ??
+        (esGuardia
+            ? PaletaAulasCuadrante.colorGuardia
+            : theme.colorScheme.primary);
 
     final contenido = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            titulo,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: theme.colorScheme.onSurface,
-              height: 1.15,
-            ),
+          Row(
+            children: [
+              if (esGuardia) ...[
+                Icon(
+                  Icons.shield_outlined,
+                  size: 13,
+                  color: acento,
+                ),
+                const SizedBox(width: 4),
+              ],
+              Expanded(
+                child: Text(
+                  titulo,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurface,
+                    height: 1.15,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
             subtitulo,
             maxLines: 2,
@@ -294,19 +352,70 @@ class ChipCuadrante extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          if (etiquetaAula != null && etiquetaAula!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: acento.withValues(alpha: esOscuro ? 0.28 : 0.16),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                etiquetaAula!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                  color: acento,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
 
     final tarjeta = Container(
       decoration: BoxDecoration(
-        color: destacado ? acento.withValues(alpha: 0.12) : null,
+        color: destacado
+            ? acento.withValues(alpha: esOscuro ? 0.18 : 0.08)
+            : (esGuardia
+                ? acento.withValues(alpha: esOscuro ? 0.10 : 0.04)
+                : null),
         border: Border.all(
-          color: destacado ? acento.withValues(alpha: 0.5) : bordeSuave(theme),
+          color: destacado
+              ? acento.withValues(alpha: esOscuro ? 0.65 : 0.45)
+              : (esGuardia
+                  ? acento.withValues(alpha: esOscuro ? 0.45 : 0.30)
+                  : bordeSuave(theme)),
+          width: destacado ? 1.4 : 1.0,
         ),
         borderRadius: BorderRadius.circular(7),
       ),
-      child: contenido,
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: Container(
+              width: 3.5,
+              decoration: BoxDecoration(
+                color: acento,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(7),
+                  bottomLeft: Radius.circular(7),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 3.5),
+            child: contenido,
+          ),
+        ],
+      ),
     );
 
     if (onTap == null) return tarjeta;

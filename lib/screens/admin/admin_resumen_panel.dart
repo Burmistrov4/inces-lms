@@ -5,6 +5,7 @@ import '../../core/result.dart';
 import '../../models/system_module.dart';
 import '../../repositories/modulo_repository.dart';
 import '../../theme/inces_theme.dart';
+import '../../widgets/barra_acciones_superiores.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/walkthrough_interactivo.dart';
 
@@ -72,6 +73,28 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          BarraAccionesSuperiores(
+            onInscribirAspirante: () =>
+                widget.onNavegarA?.call('Inscripciones y Cupos'),
+            onAsignarClase: () =>
+                widget.onNavegarA?.call('Horarios de Clases'),
+            onVerAulas: () =>
+                widget.onNavegarA?.call('Espacios y Aulas'),
+            onGenerarReporte: () =>
+                BarraAccionesSuperiores.mostrarDialogoReportes(
+              context,
+              onVerInscripciones: () =>
+                  widget.onNavegarA?.call('Inscripciones y Cupos'),
+              onVerHorarios: () =>
+                  widget.onNavegarA?.call('Horarios de Clases'),
+              onVerAccesos: () =>
+                  widget.onNavegarA?.call('Registro de Inicios de Sesión / Accesos'),
+            ),
+            onVerLapsos: () =>
+                widget.onNavegarA?.call('Lapsos Académicos'),
+            onVerModulos: () =>
+                widget.onNavegarA?.call('Módulos del Sistema'),
+          ),
           _construirCabeceraEjecutiva(theme, esOscuro),
           const SizedBox(height: 20),
           _construirRejillaMetricas(),

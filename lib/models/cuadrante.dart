@@ -124,6 +124,20 @@ const Map<int, String> horasDeBloque = {
 /// Devuelve la franja horaria formal de un bloque académico (ej. «07:30 - 08:15»).
 String horaLegibleDeBloque(int bloque) => horasDeBloque[bloque] ?? '';
 
+/// Índice determinista de color (0 a 11) asignado a un aula según su ID o nombre.
+///
+/// Permite asignar paletas armoniosas y consistentes a cada aula o taller sin
+/// acoplar este modelo de dominio con librerías gráficas de Flutter.
+int indiceColorDeAula(String? aulaId) {
+  if (aulaId == null || aulaId.trim().isEmpty) return 0;
+  var hash = 0;
+  final limpio = aulaId.trim().toLowerCase();
+  for (var i = 0; i < limpio.length; i++) {
+    hash = (hash * 31 + limpio.codeUnitAt(i)) & 0xFFFFFF;
+  }
+  return hash.abs() % 12;
+}
+
 
 /// Las tres formas que puede tener un espacio, **derivadas** de dos columnas.
 ///
@@ -187,6 +201,9 @@ class Aula {
 
   /// La forma del espacio, derivada de sus dos columnas.
   TipoAula get tipo => TipoAula.deAula(esTaller: esTaller, capacidad: capacidad);
+
+  /// Índice determinista de color para este espacio en la rejilla.
+  int get indiceColor => indiceColorDeAula(id);
 
   factory Aula.fromJson(Map<String, dynamic> json) {
     return Aula(
@@ -376,6 +393,9 @@ class Guardia {
   final DateTime? creadoEn;
   final DateTime? actualizadoEn;
 
+  /// Índice determinista de color para el aula de la guardia.
+  int get indiceColor => indiceColorDeAula(aulaId);
+
   factory Guardia.fromJson(Map<String, dynamic> json) {
     final bloque = (json['bloque'] ?? json['block']) as int? ?? 0;
     return Guardia(
@@ -487,6 +507,9 @@ class ClaseCuadrante {
 
   /// ¿La vista no pudo resolver el nombre del docente? Ver R-21.
   bool get docenteSinNombre => docente.trim().isEmpty;
+
+  /// Índice determinista de color para el aula de esta clase.
+  int get indiceColor => indiceColorDeAula(aulaId);
 
   factory ClaseCuadrante.fromJson(Map<String, dynamic> json) {
     final bloque = (json['bloque'] ?? json['block']) as int? ?? 0;

@@ -307,6 +307,28 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
       onCerrarSesion: _cerrarSesion,
       temaActual: tema?.modo,
       onCambiarTema: tema?.cambiar,
+      accionesEncabezado: [
+        IconButton(
+          tooltip: 'Ofertas de cupos',
+          icon: const Icon(Icons.explore_outlined, size: 20),
+          onPressed: () => _navegarA('Ofertas de cupos'),
+        ),
+        IconButton(
+          tooltip: 'Mis aulas',
+          icon: const Icon(Icons.class_outlined, size: 20),
+          onPressed: () => _navegarA('Mis aulas'),
+        ),
+        IconButton(
+          tooltip: 'Marcar asistencia',
+          icon: const Icon(Icons.fact_check_outlined, size: 20),
+          onPressed: () => _navegarA('Asistencia'),
+        ),
+        IconButton(
+          tooltip: 'Descargar Planilla Oficial PDF',
+          icon: const Icon(Icons.download_rounded, size: 20),
+          onPressed: _descargarPlanilla,
+        ),
+      ],
       contenido: _contenido(),
     );
   }
@@ -554,6 +576,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
         EstudianteResumenPanel(
           aspirante: aspirante,
           onNavegarA: _navegarA,
+          onDescargarPlanilla: _descargarPlanilla,
         ),
         const SizedBox(height: 20),
         const Divider(),

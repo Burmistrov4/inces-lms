@@ -6,6 +6,7 @@ import '../repositories/modulo_repository.dart';
 import '../services/auth_service.dart';
 import '../theme/inces_theme.dart';
 import '../widgets/andamiaje.dart';
+import '../widgets/barra_acciones_superiores.dart';
 import '../widgets/comunes.dart';
 import '../widgets/modulos_del_menu.dart';
 import 'admin/admin_resumen_panel.dart';
@@ -279,6 +280,34 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       onCerrarSesion: _cerrarSesion,
       temaActual: tema?.modo,
       onCambiarTema: tema?.cambiar,
+      accionesEncabezado: [
+        IconButton(
+          tooltip: 'Inscribir Aspirante',
+          icon: const Icon(Icons.person_add_alt_1_rounded, size: 20),
+          onPressed: () => _navegarA('Inscripciones y Cupos'),
+        ),
+        IconButton(
+          tooltip: 'Horarios de Clases',
+          icon: const Icon(Icons.calendar_month_rounded, size: 20),
+          onPressed: () => _navegarA('Horarios de Clases'),
+        ),
+        IconButton(
+          tooltip: 'Espacios y Aulas',
+          icon: const Icon(Icons.meeting_room_outlined, size: 20),
+          onPressed: () => _navegarA('Espacios y Aulas'),
+        ),
+        IconButton(
+          tooltip: 'Generar Reporte',
+          icon: const Icon(Icons.summarize_outlined, size: 20),
+          onPressed: () => BarraAccionesSuperiores.mostrarDialogoReportes(
+            context,
+            onVerInscripciones: () => _navegarA('Inscripciones y Cupos'),
+            onVerHorarios: () => _navegarA('Horarios de Clases'),
+            onVerAccesos: () =>
+                _navegarA('Registro de Inicios de Sesión / Accesos'),
+          ),
+        ),
+      ],
       contenido: _contenido(),
     );
   }

@@ -2,6 +2,37 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.2.6] - 2026-10-15
+### Sistema de Correo Transaccional Dual, Barra de Acciones Superiores y Codificación Cromática por Aula
+- **Infraestructura de Correo Transaccional Resiliente (`backend/src/infra/correo.ts`, `backend/src/server.ts`):**
+  - Implementado `crearRemitenteTransaccional` con prioridad a Gmail SMTP (`nodemailer`) y conmutación automática hacia la API HTTP de Resend en caso de fallo o indisponibilidad de puerto.
+  - Saneamiento automático de contraseñas de aplicación de Google de 16 caracteres eliminando espacios accidentales.
+  - Timeout de conexión estricto (10 s) para evitar bloqueos del hilo principal.
+  - Garantía de retorno no-bloqueante (`{ entregado: false, proveedor: 'ninguno' }`) cuando no hay red o credenciales configuradas, previniendo excepciones 500 en flujos de usuario.
+  - Cableado en todos los flujos transaccionales clave del sistema:
+    - `POST /api/v1/auth/registro-aspirante`: Correo de bienvenida y confirmación de ficha de pre-inscripción.
+    - `POST /api/v1/admin/usuarios/:id/restablecer`: Envío del código de recuperación de contraseña emitido por el administrador.
+    - `POST /api/v1/admin/invitaciones`: Notificación formal de invitación a docentes para ingreso a la plataforma.
+    - `POST /api/v1/yo/planilla/enviar`: Confirmación de recepción de planilla institucional de formación técnica.
+    - `POST /api/v1/inscripciones`: Confirmación de postulación formal a curso o especialidad productiva.
+  - Suite de pruebas unitarias `backend/test/correo.test.ts` (5/5 pruebas pasando; total backend: 34 archivos, 705/705 pruebas superadas).
+- **Barra de Acciones Superiores de Acceso Inmediato (`lib/widgets/barra_acciones_superiores.dart`):**
+  - Creado componente institucional `BarraAccionesSuperiores` integrado en `AdminResumenPanel` y en el encabezado responsive de `AdminDashboardScreen`.
+  - Botones de acción directa: `+ Inscribir Aspirante`, `+ Asignar Clase`, `Ver Aulas` y `Generar Reporte`.
+  - Insignia de lapso académico activo (ej. `Lapso: SA26-2`) y pulso en tiempo real de operatividad (`Sistema: 100% En Línea`).
+  - Modal interactivo institucional `mostrarDialogoReportes` con selección de reportes consolidados (Inscripciones, Horarios y Auditoría de Seguridad) con envoltura `SingleChildScrollView` tolerante a pantallas móviles y viewports reducidos.
+- **Codificación Cromática y Badges de Aula en Horarios Semanales (`lib/models/cuadrante.dart`, `lib/widgets/cuadrante_grid.dart`):**
+  - Función determinista pura `indiceColorDeAula(String? aulaId)` (índices 0 a 11) en `cuadrante.dart` que preserva el desacoplamiento estricto de los modelos respecto al framework Flutter/UI.
+  - Paleta armónica institucional de 12 tonos pastel (`PaletaAulasCuadrante`) con diferenciación inmediata de talleres y aulas teóricas.
+  - Rediseño de `ChipCuadrante`: borde de acento izquierdo de 3.5 px, fondo pastel teñido, badge tipo píldora con nombre de aula y escudo distintivo para guardias pedagógicas.
+  - Integración en `CpanelCuadrantePanel`, `MiHorarioPanel` y `CpanelGuardiasPanel` con leyenda explicativa de colores.
+- **Control de Calidad, Compilación y Despliegue en Producción:**
+  - Análisis estático con `node devops/analizar-dart.mjs`: 238 archivos analizados con 0 errores, 0 avisos y 0 infos.
+  - Verificación Flutter: suites `cuadrante_paleta_colores_test.dart`, `barra_acciones_superiores_test.dart`, `cpanel_test.dart`, `cuadrante_paneles_test.dart`, `cuadrante_guardias_panel_test.dart` y `app_config_test.dart` aprobadas al 100%.
+  - Compilación Web optimizada: `flutter build web --release --dart-define-from-file=.env.json` (tree-shaking de fuentes: 97.4% reducción).
+  - Despliegue exitoso a Cloudflare Pages producción (`https://inces-lms.pages.dev`, deployment `42c1d5fc`).
+  - Validación automatizada End-to-End con Playwright: HTTP 200, WebGL activo y cero errores de consola en todas las rutas públicas (`/#/`, `/#/login`, `/#/inscripcion`).
+
 ## [1.2.5] - 2026-10-15
 ### Horarios de Clases Institucionales (Mañana y Tarde) y Resiliencia en Rejilla
 - **Integración de Horas Reloj y Distinción de Turnos (`lib/models/cuadrante.dart`, `lib/widgets/cuadrante_grid.dart`):**

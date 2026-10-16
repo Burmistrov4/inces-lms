@@ -319,5 +319,36 @@
   - [x] Despliegue v1.2.5 completado a Cloudflare Pages rama `main`.
   - [x] Captura y verificación E2E `audit_08_admin_horarios.png` con la nueva columna de horas y turnos.
 
+---
+
+## 🚀 15. Sistema de Correo Transaccional Dual, Barra de Acciones Superiores y Codificación Cromática por Aula (v1.2.6)
+- [x] **Infraestructura de Correo Transaccional Resiliente:**
+  - [x] `backend/src/infra/correo.ts`: Implementado `crearRemitenteTransaccional` con prioridad a Gmail SMTP (`nodemailer`) y conmutación automática hacia Resend API.
+  - [x] Saneamiento de espacios en Google App Passwords de 16 caracteres.
+  - [x] Retorno no bloqueante garantizado (`{ entregado: false, proveedor: 'ninguno' }`) sin lanzar 500 ante desconexión total.
+  - [x] Integración en `POST /api/v1/auth/registro-aspirante`, `POST /api/v1/admin/usuarios/:id/restablecer`, `POST /api/v1/admin/invitaciones`, `POST /api/v1/yo/planilla/enviar` e `POST /api/v1/inscripciones`.
+  - [x] Pruebas unitarias completadas: `backend/test/correo.test.ts` (5/5 pruebas pasando; backend total: 705/705 pruebas).
+- [x] **Barra de Acciones Superiores (`BarraAccionesSuperiores`):**
+  - [x] Componente directivo integrado en `AdminResumenPanel` y `AdminDashboardScreen`.
+  - [x] Botones de acceso directo: `+ Inscribir Aspirante`, `+ Asignar Clase`, `Ver Aulas` y `Generar Reporte`.
+  - [x] Insignia de lapso activo (ej. `Lapso: SA26-2`) y pulso en tiempo real `Sistema: 100% En Línea`.
+  - [x] Diálogo modal `mostrarDialogoReportes` envuelto en `SingleChildScrollView` tolerante a pantallas pequeñas.
+  - [x] Suite de pruebas unitarias superada: `test/barra_acciones_superiores_test.dart` (2/2 pruebas).
+- [x] **Codificación Cromática y Badges de Aula en Horarios Semanales:**
+  - [x] Función matemática determinista pura `indiceColorDeAula(String? aulaId)` (0..11) en `lib/models/cuadrante.dart` desacoplada de la UI.
+  - [x] Paleta institucional armónica de 12 tonos pastel `PaletaAulasCuadrante` en `lib/widgets/cuadrante_grid.dart`.
+  - [x] Rediseño de `ChipCuadrante`: borde izquierdo acentuado de 3.5 px, pasteles por aula, badge tipo píldora con nombre de aula y escudo para guardias.
+  - [x] Actualizados paneles `CpanelCuadrantePanel`, `MiHorarioPanel` y `CpanelGuardiasPanel`.
+  - [x] Suite de pruebas superada: `test/cuadrante_paleta_colores_test.dart` (4/4 pruebas).
+- [x] **Control de Calidad, Compilación y Despliegue:**
+  - [x] `node devops/analizar-dart.mjs`: 238 archivos analizados con 0 errores, 0 avisos y 0 infos.
+  - [x] Versión elevada a **v1.2.6** en `lib/core/config/app_config.dart`, `web/index.html` y `pubspec.yaml`.
+  - [x] Compilación web: `flutter build web --release --dart-define-from-file=.env.json` exitosa (build\web).
+  - [x] Despliegue completado a Cloudflare Pages producción (`https://inces-lms.pages.dev`, deployment `42c1d5fc`).
+  - [x] Verificación E2E Playwright en vivo (`node e2e/verificar-produccion.mjs` y `verificar-rutas-produccion.mjs`): HTTP 200, WebGL activo y cero errores de consola.
+- [x] **Documentación Arquitectónica y de Evolución:**
+  - [x] Documento maestro `organizacion_y_evolucion_sistema.md` creado con mapa arquitectónico, inventario de capacidades, auditoría de deuda técnica y roadmap multi-fase 2026-2027.
+
+
 
 

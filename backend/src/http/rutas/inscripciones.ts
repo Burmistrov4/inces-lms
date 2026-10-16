@@ -124,6 +124,36 @@ export function rutasInscripciones(app: FastifyInstance, deps: DependenciasRutas
 
       const estado = await reposDe(request).inscripciones.solicitar(seccionId);
 
+      // Notificación al estudiante
+      if (request.usuario?.perfil.email) {
+        const desc = descripcionDeEstado(estado);
+        const htmlInscripcion = [
+          '<div style="font-family:Inter,Segoe UI,Arial,sans-serif;max-width:540px;margin:0 auto;padding:24px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;">',
+          '  <div style="background:linear-gradient(135deg, #0b5cab 0%, #003366 100%);padding:20px;border-radius:8px;text-align:center;margin-bottom:24px;">',
+          '    <h1 style="color:#ffffff;margin:0;font-size:20px;font-weight:700;">INCES LMS · Solicitud de Inscripción</h1>',
+          '    <p style="color:#e2e8f0;margin:4px 0 0;font-size:13px;">CFS Nacional de Soldadura «Rafael Urdaneta»</p>',
+          '  </div>',
+          `  <h2 style="color:#1e293b;font-size:18px;margin-bottom:12px;">Hola, ${request.usuario.perfil.nombres || 'Estudiante'}:</h2>`,
+          '  <p style="color:#475569;font-size:14px;line-height:1.5;">Hemos procesado tu solicitud de cupo en la sección seleccionada.</p>',
+          '  <div style="background-color:#f0fdf4;border-left:4px solid #16a34a;padding:14px;border-radius:6px;margin:20px 0;">',
+          `    <p style="margin:0;font-size:13px;color:#166534;font-weight:600;">Estatus: ${estado}</p>`,
+          `    <p style="margin:4px 0 0;font-size:13px;color:#374151;">${desc}</p>`,
+          '  </div>',
+          '  <p style="color:#64748b;font-size:12px;line-height:1.4;">Puedes consultar el avance de tus postulaciones e inscripciones desde el portal de usuario en cualquier momento.</p>',
+          '</div>',
+        ].join('\n');
+
+        try {
+          await deps.enviarCorreo.enviar({
+            para: request.usuario.perfil.email,
+            asunto: `Actualización de Solicitud de Cupo (${estado}) — INCES LMS`,
+            html: htmlInscripcion,
+          });
+        } catch (err) {
+          request.log.warn({ err }, 'No se pudo enviar correo de confirmación de inscripción');
+        }
+      }
+
       // 201: se creó una inscripción, y el estado resultante dice si entró o
       // quedó en la cola. **No se adivina aquí**: lo decide la base dentro de su
       // cerrojo, y una segunda copia de la regla se desviaría.

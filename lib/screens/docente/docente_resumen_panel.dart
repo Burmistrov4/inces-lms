@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/inces_theme.dart';
+import '../../widgets/barra_acciones_superiores.dart';
 import '../../widgets/comunes.dart';
 
 /// Panel de resumen y control docente.
@@ -28,6 +29,12 @@ class DocenteResumenPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          BarraAccionesSuperiores.docente(
+            onMisAulas: () => onNavegarA?.call('Mis aulas'),
+            onAsistencia: () => onNavegarA?.call('Asistencia'),
+            onCalificaciones: () => onNavegarA?.call('Calificaciones'),
+            onMiHorario: () => onNavegarA?.call('Mi horario'),
+          ),
           _construirCabecera(theme, esOscuro),
           const SizedBox(height: 20),
           _construirMetricas(),

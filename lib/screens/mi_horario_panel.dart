@@ -126,7 +126,63 @@ class _MiHorarioPanelState extends State<MiHorarioPanel> {
       celdas.putIfAbsent(entrada.key, () => []).addAll(entrada.value);
     }
 
-    return CuadranteGrid(celdas: celdas);
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Clases (color por aula / taller asignado)',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: PaletaAulasCuadrante.colorGuardia,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Guardias Docentes',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Expanded(child: CuadranteGrid(celdas: celdas)),
+      ],
+    );
   }
 
   Widget _chipClase(ClaseCuadrante clase) {
@@ -134,9 +190,12 @@ class _MiHorarioPanelState extends State<MiHorarioPanel> {
     final subtitulo = clase.aula.isNotEmpty
         ? '${clase.aula} · ${clase.seccion}'
         : clase.seccion;
+    final colorAula = PaletaAulasCuadrante.colorParaAula(clase.aulaId);
     return ChipCuadrante(
       titulo: materia,
       subtitulo: subtitulo,
+      color: colorAula,
+      etiquetaAula: clase.aula.isNotEmpty ? clase.aula : null,
       destacado: true,
       onTap: null,
     );
@@ -146,9 +205,13 @@ class _MiHorarioPanelState extends State<MiHorarioPanel> {
     final aula = guardia.aulaId.isNotEmpty
         ? guardia.aulaId
         : 'Espacio no disponible';
+    final colorAula = PaletaAulasCuadrante.colorParaAula(guardia.aulaId);
     return ChipCuadrante(
       titulo: 'Guardia',
       subtitulo: aula,
+      color: colorAula,
+      etiquetaAula: aula,
+      esGuardia: true,
       onTap: null,
     );
   }

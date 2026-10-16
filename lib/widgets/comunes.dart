@@ -1073,24 +1073,32 @@ class PanelVacio extends StatelessWidget {
 /// ver primero —el lapso vigente—, no para decorar: si todas destacan, ninguna
 /// destaca.
 class Etiqueta extends StatelessWidget {
-  const Etiqueta({super.key, required this.texto, this.destacada = false});
+  const Etiqueta({
+    super.key,
+    required this.texto,
+    this.destacada = false,
+    this.color,
+  });
 
   final String texto;
   final bool destacada;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final acento = color ?? theme.colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: destacada
-            ? theme.colorScheme.primary.withValues(alpha: 0.12)
+        color: (destacada || color != null)
+            ? acento.withValues(alpha: 0.12)
             : null,
         border: Border.all(
-          color:
-              destacada ? theme.colorScheme.primary : theme.colorScheme.outline,
+          color: (destacada || color != null)
+              ? acento.withValues(alpha: 0.5)
+              : theme.colorScheme.outline,
         ),
         borderRadius: BorderRadius.circular(5),
       ),
@@ -1098,9 +1106,10 @@ class Etiqueta extends StatelessWidget {
         texto,
         style: GoogleFonts.inter(
           fontSize: 11,
-          fontWeight: FontWeight.w500,
-          color: destacada
-              ? theme.colorScheme.primary
+          fontWeight:
+              (destacada || color != null) ? FontWeight.w600 : FontWeight.w500,
+          color: (destacada || color != null)
+              ? acento
               : theme.colorScheme.onSurfaceVariant,
         ),
       ),

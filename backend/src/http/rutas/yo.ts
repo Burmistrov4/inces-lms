@@ -71,7 +71,37 @@ export function rutasYo(app: FastifyInstance, deps: DependenciasRutas): void {
   app.post('/api/v1/yo/planilla/enviar', { preHandler: [exigirSesion()] }, async (request) => {
     const usuario = request.usuario;
     if (!usuario) throw ErrorApi.noAutorizado();
-    return { version: await reposDe(request).planilla.enviarPlanilla(usuario.id) };
+    const version = await reposDe(request).planilla.enviarPlanilla(usuario.id);
+
+    if (usuario.perfil.email) {
+      const htmlPlanillaEnviada = [
+        '<div style="font-family:Inter,Segoe UI,Arial,sans-serif;max-width:540px;margin:0 auto;padding:24px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;">',
+        '  <div style="background:linear-gradient(135deg, #0b5cab 0%, #003366 100%);padding:20px;border-radius:8px;text-align:center;margin-bottom:24px;">',
+        '    <h1 style="color:#ffffff;margin:0;font-size:20px;font-weight:700;">INCES LMS · Planilla Consignada</h1>',
+        '    <p style="color:#e2e8f0;margin:4px 0 0;font-size:13px;">CFS Nacional de Soldadura «Rafael Urdaneta»</p>',
+        '  </div>',
+        `  <h2 style="color:#1e293b;font-size:18px;margin-bottom:12px;">Hola, ${usuario.perfil.nombres || 'Aspirante'}:</h2>`,
+        '  <p style="color:#475569;font-size:14px;line-height:1.5;">Te confirmamos que tu <strong>Planilla Oficial de Inscripción</strong> ha sido enviada para validación ante la coordinación académica del CFS.</p>',
+        '  <div style="background-color:#f8fafc;border-left:4px solid #0b5cab;padding:14px;border-radius:6px;margin:20px 0;">',
+        `    <p style="margin:0;font-size:13px;color:#334155;">Versión registrada: <strong>${version.version}</strong> (${version.estado})</p>`,
+        '    <p style="margin:4px 0 0;font-size:12px;color:#64748b;">El equipo revisará tus datos y recaudos conforme a los requisitos del programa de formación técnica.</p>',
+        '  </div>',
+        '  <p style="color:#475569;font-size:14px;line-height:1.5;">Puedes consultar el estatus y descargar el comprobante en formato PDF directamente desde tu panel de usuario en cualquier momento.</p>',
+        '</div>',
+      ].join('\n');
+
+      try {
+        await deps.enviarCorreo.enviar({
+          para: usuario.perfil.email,
+          asunto: 'Comprobante de Envío de Planilla de Inscripción — INCES LMS',
+          html: htmlPlanillaEnviada,
+        });
+      } catch (err) {
+        request.log.warn({ err }, 'No se pudo enviar el correo de confirmación de planilla');
+      }
+    }
+
+    return { version };
   });
 
   app.post('/api/v1/yo/planilla/reenviar', { preHandler: [exigirSesion()] }, async (request) => {

@@ -207,18 +207,24 @@ export function rutasAuth(app: FastifyInstance, deps: DependenciasRutas): void {
             '</div>',
           ].join('\n');
 
-          const resultadoEnvio = await deps.enviarCorreo.enviar({
-            para: perfil.email,
-            asunto: 'Código de recuperación de contraseña — INCES LMS',
-            html: htmlCorreo,
-          });
+          let correoEnviado = false;
+          try {
+            const resultadoEnvio = await deps.enviarCorreo.enviar({
+              para: perfil.email,
+              asunto: 'Código de recuperación de contraseña — INCES LMS',
+              html: htmlCorreo,
+            });
+            correoEnviado = resultadoEnvio.entregado;
+          } catch (errorCorreo) {
+            request.log.warn({ err: errorCorreo }, 'Fallo al despachar correo de recuperación');
+          }
 
           return {
             exito: true,
-            correoEnviado: resultadoEnvio.entregado,
-            metodo: resultadoEnvio.entregado ? ('smtp' as const) : ('supabase' as const),
+            correoEnviado,
+            metodo: correoEnviado ? ('smtp' as const) : ('supabase' as const),
             ...(perfil.email ? { email: perfil.email } : {}),
-            mensaje: resultadoEnvio.entregado
+            mensaje: correoEnviado
               ? 'Si los datos coinciden con un usuario registrado, hemos enviado las instrucciones y el código a tu correo electrónico.'
               : 'El servidor SMTP no tiene entrega activa. Se recomienda el flujo de recuperación de Supabase.',
           };
@@ -355,9 +361,51 @@ export function rutasAuth(app: FastifyInstance, deps: DependenciasRutas): void {
             estado: 'SUCCESS',
           });
 
+          let correoEnviado = false;
+          try {
+            const nombreAspirante = metadata?.nombres
+              ? `${metadata.nombres} ${metadata?.apellidos ?? ''}`.trim()
+              : 'Aspirante';
+
+            const urlLogin = `${deps.urlFrente}/#/auth/login`;
+
+            const htmlBienvenida = [
+              '<div style="font-family:Inter,Segoe UI,Arial,sans-serif;max-width:540px;margin:0 auto;padding:24px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;">',
+              '  <div style="background:linear-gradient(135deg, #0b5cab 0%, #003366 100%);padding:20px;border-radius:8px;text-align:center;margin-bottom:24px;">',
+              '    <h1 style="color:#ffffff;margin:0;font-size:20px;font-weight:700;">INCES LMS · Registro de Aspirante</h1>',
+              '    <p style="color:#e2e8f0;margin:4px 0 0;font-size:13px;">CFS Nacional de Soldadura «Rafael Urdaneta»</p>',
+              '  </div>',
+              `  <h2 style="color:#1e293b;font-size:18px;margin-bottom:12px;">¡Bienvenido/a, ${nombreAspirante}!</h2>`,
+              '  <p style="color:#475569;font-size:14px;line-height:1.5;">Tu cuenta en el Sistema de Gestión Académica del INCES ha sido creada exitosamente.</p>',
+              '  <div style="background-color:#f0fdf4;border-left:4px solid #16a34a;padding:14px;border-radius:6px;margin:20px 0;">',
+              '    <strong style="color:#166534;font-size:13px;">Próximos pasos para completar tu ingreso:</strong>',
+              '    <ol style="color:#374151;font-size:13px;line-height:1.6;margin:8px 0 0 16px;padding:0;">',
+              '      <li>Inicia sesión con tu correo electrónico y la contraseña que has configurado.</li>',
+              '      <li>Completa los datos de tu <strong>Planilla Oficial de Inscripción</strong>.</li>',
+              '      <li>Selecciona el curso o programa técnico de tu preferencia para postularte.</li>',
+              '    </ol>',
+              '  </div>',
+              '  <div style="text-align:center;margin:24px 0;">',
+              `    <a href="${urlLogin}" style="background-color:#0b5cab;color:#ffffff;padding:12px 28px;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;display:inline-block;">Ingresar al Sistema</a>`,
+              '  </div>',
+              '  <p style="color:#94a3b8;font-size:12px;line-height:1.4;margin-top:24px;border-top:1px solid #e2e8f0;padding-top:16px;">Si no realizaste este registro, por favor notifícalo a la coordinación del centro.</p>',
+              '</div>',
+            ].join('\n');
+
+            const res = await deps.enviarCorreo.enviar({
+              para: email,
+              asunto: '¡Bienvenido al INCES! Confirmación de Registro de Aspirante',
+              html: htmlBienvenida,
+            });
+            correoEnviado = res.entregado;
+          } catch (errorCorreo) {
+            request.log.warn({ err: errorCorreo }, 'Fallo al despachar correo de bienvenida al aspirante');
+          }
+
           return {
             exito: true,
             userId,
+            correoEnviado,
             mensaje: 'Cuenta de aspirante creada y confirmada exitosamente.',
           };
         } catch (error) {

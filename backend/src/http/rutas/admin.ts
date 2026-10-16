@@ -33,14 +33,23 @@ import {
  * de datos), así que es seguro interpolarlo: no viene del cliente. No se mete
  * nada más del cliente en el HTML.
  */
-function htmlInvitacion(enlace: string): string {
+function htmlInvitacion(enlace: string, nombres?: string): string {
+  const saludo = nombres ? `Estimado/a ${nombres}:` : 'Estimado/a Docente:';
   return [
-    '<div style="font-family:Inter,Arial,sans-serif;max-width:520px;margin:0 auto">',
-    '  <h2>Invitación al LMS del INCES</h2>',
-    '  <p>Ha sido invitado a formar parte del sistema como <strong>docente</strong>.</p>',
-    '  <p>Active su cuenta en las próximas 48 horas usando el siguiente enlace:</p>',
-    `  <p><a href="${enlace}" style="color:#1d4ed8">${enlace}</a></p>`,
-    '  <p>Si no esperaba esta invitación, puede ignorar este mensaje.</p>',
+    '<div style="font-family:Inter,Segoe UI,Arial,sans-serif;max-width:540px;margin:0 auto;padding:24px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;">',
+    '  <div style="background:linear-gradient(135deg, #0b5cab 0%, #003366 100%);padding:20px;border-radius:8px;text-align:center;margin-bottom:24px;">',
+    '    <h1 style="color:#ffffff;margin:0;font-size:20px;font-weight:700;">INCES LMS · Gestión Académica</h1>',
+    '    <p style="color:#e2e8f0;margin:4px 0 0;font-size:13px;">CFS Nacional de Soldadura «Rafael Urdaneta»</p>',
+    '  </div>',
+    `  <h2 style="color:#1e293b;font-size:18px;margin-bottom:12px;">${saludo}</h2>`,
+    '  <p style="color:#475569;font-size:14px;line-height:1.5;">Ha sido formalmente invitado a incorporarse a la plataforma LMS del CFS Nacional de Soldadura como <strong>Docente / Instructor</strong>.</p>',
+    '  <p style="color:#475569;font-size:14px;line-height:1.5;">Para activar su cuenta institucional, definir su clave de acceso y consultar sus asignaciones docentes, por favor active su perfil en las próximas 48 horas pulsando el siguiente botón:</p>',
+    '  <div style="text-align:center;margin:24px 0;">',
+    `    <a href="${enlace}" style="background-color:#0b5cab;color:#ffffff;padding:12px 28px;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;display:inline-block;">Activar Cuenta Docente</a>`,
+    '  </div>',
+    '  <p style="color:#64748b;font-size:12px;line-height:1.4;">Si el botón no abre directamente, copie y pegue el siguiente enlace en su navegador:</p>',
+    `  <p style="word-break:break-all;font-size:11px;color:#0b5cab;"><a href="${enlace}" style="color:#0b5cab;">${enlace}</a></p>`,
+    '  <p style="color:#94a3b8;font-size:12px;line-height:1.4;margin-top:24px;border-top:1px solid #e2e8f0;padding-top:16px;">Si no esperaba esta invitación institucional, puede ignorar este mensaje de forma segura.</p>',
     '</div>',
   ].join('\n');
 }
@@ -97,7 +106,7 @@ async function crearInvitacionConEnlace(
   const correo = await deps.enviarCorreo.enviar({
     para: datos.email,
     asunto: 'Invitación al LMS del INCES — Active su cuenta de docente',
-    html: htmlInvitacion(enlace),
+    html: htmlInvitacion(enlace, datos.nombres),
   });
 
   return { invitacion, enlace, correoEnviado: correo.entregado };
@@ -438,13 +447,46 @@ export function rutasAdmin(app: FastifyInstance, deps: DependenciasRutas): void 
             createdBy: usuario.id,
           });
 
+          let correoEnviado = false;
+          if (objetivo.email) {
+            const urlRestablecer = `${deps.urlFrente}/#/restablecer-codigo?codigo=${encodeURIComponent(codigo)}`;
+            const htmlAdminRestablecer = [
+              '<div style="font-family:Inter,Segoe UI,Arial,sans-serif;max-width:540px;margin:0 auto;padding:24px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;">',
+              '  <div style="background:linear-gradient(135deg, #0b5cab 0%, #003366 100%);padding:20px;border-radius:8px;text-align:center;margin-bottom:24px;">',
+              '    <h1 style="color:#ffffff;margin:0;font-size:20px;font-weight:700;">INCES LMS · Restablecimiento de Acceso</h1>',
+              '    <p style="color:#e2e8f0;margin:4px 0 0;font-size:13px;">CFS Nacional de Soldadura «Rafael Urdaneta»</p>',
+              '  </div>',
+              `  <h2 style="color:#1e293b;font-size:18px;margin-bottom:12px;">Hola, ${objetivo.nombres || 'Usuario'}:</h2>`,
+              '  <p style="color:#475569;font-size:14px;line-height:1.5;">La Administración del CFS ha emitido un código de restablecimiento de contraseña para tu cuenta.</p>',
+              '  <div style="background-color:#f1f5f9;border-left:4px solid #0b5cab;padding:16px;border-radius:6px;margin:20px 0;text-align:center;">',
+              '    <span style="display:block;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Tu código de seguridad temporal:</span>',
+              `    <strong style="font-size:26px;color:#0b5cab;letter-spacing:3px;font-family:monospace;">${codigo}</strong>`,
+              '    <span style="display:block;font-size:12px;color:#64748b;margin-top:6px;">Válido durante los próximos 30 minutos (un solo uso).</span>',
+              '  </div>',
+              '  <div style="text-align:center;margin:24px 0;">',
+              `    <a href="${urlRestablecer}" style="background-color:#0b5cab;color:#ffffff;padding:12px 28px;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;display:inline-block;">Restablecer mi contraseña</a>`,
+              '  </div>',
+              '</div>',
+            ].join('\n');
+
+            try {
+              const res = await deps.enviarCorreo.enviar({
+                para: objetivo.email,
+                asunto: 'Código de restablecimiento de contraseña — INCES LMS',
+                html: htmlAdminRestablecer,
+              });
+              correoEnviado = res.entregado;
+            } catch (errCorreo) {
+              request.log.warn({ err: errCorreo }, 'No se pudo despachar correo de restablecimiento');
+            }
+          }
+
           return {
             email: objetivo.email,
             codigo,
             expiraEn: registro.expiresAt,
-            // El administrador debe entregarlo por el canal institucional. No se
-            // afirma que se haya enviado por correo: no se ha enviado.
             entrega: 'manual',
+            correoEnviado,
           };
         },
       );

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/aspirante_model.dart';
 import '../../theme/inces_theme.dart';
+import '../../widgets/barra_acciones_superiores.dart';
 import '../../widgets/comunes.dart';
 
 /// Panel de resumen académico del Aprendiz / Estudiante.
@@ -15,6 +16,7 @@ class EstudianteResumenPanel extends StatelessWidget {
     super.key,
     this.aspirante,
     this.onNavegarA,
+    this.onDescargarPlanilla,
   });
 
   /// Ficha del estudiante con sus datos de matrícula.
@@ -22,6 +24,9 @@ class EstudianteResumenPanel extends StatelessWidget {
 
   /// Permite saltar a una pestaña del dashboard de estudiante.
   final void Function(String tituloSeccion)? onNavegarA;
+
+  /// Permite descargar el comprobante oficial en PDF.
+  final VoidCallback? onDescargarPlanilla;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +50,12 @@ class EstudianteResumenPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          BarraAccionesSuperiores.estudiante(
+            onOfertasCupos: () => onNavegarA?.call('Ofertas de cupos'),
+            onMisAulas: () => onNavegarA?.call('Mis aulas'),
+            onAsistencia: () => onNavegarA?.call('Asistencia'),
+            onDescargarPlanilla: onDescargarPlanilla,
+          ),
           _construirCabecera(theme, esOscuro, nombre, programa, cedula),
           const SizedBox(height: 20),
           _construirMetricas(programa),

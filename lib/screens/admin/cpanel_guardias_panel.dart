@@ -8,6 +8,7 @@ import '../../models/cuadrante.dart';
 import '../../repositories/cuadrante_repository.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/cuadrante_grid.dart';
 
 /// Panel de guardias docentes (Módulo 3).
 ///
@@ -683,6 +684,7 @@ class _FilaGuardia extends StatelessWidget {
     final theme = Theme.of(context);
     final archivada = !guardia.activa;
     final notas = guardia.notas?.trim();
+    final colorAula = PaletaAulasCuadrante.colorParaAula(guardia.aulaId);
 
     return Card(
       child: Padding(
@@ -694,8 +696,8 @@ class _FilaGuardia extends StatelessWidget {
               height: 38,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary
-                    .withValues(alpha: archivada ? 0.05 : 0.12),
+                color: colorAula
+                    .withValues(alpha: archivada ? 0.05 : 0.16),
                 borderRadius: BorderRadius.circular(IncesTheme.radioControl),
               ),
               child: Icon(
@@ -703,7 +705,7 @@ class _FilaGuardia extends StatelessWidget {
                 size: 19,
                 color: archivada
                     ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)
-                    : theme.colorScheme.primary,
+                    : colorAula,
               ),
             ),
             const SizedBox(width: 14),
@@ -734,7 +736,14 @@ class _FilaGuardia extends StatelessWidget {
                         texto: '${_diaLegible()} · Bloque ${guardia.bloque}',
                       ),
                       Etiqueta(texto: guardia.turno.etiqueta),
-                      Etiqueta(texto: aula ?? 'Espacio no disponible'),
+                      if (horaLegibleDeBloque(guardia.bloque).isNotEmpty)
+                        Etiqueta(
+                          texto: horaLegibleDeBloque(guardia.bloque),
+                        ),
+                      Etiqueta(
+                        texto: aula ?? 'Espacio no disponible',
+                        color: colorAula,
+                      ),
                       if (archivada) const Etiqueta(texto: 'Archivada'),
                     ],
                   ),

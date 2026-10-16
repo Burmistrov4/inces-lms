@@ -329,18 +329,20 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
-          child: Row(
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               _Leyenda(
                 color: theme.colorScheme.primary,
                 relleno: true,
-                texto: 'Clase',
+                texto: 'Clases (color por aula asignada)',
               ),
-              const SizedBox(width: 16),
-              _Leyenda(
-                color: theme.colorScheme.outline,
+              const _Leyenda(
+                color: PaletaAulasCuadrante.colorGuardia,
                 relleno: false,
-                texto: 'Guardia (sólo lectura aquí)',
+                texto: 'Guardias (sólo lectura aquí)',
               ),
             ],
           ),
@@ -360,9 +362,12 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
 
   Widget _chipClase(ClaseCuadrante clase) {
     final docente = nombreDeDocente(clase.docente);
+    final colorAula = PaletaAulasCuadrante.colorParaAula(clase.aulaId);
     return ChipCuadrante(
       titulo: clase.materia.isNotEmpty ? clase.materia : 'Clase',
       subtitulo: '${clase.aula} · $docente',
+      color: colorAula,
+      etiquetaAula: clase.aula,
       destacado: true,
       onTap: () => _abrirEdicion(clase),
     );
@@ -370,9 +375,13 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
 
   Widget _chipGuardia(Guardia guardia) {
     final aula = _aulas.where((a) => a.id == guardia.aulaId).firstOrNull;
+    final colorAula = PaletaAulasCuadrante.colorParaAula(guardia.aulaId);
     return ChipCuadrante(
       titulo: 'Guardia',
       subtitulo: aula?.nombre ?? 'Espacio no disponible',
+      color: colorAula,
+      etiquetaAula: aula?.nombre,
+      esGuardia: true,
       onTap: null,
     );
   }
