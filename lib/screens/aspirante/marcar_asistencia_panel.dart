@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/result.dart';
 import '../../services/asistencia_service.dart';
@@ -361,17 +362,26 @@ class _MarcarAsistenciaPanelState extends State<MarcarAsistenciaPanel> {
                     : _yaEstaba
                         ? 'Ya estabas contado.'
                         : 'Marca tu asistencia',
-                style: theme.textTheme.titleLarge,
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 _marcada
                     ? 'La marca ya está guardada y el docente la ve en su pantalla.'
                     : _yaEstaba
                         ? 'Tu asistencia en esta clase ya estaba registrada. No hace falta repetirla.'
-                        : 'Escribe los seis dígitos que el docente proyecta en la pizarra. Cambian cada pocos segundos.',
-                style: theme.textTheme.bodySmall,
+                        : 'Escribe los seis dígitos que el docente proyecta en la pizarra o escanea el QR con tu cámara. Los códigos caducan cada pocos segundos para certificar tu presencia en aula.',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  height: 1.4,
+                  fontWeight: FontWeight.w400,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),

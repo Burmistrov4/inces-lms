@@ -311,8 +311,8 @@ class EstudianteResumenPanel extends StatelessWidget {
             tono: TonoEstado.exito,
           ),
           const TarjetaMetrica(
-            etiqueta: 'Aula Virtual M6',
-            valor: 'Activa',
+            etiqueta: 'Campus Virtual',
+            valor: 'Activo',
             icono: Icons.devices_rounded,
             tono: TonoEstado.info,
           ),
@@ -373,10 +373,10 @@ class EstudianteResumenPanel extends StatelessWidget {
         color: paleta.enlace,
       ),
       _EstudianteAccionData(
-        titulo: 'Mi Ficha de Inscripción',
+        titulo: 'Mi Expediente y Planilla',
         descripcion: 'Verificar los datos de registro y descargar la planilla oficial institucional.',
         icono: Icons.badge_outlined,
-        seccionDestino: 'Mi inscripción',
+        seccionDestino: 'Mi expediente',
         color: paleta.advertencia,
       ),
       _EstudianteAccionData(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:inces_lms_app/core/errors/app_exception.dart';
+import 'package:inces_lms_app/core/network/api_client.dart';
 import 'package:inces_lms_app/core/result.dart';
 import 'package:inces_lms_app/screens/aspirante_form_screen.dart';
 import 'package:inces_lms_app/screens/landing_page.dart';
@@ -40,6 +41,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   /// Ancho a partir del cual se muestra el panel de marca lateral.
   static const double _anchoConPanelMarca = 900;
+
+  @override
+  void initState() {
+    super.initState();
+    ApiClient.calentarBackend();
+  }
 
   @override
   void dispose() {

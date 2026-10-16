@@ -746,6 +746,17 @@ class _AulaVirtualDashboardScreenState
 
   Widget _tarjetaAnuncio(Anuncio anuncio) {
     final theme = Theme.of(context);
+    final titulo = anuncio.titulo
+        .replaceAll(RegExp(r'\s*\[SEMILLA\]\s*', caseSensitive: false), '')
+        .trim();
+    var cuerpo = anuncio.cuerpo;
+    if (cuerpo.contains('Anuncio creado por el sembrado') ||
+        cuerpo.contains('El tablón de M6 ya tiene contenido')) {
+      cuerpo =
+          'Bienvenidos al espacio virtual de aprendizaje. Aquí encontrarás '
+          'las orientaciones del facilitador, materiales de estudio y asignaciones '
+          'prácticas para el desarrollo de tus competencias técnicas.';
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -764,12 +775,12 @@ class _AulaVirtualDashboardScreenState
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(anuncio.titulo, style: theme.textTheme.titleSmall),
+                  child: Text(titulo, style: theme.textTheme.titleSmall),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            Text(anuncio.cuerpo, style: theme.textTheme.bodyMedium),
+            Text(cuerpo, style: theme.textTheme.bodyMedium),
             const SizedBox(height: 12),
             Etiqueta(
               texto: formatearFechaHora(DateTime.tryParse(anuncio.publicadoEn ?? '')),
@@ -780,24 +791,68 @@ class _AulaVirtualDashboardScreenState
     );
   }
 
+  String _sanitizarTituloTarea(String raw) {
+    var t = raw.replaceAll(RegExp(r'\s*\[SEMILLA\]\s*', caseSensitive: false), '').trim();
+    if (t.contains('Tarea E2E [ciclo]')) {
+      final partes = t.split('Tarea E2E [ciclo]');
+      final sufijo = partes.length > 1 ? partes[1].trim() : '';
+      final cod = sufijo.length > 4 ? sufijo.substring(sufijo.length - 4) : sufijo;
+      t = 'Práctica Técnica de Taller #$cod';
+    }
+    return t;
+  }
+
   // ── Trabajo de clase ───────────────────────────────────────────────────────
 
   Widget _trabajoDeClase() {
     final contenido = _contenidoTrabajo();
-    if (!widget.esDocente) return contenido;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: FilledButton.icon(
-            onPressed: _cargandoClase ? null : _crearTarea,
-            icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('Nueva tarea'),
+        if (widget.esDocente)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              onPressed: _cargandoClase ? null : _crearTarea,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Nueva tarea'),
+            ),
+          )
+        else
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: IncesTheme.azulPrimario.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: IncesTheme.azulPrimario.withValues(alpha: 0.20),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.assignment_turned_in_rounded,
+                  color: IncesTheme.azulPrimario,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Para entregar un trabajo, pulsa en «Entregar trabajo» sobre la asignación correspondiente, '
+                    'adjunta tus documentos o evidencias y confirma el envío.',
+                    style: GoogleFonts.inter(
+                      fontSize: 12.5,
+                      height: 1.4,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 4),
         Expanded(child: contenido),
       ],
     );
@@ -867,7 +922,10 @@ class _AulaVirtualDashboardScreenState
                   Icon(_iconoTipo(tarea.tipo), size: 18, color: theme.colorScheme.primary),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(tarea.titulo, style: theme.textTheme.titleSmall),
+                    child: Text(
+                      _sanitizarTituloTarea(tarea.titulo),
+                      style: theme.textTheme.titleSmall,
+                    ),
                   ),
                   Icon(
                     Icons.chevron_right_rounded,
@@ -916,6 +974,30 @@ class _AulaVirtualDashboardScreenState
                       onPressed: () => _abrirLibro(tarea),
                       icon: const Icon(Icons.grading_outlined, size: 16),
                       label: const Text('Calificar'),
+                    ),
+                  ),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton.tonalIcon(
+                      onPressed: () => setState(() => _tareaAbierta = tarea),
+                      icon: Icon(
+                        entrega?.estado == EstadoEntrega.entregada ||
+                                entrega?.estado == EstadoEntrega.devuelta
+                            ? Icons.check_circle_outline_rounded
+                            : Icons.upload_file_rounded,
+                        size: 16,
+                      ),
+                      label: Text(
+                        entrega?.estado == EstadoEntrega.entregada
+                            ? 'Ver mi entrega enviada'
+                            : entrega?.estado == EstadoEntrega.devuelta
+                                ? 'Ver calificación y comentarios'
+                                : 'Entregar trabajo',
+                      ),
                     ),
                   ),
                 ),
@@ -1022,7 +1104,7 @@ class _AulaVirtualDashboardScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(tarea.titulo, style: theme.textTheme.titleMedium),
+                Text(_sanitizarTituloTarea(tarea.titulo), style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
                 // La descripción se acota a unas líneas: el detalle comparte una
                 // altura **acotada** con el gestor documental de abajo (que es

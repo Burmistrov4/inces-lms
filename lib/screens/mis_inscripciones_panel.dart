@@ -279,7 +279,9 @@ class _PanelMisInscripcionesState extends State<PanelMisInscripciones> {
   Widget _tarjetaInscripcion(InscripcionDetallada i) {
     final theme = Theme.of(context);
     final ocupado = _actuando.contains(i.seccionId);
-    final titulo = i.materiaNombre ?? i.seccionNombre;
+    final titulo = (i.materiaNombre ?? i.seccionNombre)
+        .replaceAll(RegExp(r'\s*\[SEMILLA\]\s*', caseSensitive: false), '')
+        .trim();
 
     // La tarjeta que exige acción se distingue del resto de un vistazo: borde
     // ámbar y fondo apenas teñido. Sólo se aplica a `PENDING_BID`, así que el
@@ -314,8 +316,16 @@ class _PanelMisInscripcionesState extends State<PanelMisInscripciones> {
                       Text(titulo, style: theme.textTheme.titleSmall),
                       const SizedBox(height: 4),
                       Text(
-                        [if (i.programaNombre != null) i.programaNombre!, i.periodo]
-                            .join(' · '),
+                        [
+                          if (i.programaNombre != null)
+                            i.programaNombre!
+                                .replaceAll(
+                                  RegExp(r'\s*\[SEMILLA\]\s*', caseSensitive: false),
+                                  '',
+                                )
+                                .trim(),
+                          i.periodo
+                        ].join(' · '),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

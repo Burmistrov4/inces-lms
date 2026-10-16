@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../core/gateways/aula_gateway.dart';
@@ -134,7 +135,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
     // ver el estado de la suya.
     ItemNavegacion(
       icono: Icons.badge_outlined,
-      titulo: 'Mi inscripción',
+      titulo: 'Mi Expediente',
       categoria: 'Mi cuenta',
     ),
     // El aprendiz corrige su nombre desde el primer día: `profiles` se crea en
@@ -233,6 +234,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
       switch (resultado) {
         case Success(value: final ficha):
           _aspirante = ficha;
+          _panelesCargados.remove('Ofertas de cupos');
         case Failure(error: final fallo):
           _error = fallo.message;
       }
@@ -363,11 +365,13 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
       );
     }
 
-    if (item.titulo == 'Mi inscripción') {
-      _panelesCargados['Mi inscripción'] = _panelMiInscripcion();
+    if (item.titulo == 'Mi Expediente' || item.titulo == 'Mi inscripción') {
+      _panelesCargados['Mi Expediente'] = _panelMiInscripcion();
+      _panelesCargados['Mi inscripción'] = _panelesCargados['Mi Expediente']!;
     } else {
       _panelesCargados.putIfAbsent(item.titulo, () {
         switch (item.titulo) {
+          case 'Mi Expediente':
           case 'Mi inscripción':
             return _panelMiInscripcion();
 
@@ -380,7 +384,10 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
             );
 
           case 'Ofertas de cupos':
-            return PanelOfertas(repositorio: _inscripciones);
+            return PanelOfertas(
+              repositorio: _inscripciones,
+              programaAspirante: _aspirante?.programaNombre,
+            );
 
           case 'Mis inscripciones':
             return PanelMisInscripciones(repositorio: _inscripciones);
@@ -495,7 +502,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
 
   Widget _panelMiInscripcion() {
     return ContenidoSeccion(
-      migas: const ['Inicio', 'Mi cuenta', 'Mi inscripción'],
+      migas: const ['Inicio', 'Mi cuenta', 'Mi Expediente y Planilla'],
       child: _cargando
           ? const Padding(
               padding: EdgeInsets.all(48),
@@ -750,9 +757,14 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
 /// etiqueta "Asiento en asignación", **aunque** `cuposDisponibles > 0`. No se
 /// puede "robar" un cupo que el backend está asignando a quien viene de la cola.
 class PanelOfertas extends StatefulWidget {
-  const PanelOfertas({super.key, required this.repositorio});
+  const PanelOfertas({
+    super.key,
+    required this.repositorio,
+    this.programaAspirante,
+  });
 
   final InscripcionesRepository repositorio;
+  final String? programaAspirante;
 
   @override
   State<PanelOfertas> createState() => _PanelOfertasState();
@@ -790,7 +802,53 @@ class _PanelOfertasState extends State<PanelOfertas> {
     });
   }
 
+  String _limpiarSemilla(String texto) {
+    return texto.replaceAll(RegExp(r'\s*\[SEMILLA\]\s*', caseSensitive: false), '').trim();
+  }
+
   Future<void> _inscribirse(OcupacionSeccion o) async {
+    final progSeccion = o.programaNombre != null ? _limpiarSemilla(o.programaNombre!) : null;
+    final progAspirante = widget.programaAspirante != null ? _limpiarSemilla(widget.programaAspirante!) : null;
+
+    final esDiferente = progAspirante != null &&
+        progAspirante.isNotEmpty &&
+        progSeccion != null &&
+        progSeccion.isNotEmpty &&
+        progAspirante.toLowerCase() != progSeccion.toLowerCase();
+
+    if (esDiferente) {
+      final confirmar = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.help_outline_rounded, color: IncesTheme.azulPrimario),
+              SizedBox(width: 8),
+              Expanded(child: Text('Confirmar postulación en otra formación')),
+            ],
+          ),
+          content: Text(
+            'Tu registro inicial en el centro es para el oficio "$progAspirante".\n\n'
+            'Estás a punto de solicitar cupo en "${_limpiarSemilla(o.materiaNombre ?? o.nombre)}", perteneciente a la formación "$progSeccion".\n\n'
+            '¿Deseas confirmar tu solicitud de cupo para esta formación complementaria?',
+            style: const TextStyle(height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Confirmar postulación'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmar != true) return;
+    }
+
     setState(() => _inscribiendo.add(o.seccionId));
     final resultado = await widget.repositorio.inscribirse(o.seccionId);
     if (!mounted) return;
@@ -823,6 +881,9 @@ class _PanelOfertasState extends State<PanelOfertas> {
   }
 
   Widget _contenido() {
+    final theme = Theme.of(context);
+    final progAspirante = widget.programaAspirante != null ? _limpiarSemilla(widget.programaAspirante!) : null;
+
     if (_secciones.isEmpty) {
       return const PanelVacio(
         titulo: 'No hay secciones abiertas',
@@ -832,6 +893,12 @@ class _PanelOfertasState extends State<PanelOfertas> {
         icono: Icons.explore_outlined,
       );
     }
+
+    final tieneSeccionesDeMiPrograma = progAspirante != null &&
+        progAspirante.isNotEmpty &&
+        _secciones.any((s) =>
+            s.programaNombre != null &&
+            _limpiarSemilla(s.programaNombre!).toLowerCase() == progAspirante.toLowerCase());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -848,6 +915,56 @@ class _PanelOfertasState extends State<PanelOfertas> {
           ],
         ),
         const SizedBox(height: 8),
+        if (progAspirante != null && progAspirante.isNotEmpty && !tieneSeccionesDeMiPrograma) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: IncesTheme.azulPrimario.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: IncesTheme.azulPrimario.withValues(alpha: 0.25),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.info_outline_rounded,
+                  color: IncesTheme.azulPrimario,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tu formación seleccionada: $progAspirante',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'En el lapso académico actual no hay secciones abiertas para tu formación técnica específica. '
+                        'Tu postulación se encuentra en lista de espera prioritaria para futuras aperturas. '
+                        'Las opciones que aparecen a continuación corresponden a otras formaciones técnicas con cupo en el centro.',
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          height: 1.45,
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         const AvisoEnLinea(
           texto:
               'Si una sección dice «Asiento en asignación» no puedes pedirla: '
@@ -876,7 +993,8 @@ class _PanelOfertasState extends State<PanelOfertas> {
     final puedeInscribirse = !enAsignacion && conCupo;
     final ocupado = _inscribiendo.contains(o.seccionId);
 
-    final titulo = o.materiaNombre ?? o.nombre;
+    final titulo = _limpiarSemilla(o.materiaNombre ?? o.nombre);
+    final programa = o.programaNombre != null ? _limpiarSemilla(o.programaNombre!) : null;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -889,15 +1007,24 @@ class _PanelOfertasState extends State<PanelOfertas> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(titulo, style: theme.textTheme.titleSmall),
+                  Text(
+                    titulo,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     [
-                      if (o.programaNombre != null) o.programaNombre!,
+                      ?programa,
                       o.periodo,
                     ].join(' · '),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                     ),
                   ),
                   const SizedBox(height: 10),

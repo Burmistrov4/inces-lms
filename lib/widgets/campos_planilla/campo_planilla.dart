@@ -360,45 +360,93 @@ class _TextoState extends State<_Texto> {
           const SizedBox(height: 6),
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 4),
-            child: Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              children: widget.opciones!.take(8).map((opcion) {
-                final seleccionada = _controller.text.trim().toLowerCase() ==
-                    opcion.etiqueta.trim().toLowerCase();
-                return InkWell(
-                  onTap: () {
-                    _controller.text = opcion.etiqueta;
-                    widget.onCambio(opcion.etiqueta);
-                  },
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: seleccionada
-                          ? IncesTheme.azulPrimario.withValues(alpha: 0.12)
-                          : paleta.rellenoDeCampo,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: seleccionada
-                            ? IncesTheme.azulPrimario
-                            : paleta.bordeDeCampo,
-                        width: seleccionada ? 1.5 : 1,
-                      ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.touch_app_outlined,
+                      size: 13,
+                      color: paleta.textoSecundario,
                     ),
-                    child: Text(
-                      opcion.etiqueta,
+                    const SizedBox(width: 4),
+                    Text(
+                      'Sugerencias rápidas (pulsa para autocompletar):',
                       style: GoogleFonts.inter(
                         fontSize: 11,
-                        fontWeight: seleccionada ? FontWeight.w600 : FontWeight.w400,
-                        color: seleccionada
-                            ? IncesTheme.azulPrimario
-                            : paleta.textoSecundario,
+                        fontWeight: FontWeight.w500,
+                        color: paleta.textoSecundario,
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: widget.opciones!.take(8).map((opcion) {
+                    final seleccionada = _controller.text.trim().toLowerCase() ==
+                        opcion.etiqueta.trim().toLowerCase();
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _controller.text = opcion.etiqueta;
+                            _controller.selection = TextSelection.fromPosition(
+                              TextPosition(offset: opcion.etiqueta.length),
+                            );
+                          });
+                          widget.onCambio(opcion.etiqueta);
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: seleccionada
+                                ? IncesTheme.azulPrimario.withValues(alpha: 0.15)
+                                : paleta.rellenoDeCampo,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: seleccionada
+                                  ? IncesTheme.azulPrimario
+                                  : paleta.bordeDeCampo,
+                              width: seleccionada ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (seleccionada) ...[
+                                const Icon(
+                                  Icons.check_rounded,
+                                  size: 12,
+                                  color: IncesTheme.azulPrimario,
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              Text(
+                                opcion.etiqueta,
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: seleccionada ? FontWeight.w600 : FontWeight.w500,
+                                  color: seleccionada
+                                      ? IncesTheme.azulPrimario
+                                      : paleta.textoSecundario,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
           ),
         ],

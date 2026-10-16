@@ -7,7 +7,15 @@
 > **Fecha:** 2026-10-02 · **Autor del levantamiento:** sesión de trabajo sobre el
 > repositorio `github.com/Burmistrov4/INCES---LMS` (rama `main`, `a76116b`).
 
-## ESTADO DE EJECUCIÓN VIGENTE — 2026-10-09
+## ESTADO DE EJECUCIÓN VIGENTE — 2026-10-16 (v1.2.9)
+
+**Fase activa: V1.2.9 AUDITORÍA DE AULA VIRTUAL, RESILIENCIA COLD-START Y EXPERIENCIA DE TAREAS.**
+- **Cierre del ciclo de vida de tareas:** Clarificación pedagógica Docente (asigna) / Estudiante (entrega). Botón de llamada a la acción explícito en tarjeta de tarea (`FilledButton.tonalIcon` «Entregar trabajo»), pantalla de entrega integrada con `GestorDocumentalPanel` a Cloudflare R2 y devolución evaluada con nota y retroalimentación privada.
+- **Resiliencia ante cold-start:** Transparent retry en `ApiClient.get` con timeout de 40s ante caída temporal de Render y calentamiento de API anticipado en el arranque de la app.
+- **Sincronización de versiones:** Eliminación de cadenas estáticas desfasadas en resúmenes administrativos (`v1.2.9` globalmente unificada).
+- **Pruebas:** 240 archivos Dart analizados (0 errores, 0 avisos, 0 infos); 26/26 tests Flutter aprobados; 705/705 tests backend Vitest aprobados.
+
+## ESTADO DE EJECUCIÓN ANTERIOR — 2026-10-09
 
 **Fase activa: PERFORMANCE, con frente de identidad reordenado por decisión de producto (2026-10-09).** Recuperación de contraseña e invitación/activación docente deben ser internas y no depender de Resend, SMTP, correo ni SMS. Resend HTTP 401 sólo afecta notificaciones externas opcionales. El orden vigente mantiene los gates: ciclo funcional/seguridad → build y regresión verificables → Performance → Responsive (375/768/1024/1280/1440) → UI/UX/accesibilidad → motion/3D con presupuesto de rendimiento → Android si sigue en alcance → regresión/auditoría final.
 
@@ -369,7 +377,7 @@ Todas verificadas contra el código; ninguna implementada todavía.
 | 6 | **Descarga de la planilla PDF desde el Dashboard** | Si el aprendiz omite la descarga en la confirmación, la opción desaparece |
 | 7 | **Sidebar colapsable** | Mejora de UX pendiente |
 | 8 | **Permisos en «Material de apoyo»** | Un **aprendiz** ve botones de carga que sólo debería tener el docente. **Bug de permisos** |
-| 9 | **Sanitizar el sufijo `[SEMILLA]`** en la UI | Aparece en la oferta de cupos y en «Mi inscripción» |
+| 9 | **Sanitizar el sufijo `[SEMILLA]`** en la UI | ✅ **Implementado en UI (v1.2.8)**: Sanitizado en `PanelOfertas` y `PanelMisInscripciones` mediante regex institucional |
 | 10 | **Anuncios del tablón con jerga interna** | Hay textos como «creado por el sembrado. El tablón de m6 ya tiene contenido» que un aprendiz no debe leer |
 | 11 | **Vocabulario de asignación de cupos** | «Bids» / «Pujas» deben pasar a «Solicitud de cupo» / «Asignación de cupo» / «Lista de espera» |
 

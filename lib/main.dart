@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/app_config.dart';
 import 'core/gateways/preferencias_tema.dart';
 import 'core/navegacion.dart';
+import 'core/network/api_client.dart';
 import 'providers/role_provider.dart';
 import 'providers/tema_provider.dart';
 import 'repositories/aspirante_repository.dart';
@@ -31,6 +32,7 @@ SupabaseClient get supabase => Supabase.instance.client;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   AppConfig.validate();
+  unawaited(ApiClient.calentarBackend());
 
   await Supabase.initialize(
     url: AppConfig.supabaseUrl,

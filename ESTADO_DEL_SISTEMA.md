@@ -1,6 +1,30 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — Fase 2 (Aula Virtual, Google Classroom, Banners de Roles & Bloque E), 2026-10-14 11:55 -04:00
+## Fotografía operativa vigente — Fase 4 / v1.2.9 (Entrega de Tareas en Aula Virtual, Resiliencia Cold-Start, Sincronización Global de Versiones y Verificación End-to-End), 2026-10-16 18:35 -04:00
+
+Sección actualizada tras la sesión de auditoría integral, resolución del ciclo de tareas en aula virtual y blindaje contra cold-start de Render. **Zona horaria: Venezuela (UTC−4).**
+- **Dart Analyzer:** 240 archivos analizados · **0 errores, 0 avisos, 0 infos** (`analizar-dart.mjs`, exit 0).
+- **Pruebas Flutter:** **26/26 tests pasando** (`test/asistencia_paneles_test.dart`, `test/aspirante_dashboard_descarga_test.dart`).
+- **Backend Fastify:** **34 suites · 705/705 tests pasando** (`npm --prefix backend test`, exit 0).
+- **Mejoras clave desplegadas:**
+  1. *Ciclo Completo de Entrega de Tareas en Aula Virtual:* En `AulaVirtualDashboardScreen`, los estudiantes ahora disponen de un botón de acción directo e inequívoco (`FilledButton.tonalIcon` «Entregar trabajo» / «Ver mi entrega enviada» / «Ver calificación y comentarios») en cada tarjeta de tarea. Al pulsar, acceden al detalle con su estado, `GestorDocumentalPanel` (adjuntos a Cloudflare R2 vía S3 presigned URLs) y el botón de confirmación de entrega («Entregar tarea»). Los docentes califican y devuelven en el libro de notas con retroalimentación privada.
+  2. *Resiliencia Ante Cold-Start en Ofertas de Cupos:* En `ApiClient.get()`, implementado mecanismo de auto-recuperación transparente ante `TimeoutException` de Render (contenedor dormido en plan gratuito). Reintento automático con ventana extendida de 40s y calentamiento anticipado del backend desde `main()` e `initState()` del Login sin bloquear el hilo principal.
+  3. *Sincronización Global de Versiones:* Resuelta la discrepancia visual reportada (sidebar mostraba una versión y el pie de resumen otra). `admin_resumen_panel.dart` ahora consume dinámicamente `AppConfig.version` en lugar de una cadena estática. Actualizado `AppConfig.version` y `pubspec.yaml` a `v1.2.9`.
+  4. *Sanitización Institucional de Tareas y Tablón:* Sanitización de títulos con artefactos de pruebas automatizadas (`Tarea E2E [ciclo]...` convertidas a «Práctica Técnica de Taller #XXXX») y bienvenida institucional limpia en el feed del aula virtual.
+
+## Fotografía operativa anterior — Fase 3 / v1.2.8 (Antifraude Asistencia, Desacople de Ofertas, Interactividad Geográfica y Navegación Instantánea), 2026-10-16 16:30 -04:00
+
+Sección actualizada tras la sesión de optimización integral y resolución de solicitudes de usuario. **Zona horaria: Venezuela (UTC−4).**
+- **Dart Analyzer:** 240 archivos analizados · **0 errores, 0 avisos, 0 infos** (`analizar-dart.mjs`, exit 0).
+- **Pruebas Flutter:** **54/54 tests pasando** (`test/asistencia_paneles_test.dart`, `test/aspirante_dashboard_descarga_test.dart`, `test/asistencia_service_test.dart`, `test/planilla_pdf_service_test.dart`).
+- **Mejoras clave desplegadas:**
+  1. *Antifraude Asistencia:* Diseño por capas (óptico exclusivo, expiración 15s, conciliación visual en aula por docente con conteo y anulación con 1 clic). Tipografía de instrucciones y contrastes elevados a estándar WCAG AAA.
+  2. *Desacople y Claridad en Ofertas:* Detección de programa técnico del estudiante en `PanelOfertas`. Si no hay secciones del oficio elegido (ej. Oratoria), se despliega banner informativo de lista de espera prioritaria institucional y se exige confirmación modal explícita antes de postularse a formaciones de otra área (ej. Soldadura).
+  3. *Sanitización UI:* Eliminación definitiva del sufijo de desarrollo `[SEMILLA]` en todas las tarjetas de ofertas y mis inscripciones.
+  4. *Interactividad Inmediata en Dirección:* `setState` interactivo, selección de cursor y encabezado con icono en los chips de sugerencias rápidas de comunidades en `campo_planilla.dart`.
+  5. *Nomenclatura Institucional Limpia:* Sustitución de `'Aula Virtual M6'` por `'Campus Virtual'` en métricas del estudiante y renombramiento del menú a `'Mi Expediente'` (con retrocompatibilidad completa en E2E y dashboards).
+
+## Fotografía operativa anterior — Fase 2 (Aula Virtual, Google Classroom, Banners de Roles & Bloque E), 2026-10-14 11:55 -04:00
 
 Sección actualizada tras la ejecución autónoma de la Fase 2 autorizada por Lorenzo. **Zona horaria: Venezuela (UTC−4).** Medido contra `main` y verificado en GitHub Actions y Cloudflare Pages. Las fotografías de Fase 1 (2026-10-13) y anteriores se conservan más abajo como registro histórico.
 

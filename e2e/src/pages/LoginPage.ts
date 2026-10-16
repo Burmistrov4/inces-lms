@@ -35,12 +35,12 @@ export const SENAL_DE_SESION = 'Inscripciones y Cupos';
  * acceso de alumno da un fallo con el mensaje equivocado: diría «revisa las
  * credenciales» cuando lo que pasa es que la señal no es de ese rol.
  *
- * `Mi inscripción` es la **primera** sección del menú del alumno y no depende de
+ * `Mi Expediente` es la **primera** sección del menú del alumno y no depende de
  * ningún módulo conmutable (`aspirante_dashboard.dart`: no lleva `modulo:`), así
  * que aparece aunque el administrador haya apagado medio cPanel. Es la señal más
  * estable que hay para decir «este alumno ya entró».
  */
-export const SENAL_DE_SESION_ALUMNO = 'Mi inscripción';
+export const SENAL_DE_SESION_ALUMNO = 'Mi Expediente';
 
 export class LoginPage {
   readonly app: FlutterApp;

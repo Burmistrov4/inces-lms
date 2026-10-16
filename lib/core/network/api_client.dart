@@ -172,6 +172,17 @@ class ApiClient {
       final respuesta = await ejecutarPeticion();
       return _procesar(respuesta, ruta);
     } on TimeoutException {
+      if (permitirReintento) {
+        await Future<void>.delayed(const Duration(milliseconds: 1000));
+        return get(
+          ruta,
+          token: token,
+          parametros: parametros,
+          encabezadosExtra: encabezadosExtra,
+          tiempoEspera: const Duration(seconds: 40),
+          permitirReintento: false,
+        );
+      }
       throw const AppException(
         type: AppErrorType.red,
         message:
@@ -188,7 +199,7 @@ class ApiClient {
           token: token,
           parametros: parametros,
           encabezadosExtra: encabezadosExtra,
-          tiempoEspera: tiempoEspera,
+          tiempoEspera: const Duration(seconds: 35),
           permitirReintento: false,
         );
       }

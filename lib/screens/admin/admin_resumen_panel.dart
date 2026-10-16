@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/config/app_config.dart';
 import '../../core/result.dart';
 import '../../models/system_module.dart';
 import '../../repositories/modulo_repository.dart';
@@ -633,7 +634,7 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Text(
-          'CFS Nacional de Soldadura «Rafael Urdaneta» · INCES La Isabelica · v1.2.4 · Prod 2026',
+          'CFS Nacional de Soldadura «Rafael Urdaneta» · INCES La Isabelica · v${AppConfig.version} · Prod 2026',
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
           ),
