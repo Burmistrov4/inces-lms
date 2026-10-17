@@ -2,6 +2,37 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.2.9] - 2026-10-16
+### Ciclo Completo de Entrega de Tareas en Aula Virtual, Resiliencia Cold-Start y Sincronización Global
+- **Cierre del Ciclo Pedagógico de Tareas en el Campus Virtual (M6):**
+  - Diferenciación explícita de roles: Facilitadores asignan y evalúan; estudiantes consignan evidencias técnicas y prácticas de taller.
+  - Botón de llamada a la acción directo e inequívoco (`FilledButton.tonalIcon` «Entregar trabajo» / «Ver mi entrega enviada» / «Ver calificación y comentarios») en cada tarjeta de tarea en `AulaVirtualDashboardScreen`.
+  - Integración de `GestorDocumentalPanel` para adjuntar evidencias fotográficas y documentales de taller (piezas de soldadura, cordones, planos e informes en PDF, JPG, PNG, WEBP) a Cloudflare R2 vía URLs prefirmadas de S3.
+  - Barra de estado de entrega interactiva (`ASIGNADA`, `ENTREGADA`, `DEVUELTA`, `RECLAMADA`) con confirmación de entrega y anulación para corrección antes de la fecha límite.
+  - Libro de Calificaciones (Gradebook) para el facilitador con visor de evidencias, calificación numérica y retroalimentación cualitativa privada.
+  - Sanitización de títulos con artefactos de pruebas automatizadas (`Tarea E2E [ciclo]...` convertidas a `Práctica Técnica de Taller #XXXX`) y bienvenida institucional limpia en el feed del aula virtual.
+- **Blindaje contra Cold-Start de Infraestructura en la Nube:**
+  - Reintento transparente automático en `ApiClient.get` ante `TimeoutException` de Render (espera 1 000 ms y reintenta con ventana de 40 s).
+  - Calentamiento asíncrono anticipado del backend (`ApiClient.calentarBackend()`) en `main()` y `LoginScreen.initState()` sin bloquear el hilo de ejecución principal.
+- **Sincronización Global de Versiones:**
+  - Resuelta discrepancia entre la barra lateral y el pie central del panel administrativo: `AdminResumenPanel` ahora consume dinámicamente `AppConfig.version` en lugar de una cadena quemada.
+  - Versión del sistema unificada a **v1.2.9** en `app_config.dart` y `pubspec.yaml`.
+
+## [1.2.8] - 2026-10-16
+### Asistencia Antifraude por Capas, Desacople de Ofertas y Geografía Interactiva
+- **Protocolo de Asistencia Antifraude (M7):**
+  - Código óptico QR rotativo de 15 segundos derivado con HMAC (`qr_secret`) proyectado por el facilitador.
+  - Canal WebSocket en vivo que actualiza las marcas de asistencia en la pantalla del aula en tiempo real.
+  - Conciliación visual y botón de anulación con 1 solo clic para el facilitador ante detección de suplantación.
+  - Elevación de contraste de texto e instrucciones a estándar WCAG 2.1 AAA.
+- **Desacople y Claridad en Ofertas de Formación (M4):**
+  - Detección del oficio o programa técnico del estudiante en `PanelOfertas`.
+  - Si no hay cupos abiertos para la formación elegida (ej. Oratoria), se despliega banner informativo de lista de espera prioritaria y se exige confirmación modal antes de inscribirse en áreas distintas (ej. Soldadura).
+  - Eliminación definitiva del sufijo de desarrollo `[SEMILLA]` en todas las tarjetas de oferta.
+- **Interactividad en Geografía y Direcciones:**
+  - Selección táctil e interactiva mediante chips de sugerencias rápidas de comunidades en `campo_planilla.dart`.
+  - Renombramiento del menú del estudiante a «Mi Expediente» y sustitución de menciones de «M6» por «Campus Virtual».
+
 ## [1.2.7] - 2026-10-16
 ### Navegación Instantánea, Guías Contextuales Inteligentes, Validaciones de Inscripción y Resiliencia en Recuperación
 - **Recuperación de Contraseña Resiliente y Sin Errores 500:**

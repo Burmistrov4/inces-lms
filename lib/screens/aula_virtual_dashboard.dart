@@ -840,8 +840,8 @@ class _AulaVirtualDashboardScreenState
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Para entregar un trabajo, pulsa en «Entregar trabajo» sobre la asignación correspondiente, '
-                    'adjunta tus documentos o evidencias y confirma el envío.',
+                    'Para consignar tu práctica técnica, pulsa en «Entregar trabajo», '
+                    'adjunta tus evidencias (fotos de piezas y cordones de soldadura, informes o planos) y confirma el envío.',
                     style: GoogleFonts.inter(
                       fontSize: 12.5,
                       height: 1.4,
@@ -1195,7 +1195,9 @@ class _AulaVirtualDashboardScreenState
           child: GestorDocumentalPanel(
             entityType: TipoEntidadArchivo.taskSubmission,
             entidadId: entrega.id,
-            titulo: 'Mi entrega',
+            titulo: 'Evidencias de la entrega',
+            subtitulo:
+                'Fotografías de piezas o cordones de soldadura, planos o informes técnicos (PDF, JPG, PNG)',
             repositorio: widget.archivosRepositorio,
             selector: widget.selectorArchivos,
           ),

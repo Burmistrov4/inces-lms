@@ -1,9 +1,9 @@
 # 📋 Plan de Corrección e Implementación - INCES LMS (inces-lms.pages.dev)
 
 > **Documento de Control y Seguimiento Integral de Tareas**
-> **Fecha de Actualización:** 2026-10-14
+> **Fecha de Actualización:** 2026-10-16 (Cierre Operativo Nocturno v1.2.9)
 > **Entorno de Producción:** [inces-lms.pages.dev](https://inces-lms.pages.dev) | API: [inces-lms-api.onrender.com](https://inces-lms-api.onrender.com)
-> **Estado:** 100% Completado y Verificado (700 tests backend pasando, Dart Analyzer 0 errores/avisos/infos, Suite de alcanzabilidad UI 100% pasando).
+> **Estado:** 100% Completado y Verificado (705 tests backend pasando, Dart Analyzer 0 errores/avisos/infos en 240 archivos, 26/26 tests Flutter aprobados).
 
 ---
 
@@ -370,5 +370,23 @@
   - [x] Widget `GuiaContextualModulo` integrado en `CpanelLapsosPanel`, `CpanelCuadrantePanel` y `MiHorarioPanel`.
   - [x] Redacción pedagógica e institucional para directores, docentes y estudiantes; persistencia en `SharedPreferences` y botón de reapertura disponible.
 - [x] **Estudio Landing Page 2026 y Calibración PDF:**
-  - [x] Análisis exhaustivo de los 9 componentes de una landing page efectiva 2026 según Landingi registrado en `organizacion_y_evolucion_sistema.md`.
+  - [x] Estudio exhaustivo de los 9 componentes de una landing page efectiva 2026 según Landingi registrado en `organizacion_y_evolucion_sistema.md`.
   - [x] Calibración milimétrica de casillas de verificación 'X' y soporte para experiencias empíricas en la planilla oficial PDF.
+
+---
+
+## 🚀 17. Sprint v1.2.9: Ciclo Completo de Tareas de Soldadura, Resiliencia Cold-Start y Cierre Operativo Nocturno
+- [x] **Cierre Completo del Ciclo Pedagógico de Tareas (M6):**
+  - [x] Claridad de roles: Facilitadores asignan y evalúan; estudiantes consignan evidencias técnicas y prácticas de taller.
+  - [x] Botón directo de llamada a la acción (`FilledButton.tonalIcon` «Entregar trabajo» / «Ver mi entrega enviada» / «Ver calificación y comentarios») en cada tarjeta de tarea en `AulaVirtualDashboardScreen`.
+  - [x] Integración de `GestorDocumentalPanel` permitiendo la subida directa a Cloudflare R2 de fotografías de piezas, cordones de soldadura, planos e informes (PDF, JPG, PNG, WEBP) mediante URLs prefirmadas de S3.
+  - [x] Flujo de calificación en Libro de Notas (Gradebook) con nota numérica y retroalimentación cualitativa privada.
+  - [x] Sanitización completa de títulos y textos de desarrollo en el feed del aula virtual.
+- [x] **Blindaje contra Cold-Start y Resiliencia de Red:**
+  - [x] Reintento transparente automático en `ApiClient.get` ante `TimeoutException` de Render (espera 1 000 ms y reintenta con ventana de 40 s).
+  - [x] Calentamiento asíncrono anticipado del backend (`ApiClient.calentarBackend()`) en `main()` y `LoginScreen.initState()`.
+- [x] **Sincronización Total de Versión (v1.2.9):**
+  - [x] Unificación de `v1.2.9` en `app_config.dart`, `pubspec.yaml` y eliminación de cadenas estáticas desfasadas en cPanel.
+- [x] **Registro Visual para Autoridades del CFS:**
+  - [x] Capturas de pantalla de alta resolución de las vistas clave generadas en `docs/assets/production_ready/` (Landing, Login, Formulario de Inscripción y Canje de Código).
+
