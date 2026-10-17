@@ -82,9 +82,9 @@ export function crearRemitenteSMTP(opciones: OpcionesRemitenteSMTP): EnvioCorreo
       user: user.trim(),
       pass: passLimpia,
     },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
+    connectionTimeout: 2500,
+    greetingTimeout: 2500,
+    socketTimeout: 3500,
   });
 
   const remitente = from ?? `"INCES LMS · CFS Rafael Urdaneta" <${user.trim()}>`;

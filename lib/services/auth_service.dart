@@ -170,18 +170,9 @@ class AuthService {
           );
         }
 
-        // Si el backend respondió éxito (política anti-enumeración), respetamos su resultado
-        if (res['exito'] == true) {
-          return ResultadoRecuperacionCuenta(
-            exito: true,
-            metodo: MetodoRecuperacionUsado.smtp,
-            mensaje: res['mensaje'] as String? ??
-                'Si los datos coinciden con un usuario registrado, hemos enviado las instrucciones y el código a tu correo electrónico.',
-            emailDestino: resEmail,
-          );
-        }
-
-        // Si el SMTP no despachó pero tenemos el correo resuelto, intentamos Supabase con guarda segura
+        // Si el SMTP directo no pudo despachar (p. ej. puertos salientes bloqueados
+        // por la infraestructura del servidor), activamos el despacho vía Supabase Auth
+        // (que se encuentra sincronizado con el SMTP de Gmail institucional).
         if (resEmail != null && resEmail.isNotEmpty) {
           try {
             await _gateway.enviarRecuperacion(resEmail);
@@ -189,15 +180,15 @@ class AuthService {
               exito: true,
               metodo: MetodoRecuperacionUsado.supabase,
               mensaje:
-                  'Hemos enviado un enlace de recuperación directo a tu correo ($resEmail) a través de Supabase.',
+                  'Hemos enviado un enlace de recuperación a tu correo ($resEmail).',
               emailDestino: resEmail,
             );
           } catch (_) {
             return ResultadoRecuperacionCuenta(
               exito: true,
               metodo: MetodoRecuperacionUsado.smtp,
-              mensaje:
-                  'Solicitud procesada. Si tu correo está registrado, recibirás el código. También puedes solicitar un código temporal en coordinación presentando tu cédula.',
+              mensaje: res['mensaje'] as String? ??
+                  'Solicitud procesada. Si los datos coinciden con un usuario registrado, recibirás las instrucciones en tu correo.',
               emailDestino: resEmail,
             );
           }
