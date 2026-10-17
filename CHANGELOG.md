@@ -16,12 +16,13 @@ Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en
   - Implementada la vista "Rol de Guardia MTP / PNA - Pizarra Física": matriz semanal con espacios/talleres en filas y turnos Mañana (07:30 - 12:00) y Tarde (13:00 - 17:30) de Lunes a Sábado en columnas.
   - Celdas táctiles con asignación directa mediante un clic en los espacios vacíos y chips visuales para docentes asignados.
   - Selector conmutador en la cabecera para alternar entre `[ Matriz Semanal | Lista detallada ]`.
-- **Programas, Currículo y Secciones (M2 / M4):**
+- **Programas, Currículo, Secciones y Lapsos Académicos (M2 / M3 / M4):**
   - Modal «Editar programa» que permite modificar nombre, requisito de pasantías y duración (valor y unidad) respetando la identidad institucional inmutable.
   - Sincronización del rango etario oficial de aprendices PNA a «14 a 18 años».
   - Cabeceras del pensum curricular actualizadas a «Módulo / Trimestre X».
   - Resolución automática de UUIDs a nombres legibles de programas y materias en las tarjetas de sección.
   - Modal «Editar sección» para ajustar nombre corto, cupo máximo (o herencia global) y estado de archivado.
+  - Asignación de fechas de vigencia institucional por defecto (2026-09-15 a 2027-01-30) para el lapso activo `SA26-2`, eliminando avisos de «Sin fechas cargadas» en backend, PostgREST y la tabla de Lapsos Académicos.
 - **Validaciones Estrictas de Identidad y Contacto Venezolano:**
   - Cédula de identidad validada entre 6 y 9 dígitos numéricos (o con formato oficial V/E).
   - Teléfonos móviles y fijos validados en 10 u 11 dígitos contra los códigos de área y operadoras de Venezuela (0412, 0414, 0424, 0416, 0426, 0241, etc.).

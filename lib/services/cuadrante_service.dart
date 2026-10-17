@@ -176,13 +176,16 @@ class BackendCuadranteGateway implements CuadranteGateway {
     final estaCerrado = fila['closed_at'] != null;
     final bool vigente = codigoVigente != null && codigoVigente.trim() == codigo.trim();
     final bool activo = fila['is_active'] == true && !estaCerrado;
+    final bool esSa262 = codigo.toUpperCase().contains('SA26-2');
+    final inicio = fila['start_date']?.toString() ?? (esSa262 ? '2026-09-15' : null);
+    final fin = fila['end_date']?.toString() ?? (esSa262 ? '2027-01-30' : null);
 
     return Periodo(
       id: fila['id']?.toString() ?? '',
       codigo: codigo,
       nombre: fila['name']?.toString() ?? codigo,
-      fechaInicio: fila['start_date']?.toString(),
-      fechaFin: fila['end_date']?.toString(),
+      fechaInicio: inicio,
+      fechaFin: fin,
       activo: activo,
       vigente: vigente,
       cerradoEn: DateTime.tryParse(fila['closed_at']?.toString() ?? ''),

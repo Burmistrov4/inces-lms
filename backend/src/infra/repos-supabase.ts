@@ -447,8 +447,9 @@ function aAula(fila: Fila): Aula {
 function aPeriodo(fila: Fila, codigoVigente: string | null): Periodo {
   const codigo = textoObligatorio(fila.code);
   const activo = booleano(fila.is_active, false);
-  const fechaInicio = texto(fila.start_date);
-  const fechaFin = texto(fila.end_date);
+  const esSa262 = codigo.toUpperCase().includes('SA26-2');
+  const fechaInicio = texto(fila.start_date) ?? (esSa262 ? '2026-09-15' : null);
+  const fechaFin = texto(fila.end_date) ?? (esSa262 ? '2027-01-30' : null);
   const cerradoEn = texto(fila.closed_at);
   const cerradoPor = texto(fila.closed_by);
   return {
