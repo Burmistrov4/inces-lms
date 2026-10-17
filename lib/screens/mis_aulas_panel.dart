@@ -168,6 +168,12 @@ class _PanelMisAulasState extends State<PanelMisAulas> {
           'Mis aulas',
           subtitulo: '${mis.aulas.length} sección(es) en este lapso.',
           acciones: [
+            if (!mis.esDocente && widget.onNavegarA != null)
+              TextButton.icon(
+                onPressed: () => widget.onNavegarA?.call('Mis entregas'),
+                icon: const Icon(Icons.assignment_turned_in_outlined, size: 16),
+                label: const Text('Ver tareas pendientes'),
+              ),
             IconButton(
               tooltip: 'Actualizar',
               onPressed: _cargando ? null : _cargar,
@@ -208,14 +214,17 @@ class _PanelMisAulasState extends State<PanelMisAulas> {
     final theme = Theme.of(context);
     final abrible = widget.aulaGateway != null;
     final area = AreaFormativa.resolver(aula.etiqueta);
+    final esDocente = _misAulas?.esDocente ?? false;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
-        side: BorderSide(color: theme.colorScheme.outline),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.35),
+        ),
       ),
       child: InkWell(
         // Sin puerta de contenido la tarjeta no se puede pulsar: un toque que
@@ -224,95 +233,197 @@ class _PanelMisAulasState extends State<PanelMisAulas> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              height: 5,
-              decoration: BoxDecoration(gradient: area.degradadoBanner),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
+            // Cabecera tipo Google Classroom con fotografía vocacional y degradado
+            SizedBox(
+              height: 110,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: area.colorPrimario.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: area.colorPrimario.withValues(alpha: 0.25),
-                      ),
+                  Image.asset(
+                    area.rutaImagenAsset,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => Container(
+                      decoration: BoxDecoration(gradient: area.degradadoBanner),
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(9),
-                      child: Image.asset(
-                        area.rutaImagenAsset,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Icon(
-                          area.icono,
-                          size: 24,
-                          color: area.colorPrimario,
-                        ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.40),
+                          Colors.black.withValues(alpha: 0.85),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
+                  Padding(
+                    padding: const EdgeInsets.all(14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          aula.etiqueta,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
                         Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
+                                horizontal: 8,
+                                vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: area.colorPrimario.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                area.etiqueta,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: area.colorPrimario,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 10,
+                                color: Colors.black.withValues(alpha: 0.35),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.3),
                                 ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    area.icono,
+                                    size: 13,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    area.etiqueta,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                aula.programa?.trim().isNotEmpty == true
-                                    ? aula.programa!.trim()
-                                    : 'CFS «Rafael Urdaneta»',
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontSize: 11,
-                                ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.school_rounded,
+                                size: 16,
+                                color: Colors.white,
                               ),
                             ),
                           ],
                         ),
+                        Text(
+                          aula.etiqueta,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  if (abrible) ...[
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 22,
-                      color: theme.colorScheme.onSurfaceVariant,
+                ],
+              ),
+            ),
+            // Indicadores de actividad rápida en el aula
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.campaign_outlined,
+                    size: 16,
+                    color: area.colorPrimario,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Tablón',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
+                  ),
+                  const SizedBox(width: 14),
+                  Icon(
+                    Icons.assignment_outlined,
+                    size: 16,
+                    color: area.colorPrimario,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Trabajo de clase',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Icon(
+                    Icons.photo_library_outlined,
+                    size: 16,
+                    color: area.colorPrimario,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Evidencias R2',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+            ),
+            // Pie de acción y estado
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    esDocente
+                        ? 'Gestión de curso y calificaciones'
+                        : 'Entrega de tareas y notas',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
+                  ),
+                  if (abrible)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Entrar al aula',
+                          style: TextStyle(
+                            color: area.colorPrimario,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 16,
+                          color: area.colorPrimario,
+                        ),
+                      ],
+                    )
+                  else
+                    Text(
+                      'Por activar',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                 ],
               ),
             ),

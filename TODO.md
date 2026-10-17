@@ -385,6 +385,11 @@
 - [x] **Blindaje contra Cold-Start y Resiliencia de Red:**
   - [x] Reintento transparente automático en `ApiClient.get` ante `TimeoutException` de Render (espera 1 000 ms y reintenta con ventana de 40 s).
   - [x] Calentamiento asíncrono anticipado del backend (`ApiClient.calentarBackend()`) en `main()` y `LoginScreen.initState()`.
+- [x] **Rediseño de Tarjetas de Sección en «Mis aulas» (Estilo Google Classroom):**
+  - [x] Cabecera fotográfica inmersiva por especialidad técnica (`assets/images/area_*.jpg`) con degradado oscuro de alto contraste y distintivo de área en `PanelMisAulas`.
+  - [x] Indicadores rápidos de actividad en el aula (Tablón, Trabajo de clase, Evidencias R2) y botón directo «Entrar al aula».
+  - [x] Enlace bidireccional fluido hacia el hub de tareas del aprendiz (`EstudianteTareasPanel`) desde la barra de acciones superior.
+  - [x] Consistencia matemática en el menú del estudiante: 8 ítems declarados, 8 ramas en el switch, suite de alcanzabilidad `menu_alcanzable_test.dart` y pruebas de producción al 100% de éxito.
 - [x] **Sincronización Total de Versión (v1.2.9):**
   - [x] Unificación de `v1.2.9` en `app_config.dart`, `pubspec.yaml` y eliminación de cadenas estáticas desfasadas en cPanel.
 - [x] **Registro Visual para Autoridades del CFS:**

@@ -11,6 +11,10 @@ Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en
   - Barra de estado de entrega interactiva (`ASIGNADA`, `ENTREGADA`, `DEVUELTA`, `RECLAMADA`) con confirmación de entrega y anulación para corrección antes de la fecha límite.
   - Libro de Calificaciones (Gradebook) para el facilitador con visor de evidencias, calificación numérica y retroalimentación cualitativa privada.
   - Sanitización de títulos con artefactos de pruebas automatizadas (`Tarea E2E [ciclo]...` convertidas a `Práctica Técnica de Taller #XXXX`) y bienvenida institucional limpia en el feed del aula virtual.
+- **Tarjetas de Clase y Navegación Estilo Google Classroom:**
+  - Rediseño integral de las tarjetas de sección en `PanelMisAulas`: cabecera inmersiva con fotografía vocacional oficial por especialidad técnica (`assets/images/area_*.jpg`), degradado oscuro superpuesto, distintivo de área técnica, badges de módulos activos (Tablón, Trabajo de clase, Evidencias R2) y botón de acción directa «Entrar al aula».
+  - Enlace bidireccional fluido hacia el hub de tareas pendientes (`EstudianteTareasPanel`): acceso directo desde la cabecera de «Mis aulas» para consultar tareas Asignadas, Vencidas y Completadas con sus respectivas notas.
+  - Saneamiento de ramas en el switch del dashboard de estudiante (`aspirante_dashboard.dart`), asegurando consistencia matemática de 8 ítems disponibles y 8 ramas atendidas cubiertas por `menu_alcanzable_test.dart`.
 - **Blindaje contra Cold-Start de Infraestructura en la Nube:**
   - Reintento transparente automático en `ApiClient.get` ante `TimeoutException` de Render (espera 1 000 ms y reintenta con ventana de 40 s).
   - Calentamiento asíncrono anticipado del backend (`ApiClient.calentarBackend()`) en `main()` y `LoginScreen.initState()` sin bloquear el hilo de ejecución principal.

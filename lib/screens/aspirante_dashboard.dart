@@ -365,14 +365,12 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
       );
     }
 
-    if (item.titulo == 'Mi Expediente' || item.titulo == 'Mi inscripción') {
+    if (item.titulo == 'Mi Expediente') {
       _panelesCargados['Mi Expediente'] = _panelMiInscripcion();
-      _panelesCargados['Mi inscripción'] = _panelesCargados['Mi Expediente']!;
     } else {
       _panelesCargados.putIfAbsent(item.titulo, () {
         switch (item.titulo) {
           case 'Mi Expediente':
-          case 'Mi inscripción':
             return _panelMiInscripcion();
 
           // El mismo panel que monta el administrador. Aquí no se le inyecta nada:
@@ -404,6 +402,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
             return PanelMisAulas(
               gateway: _aulasPropias,
               aulaGateway: _aulaContenido,
+              onNavegarA: _navegarA,
             );
 
           case 'Mis entregas':
