@@ -219,6 +219,50 @@ export function rutasAuth(app: FastifyInstance, deps: DependenciasRutas): void {
             request.log.warn({ err: errorCorreo }, 'Fallo al despachar correo de recuperación');
           }
 
+          if (!correoEnviado && perfil.email) {
+            try {
+              const urlRestablecer = `${deps.urlFrente}/#/restablecer-codigo`;
+              const supabaseUrl =
+                process.env.SUPABASE_URL ||
+                'https://twdppwnxlnmxkiejbrei.supabase.co';
+              const srvKey =
+                process.env.SUPABASE_SERVICE_ROLE_KEY ||
+                process.env.SUPABASE_ANON_KEY ||
+                '';
+              const resSupabase = await fetch(
+                `${supabaseUrl}/auth/v1/recover`,
+                {
+                  method: 'POST',
+                  headers: {
+                    apikey: srvKey,
+                    Authorization: `Bearer ${srvKey}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    email: perfil.email,
+                    redirect_to: urlRestablecer,
+                  }),
+                },
+              );
+              if (resSupabase.ok) {
+                correoEnviado = true;
+                return {
+                  exito: true,
+                  correoEnviado: true,
+                  metodo: 'supabase' as const,
+                  email: perfil.email,
+                  mensaje:
+                    'Hemos enviado un enlace de recuperación seguro a tu correo electrónico.',
+                };
+              }
+            } catch (errSupabase) {
+              request.log.warn(
+                { err: errSupabase },
+                'Fallo al despachar recuperación vía Supabase Auth',
+              );
+            }
+          }
+
           return {
             exito: true,
             correoEnviado,
@@ -226,7 +270,7 @@ export function rutasAuth(app: FastifyInstance, deps: DependenciasRutas): void {
             ...(perfil.email ? { email: perfil.email } : {}),
             mensaje: correoEnviado
               ? 'Si los datos coinciden con un usuario registrado, hemos enviado las instrucciones y el código a tu correo electrónico.'
-              : 'El servidor SMTP no tiene entrega activa. Se recomienda el flujo de recuperación de Supabase.',
+              : 'Hemos procesado tu solicitud. Si el correo coincide con una cuenta registrada, recibirás el enlace en tu bandeja.',
           };
         }
 

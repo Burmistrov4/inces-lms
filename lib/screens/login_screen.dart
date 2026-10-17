@@ -221,10 +221,13 @@ class _LoginScreenState extends State<LoginScreen> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  mensajeExito ??
-                                      (metodoUsado == MetodoRecuperacionUsado.supabase
-                                          ? 'Hemos enviado un enlace de recuperación a tu correo electrónico vía Supabase Auth.'
-                                          : 'Si la cuenta está registrada, hemos enviado el código de restablecimiento a tu dirección de correo electrónico.'),
+                                  (mensajeExito != null &&
+                                          !mensajeExito!.contains('SMTP') &&
+                                          !mensajeExito!.contains('entrega activa'))
+                                      ? mensajeExito!
+                                      : (metodoUsado == MetodoRecuperacionUsado.supabase
+                                          ? 'Hemos enviado un enlace de recuperación seguro a tu correo electrónico.'
+                                          : 'Si la cuenta está registrada, hemos enviado el código de restablecimiento a tu correo electrónico.'),
                                   style: GoogleFonts.inter(
                                     fontSize: 13,
                                     color: IncesTheme.exito,
@@ -239,8 +242,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 16),
                         Text(
                           metodoUsado == MetodoRecuperacionUsado.supabase
-                              ? 'Revisa tu bandeja de entrada o la carpeta de spam y pulsa en el enlace recibido en el correo para crear tu nueva contraseña.'
-                              : 'Revisa tu bandeja de entrada o la carpeta de spam. Luego presiona el botón inferior para ingresar tu código y crear una contraseña nueva.',
+                              ? 'Abre tu correo (revisa la bandeja de entrada o spam) y pulsa directamente en el botón o enlace recibido para crear tu nueva contraseña. No necesitas escribir ningún código manual.'
+                              : 'Revisa tu bandeja de entrada o la carpeta de spam para ver tu código temporal. Luego pulsa abajo para ingresarlo y crear tu nueva contraseña.',
                           style: GoogleFonts.inter(fontSize: 13, height: 1.4),
                         ),
                       ] else ...[
@@ -354,27 +357,49 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               actions: [
-                TextButton(
-                  onPressed: enviandoCorreo
-                      ? null
-                      : () => Navigator.of(contextoDialogo).pop(),
-                  child: const Text('Cerrar'),
-                ),
-                FilledButton.tonalIcon(
-                  onPressed: enviandoCorreo
-                      ? null
-                      : () {
-                          Navigator.of(contextoDialogo).pop();
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  const RestablecerConCodigoScreen(),
-                            ),
-                          );
-                        },
-                  icon: const Icon(Icons.pin_outlined, size: 18),
-                  label: const Text('Ingresar código'),
-                ),
+                if (correoEnviado &&
+                    metodoUsado == MetodoRecuperacionUsado.supabase) ...[
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.of(contextoDialogo).pop();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const RestablecerConCodigoScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.pin_outlined, size: 16),
+                    label: const Text('Tengo un código manual'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.of(contextoDialogo).pop(),
+                    child: const Text('Entendido, revisar mi correo'),
+                  ),
+                ] else ...[
+                  TextButton(
+                    onPressed: enviandoCorreo
+                        ? null
+                        : () => Navigator.of(contextoDialogo).pop(),
+                    child: const Text('Cerrar'),
+                  ),
+                  FilledButton.tonalIcon(
+                    onPressed: enviandoCorreo
+                        ? null
+                        : () {
+                            Navigator.of(contextoDialogo).pop();
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const RestablecerConCodigoScreen(),
+                              ),
+                            );
+                          },
+                    icon: const Icon(Icons.pin_outlined, size: 18),
+                    label: Text(correoEnviado
+                        ? 'Ingresar código temporal'
+                        : 'Ingresar código'),
+                  ),
+                ],
               ],
             );
           },

@@ -45,6 +45,41 @@ export async function onRequestPost(context) {
     });
 
     const data = await resp.json().catch(() => ({}));
+
+    // Si el backend no pudo entregar vía SMTP directo (o dio fallback),
+    // aseguramos el despacho inmediato vía Supabase Auth desde el Edge.
+    const emailDestino = (data && data.email) || (identificador.includes('@') ? identificador : null);
+    if ((!data || !data.correoEnviado) && emailDestino) {
+      try {
+        const supabaseUrl = context.env?.SUPABASE_URL || 'https://twdppwnxlnmxkiejbrei.supabase.co';
+        const anonKey = context.env?.SUPABASE_ANON_KEY || 'sb_publishable_3nmupQBjT0gKZ_FKD8vFkg_eMdnWgmk';
+        const resRecov = await fetch(`${supabaseUrl}/auth/v1/recover`, {
+          method: 'POST',
+          headers: {
+            apikey: anonKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: emailDestino,
+            redirect_to: 'https://inces-lms.pages.dev/#/restablecer-codigo',
+          }),
+        });
+
+        if (resRecov.ok) {
+          return new Response(
+            JSON.stringify({
+              exito: true,
+              correoEnviado: true,
+              metodo: 'supabase',
+              email: emailDestino,
+              mensaje: 'Hemos enviado un enlace de recuperación seguro a tu correo electrónico.',
+            }),
+            { status: 200, headers: corsHeaders }
+          );
+        }
+      } catch (_) {}
+    }
+
     if (resp.status === 404) {
       return new Response(
         JSON.stringify({
