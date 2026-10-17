@@ -21,7 +21,6 @@ import 'screens/aspirante_form_screen.dart';
 import 'screens/docente_dashboard.dart';
 import 'screens/landing_page.dart';
 import 'screens/login_screen.dart';
-import 'screens/restablecer_password_screen.dart';
 import 'screens/restablecer_con_codigo_screen.dart';
 import 'screens/activar_cuenta_screen.dart';
 import 'services/auth_service.dart';
@@ -49,11 +48,10 @@ Future<void> main() async {
 /// Se resuelve aparte en [_generarRuta].
 final Map<String, WidgetBuilder> _pantallas = {
   '/login': (_) => const LoginScreen(),
+  '/auth/login': (_) => const LoginScreen(), // Alias defensivo para enlaces externos
   '/inscripcion': (_) => const AspiranteFormScreen(),
-  '/restablecer': (_) => const RestablecerPasswordScreen(),
-  // Canje del código temporal que el personal del centro entrega en mano. Se
-  // registra además de empujarse desde el login para que el enlace directo
-  // funcione: el administrador puede indicar la URL al titular junto al código.
+  '/restablecer': (_) => const RestablecerConCodigoScreen(),
+  // Canje del código temporal institucional o enlace por correo.
   '/restablecer-codigo': (_) => const RestablecerConCodigoScreen(),
 };
 
@@ -328,7 +326,7 @@ class _AuthGateState extends State<AuthGate> {
     // La recuperación gana al rol: hay sesión, pero es temporal y sólo sirve
     // para definir la contraseña nueva.
     if (_enRecuperacion) {
-      return const RestablecerPasswordScreen();
+      return const RestablecerConCodigoScreen();
     }
 
     switch (roleProvider.role) {

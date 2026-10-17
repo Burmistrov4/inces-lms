@@ -367,7 +367,7 @@ export function rutasAuth(app: FastifyInstance, deps: DependenciasRutas): void {
               ? `${metadata.nombres} ${metadata?.apellidos ?? ''}`.trim()
               : 'Aspirante';
 
-            const urlLogin = `${deps.urlFrente}/#/auth/login`;
+            const urlLogin = `${deps.urlFrente}/#/login`;
 
             const htmlBienvenida = [
               '<div style="font-family:Inter,Segoe UI,Arial,sans-serif;max-width:540px;margin:0 auto;padding:24px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;">',
