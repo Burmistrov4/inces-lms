@@ -83,7 +83,7 @@ export function rutasYo(app: FastifyInstance, deps: DependenciasRutas): void {
         `  <h2 style="color:#1e293b;font-size:18px;margin-bottom:12px;">Hola, ${usuario.perfil.nombres || 'Aspirante'}:</h2>`,
         '  <p style="color:#475569;font-size:14px;line-height:1.5;">Te confirmamos que tu <strong>Planilla Oficial de Inscripción</strong> ha sido enviada para validación ante la coordinación académica del CFS.</p>',
         '  <div style="background-color:#f8fafc;border-left:4px solid #0b5cab;padding:14px;border-radius:6px;margin:20px 0;">',
-        `    <p style="margin:0;font-size:13px;color:#334155;">Versión registrada: <strong>${version.version}</strong> (${version.estado})</p>`,
+        `    <p style="margin:0;font-size:13px;color:#334155;">Versión registrada: <strong>${version.numero}</strong> (${version.estado})</p>`,
         '    <p style="margin:4px 0 0;font-size:12px;color:#64748b;">El equipo revisará tus datos y recaudos conforme a los requisitos del programa de formación técnica.</p>',
         '  </div>',
         '  <p style="color:#475569;font-size:14px;line-height:1.5;">Puedes consultar el estatus y descargar el comprobante en formato PDF directamente desde tu panel de usuario en cualquier momento.</p>',

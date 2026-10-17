@@ -2,8 +2,6 @@ import { construirApp, VERSION_API } from './app.js';
 import { cargarEnv } from './config/env.js';
 import { crearRepositorios, crearVerificadorDeTokens } from './infra/repos-supabase.js';
 import {
-  crearRemitenteResend,
-  crearRemitenteSMTP,
   crearRemitenteTransaccional,
   type EnvioCorreo,
 } from './infra/correo.js';

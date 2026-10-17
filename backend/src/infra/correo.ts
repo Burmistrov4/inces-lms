@@ -17,11 +17,14 @@ export interface MensajeCorreo {
   para: string;
   asunto: string;
   html: string;
+  texto?: string;
 }
 
 export interface ResultadoEnvio {
   /** `true` si el proveedor aceptó el mensaje. */
   entregado: boolean;
+  proveedor?: 'smtp' | 'resend' | 'ninguno';
+  detalle?: string;
 }
 
 export interface EnvioCorreo {
