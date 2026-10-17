@@ -255,6 +255,20 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel> {
     );
   }
 
+  Future<void> _editarPrograma(ProgramaConTotales programa) async {
+    final guardado = await showDialog<bool>(
+      context: context,
+      builder: (_) => _DialogoEditarPrograma(
+        repo: _repo,
+        programa: programa,
+      ),
+    );
+    if (guardado == true && mounted) {
+      mostrarAviso(context, 'Programa actualizado correctamente.', exito: true);
+      _cargar();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -402,6 +416,7 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel> {
               programa: _programas[i],
               guardando: _guardandoId == _programas[i].id,
               onVer: () => _verDetalle(_programas[i]),
+              onEditarPrograma: () => _editarPrograma(_programas[i]),
               onEditarPensum: () => _editarPensum(_programas[i]),
               onAlternarActivo: () => _alternarActivo(_programas[i]),
             ),
@@ -462,6 +477,7 @@ class _TarjetaPrograma extends StatelessWidget {
     required this.programa,
     required this.guardando,
     required this.onVer,
+    required this.onEditarPrograma,
     required this.onEditarPensum,
     required this.onAlternarActivo,
   });
@@ -469,6 +485,7 @@ class _TarjetaPrograma extends StatelessWidget {
   final ProgramaConTotales programa;
   final bool guardando;
   final VoidCallback onVer;
+  final VoidCallback onEditarPrograma;
   final VoidCallback onEditarPensum;
   final VoidCallback onAlternarActivo;
 
@@ -646,6 +663,11 @@ class _TarjetaPrograma extends StatelessWidget {
                   onChanged: (_) => onAlternarActivo(),
                 ),
               ),
+            IconButton(
+              tooltip: 'Editar datos del programa',
+              onPressed: onEditarPrograma,
+              icon: const Icon(Icons.edit_note_outlined, size: 21),
+            ),
             IconButton(
               tooltip: 'Ver pensum',
               onPressed: onVer,
@@ -839,6 +861,211 @@ class _DialogoDetallePrograma extends StatelessWidget {
           onPressed: onEditarPensum,
           icon: const Icon(Icons.edit_outlined, size: 17),
           label: const Text('Editar pensum'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Modal para editar los datos y metadatos de un programa formativo.
+class _DialogoEditarPrograma extends StatefulWidget {
+  const _DialogoEditarPrograma({
+    required this.repo,
+    required this.programa,
+  });
+
+  final CurriculoRepository repo;
+  final ProgramaConTotales programa;
+
+  @override
+  State<_DialogoEditarPrograma> createState() => _DialogoEditarProgramaState();
+}
+
+class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
+  final _forma = GlobalKey<FormState>();
+  late final TextEditingController _nombreCtrl =
+      TextEditingController(text: widget.programa.nombre);
+  late bool _requierePasantia = widget.programa.requierePasantia;
+  late final TextEditingController _duracionValorCtrl =
+      TextEditingController(text: widget.programa.duracionValor?.toString() ?? '');
+  late String _duracionUnidad = widget.programa.duracionUnidad ?? 'MESES';
+
+  bool _guardando = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _nombreCtrl.dispose();
+    _duracionValorCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _guardar() async {
+    if (_guardando) return;
+    if (!_forma.currentState!.validate()) return;
+
+    final duracionTexto = _duracionValorCtrl.text.trim();
+    int? duracionVal;
+    if (duracionTexto.isNotEmpty) {
+      duracionVal = int.tryParse(duracionTexto);
+    }
+
+    setState(() {
+      _guardando = true;
+      _error = null;
+    });
+
+    final cambios = CambiosPrograma(
+      nombre: _nombreCtrl.text.trim() != widget.programa.nombre
+          ? _nombreCtrl.text.trim()
+          : null,
+      requierePasantia: _requierePasantia != widget.programa.requierePasantia
+          ? _requierePasantia
+          : null,
+      duracionValor: duracionVal,
+      duracionUnidad: duracionVal != null ? _duracionUnidad : null,
+    );
+
+    if (cambios.vacio) {
+      Navigator.of(context).pop(false);
+      return;
+    }
+
+    final resultado =
+        await widget.repo.actualizarPrograma(widget.programa.id, cambios);
+    if (!mounted) return;
+    setState(() => _guardando = false);
+
+    resultado.when(
+      success: (_) => Navigator.of(context).pop(true),
+      failure: (fallo) => setState(() => _error = fallo.message),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Editar programa formativo'),
+      content: SizedBox(
+        width: 480,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _forma,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Código: ${widget.programa.codigo}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Tipo: ${widget.programa.tipo.etiqueta}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSecondaryContainer,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _nombreCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre del programa',
+                    hintText: 'ej. Soldadura Básica Universal',
+                    isDense: true,
+                  ),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Indica el nombre' : null,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: TextFormField(
+                        controller: _duracionValorCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Duración (número)',
+                          hintText: 'ej. 6',
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 6,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _duracionUnidad,
+                        decoration: const InputDecoration(
+                          labelText: 'Unidad de duración',
+                          isDense: true,
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'MESES', child: Text('Meses')),
+                          DropdownMenuItem(value: 'SEMANAS', child: Text('Semanas')),
+                          DropdownMenuItem(value: 'DIAS', child: Text('Días')),
+                        ],
+                        onChanged: (v) {
+                          if (v != null) setState(() => _duracionUnidad = v);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Requiere pasantías'),
+                  subtitle: const Text('Fase práctica laboral en taller o empresa'),
+                  value: _requierePasantia,
+                  onChanged: (v) => setState(() => _requierePasantia = v),
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 8),
+                  AvisoEnLinea(
+                    texto: _error!,
+                    tono: TonoAviso.peligro,
+                    icono: Icons.error_outline,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _guardando ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _guardando ? null : _guardar,
+          child: Text(_guardando ? 'Guardando…' : 'Guardar cambios'),
         ),
       ],
     );

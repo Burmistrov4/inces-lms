@@ -61,11 +61,11 @@ function banda(texto: string, fondo: string, color: string, fontSize?: number): 
   };
 }
 
-/** Una fila etiqueta/valor. `wrap` en el valor porque una tabla ocupa varias líneas. */
+/** Una fila etiqueta/valor. `wrap` en el valor porque una tabla ocupa varias líneas. Type String explícito para evitar advertencias de Excel. */
 function par(etiqueta: string, valor: string): Row {
   return [
     { value: etiqueta, fontWeight: 'bold', alignVertical: 'top' },
-    { value: valor || '-', wrap: true, alignVertical: 'top' },
+    { value: valor || '-', type: String, wrap: true, alignVertical: 'top' },
   ];
 }
 
@@ -101,11 +101,14 @@ export async function renderizarPlanillaXlsx(
 ): Promise<Uint8Array> {
   const filas: Row[] = [];
 
-  // --- Cabecera, igual que la del formulario impreso ---
+  // --- Cabecera institucional idéntica a la oficial ---
   filas.push([banda('PLANILLA DE INSCRIPCIÓN', AZUL, BLANCO, 14)]);
-  filas.push([banda('CFS NAC. SOLDADURA «RAFAEL URDANETA» — LA ISABELICA', AZUL, BLANCO)]);
+  filas.push([banda('REPÚBLICA BOLIVARIANA DE VENEZUELA', AZUL, BLANCO, 10)]);
+  filas.push([banda('INSTITUTO NACIONAL DE CAPACITACIÓN Y EDUCACIÓN SOCIALISTA (INCES)', AZUL, BLANCO, 12)]);
+  filas.push([banda('CFS NACIONAL DE SOLDADURA «RAFAEL URDANETA» — LA ISABELICA', AZUL, BLANCO, 11)]);
+  filas.push([banda('RIF: G-20000043-1 · PLANILLA OFICIAL DE INSCRIPCIÓN Y REGISTRO', AZUL, BLANCO, 10)]);
   const nombre = `${entrada.nombres ?? ''} ${entrada.apellidos ?? ''}`.trim() || 'ASPIRANTE';
-  filas.push([banda(nombre, AZUL, BLANCO)]);
+  filas.push([banda(`ASPIRANTE: ${nombre.toUpperCase()}`, '#003366', BLANCO, 12)]);
   filas.push([]);
 
   const cedula =

@@ -46,11 +46,67 @@ class _LandingPageState extends State<LandingPage> {
   /// Por qué no hay cursos que mostrar, si no los hay. `null` cuando sí hay.
   String? _aviso;
 
+  final TextEditingController _busquedaCtrl = TextEditingController();
+  String _areaSeleccionada = 'TODOS';
+
   @override
   void initState() {
     super.initState();
     _aspiranteRepo = widget.aspiranteRepository ?? AspiranteRepository();
     _cargarOferta();
+  }
+
+  @override
+  void dispose() {
+    _busquedaCtrl.dispose();
+    super.dispose();
+  }
+
+  List<OpcionCampo> get _cursosFiltrados {
+    final query = _busquedaCtrl.text.trim().toLowerCase();
+    return _cursos.where((c) {
+      final nombre = c.etiqueta.toLowerCase();
+      final coincideTexto = query.isEmpty || nombre.contains(query);
+      if (!coincideTexto) return false;
+
+      if (_areaSeleccionada == 'TODOS') return true;
+      if (_areaSeleccionada == 'PNA') {
+        return nombre.contains('pna') ||
+            nombre.contains('aprendiz') ||
+            nombre.contains('juvenil');
+      }
+      if (_areaSeleccionada == 'SOLDADURA') {
+        return nombre.contains('solda') ||
+            nombre.contains('oxigas') ||
+            nombre.contains('arco') ||
+            nombre.contains('mig') ||
+            nombre.contains('tig');
+      }
+      if (_areaSeleccionada == 'MECANICA') {
+        return nombre.contains('mecan') ||
+            nombre.contains('torno') ||
+            nombre.contains('fresa') ||
+            nombre.contains('ajuste') ||
+            nombre.contains('herramient');
+      }
+      if (_areaSeleccionada == 'ELECTRICIDAD') {
+        return nombre.contains('electr') ||
+            nombre.contains('circuit') ||
+            nombre.contains('bobin');
+      }
+      if (_areaSeleccionada == 'REFRIGERACION') {
+        return nombre.contains('refrig') ||
+            nombre.contains('clima') ||
+            nombre.contains('aire');
+      }
+      if (_areaSeleccionada == 'GESTION') {
+        return nombre.contains('gestion') ||
+            nombre.contains('admin') ||
+            nombre.contains('contab') ||
+            nombre.contains('asistent');
+      }
+      return true;
+    }).toList();
   }
 
   Future<void> _cargarOferta() async {
@@ -99,6 +155,7 @@ class _LandingPageState extends State<LandingPage> {
           children: [
             _construirHero(),
             _construirPilares(),
+            _construirQuienesSomos(),
             _construirOferta(),
             _construirRoles(),
             _construirCompromiso(),
@@ -120,41 +177,181 @@ class _LandingPageState extends State<LandingPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1200),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 52),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final esEscritorio = constraints.maxWidth > 920;
-                return esEscritorio
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            flex: 6,
-                            child: _construirContenidoHero(esEscritorio: true),
-                          ),
-                          const SizedBox(width: 40),
-                          Expanded(
-                            flex: 6,
-                            child: Align(
-                              alignment: Alignment.center,
-                              child: _construirInsigniaIndustrial3D(),
-                            ),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _construirContenidoHero(esEscritorio: false),
-                          const SizedBox(height: 32),
-                          _construirHeroVisualMovil(),
-                        ],
-                      );
-              },
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: Column(
+              children: [
+                _construirNavbar(),
+                const SizedBox(height: 36),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final esEscritorio = constraints.maxWidth > 920;
+                    return esEscritorio
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                flex: 6,
+                                child: _construirContenidoHero(esEscritorio: true),
+                              ),
+                              const SizedBox(width: 40),
+                              Expanded(
+                                flex: 6,
+                                child: Align(
+                                  alignment: Alignment.center,
+                                  child: _construirInsigniaIndustrial3D(),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _construirContenidoHero(esEscritorio: false),
+                              const SizedBox(height: 32),
+                              _construirHeroVisualMovil(),
+                            ],
+                          );
+                  },
+                ),
+              ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _construirNavbar() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final esEstrecho = constraints.maxWidth < 750;
+        return Column(
+          children: [
+            Row(
+              children: [
+                _construirMarca(),
+                const Spacer(),
+                if (!esEstrecho) ...[
+                  SizedBox(
+                    width: 260,
+                    height: 40,
+                    child: TextField(
+                      controller: _busquedaCtrl,
+                      onChanged: (_) => setState(() {}),
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'Buscar cursos o especialidad…',
+                        hintStyle: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.65),
+                          fontSize: 13,
+                        ),
+                        prefixIcon: const Icon(Icons.search, color: Colors.white70, size: 18),
+                        suffixIcon: _busquedaCtrl.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.close, color: Colors.white70, size: 16),
+                                onPressed: () {
+                                  _busquedaCtrl.clear();
+                                  setState(() {});
+                                },
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: Colors.white.withValues(alpha: 0.15),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: const BorderSide(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  TextButton.icon(
+                    onPressed: _irAlPortalAcademico,
+                    icon: const Icon(Icons.login, size: 18, color: Colors.white),
+                    label: const Text('Portal Académico', style: TextStyle(color: Colors.white)),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: _irAInscripcion,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: IncesTheme.azulPrimario,
+                    ),
+                    child: const Text('Inscribirse'),
+                  ),
+                ] else ...[
+                  IconButton(
+                    tooltip: 'Portal Académico',
+                    icon: const Icon(Icons.login, color: Colors.white),
+                    onPressed: _irAlPortalAcademico,
+                  ),
+                  FilledButton(
+                    onPressed: _irAInscripcion,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: IncesTheme.azulPrimario,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    child: const Text('Inscribirse'),
+                  ),
+                ],
+              ],
+            ),
+            if (esEstrecho) ...[
+              const SizedBox(height: 14),
+              SizedBox(
+                height: 40,
+                child: TextField(
+                  controller: _busquedaCtrl,
+                  onChanged: (_) => setState(() {}),
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'Buscar cursos o especialidad…',
+                    hintStyle: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.65),
+                      fontSize: 13,
+                    ),
+                    prefixIcon: const Icon(Icons.search, color: Colors.white70, size: 18),
+                    suffixIcon: _busquedaCtrl.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white70, size: 16),
+                            onPressed: () {
+                              _busquedaCtrl.clear();
+                              setState(() {});
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.15),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: const BorderSide(color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -655,7 +852,228 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   // ---------------------------------------------------------------------------
-  // Oferta formativa (dinámica)
+  // ¿Quiénes somos? (Identidad Institucional del CFS La Isabelica)
+  // ---------------------------------------------------------------------------
+
+  Widget _construirQuienesSomos() {
+    final theme = Theme.of(context);
+    final esOscuro = theme.brightness == Brightness.dark;
+
+    return Container(
+      color: esOscuro
+          ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.15)
+          : Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 56),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: IncesTheme.azulPrimario.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'CONOCE NUESTRO CENTRO',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.primary,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Centro de Formación Socialista CFS Nacional de Soldadura «Rafael Urdaneta»',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Sede neurálgica de la formación técnica industrial en Carabobo y referencia nacional en metalmecánica y soldadura especializada.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 32),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final esEscritorio = constraints.maxWidth > 800;
+                  return esEscritorio
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 7,
+                              child: _construirTextoQuienesSomos(theme),
+                            ),
+                            const SizedBox(width: 32),
+                            Expanded(
+                              flex: 5,
+                              child: _construirTarjetasDestacadasQuienesSomos(theme),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _construirTextoQuienesSomos(theme),
+                            const SizedBox(height: 24),
+                            _construirTarjetasDestacadasQuienesSomos(theme),
+                          ],
+                        );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _construirTextoQuienesSomos(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'El Centro de Formación Socialista (CFS) Nacional de Soldadura «Rafael Urdaneta», adscrito a la Gerencia Regional del INCES Carabobo, está ubicado estratégicamente en la Zona Industrial La Isabelica (Valencia), epicentro de la manufactura y el parque automotriz y metalmecánico del centro del país.\n\n'
+          'Nuestra misión es formar integralmente a la juventud trabajadora, aprendices del Programa Nacional de Aprendizaje (PNA) y profesionales en ejercicio mediante un enfoque pedagógico dual que combina la rigurosidad técnica en el aula con la práctica intensiva en talleres dotados con cabinas industriales.\n\n'
+          'Impulsamos la soberanía técnica, la certificación de saberes empíricos y la inserción laboral productiva de acuerdo con las normas técnicas nacionales e internacionales (AWS, ASME, DIN).',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            height: 1.6,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            _chipCualidad(Icons.verified_user_outlined, 'Acreditación Oficial INCES'),
+            _chipCualidad(Icons.workspace_premium_outlined, 'Estándares AWS y ASME'),
+            _chipCualidad(Icons.groups_outlined, 'Programa PNA 14-18 años'),
+            _chipCualidad(Icons.location_on_outlined, 'La Isabelica · Valencia'),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _chipCualidad(IconData icono, String etiqueta) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icono, size: 16, color: theme.colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            etiqueta,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _construirTarjetasDestacadasQuienesSomos(ThemeData theme) {
+    final datos = [
+      (
+        numero: '100%',
+        titulo: 'Formación Gratuita',
+        desc: 'Acceso universal a educación técnica pública y de calidad.',
+      ),
+      (
+        numero: 'Dual',
+        titulo: 'Taller + Aula Virtual',
+        desc: 'Práctica directa con maquinaria industrial y soporte digital.',
+      ),
+      (
+        numero: 'HACER',
+        titulo: 'Registro Nacional',
+        desc: 'Conexión institucional con la plataforma nacional de títulos.',
+      ),
+    ];
+
+    return Column(
+      children: [
+        for (final d in datos) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+              border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.7)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    d.numero,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        d.titulo,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        d.desc,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Oferta formativa (dinámica con búsqueda y categorías)
   // ---------------------------------------------------------------------------
 
   Widget _construirOferta() {
@@ -671,16 +1089,55 @@ class _LandingPageState extends State<LandingPage> {
               Text('Oferta formativa', style: theme.textTheme.headlineSmall),
               const SizedBox(height: 6),
               Text(
-                'Cursos abiertos a inscripción en el centro.',
+                'Cursos y programas técnicos abiertos a inscripción en el centro.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
+              _construirFiltrosArea(),
+              const SizedBox(height: 20),
               _construirEstadoOferta(),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _construirFiltrosArea() {
+    final categorias = [
+      (id: 'TODOS', etiqueta: 'Todos', icono: Icons.apps_rounded),
+      (id: 'SOLDADURA', etiqueta: 'Soldadura Especializada', icono: Icons.precision_manufacturing_outlined),
+      (id: 'MECANICA', etiqueta: 'Mecánica Industrial', icono: Icons.build_outlined),
+      (id: 'ELECTRICIDAD', etiqueta: 'Electricidad y Electrónica', icono: Icons.bolt_outlined),
+      (id: 'REFRIGERACION', etiqueta: 'Refrigeración', icono: Icons.ac_unit_outlined),
+      (id: 'PNA', etiqueta: 'Programas PNA (14 a 18 años)', icono: Icons.school_outlined),
+      (id: 'GESTION', etiqueta: 'Gestión y Servicios', icono: Icons.business_center_outlined),
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final cat in categorias) ...[
+            FilterChip(
+              avatar: Icon(
+                cat.icono,
+                size: 16,
+                color: _areaSeleccionada == cat.id
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : Theme.of(context).colorScheme.primary,
+              ),
+              label: Text(cat.etiqueta),
+              selected: _areaSeleccionada == cat.id,
+              onSelected: (_) {
+                setState(() => _areaSeleccionada = cat.id);
+              },
+            ),
+            const SizedBox(width: 8),
+          ],
+        ],
       ),
     );
   }
@@ -735,12 +1192,42 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   Widget _construirRejilla() {
+    final lista = _cursosFiltrados;
+    if (lista.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(28),
+        alignment: Alignment.center,
+        child: Column(
+          children: [
+            const Icon(Icons.search_off_rounded, size: 48, color: Colors.grey),
+            const SizedBox(height: 12),
+            Text(
+              'No se encontraron cursos con los filtros aplicados',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Prueba con otro término de búsqueda o selecciona otra categoría.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () {
+                _busquedaCtrl.clear();
+                setState(() => _areaSeleccionada = 'TODOS');
+              },
+              child: const Text('Restablecer filtros'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         const separacion = 16.0;
-        // El número de columnas sale del ancho disponible, no de un valor fijo:
-        // así la rejilla no desborda en móvil ni deja tarjetas diminutas en
-        // escritorio. El techo es 3 para que la tarjeta no se estire sin fin.
         final columnas = (constraints.maxWidth / 300).floor().clamp(1, 3);
         final ancho =
             (constraints.maxWidth - separacion * (columnas - 1)) / columnas;
@@ -748,7 +1235,7 @@ class _LandingPageState extends State<LandingPage> {
           spacing: separacion,
           runSpacing: separacion,
           children: [
-            for (final curso in _cursos)
+            for (final curso in lista)
               SizedBox(
                 width: ancho,
                 child: _TarjetaCurso(
@@ -829,22 +1316,209 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Footer Institucional Completo
+  // ---------------------------------------------------------------------------
+
   Widget _construirPie() {
     final theme = Theme.of(context);
+    final esOscuro = theme.brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-      color: theme.colorScheme.surfaceContainerHighest,
+      color: esOscuro
+          ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
+          : const Color(0xFF0F172A), // Azul noche institucional
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
       child: Center(
-        child: Text(
-          'INCES · CFS Nacional de Soldadura «Rafael Urdaneta» · La Isabelica',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w400,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final esEscritorio = constraints.maxWidth > 780;
+                  return esEscritorio
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 4, child: _columnaFooterIdentidad()),
+                            const SizedBox(width: 32),
+                            Expanded(flex: 3, child: _columnaFooterUbicacion()),
+                            const SizedBox(width: 32),
+                            Expanded(flex: 3, child: _columnaFooterEnlaces()),
+                            const SizedBox(width: 32),
+                            Expanded(flex: 2, child: _columnaFooterModulos()),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _columnaFooterIdentidad(),
+                            const SizedBox(height: 24),
+                            _columnaFooterUbicacion(),
+                            const SizedBox(height: 24),
+                            _columnaFooterEnlaces(),
+                            const SizedBox(height: 24),
+                            _columnaFooterModulos(),
+                          ],
+                        );
+                },
+              ),
+              const SizedBox(height: 36),
+              const Divider(color: Colors.white24),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      '© 2026 Instituto Nacional de Capacitación y Educación Socialista (INCES). República Bolivariana de Venezuela.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.white60,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    'CFS La Isabelica · v1.2.9',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.white54,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _columnaFooterIdentidad() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text(
+                'I',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'INCES LMS',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Centro de Formación Socialista «Rafael Urdaneta»\nEspecialistas en Soldadura y Tecnologías Industriales.',
+          style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+        ),
+        const SizedBox(height: 10),
+        const Text(
+          '«Formar produciendo, producir formando»',
+          style: TextStyle(
+            color: IncesTheme.advertencia,
+            fontSize: 12,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _columnaFooterUbicacion() {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Sede y Talleres',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+          ),
+        ),
+        SizedBox(height: 10),
+        Text(
+          'Av. Este-Oeste 3, Zona Industrial La Isabelica, Valencia, Edo. Carabobo.',
+          style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Horario de Talleres:\nLunes a Viernes 07:30 - 16:30',
+          style: TextStyle(color: Colors.white60, fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Widget _columnaFooterEnlaces() {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Enlaces Oficiales',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+          ),
+        ),
+        SizedBox(height: 10),
+        Text(
+          '• Portal Nacional INCES (inces.gob.ve)\n'
+          '• Plataforma HACER Títulos Oficiales\n'
+          '• Min. Proceso Social de Trabajo',
+          style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.6),
+        ),
+      ],
+    );
+  }
+
+  Widget _columnaFooterModulos() {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Módulos LMS',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+          ),
+        ),
+        SizedBox(height: 10),
+        Text(
+          '• Aula Virtual\n'
+          '• Asistencia QR\n'
+          '• Horarios y Talleres\n'
+          '• Planilla HACER',
+          style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.6),
+        ),
+      ],
     );
   }
 }
@@ -1051,7 +1725,7 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
     _DatoSlideHero(
       imagen: 'assets/images/area_juvenil.jpg',
       badge: 'PROGRAMA JUVENIL PNA',
-      tag: 'Jóvenes de 15 a 18 años',
+      tag: 'Jóvenes de 14 a 18 años',
       titulo: 'Aprendices INCES e Inserción Laboral',
       descripcion:
           'Programa Nacional de Aprendizaje con orientación vocacional integral, formación técnica dual y valores.',

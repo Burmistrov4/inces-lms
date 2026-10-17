@@ -81,12 +81,8 @@ class CampoPlanilla extends StatelessWidget {
             etiqueta: etiqueta,
             error: error,
             opciones: opciones,
-            tipoTeclado: _esCampoIdentidad(campo.codigo)
-                ? TextInputType.number
-                : TextInputType.text,
-            validadorDeFormato: _esCampoIdentidad(campo.codigo)
-                ? _validarCedula
-                : null,
+            tipoTeclado: _resolverTipoTeclado(campo.codigo),
+            validadorDeFormato: _resolverValidadorTexto(campo.codigo),
           ),
         TipoCampoInscripcion.email => _Texto(
             key: claveDeEstado,
@@ -267,6 +263,87 @@ String? _validarCedula(String texto) {
     return null;
   }
   return 'Formato inválido. Use entre 6 y 9 números para cédula venezolana.';
+}
+
+bool _esCampoTelefono(String codigo) {
+  final c = codigo.toLowerCase();
+  return c.contains('telefono') || c.contains('celular') || c == 'movil';
+}
+
+/// Validación de números telefónicos venezolanos (móviles y fijos).
+String? _validarTelefono(String texto) {
+  var limpio = texto.replaceAll(RegExp(r'[\s\-\(\)\.]'), '').trim();
+  if (limpio.isEmpty) return null;
+  if (limpio.startsWith('+58')) {
+    limpio = limpio.substring(3);
+  } else if (limpio.startsWith('0058')) {
+    limpio = limpio.substring(4);
+  }
+  if (limpio.startsWith('0')) {
+    limpio = limpio.substring(1);
+  }
+  if (!RegExp(r'^\d+$').hasMatch(limpio)) {
+    return 'El teléfono solo debe contener números.';
+  }
+  if (limpio.length != 10) {
+    return 'El teléfono debe tener 10 u 11 dígitos (ej. 04121234567).';
+  }
+  final prefijo = limpio.substring(0, 3);
+  const prefijosValidos = {
+    '412', '414', '424', '416', '426', // Móviles
+    '212', '241', '242', '243', '244', '245', '246', '247', '248', '249', // Centro
+    '251', '252', '253', '254', '255', '256', '257', '258', '259', // Occidente
+    '261', '262', '263', '264', '265', '266', '267', '268', '269', // Zulia / Falcón
+    '271', '272', '273', '274', '275', '276', '277', '278', // Andes
+    '281', '282', '283', '284', '285', '286', '287', '288', // Oriente / Guayana
+    '291', '292', '293', '294', '295', // Sucre / Nva Esparta
+    '234', '235', '237', '238', '239', // Llanos
+  };
+  if (!prefijosValidos.contains(prefijo)) {
+    return 'Código de área o prefijo no reconocido (ej. 0412, 0414, 0424, 0416, 0426, 0241).';
+  }
+  return null;
+}
+
+bool _esCampoNombreOApellido(String codigo) {
+  final c = codigo.toLowerCase();
+  return c == 'primer_nombre' ||
+      c == 'segundo_nombre' ||
+      c == 'primer_apellido' ||
+      c == 'segundo_apellido' ||
+      c == 'nombres' ||
+      c == 'apellidos' ||
+      c == 'nombre_contacto_emergencia' ||
+      c == 'nombre_madre' ||
+      c == 'nombre_padre' ||
+      c == 'nombre_tutor' ||
+      c == 'nombre_representante';
+}
+
+/// Validación de nombres y apellidos (solo letras, tildes, diéresis, ñ y espacios).
+String? _validarNombreOApellido(String texto) {
+  final limpio = texto.trim();
+  if (limpio.isEmpty) return null;
+  if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-]+$').hasMatch(limpio)) {
+    return 'Solo debe contener letras y espacios (sin números ni caracteres especiales).';
+  }
+  if (limpio.length < 2) {
+    return 'Debe tener al menos 2 letras.';
+  }
+  return null;
+}
+
+String? Function(String)? _resolverValidadorTexto(String codigo) {
+  if (_esCampoIdentidad(codigo)) return _validarCedula;
+  if (_esCampoTelefono(codigo)) return _validarTelefono;
+  if (_esCampoNombreOApellido(codigo)) return _validarNombreOApellido;
+  return null;
+}
+
+TextInputType _resolverTipoTeclado(String codigo) {
+  if (_esCampoIdentidad(codigo)) return TextInputType.number;
+  if (_esCampoTelefono(codigo)) return TextInputType.phone;
+  return TextInputType.text;
 }
 
 // ---------------------------------------------------------------------------

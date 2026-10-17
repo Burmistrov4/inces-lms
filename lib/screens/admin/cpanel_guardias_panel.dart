@@ -9,6 +9,7 @@ import '../../repositories/cuadrante_repository.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/cuadrante_grid.dart';
+import 'cpanel_invitaciones_panel.dart';
 
 /// Panel de guardias docentes (Módulo 3).
 ///
@@ -70,6 +71,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
   int? _diaFiltro;
   int? _bloqueFiltro;
   bool? _activaFiltro;
+  bool _vistaMatriz = true;
 
   bool _cargando = true;
   String? _error;
@@ -145,6 +147,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
       return;
     }
 
+    final limiteEfectivo = _vistaMatriz ? 250 : _limite;
     final resultado = await _repo.listarGuardias(
       periodo: lapso,
       docenteId: _docenteFiltro,
@@ -152,8 +155,8 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
       dia: _diaFiltro,
       bloque: _bloqueFiltro,
       activa: _activaFiltro,
-      limite: _limite,
-      desplazamiento: _desplazamiento,
+      limite: limiteEfectivo,
+      desplazamiento: _vistaMatriz ? 0 : _desplazamiento,
     );
 
     if (!mounted) return;
@@ -242,7 +245,12 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     return null;
   }
 
-  Future<void> _abrirFormulario({Guardia? existente}) async {
+  Future<void> _abrirFormulario({
+    Guardia? existente,
+    String? aulaIdInicial,
+    int? diaInicial,
+    int? bloqueInicial,
+  }) async {
     final lapso = _lapso;
     if (lapso == null) return;
 
@@ -254,6 +262,9 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
         docentes: _docentes,
         aulas: _aulas,
         existente: existente,
+        aulaIdInicial: aulaIdInicial,
+        diaInicial: diaInicial,
+        bloqueInicial: bloqueInicial,
       ),
     );
 
@@ -311,7 +322,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
             cargando: _cargando,
             error: _error,
             onReintentar: _cargar,
-            child: _lista(),
+            child: _vistaMatriz ? _matrizSemanal() : _lista(),
           ),
         ),
       ],
@@ -329,13 +340,247 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
 
     return TituloSeccion(
       'Guardias docentes',
-      subtitulo: 'Quién custodia cada espacio, por día y bloque, haya clase o '
-          'no. El sistema no admite dos presencias en el mismo hueco.',
+      subtitulo: 'Rol de Guardia MTP / PNA - Pizarra de control de talleres y espacios. '
+          'Quién custodia cada espacio por día y bloque, haya clase o no.',
       acciones: [
-        // Un botón deshabilitado sin explicación se lee como un fallo de
-        // permisos, así que cuando no se puede asignar se dice por qué.
+        SegmentedButton<bool>(
+          segments: const [
+            ButtonSegment<bool>(
+              value: true,
+              icon: Icon(Icons.grid_on_outlined, size: 16),
+              label: Text('Matriz Semanal'),
+            ),
+            ButtonSegment<bool>(
+              value: false,
+              icon: Icon(Icons.view_list_outlined, size: 16),
+              label: Text('Lista detallada'),
+            ),
+          ],
+          selected: {_vistaMatriz},
+          onSelectionChanged: (set) {
+            setState(() => _vistaMatriz = set.first);
+            _cargarPagina();
+          },
+        ),
+        const SizedBox(width: 8),
         if (razon == null) boton else Tooltip(message: razon, child: boton),
       ],
+    );
+  }
+
+  Widget _matrizSemanal() {
+    if (_aulas.isEmpty) {
+      return const PanelVacio(
+        titulo: 'No hay espacios registrados',
+        mensaje: 'Registra los talleres o aulas en «Espacios del centro» para armar el rol de guardias.',
+        icono: Icons.meeting_room_outlined,
+      );
+    }
+
+    final theme = Theme.of(context);
+    final borderSide = BorderSide(color: theme.dividerColor.withValues(alpha: 0.6));
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: borderSide,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.vertical,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Cabecera: Días y turnos
+              Container(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 170,
+                      height: 56,
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
+                      child: Text(
+                        'Espacio / Taller',
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    for (var dia = 1; dia <= diaMaximo; dia++)
+                      Container(
+                        width: 280,
+                        height: 56,
+                        decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
+                        child: Column(
+                          children: [
+                            Container(
+                              height: 26,
+                              alignment: Alignment.center,
+                              color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                              child: Text(
+                                diasDeLaSemana[dia],
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.primary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    height: 30,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(border: Border(right: borderSide)),
+                                    child: const Text('Mañana (07:30-12)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Container(
+                                    height: 30,
+                                    alignment: Alignment.center,
+                                    child: const Text('Tarde (13:00-17:30)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              // Filas por espacio / aula
+              for (final aula in _aulas)
+                Container(
+                  decoration: BoxDecoration(border: Border(bottom: borderSide)),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 170,
+                        constraints: const BoxConstraints(minHeight: 64),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        alignment: Alignment.centerLeft,
+                        decoration: BoxDecoration(border: Border(right: borderSide)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              aula.nombre,
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                            Text(
+                              aula.tipo.etiqueta,
+                              style: theme.textTheme.bodySmall?.copyWith(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                      for (var dia = 1; dia <= diaMaximo; dia++)
+                        Container(
+                          width: 280,
+                          constraints: const BoxConstraints(minHeight: 64),
+                          decoration: BoxDecoration(border: Border(right: borderSide)),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  constraints: const BoxConstraints(minHeight: 64),
+                                  decoration: BoxDecoration(border: Border(right: borderSide)),
+                                  child: _celdaMatriz(aula: aula, dia: dia, turno: Turno.manana),
+                                ),
+                              ),
+                              Expanded(
+                                child: Container(
+                                  constraints: const BoxConstraints(minHeight: 64),
+                                  child: _celdaMatriz(aula: aula, dia: dia, turno: Turno.tarde),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _celdaMatriz({required Aula aula, required int dia, required Turno turno}) {
+    final guardias = _guardias.where((g) =>
+        g.aulaId == aula.id &&
+        g.dia == dia &&
+        g.activa &&
+        turnoDeBloque(g.bloque) == turno).toList();
+
+    if (guardias.isEmpty) {
+      return InkWell(
+        onTap: () => _abrirFormulario(
+          aulaIdInicial: aula.id,
+          diaInicial: dia,
+          bloqueInicial: turno == Turno.manana ? 1 : 7,
+        ),
+        child: Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(4),
+          child: Icon(
+            Icons.add_rounded,
+            size: 16,
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final g in guardias)
+            InkWell(
+              onTap: () => _abrirFormulario(existente: g),
+              borderRadius: BorderRadius.circular(4),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                decoration: BoxDecoration(
+                  color: PaletaAulasCuadrante.colorGuardia.withValues(alpha: 0.15),
+                  border: Border.all(color: PaletaAulasCuadrante.colorGuardia.withValues(alpha: 0.5), width: 1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _nombreDelDocente(g.docenteId) ?? 'Docente asignado',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      'B${g.bloque} (${horaLegibleDeBloque(g.bloque)})',
+                      style: const TextStyle(fontSize: 10, color: Colors.black87),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -809,17 +1054,19 @@ class _DialogoGuardia extends StatefulWidget {
     required this.docentes,
     required this.aulas,
     this.existente,
+    this.aulaIdInicial,
+    this.diaInicial,
+    this.bloqueInicial,
   });
 
   final CuadranteRepository repo;
-
-  /// El lapso al que pertenecerá la guardia. No se elige aquí: es el que la
-  /// pantalla está mirando, y una guardia en otro lapso no se vería en la lista.
   final String periodo;
-
   final List<DocenteResumen> docentes;
   final List<Aula> aulas;
   final Guardia? existente;
+  final String? aulaIdInicial;
+  final int? diaInicial;
+  final int? bloqueInicial;
 
   @override
   State<_DialogoGuardia> createState() => _DialogoGuardiaState();
@@ -827,9 +1074,9 @@ class _DialogoGuardia extends StatefulWidget {
 
 class _DialogoGuardiaState extends State<_DialogoGuardia> {
   late String? _docenteId = widget.existente?.docenteId;
-  late String? _aulaId = widget.existente?.aulaId;
-  late int _dia = widget.existente?.dia ?? 1;
-  late int _bloque = widget.existente?.bloque ?? 1;
+  late String? _aulaId = widget.existente?.aulaId ?? widget.aulaIdInicial;
+  late int _dia = widget.existente?.dia ?? widget.diaInicial ?? 1;
+  late int _bloque = widget.existente?.bloque ?? widget.bloqueInicial ?? 1;
 
   late final TextEditingController _notasCtrl =
       TextEditingController(text: widget.existente?.notas ?? '');
@@ -839,10 +1086,212 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
 
   bool get _esEdicion => widget.existente != null;
 
+  List<DocenteResumen> get _docentesLimpios =>
+      widget.docentes.where((d) => !d.esTestOSemilla).toList();
+
   @override
   void dispose() {
     _notasCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _abrirInvitacionDocente() async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Invitar / Registrar nuevo docente'),
+        content: const SizedBox(
+          width: 520,
+          height: 480,
+          child: SingleChildScrollView(
+            child: CpanelInvitacionesPanel(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _abrirEditarBloqueActual() async {
+    final horaActual = horaLegibleDeBloque(_bloque);
+    final ctrl = TextEditingController(text: horaActual);
+    final nuevoRango = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Editar horario Bloque $_bloque'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Turno: ${turnoDeBloque(_bloque).etiqueta}'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Franja horaria',
+                hintText: 'ej. 07:30 - 08:15',
+                prefixIcon: Icon(Icons.access_time),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (nuevoRango != null && nuevoRango.isNotEmpty) {
+      actualizarHoraDeBloque(_bloque, nuevoRango);
+      setState(() {});
+    }
+  }
+
+  Widget _selectorDocente() {
+    final docentes = _docentesLimpios;
+    final docenteActual =
+        docentes.where((d) => d.id == _docenteId).firstOrNull;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Docente custodio',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            TextButton.icon(
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+              ),
+              icon: const Icon(Icons.person_add_alt, size: 15),
+              label: const Text(
+                '+ Invitar / Registrar docente',
+                style: TextStyle(fontSize: 12),
+              ),
+              onPressed: _abrirInvitacionDocente,
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Autocomplete<DocenteResumen>(
+          initialValue: TextEditingValue(
+            text: docenteActual != null
+                ? nombreDeDocente(docenteActual.nombre)
+                : '',
+          ),
+          displayStringForOption: (d) => nombreDeDocente(d.nombre),
+          optionsBuilder: (TextEditingValue textEditingValue) {
+            if (textEditingValue.text.isEmpty) {
+              return docentes;
+            }
+            final q = textEditingValue.text.toLowerCase();
+            return docentes.where((d) {
+              final nom = d.nombre.toLowerCase();
+              final em = d.email?.toLowerCase() ?? '';
+              return nom.contains(q) || em.contains(q);
+            });
+          },
+          onSelected: (DocenteResumen d) {
+            setState(() => _docenteId = d.id);
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(8),
+                child: ConstrainedBox(
+                  constraints:
+                      const BoxConstraints(maxHeight: 260, maxWidth: 440),
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        final option = options.elementAt(index);
+                        final seleccionado = option.id == _docenteId;
+                        return ListTile(
+                          dense: true,
+                          selected: seleccionado,
+                          leading: CircleAvatar(
+                            radius: 14,
+                            child: Text(
+                              (option.nombre.isNotEmpty
+                                      ? option.nombre[0]
+                                      : 'D')
+                                  .toUpperCase(),
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          title: Text(
+                            nombreDeDocente(option.nombre),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          subtitle: option.email != null &&
+                                  option.email!.isNotEmpty
+                              ? Text(option.email!,
+                                  style: const TextStyle(fontSize: 11))
+                              : null,
+                          trailing: seleccionado
+                              ? const Icon(Icons.check, size: 16)
+                              : null,
+                          onTap: () => onSelected(option),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+          fieldViewBuilder:
+              (context, controller, focusNode, onFieldSubmitted) {
+            return TextField(
+              controller: controller,
+              focusNode: focusNode,
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: 'Buscar facilitador por nombre o correo...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: controller.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () {
+                          controller.clear();
+                          setState(() => _docenteId = null);
+                        },
+                      )
+                    : null,
+              ),
+            );
+          },
+        ),
+      ],
+    );
   }
 
   Future<void> _guardar() async {
@@ -866,8 +1315,6 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
 
   Future<Result<Guardia>> _crear() => widget.repo.crearGuardia(
         EntradaCrearGuardia(
-          // Los `?? ''` no son un valor por defecto: dejan que el repositorio
-          // diga «Elige el docente» en vez de que la pantalla invente uno.
           docenteId: _docenteId ?? '',
           aulaId: _aulaId ?? '',
           periodo: widget.periodo,
@@ -877,12 +1324,6 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
         ),
       );
 
-  /// Manda **sólo lo que cambió**.
-  ///
-  /// El `periodo` no se manda nunca. Mover una guardia de lapso no es editar la
-  /// misma guardia: es otra, con otra agenda contra la que comprobar los
-  /// choques, y la fila desaparecería de la lista que se está mirando sin que
-  /// nadie lo haya pedido. Si hace falta, se archiva y se crea en el otro lapso.
   Future<Result<Guardia>> _guardarCambios() {
     final antes = widget.existente!;
     final notas = _notasCtrl.text.trim();
@@ -896,43 +1337,16 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
         dia: _dia != antes.dia ? _dia : null,
         bloque: _bloque != antes.bloque ? _bloque : null,
         notas: notas.isNotEmpty ? notas : null,
-        // «Vaciar las notas» no es «no tocar las notas»: el modelo distingue el
-        // campo ausente del campo nulo, y sin este indicador no habría forma de
-        // deshacer unas notas mal escritas.
         borrarNotas: notas.isEmpty && teniaNotas,
       ),
     );
   }
 
-  /// El ítem que representa el valor actual cuando ya no está en el catálogo.
-  ///
-  /// La rejilla sólo devuelve docentes **activos**, así que una guardia de
-  /// alguien desactivado después apunta a un id ausente. Sin este ítem el
-  /// desplegable no tendría dónde seleccionar su valor y el widget reventaría
-  /// al pintarlo.
   DropdownMenuItem<String?> _itemAusente(String valor, String etiqueta) =>
       DropdownMenuItem(
         value: valor,
         child: Text('$etiqueta (no disponible)'),
       );
-
-  List<DropdownMenuItem<String?>> _opcionesDeDocente() {
-    final actual = _docenteId;
-    final falta = actual != null && !widget.docentes.any((d) => d.id == actual);
-
-    return [
-      const DropdownMenuItem(value: null, child: Text('Elige un docente')),
-      for (final docente in widget.docentes)
-        DropdownMenuItem(
-          value: docente.id,
-          child: Text(
-            nombreDeDocente(docente.nombre),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      if (falta) _itemAusente(actual, 'Docente'),
-    ];
-  }
 
   List<DropdownMenuItem<String?>> _opcionesDeAula() {
     final actual = _aulaId;
@@ -959,15 +1373,12 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
     return AlertDialog(
       title: Text(_esEdicion ? 'Editar guardia' : 'Asignar guardia'),
       content: SizedBox(
-        width: 460,
+        width: 480,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // El lapso se enseña pero no se elige: es el contexto de la
-              // pantalla, y cambiarlo aquí movería la guardia a una agenda que
-              // el usuario no está mirando.
               Text(
                 'Lapso ${widget.periodo}',
                 style: theme.textTheme.labelLarge?.copyWith(
@@ -975,13 +1386,7 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
                 ),
               ),
               const SizedBox(height: 16),
-              _Desplegable<String?>(
-                etiqueta: 'Docente',
-                ancho: double.infinity,
-                valor: _docenteId,
-                opciones: _opcionesDeDocente(),
-                onCambiar: (valor) => setState(() => _docenteId = valor),
-              ),
+              _selectorDocente(),
               const SizedBox(height: 14),
               _Desplegable<String?>(
                 etiqueta: 'Espacio',
@@ -992,8 +1397,10 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
               ),
               const SizedBox(height: 14),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
+                    flex: 4,
                     child: _Desplegable<int>(
                       etiqueta: 'Día',
                       ancho: double.infinity,
@@ -1010,8 +1417,9 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
                       },
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
+                    flex: 6,
                     child: _Desplegable<int>(
                       etiqueta: 'Bloque',
                       ancho: double.infinity,
@@ -1020,7 +1428,10 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
                         for (var bloque = 1; bloque <= bloqueMaximo; bloque++)
                           DropdownMenuItem(
                             value: bloque,
-                            child: Text('B$bloque (${horaLegibleDeBloque(bloque)}) · ${turnoDeBloque(bloque).etiqueta}'),
+                            child: Text(
+                              bloqueLegibleConTurno(bloque),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                       ],
                       onCambiar: (valor) {
@@ -1028,11 +1439,14 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
                       },
                     ),
                   ),
+                  IconButton(
+                    tooltip: 'Personalizar hora de este bloque',
+                    icon: const Icon(Icons.edit_calendar_outlined, size: 20),
+                    onPressed: _abrirEditarBloqueActual,
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
-              // El turno se enseña porque es lo que el bloque significa y no se
-              // elige: lo deriva la base con `turno_de_bloque(block)`.
               Text(
                 'Bloque $_bloque · turno de ${turnoDeBloque(_bloque).etiqueta.toLowerCase()} '
                 '(lo determina el bloque, no se elige).',
@@ -1069,9 +1483,6 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
           child: const Text('Cancelar'),
         ),
         FilledButton(
-          // Se bloquea el BOTÓN, no los campos: deshabilitar un desplegable
-          // mientras guarda lo deja ilegible justo cuando el usuario quiere
-          // comprobar qué mandó.
           onPressed: _guardando ? null : _guardar,
           child: Text(_guardando ? 'Guardando…' : 'Guardar'),
         ),

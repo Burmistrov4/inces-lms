@@ -106,7 +106,7 @@ String? diaLegible(int dia) =>
 /// - Bloque 10: 03:15 - 04:00 PM
 /// - Bloque 11: 04:00 - 04:45 PM
 /// - Bloque 12: 04:45 - 05:30 PM
-const Map<int, String> horasDeBloque = {
+final Map<int, String> horasDeBloque = {
   1: '07:30 - 08:15',
   2: '08:15 - 09:00',
   3: '09:00 - 09:45',
@@ -123,6 +123,20 @@ const Map<int, String> horasDeBloque = {
 
 /// Devuelve la franja horaria formal de un bloque académico (ej. «07:30 - 08:15»).
 String horaLegibleDeBloque(int bloque) => horasDeBloque[bloque] ?? '';
+
+/// Actualiza el rango horario de un bloque académico.
+void actualizarHoraDeBloque(int bloque, String rango) {
+  if (bloque >= 1 && bloque <= 12 && rango.trim().isNotEmpty) {
+    horasDeBloque[bloque] = rango.trim();
+  }
+}
+
+/// Etiqueta completa con turno, número y rango horario (ej. «Mañana · Bloque 1 (07:30 - 08:15)»).
+String bloqueLegibleConTurno(int bloque) {
+  final turno = turnoDeBloque(bloque).etiqueta;
+  final hora = horaLegibleDeBloque(bloque);
+  return '$turno · Bloque $bloque ($hora)';
+}
 
 /// Índice determinista de color (0 a 11) asignado a un aula según su ID o nombre.
 ///
@@ -338,12 +352,15 @@ class Periodo {
   }
 
   factory Periodo.fromJson(Map<String, dynamic> json) {
+    final cod = json['codigo'] as String? ?? '';
+    final inicio = json['fechaInicio'] as String?;
+    final fin = json['fechaFin'] as String?;
     return Periodo(
       id: json['id'] as String? ?? '',
-      codigo: json['codigo'] as String? ?? '',
+      codigo: cod,
       nombre: json['nombre'] as String?,
-      fechaInicio: json['fechaInicio'] as String?,
-      fechaFin: json['fechaFin'] as String?,
+      fechaInicio: inicio ?? (cod == 'SA26-2' ? '2026-09-15' : null),
+      fechaFin: fin ?? (cod == 'SA26-2' ? '2027-01-30' : null),
       activo: json['activo'] as bool? ?? false,
       vigente: json['vigente'] as bool? ?? false,
       cerradoEn: DateTime.tryParse(json['cerradoEn']?.toString() ?? ''),
@@ -540,7 +557,11 @@ class ClaseCuadrante {
 
 /// Un docente, reducido a lo que la rejilla necesita para pintar una fila.
 class DocenteResumen {
-  const DocenteResumen({required this.id, required this.nombre});
+  const DocenteResumen({
+    required this.id,
+    required this.nombre,
+    this.email,
+  });
 
   final String id;
 
@@ -548,12 +569,27 @@ class DocenteResumen {
   /// [ClaseCuadrante.docenteSinNombre].
   final String nombre;
 
-  bool get sinNombre => nombre.trim().isEmpty;
+  /// Correo electrónico institucional del facilitador/docente.
+  final String? email;
+
+  bool get sinNombre =>
+      nombre.trim().isEmpty ||
+      nombre.trim().toLowerCase() == 'docente sin nombre';
+
+  /// ¿Es una cuenta de prueba automatizada o semilla inválida?
+  bool get esTestOSemilla {
+    final em = (email ?? '').toLowerCase();
+    return em.endsWith('@semilla.invalid') ||
+        em.contains('invalid') ||
+        em.startsWith('t4-doc') ||
+        sinNombre;
+  }
 
   factory DocenteResumen.fromJson(Map<String, dynamic> json) {
     return DocenteResumen(
       id: json['id'] as String? ?? '',
       nombre: json['nombre'] as String? ?? '',
+      email: json['email'] as String?,
     );
   }
 

@@ -1693,6 +1693,16 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       estado.perfiles = estado.perfiles.map((p) => (p.id === id ? actualizado : p));
       return actualizado;
     },
+    async cambiarEstado(id, activo) {
+      revisar('perfiles.cambiarEstado');
+      const actual = estado.perfiles.find((p) => p.id === id);
+      if (!actual) {
+        throw ErrorApi.noEncontrado('PERFIL_INEXISTENTE', 'No existe ese usuario.');
+      }
+      const actualizado: Perfil = { ...actual, activo };
+      estado.perfiles = estado.perfiles.map((p) => (p.id === id ? actualizado : p));
+      return actualizado;
+    },
     async contarAdminsActivos() {
       revisar('perfiles.contarAdminsActivos');
       return estado.perfiles.filter((p) => p.rol === 'admin' && p.activo).length;

@@ -280,6 +280,35 @@ export function rutasAdmin(app: FastifyInstance, deps: DependenciasRutas): void 
         },
       );
 
+      admin.patch<{ Params: { id: string } }>(
+        '/usuarios/:id/estado',
+        async (request) => {
+          const { id } = esquemaRutaIdPerfil.parse(request.params);
+          const { activo } = z.object({ activo: z.boolean() }).parse(request.body);
+
+          const usuario = request.usuario;
+          if (!usuario) throw ErrorApi.noAutorizado();
+
+          const perfiles = reposDe(request).perfiles;
+          const objetivo = await perfiles.porId(id);
+          if (!objetivo) {
+            throw ErrorApi.noEncontrado('PERFIL_INEXISTENTE', 'No existe ese usuario.');
+          }
+
+          if (objetivo.rol === 'admin' && !activo) {
+            const adminsActivos = await perfiles.contarAdminsActivos();
+            if (adminsActivos <= 1) {
+              throw ErrorApi.conflicto(
+                'ULTIMO_ADMINISTRADOR',
+                'No puedes desactivar al único administrador activo del sistema.',
+              );
+            }
+          }
+
+          return { perfil: await perfiles.cambiarEstado(id, activo) };
+        },
+      );
+
       // --- Invitaciones de docentes -------------------------------------------
 
       admin.post('/usuarios/invitaciones', async (request) => {

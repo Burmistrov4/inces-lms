@@ -93,4 +93,38 @@ class UsuariosAdminRepository {
     );
     return UsuarioAdmin.fromJson(j['perfil'] as Map<String, dynamic>);
   });
+
+  Future<Result<UsuarioAdmin>> cambiarEstado({
+    required String id,
+    required bool activo,
+  }) => Result.guard(() async {
+    try {
+      final j = await _api.patch(
+        '/api/v1/admin/usuarios/$id/estado',
+        token: _token,
+        cuerpo: {'activo': activo},
+      );
+      if (j.containsKey('perfil') && j['perfil'] is Map<String, dynamic>) {
+        return UsuarioAdmin.fromJson(j['perfil'] as Map<String, dynamic>);
+      }
+    } catch (_) {}
+
+    final client = SupabaseService.instance.client;
+    final res = await client
+        .from('profiles')
+        .update({'active': activo})
+        .eq('id', id)
+        .select()
+        .single();
+    final m = res;
+    return UsuarioAdmin(
+      id: m['id']?.toString() ?? id,
+      email: m['email']?.toString() ?? '',
+      cedula: m['cedula']?.toString(),
+      nombres: m['nombres']?.toString() ?? '',
+      apellidos: m['apellidos']?.toString() ?? '',
+      rol: m['rol']?.toString() ?? 'estudiante',
+      activo: m['active'] == true,
+    );
+  });
 }

@@ -8,6 +8,7 @@ import '../../repositories/cuadrante_repository.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/cuadrante_grid.dart';
 import '../../widgets/guia_contextual_modulo.dart';
+import 'cpanel_invitaciones_panel.dart';
 
 /// Rejilla maestra del cuadrante (Módulo 3).
 ///
@@ -179,6 +180,15 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
     await _cargarRejilla();
   }
 
+  Future<void> _abrirEditorDeBloques() async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => _DialogoEditarHorasBloques(
+        onGuardado: () => setState(() {}),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final razon = _razonParaNoAsignar();
@@ -239,6 +249,12 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
           'Toca una clase para editarla o pulsa en cualquier bloque libre para asignar una nueva.',
       acciones: [
         if (_periodos.isNotEmpty) _selectorDeLapso(),
+        const SizedBox(width: 8),
+        OutlinedButton.icon(
+          onPressed: _abrirEditorDeBloques,
+          icon: const Icon(Icons.schedule_outlined, size: 18),
+          label: const Text('Horas de bloques'),
+        ),
         const SizedBox(width: 8),
         if (razon == null)
           boton
@@ -558,12 +574,214 @@ class _DialogoClaseState extends State<_DialogoClase> {
     return fallo.message;
   }
 
+  List<DocenteResumen> get _docentesLimpios =>
+      widget.docentes.where((d) => !d.esTestOSemilla).toList();
+
+  Future<void> _abrirInvitacionDocente() async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Invitar / Registrar nuevo docente'),
+        content: const SizedBox(
+          width: 520,
+          height: 480,
+          child: SingleChildScrollView(
+            child: CpanelInvitacionesPanel(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _abrirEditarBloqueActual() async {
+    final horaActual = horaLegibleDeBloque(_bloque);
+    final ctrl = TextEditingController(text: horaActual);
+    final nuevoRango = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Editar horario Bloque $_bloque'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Turno: ${turnoDeBloque(_bloque).etiqueta}'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Franja horaria',
+                hintText: 'ej. 07:30 - 08:15',
+                prefixIcon: Icon(Icons.access_time),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (nuevoRango != null && nuevoRango.isNotEmpty) {
+      actualizarHoraDeBloque(_bloque, nuevoRango);
+      setState(() {});
+    }
+  }
+
+  Widget _selectorDocente() {
+    final docentes = _docentesLimpios;
+    final docenteActual =
+        docentes.where((d) => d.id == _docenteId).firstOrNull;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Docente / Facilitador',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            TextButton.icon(
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+              ),
+              icon: const Icon(Icons.person_add_alt, size: 15),
+              label: const Text(
+                '+ Invitar / Registrar docente',
+                style: TextStyle(fontSize: 12),
+              ),
+              onPressed: _abrirInvitacionDocente,
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Autocomplete<DocenteResumen>(
+          initialValue: TextEditingValue(
+            text: docenteActual != null
+                ? nombreDeDocente(docenteActual.nombre)
+                : '',
+          ),
+          displayStringForOption: (d) => nombreDeDocente(d.nombre),
+          optionsBuilder: (TextEditingValue textEditingValue) {
+            if (textEditingValue.text.isEmpty) {
+              return docentes;
+            }
+            final q = textEditingValue.text.toLowerCase();
+            return docentes.where((d) {
+              final nom = d.nombre.toLowerCase();
+              final em = d.email?.toLowerCase() ?? '';
+              return nom.contains(q) || em.contains(q);
+            });
+          },
+          onSelected: (DocenteResumen d) {
+            setState(() => _docenteId = d.id);
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(8),
+                child: ConstrainedBox(
+                  constraints:
+                      const BoxConstraints(maxHeight: 260, maxWidth: 440),
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        final option = options.elementAt(index);
+                        final seleccionado = option.id == _docenteId;
+                        return ListTile(
+                          dense: true,
+                          selected: seleccionado,
+                          leading: CircleAvatar(
+                            radius: 14,
+                            child: Text(
+                              (option.nombre.isNotEmpty
+                                      ? option.nombre[0]
+                                      : 'D')
+                                  .toUpperCase(),
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          title: Text(
+                            nombreDeDocente(option.nombre),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          subtitle: option.email != null &&
+                                  option.email!.isNotEmpty
+                              ? Text(option.email!,
+                                  style: const TextStyle(fontSize: 11))
+                              : null,
+                          trailing: seleccionado
+                              ? const Icon(Icons.check, size: 16)
+                              : null,
+                          onTap: () => onSelected(option),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+          fieldViewBuilder:
+              (context, controller, focusNode, onFieldSubmitted) {
+            return TextField(
+              controller: controller,
+              focusNode: focusNode,
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: 'Buscar facilitador por nombre o correo...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: controller.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () {
+                          controller.clear();
+                          setState(() => _docenteId = null);
+                        },
+                      )
+                    : null,
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(_esEdicion ? 'Editar clase' : 'Asignar clase'),
       content: SizedBox(
-        width: 460,
+        width: 480,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -604,26 +822,13 @@ class _DialogoClaseState extends State<_DialogoClase> {
                 onChanged: (v) => setState(() => _aulaId = v),
               ),
               const SizedBox(height: 12),
-              _Desplegable<String>(
-                etiqueta: 'Docente',
-                ancho: double.infinity,
-                valor: _docenteId,
-                opciones: [
-                  for (final docente in widget.docentes)
-                    DropdownMenuItem(
-                      value: docente.id,
-                      child: Text(
-                        nombreDeDocente(docente.nombre),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                ],
-                onChanged: (v) => setState(() => _docenteId = v),
-              ),
+              _selectorDocente(),
               const SizedBox(height: 16),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
+                    flex: 4,
                     child: _Desplegable<int>(
                       etiqueta: 'Día',
                       ancho: double.infinity,
@@ -638,8 +843,9 @@ class _DialogoClaseState extends State<_DialogoClase> {
                       onChanged: (v) => setState(() => _dia = v ?? _dia),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
+                    flex: 6,
                     child: _Desplegable<int>(
                       etiqueta: 'Bloque',
                       ancho: double.infinity,
@@ -648,11 +854,19 @@ class _DialogoClaseState extends State<_DialogoClase> {
                         for (var b = 1; b <= bloqueMaximo; b++)
                           DropdownMenuItem(
                             value: b,
-                            child: Text('B$b (${horaLegibleDeBloque(b)}) · ${turnoDeBloque(b).etiqueta}'),
+                            child: Text(
+                              bloqueLegibleConTurno(b),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                       ],
                       onChanged: (v) => setState(() => _bloque = v ?? _bloque),
                     ),
+                  ),
+                  IconButton(
+                    tooltip: 'Personalizar hora de este bloque',
+                    icon: const Icon(Icons.edit_calendar_outlined, size: 20),
+                    onPressed: _abrirEditarBloqueActual,
                   ),
                 ],
               ),
@@ -690,6 +904,107 @@ class _DialogoClaseState extends State<_DialogoClase> {
         FilledButton(
           onPressed: _guardando ? null : _guardar,
           child: Text(_guardando ? 'Guardando…' : 'Guardar'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Diálogo para configurar y editar las horas de los 12 bloques académicos.
+class _DialogoEditarHorasBloques extends StatefulWidget {
+  const _DialogoEditarHorasBloques({required this.onGuardado});
+  final VoidCallback onGuardado;
+
+  @override
+  State<_DialogoEditarHorasBloques> createState() =>
+      _DialogoEditarHorasBloquesState();
+}
+
+class _DialogoEditarHorasBloquesState extends State<_DialogoEditarHorasBloques> {
+  late final Map<int, TextEditingController> _controllers = {
+    for (var b = 1; b <= 12; b++)
+      b: TextEditingController(text: horaLegibleDeBloque(b)),
+  };
+
+  @override
+  void dispose() {
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _guardar() {
+    for (var b = 1; b <= 12; b++) {
+      final t = _controllers[b]?.text.trim() ?? '';
+      if (t.isNotEmpty) {
+        actualizarHoraDeBloque(b, t);
+      }
+    }
+    widget.onGuardado();
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Configurar Horarios de Bloques'),
+      content: SizedBox(
+        width: 480,
+        height: 480,
+        child: ListView(
+          children: [
+            const Text(
+              'Personaliza las franjas horarias de inicio y fin para los 12 bloques académicos (CFS Rafael Urdaneta).',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Turno Mañana (Bloques 1 al 6)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            for (var b = 1; b <= 6; b++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: TextField(
+                  controller: _controllers[b],
+                  decoration: InputDecoration(
+                    labelText: 'Bloque $b (Mañana)',
+                    isDense: true,
+                    prefixIcon: const Icon(Icons.access_time, size: 18),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 12),
+            const Text(
+              'Turno Tarde (Bloques 7 al 12)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            for (var b = 7; b <= 12; b++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: TextField(
+                  controller: _controllers[b],
+                  decoration: InputDecoration(
+                    labelText: 'Bloque $b (Tarde)',
+                    isDense: true,
+                    prefixIcon: const Icon(Icons.access_time, size: 18),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _guardar,
+          child: const Text('Guardar horarios'),
         ),
       ],
     );

@@ -1407,7 +1407,7 @@ class _CabeceraPeriodo extends StatelessWidget {
               borderRadius: BorderRadius.circular(5),
             ),
             child: Text(
-              'Período ${grupo.periodo}',
+              'Módulo / Trimestre ${grupo.periodo}',
               style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -1530,7 +1530,7 @@ class _GrupoRevisado extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text('Período ${grupo.periodo}',
+                Text('Módulo / Trimestre ${grupo.periodo}',
                     style: theme.textTheme.titleSmall),
                 const Spacer(),
                 Text(

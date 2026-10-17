@@ -33,6 +33,7 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
   PaginaUsuarios? _pagina;
   String? _rol;
   bool? _activo;
+  bool _ocultarCuentasDemo = true;
   bool _cargando = true;
   String? _error;
   Timer? _debounce;
@@ -217,10 +218,59 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
     );
   }
 
+  Future<void> _cambiarEstado(UsuarioAdmin u, bool nuevoEstado) async {
+    if (_ocupado) return;
+    final accion = nuevoEstado ? 'activar' : 'desactivar (archivar)';
+    final ok =
+        await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: Text('${nuevoEstado ? 'Activar' : 'Desactivar'} usuario'),
+            content: Text(
+              '¿Estás seguro de que deseas $accion la cuenta de ${u.nombreCompleto}?'
+              '${!nuevoEstado ? '\n\nEl usuario no podrá iniciar sesión ni aparecerá en los selectores de docentes y estudiantes activos.' : ''}',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Confirmar'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!ok) return;
+
+    setState(() => _ocupado = true);
+    final r = await _repo.cambiarEstado(id: u.id, activo: nuevoEstado);
+    if (!mounted) return;
+    setState(() => _ocupado = false);
+    r.when(
+      success: (_) {
+        mostrarAviso(
+          context,
+          nuevoEstado
+              ? 'Usuario activado correctamente.'
+              : 'Usuario desactivado correctamente.',
+          exito: true,
+        );
+        _cargar();
+      },
+      failure: (e) => mostrarAviso(context, e.message),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final p = _pagina;
-    final users = p?.usuarios ?? const <UsuarioAdmin>[];
+    final todos = p?.usuarios ?? const <UsuarioAdmin>[];
+    final users = _ocultarCuentasDemo
+        ? todos.where((u) => !u.esCuentaDemo).toList()
+        : todos;
     final pages = ((p?.total ?? 0) / _limite).ceil();
     return ListView(
       padding: EdgeInsets.zero,
@@ -349,6 +399,11 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
                                 tooltip: 'Actualizar',
                                 icon: const Icon(Icons.refresh),
                               ),
+                              FilterChip(
+                                label: const Text('Ocultar pruebas'),
+                                selected: _ocultarCuentasDemo,
+                                onSelected: (v) => setState(() => _ocultarCuentasDemo = v),
+                              ),
                             ],
                           ),
                         ],
@@ -422,6 +477,12 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
                             });
                             _cargar();
                           },
+                        ),
+                        const SizedBox(width: 8),
+                        FilterChip(
+                          label: const Text('Ocultar pruebas'),
+                          selected: _ocultarCuentasDemo,
+                          onSelected: (v) => setState(() => _ocultarCuentasDemo = v),
                         ),
                         IconButton(
                           onPressed: _cargando ? null : _cargar,
@@ -579,6 +640,20 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
                                         tooltip: 'Restablecer contraseña',
                                         onPressed: () => _restablecer(u),
                                         icon: const Icon(Icons.key_outlined),
+                                      ),
+                                      IconButton(
+                                        tooltip: u.activo
+                                            ? 'Desactivar usuario'
+                                            : 'Activar usuario',
+                                        onPressed: () => _cambiarEstado(u, !u.activo),
+                                        icon: Icon(
+                                          u.activo
+                                              ? Icons.person_off_outlined
+                                              : Icons.person_add_alt_outlined,
+                                          color: u.activo
+                                              ? Colors.amber.shade800
+                                              : Colors.green.shade700,
+                                        ),
                                       ),
                                     ],
                                   ),

@@ -287,7 +287,9 @@ class _ListaInscritos extends StatelessWidget {
       // UUID correcto *y* el formato prometido, que es lo que un botón «de la
       // lista» esconde.
       key: Key('descargar-${formato.extension}-${inscrito.estudianteId}'),
-      tooltip: 'Descargar planilla ($etiqueta)',
+      tooltip: formato == FormatoPlanilla.xlsx
+          ? 'Descargar Planilla HACER (.xlsx)'
+          : 'Descargar Planilla ($etiqueta)',
       visualDensity: VisualDensity.compact,
       onPressed: bajando ? null : () => onDescargar(inscrito, formato),
       icon: bajando

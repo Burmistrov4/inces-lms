@@ -521,9 +521,10 @@ function aClaseCuadrante(fila: Fila): ClaseCuadrante {
 }
 
 function aDocenteResumen(fila: Fila): DocenteResumen {
-  const nombre = [textoObligatorio(fila.nombres), textoObligatorio(fila.apellidos)]
-    .filter((parte) => parte.length > 0)
-    .join(' ');
+  const nom = textoObligatorio(fila.nombres);
+  const ape = textoObligatorio(fila.apellidos);
+  const partes = [nom, ape].filter((parte) => parte.length > 0);
+  const nombre = partes.length > 0 ? partes.join(' ') : 'Docente Instructor INCES';
   return { id: textoObligatorio(fila.id), nombre };
 }
 
@@ -1063,7 +1064,7 @@ const COLUMNAS_CLASE =
   'id,period_code,program_id,program_name,subject_id,subject_name,section_id,section_name,teacher_id,teacher_name,classroom_id,classroom_name,day_of_week,block,turno,is_active';
 
 /** Columnas de `profiles` que bastan para pintar una fila de la rejilla. */
-const COLUMNAS_DOCENTE_RESUMEN = 'id,nombres,apellidos';
+const COLUMNAS_DOCENTE_RESUMEN = 'id,nombres,apellidos,email';
 
 // --- M4 ---------------------------------------------------------------------
 
@@ -1305,6 +1306,17 @@ class PerfilesSupabase implements PuertaPerfiles {
       .single();
 
     return aPerfil(desenvolver(respuesta, 'cambiar rol') as Fila);
+  }
+
+  async cambiarEstado(id: string, activo: boolean): Promise<Perfil> {
+    const respuesta = await this.cliente
+      .from(TABLA_PERFILES)
+      .update({ active: activo })
+      .eq('id', id)
+      .select(COLUMNAS_PERFIL)
+      .single();
+
+    return aPerfil(desenvolver(respuesta, 'cambiar estado') as Fila);
   }
 
   async contarAdminsActivos(): Promise<number> {
@@ -2844,7 +2856,13 @@ class CuadranteSupabase implements PuertaCuadrante {
       .order('nombres', { ascending: true })
       .order('id', { ascending: true });
 
-    const filas = desenvolver(respuesta, 'listar los docentes') as Fila[];
+    const filas = (desenvolver(respuesta, 'listar los docentes') as Fila[]).filter((fila) => {
+      const email = (texto(fila.email) ?? '').toLowerCase();
+      if (email.endsWith('@semilla.invalid') || email.includes('invalid') || email.startsWith('t4-doc')) return false;
+      const nom = (texto(fila.nombres) ?? '').trim();
+      const ape = (texto(fila.apellidos) ?? '').trim();
+      return nom.length > 0 || ape.length > 0;
+    });
     return filas.map(aDocenteResumen);
   }
 
@@ -3829,6 +3847,44 @@ class PlanillaSupabase implements PuertaPlanilla {
       primer_nombre: texto(fila.nombres)?.split(/\s+/)[0] ?? null,
       primer_apellido: texto(fila.apellidos)?.split(/\s+/)[0] ?? null,
     };
+
+    let nombrePrograma = texto(programa?.name);
+    const idCandidato = [
+      fila.program_id,
+      datosPlanilla.curso_seleccionado,
+      datosPlanilla.proyecto,
+      datosPlanilla.programa_id,
+    ].find((v) => typeof v === 'string' && /^[0-9a-fA-F-]{36}$/.test(String(v).trim()));
+
+    if (!nombrePrograma && idCandidato) {
+      try {
+        const resProg = await this.cliente
+          .from(TABLA_PROGRAMAS)
+          .select('name')
+          .eq('id', String(idCandidato).trim())
+          .maybeSingle();
+        if (resProg.data?.name) {
+          nombrePrograma = resProg.data.name;
+        }
+      } catch (_) {}
+    }
+
+    if (nombrePrograma) {
+      identidad.curso_seleccionado = nombrePrograma;
+      identidad.proyecto = nombrePrograma;
+      if (
+        datosPlanilla.curso_seleccionado &&
+        /^[0-9a-fA-F-]{36}$/.test(String(datosPlanilla.curso_seleccionado).trim())
+      ) {
+        datosPlanilla.curso_seleccionado = nombrePrograma;
+      }
+      if (
+        datosPlanilla.proyecto &&
+        /^[0-9a-fA-F-]{36}$/.test(String(datosPlanilla.proyecto).trim())
+      ) {
+        datosPlanilla.proyecto = nombrePrograma;
+      }
+    }
 
     return {
       cedula: texto(fila.cedula),

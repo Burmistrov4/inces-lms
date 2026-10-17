@@ -78,6 +78,8 @@ export interface PuertaPerfiles {
   listar(opciones: OpcionesListadoUsuarios): Promise<PaginaUsuarios>;
   /** Operación de administrador: cambiar el rol de un usuario. */
   cambiarRol(id: string, rol: Rol): Promise<Perfil>;
+  /** Operación de administrador: activar o desactivar (archivar) un usuario. */
+  cambiarEstado(id: string, activo: boolean): Promise<Perfil>;
   /**
    * Cuántos administradores **activos** hay ahora mismo.
    *

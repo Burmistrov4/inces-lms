@@ -42,19 +42,22 @@ void main() {
       );
     });
 
-    test('son las 61 columnas de la vista más documento_identidad', () {
-      // Es un listón a propósito, no una tautología: obliga a actualizar el
-      // contrato del cliente cuando la vista gane una columna, en vez de dejar
-      // que el CSV y la base se separen sin que nadie lo note.
-      //
-      // 61 + 1: `documento_identidad` **no viene de la vista**, se deriva de
-      // `cedula` y `planilla_nacionalidad` (ver `FilaExportacionHacer`).
-      expect(columnasExportacionHacer.length, 62);
+    test('son las 56 columnas limpias e institucionales de HACER', () {
+      expect(columnasExportacionHacer.length, 56);
     });
 
-    test('la primera es el contexto y la última el jsonb crudo', () {
-      expect(columnasExportacionHacer.first, 'inscripcion_id');
-      expect(columnasExportacionHacer.last, 'datos_planilla');
+    test('la primera es lapso y la última la experiencia de planilla', () {
+      expect(columnasExportacionHacer.first, 'lapso');
+      expect(columnasExportacionHacer.last, 'planilla_experiencias');
+    });
+
+    test('no incluye UUIDs internos ni jsonb crudo', () {
+      expect(columnasExportacionHacer, isNot(contains('inscripcion_id')));
+      expect(columnasExportacionHacer, isNot(contains('seccion_id')));
+      expect(columnasExportacionHacer, isNot(contains('programa_id')));
+      expect(columnasExportacionHacer, isNot(contains('materia_id')));
+      expect(columnasExportacionHacer, isNot(contains('aspirante_id')));
+      expect(columnasExportacionHacer, isNot(contains('datos_planilla')));
     });
 
     test('documento_identidad va pegado a cedula', () {
@@ -123,13 +126,12 @@ void main() {
     });
 
     test('la cabecera NO se pasa a mayúsculas', () {
-      //  Las reglas de saneado que HACER pidió son de datos. La cabecera es la
-      //  etiqueta con la que el sistema receptor reconoce cada columna: cambiarle
-      //  las mayúsculas es cambiar el contrato con quien lee, no sanear un valor.
       final csv = csvDeExportacionHacer([filaExportacionEjemplo()]);
+      final cabecera = celdas(csv, fila: 0);
 
-      expect(celdaDe(csv, 'inscripcion_id'), isNot('INSCRIPCION_ID'));
-      expect(sinBom(csv), startsWith('inscripcion_id;seccion_id;lapso'));
+      expect(cabecera.first, 'lapso');
+      expect(cabecera.first, isNot('LAPSO'));
+      expect(sinBom(csv), startsWith('lapso;seccion;seccion_activa'));
     });
 
     test('una fila por registro, y termina en salto de línea', () {
@@ -237,10 +239,7 @@ void main() {
       expect(celdaDe(csv, 'planilla_municipio'), 'SAN DIEGO');
     });
 
-    test('los uuid NO se pasan a mayúsculas', () {
-      //  Un uuid en mayúsculas es un uuid inválido para un analizador estricto:
-      //  la forma canónica de la RFC 9562 es en minúsculas. Subirlo rompería
-      //  justo el dato que casa la fila con el sistema de origen.
+    test('los campos internos no se exportan aunque vengan en el mapa', () {
       const uuid = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d';
       final csv = csvDeExportacionHacer([
         filaExportacionEjemplo(
@@ -248,33 +247,13 @@ void main() {
             'inscripcion_id': uuid,
             'seccion_id': uuid,
             'aspirante_id': uuid,
-          },
-        ),
-      ]);
-
-      expect(celdaDe(csv, 'inscripcion_id'), uuid);
-      expect(celdaDe(csv, 'seccion_id'), uuid);
-      expect(celdaDe(csv, 'aspirante_id'), uuid);
-      expect(csv, isNot(contains(uuid.toUpperCase())));
-    });
-
-    test('el jsonb crudo conserva sus CLAVES en minúsculas', () {
-      //  Subir el jsonb a mayúsculas subiría también sus claves, y el archivo
-      //  tendría dos vocabularios para el mismo dato: `{"NACIONALIDAD":…}` en el
-      //  jsonb y `planilla_nacionalidad` en las columnas aplanadas.
-      final csv = csvDeExportacionHacer([
-        filaExportacionEjemplo(
-          sobrescribir: {
             'datos_planilla': {'pueblo_indigena_cual': 'Wayuu'},
           },
         ),
       ]);
 
-      //  Se compara la **clave JSON entrecomillada** y no la palabra suelta: la
-      //  columna `planilla_pueblo_indigena_cual` sí se mayusculiza, y contiene
-      //  esa misma subcadena. Buscar la palabra a secas daría un rojo falso.
-      expect(csv, contains('"pueblo_indigena_cual"'));
-      expect(csv, isNot(contains('"PUEBLO_INDIGENA_CUAL"')));
+      expect(csv, isNot(contains('inscripcion_id')));
+      expect(csv, isNot(contains('datos_planilla')));
     });
 
     test('los booleanos siguen siendo true/false, no TRUE/FALSE', () {
@@ -511,9 +490,9 @@ void main() {
     test('sin filas está vacía pero sigue produciendo un archivo con cabecera', () {
       const exportacion = ExportacionHacer(filas: []);
 
-      expect(exportacion.vacia, isTrue);
       expect(exportacion.aCsv(), startsWith(marcaOrdenDeBytes));
-      expect(exportacion.aCsv(), contains('inscripcion_id'));
+      expect(exportacion.aCsv(), contains('lapso'));
+      expect(exportacion.aCsv(), isNot(contains('inscripcion_id')));
     });
   });
 

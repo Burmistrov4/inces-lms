@@ -132,7 +132,7 @@ class _GuiaContextualModuloState extends State<GuiaContextualModulo> {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: esOscuro
             ? paleta.superficieSutil
@@ -144,7 +144,7 @@ class _GuiaContextualModuloState extends State<GuiaContextualModulo> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -213,7 +213,7 @@ class _GuiaContextualModuloState extends State<GuiaContextualModulo> {
                 ),
               ],
             ),
-            if (_expandido || widget.pasos.isNotEmpty) ...[
+            if (_expandido && widget.pasos.isNotEmpty) ...[
               const SizedBox(height: 12),
               const Divider(height: 1),
               const SizedBox(height: 12),

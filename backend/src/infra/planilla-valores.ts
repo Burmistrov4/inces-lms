@@ -86,6 +86,17 @@ export function valorPlano(
   identidad: Record<string, string | null>,
 ): string {
   let valor: unknown = datos[campo.codigo];
+  if (
+    (campo.codigo === 'curso_seleccionado' || campo.codigo === 'proyecto') &&
+    typeof valor === 'string' &&
+    /^[0-9a-fA-F-]{36}$/.test(valor.trim())
+  ) {
+    const resuelto = identidad[campo.codigo] ?? identidad['curso_seleccionado'];
+    if (resuelto && !/^[0-9a-fA-F-]{36}$/.test(resuelto.trim())) {
+      valor = resuelto;
+    }
+  }
+
   if (valor === undefined || valor === null || valor === '') {
     valor = identidad[campo.codigo] ?? null;
   }

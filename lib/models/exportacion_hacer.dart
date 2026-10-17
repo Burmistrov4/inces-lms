@@ -31,24 +31,19 @@ import 'dart:convert';
 /// cabecera de los datos haría que el formato del archivo dependiera de si hay
 /// datos, que es la clase de fragilidad que este proyecto evita en todas partes.
 const List<String> columnasExportacionHacer = <String>[
-  // Contexto académico: a qué se inscribió.
-  'inscripcion_id',
-  'seccion_id',
+  // Contexto académico institucional (sin UUIDs crudos)
   'lapso',
   'seccion',
   'seccion_activa',
-  'programa_id',
   'programa_codigo',
   'programa_nombre',
-  'materia_id',
   'materia_codigo',
   'materia_nombre',
   'docente',
   'estado',
   'inscrito_en',
 
-  // Identidad: el contrato que `AspiranteModel` ya declara.
-  'aspirante_id',
+  // Identidad institucional
   'cedula',
   // Derivada, no de la vista. Va pegada a `cedula` porque es su lectura
   // «documento oficial»: nacionalidad + cédula, con relleno de ceros.
@@ -69,7 +64,7 @@ const List<String> columnasExportacionHacer = <String>[
   'telefono_tutor',
   'correo_tutor',
 
-  // Planilla aplanada: los 29 campos que sólo viven en `datos_planilla`.
+  // Planilla aplanada: los 29 campos limpios
   'planilla_numero_preimpreso',
   'planilla_primer_nombre',
   'planilla_segundo_nombre',
@@ -99,9 +94,6 @@ const List<String> columnasExportacionHacer = <String>[
   'planilla_especialidad',
   'planilla_otras_formaciones',
   'planilla_experiencias',
-
-  // La red de seguridad: el jsonb crudo, sin aplanar.
-  'datos_planilla',
 ];
 
 /// El separador de campos: **punto y coma**, como exige HACER.
@@ -168,12 +160,6 @@ const String marcaOrdenDeBytes = '\uFEFF';
 /// dirección segura del error: el texto de más se ve al abrir el archivo, un
 /// uuid roto se descubre al intentar importarlo.
 const Set<String> columnasSinMayusculas = <String>{
-  'inscripcion_id',
-  'seccion_id',
-  'programa_id',
-  'materia_id',
-  'aspirante_id',
-  'datos_planilla',
   'seccion_activa',
   'discapacidad',
   'inscrito_en',
@@ -306,13 +292,24 @@ class ExportacionHacer {
 /// pidió son de *datos* —nulos, texto, saltos de línea—, y la cabecera no es un
 /// dato: es la etiqueta que el sistema receptor usa para reconocer cada columna.
 /// Cambiarle las mayúsculas a una etiqueta es cambiar el contrato con quien lee,
-/// no sanear un valor. Si HACER pide la cabecera en mayúsculas, es **esta línea**
-/// la que cambia, y conviene confirmarlo antes de hacerlo.
+/// Columnas internas excluidas de la exportación a HACER para preservar la limpieza institucional.
+const Set<String> columnasExcluidasHacer = <String>{
+  'inscripcion_id',
+  'seccion_id',
+  'programa_id',
+  'materia_id',
+  'aspirante_id',
+  'datos_planilla',
+};
+
 String csvDeExportacionHacer(List<FilaExportacionHacer> filas) {
   final extra = <String>{};
   for (final fila in filas) {
     for (final clave in fila.valores.keys) {
-      if (!columnasExportacionHacer.contains(clave)) extra.add(clave);
+      if (!columnasExportacionHacer.contains(clave) &&
+          !columnasExcluidasHacer.contains(clave)) {
+        extra.add(clave);
+      }
     }
   }
 

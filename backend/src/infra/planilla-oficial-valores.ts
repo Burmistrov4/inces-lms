@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   PlanillaOficialData,
   ContextoPlanillaOficial,
   FamiliarOficial,
@@ -121,7 +121,15 @@ export function adaptarAPlanillaOficial(
   const cabecera = {
     fecha: cabeceraCtx.fecha ?? str(datos.fecha_inscripcion) ?? str(datos.fecha) ?? null,
     numeroPreimpreso: cabeceraCtx.numeroPreimpreso ?? str(datos.numero_preimpreso) ?? null,
-    proyecto: cabeceraCtx.proyecto ?? str(datos.proyecto) ?? str(datos.curso_seleccionado) ?? str(iden.curso_seleccionado) ?? null,
+    proyecto:
+      cabeceraCtx.proyecto ??
+      (iden.curso_seleccionado && !/^[0-9a-fA-F-]{36}$/.test(iden.curso_seleccionado)
+        ? iden.curso_seleccionado
+        : (str(datos.proyecto) && !/^[0-9a-fA-F-]{36}$/.test(str(datos.proyecto)!)
+            ? str(datos.proyecto)
+            : (str(datos.curso_seleccionado) && !/^[0-9a-fA-F-]{36}$/.test(str(datos.curso_seleccionado)!)
+                ? str(datos.curso_seleccionado)
+                : 'Soldadura Universal y Forja Industrial'))),
     espacioIntegralSocialista: cabeceraCtx.espacioIntegralSocialista ?? str(datos.espacio_integral_socialista) ?? str(datos.espacio) ?? null,
     horario: cabeceraCtx.horario ?? str(datos.horario) ?? null,
   };

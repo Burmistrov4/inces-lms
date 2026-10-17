@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/result.dart';
 import '../../models/seccion.dart';
+import '../../repositories/curriculo_repository.dart';
 import '../../repositories/secciones_repository.dart';
 import '../../widgets/comunes.dart';
 
@@ -13,13 +14,6 @@ import '../../widgets/comunes.dart';
 /// se ofrecen. El archivado es reversible (PATCH con `activa: true`); no
 /// hay borrado, porque una sección borrada se llevaría el historial de
 /// inscripciones.
-///
-/// Los formularios piden IDs en crudo (`programaId`, `materiaId`) en vez
-/// de desplegables. Es deliberado: el centro aún no carga el catálogo
-/// completo de programas y materias con permisos de admin (R-17, R-18), y
-/// derivar nombres del id en una entrada manual ahorra una pantalla que
-/// terminaría vacía la mitad del tiempo. El wire a catálogos ricos queda
-/// pendiente del cierre de esos dos riesgos.
 class CpanelSeccionesPanel extends StatefulWidget {
   const CpanelSeccionesPanel({super.key, this.repositorio});
 
@@ -32,6 +26,10 @@ class CpanelSeccionesPanel extends StatefulWidget {
 class _CpanelSeccionesPanelState extends State<CpanelSeccionesPanel> {
   late final SeccionesRepository _repo =
       widget.repositorio ?? SeccionesRepository();
+  late final CurriculoRepository _curriculoRepo = CurriculoRepository();
+
+  Map<String, String> _programasNombres = {};
+  Map<String, String> _materiasNombres = {};
 
   PaginaSecciones _pagina = const PaginaSecciones(
     secciones: [],
@@ -53,6 +51,22 @@ class _CpanelSeccionesPanelState extends State<CpanelSeccionesPanel> {
       _cargando = true;
       _error = null;
     });
+
+    try {
+      final progRes = await _curriculoRepo.listarProgramas(limite: 100);
+      final matRes = await _curriculoRepo.listarMaterias(limite: 200);
+      if (progRes.isSuccess) {
+        _programasNombres = {
+          for (final p in progRes.valueOrNull!.programas) p.id: p.nombre,
+        };
+      }
+      if (matRes.isSuccess) {
+        _materiasNombres = {
+          for (final m in matRes.valueOrNull!.materias) m.id: m.nombre,
+        };
+      }
+    } catch (_) {}
+
     final resultado = await _repo.listarSecciones();
     if (!mounted) return;
     setState(() {
@@ -66,12 +80,31 @@ class _CpanelSeccionesPanelState extends State<CpanelSeccionesPanel> {
     });
   }
 
+  String _nombrePrograma(String id) =>
+      _programasNombres[id] ?? (id.length <= 8 ? id : id.substring(0, 8));
+
+  String _nombreMateria(String id) =>
+      _materiasNombres[id] ?? (id.length <= 8 ? id : id.substring(0, 8));
+
   Future<void> _abrirCrear() async {
     final creada = await showDialog<bool>(
       context: context,
       builder: (_) => _DialogoCrearSeccion(repo: _repo),
     );
     if (creada == true && mounted) _cargar();
+  }
+
+  Future<void> _abrirEditar(Seccion s) async {
+    final editada = await showDialog<bool>(
+      context: context,
+      builder: (_) => _DialogoEditarSeccion(
+        repo: _repo,
+        seccion: s,
+        nombrePrograma: _nombrePrograma(s.programaId),
+        nombreMateria: _nombreMateria(s.materiaId),
+      ),
+    );
+    if (editada == true && mounted) _cargar();
   }
 
   Future<void> _archivar(Seccion s) async {
@@ -174,6 +207,22 @@ class _CpanelSeccionesPanelState extends State<CpanelSeccionesPanel> {
     );
   }
 
+  Future<void> _alternarActiva(Seccion s) async {
+    if (s.activa) {
+      await _archivar(s);
+    } else {
+      final resultado = await _repo.actualizarSeccion(
+        s.id,
+        const CambiosSeccion(activa: true),
+      );
+      if (!mounted) return;
+      resultado.when(
+        success: (_) => _cargar(),
+        failure: (fallo) => mostrarAviso(context, fallo.message, error: true),
+      );
+    }
+  }
+
   Widget _filaSeccion(Seccion s) {
     final theme = Theme.of(context);
     final cupo = s.cupoMaximo == null
@@ -200,10 +249,11 @@ class _CpanelSeccionesPanelState extends State<CpanelSeccionesPanel> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Lapso ${s.periodo} · programa ${_corto(s.programaId)} '
-                    '· materia ${_corto(s.materiaId)}',
+                    'Lapso ${s.periodo} · ${_nombrePrograma(s.programaId)} '
+                    '· ${_nombreMateria(s.materiaId)}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -222,6 +272,11 @@ class _CpanelSeccionesPanelState extends State<CpanelSeccionesPanel> {
               ),
             ),
             IconButton(
+              tooltip: 'Editar sección',
+              icon: const Icon(Icons.edit_outlined, size: 20),
+              onPressed: () => _abrirEditar(s),
+            ),
+            IconButton(
               tooltip: s.activa ? 'Archivar' : 'Reactivar',
               icon: Icon(
                 s.activa
@@ -229,18 +284,13 @@ class _CpanelSeccionesPanelState extends State<CpanelSeccionesPanel> {
                     : Icons.unarchive_outlined,
                 size: 20,
               ),
-              onPressed: s.activa ? () => _archivar(s) : null,
+              onPressed: () => _alternarActiva(s),
             ),
           ],
         ),
       ),
     );
   }
-
-  /// Acorta un UUID a algo legible: los primeros 8 caracteres. Suficiente
-  /// para distinguir secciones sin saturar la fila.
-  String _corto(String id) =>
-      id.length <= 8 ? id : id.substring(0, 8);
 }
 
 /// Diálogo para crear una sección.
@@ -410,4 +460,199 @@ class _DialogoCrearSeccionState extends State<_DialogoCrearSeccion> {
   /// Un UUID válido mide 36 caracteres. No exigimos formato exacto, sólo
   /// una longitud razonable para no dejar pasar un texto cualquiera.
   bool _esUuidLargo(String s) => s.length >= 8;
+}
+
+class _DialogoEditarSeccion extends StatefulWidget {
+  const _DialogoEditarSeccion({
+    required this.repo,
+    required this.seccion,
+    required this.nombrePrograma,
+    required this.nombreMateria,
+  });
+
+  final SeccionesRepository repo;
+  final Seccion seccion;
+  final String nombrePrograma;
+  final String nombreMateria;
+
+  @override
+  State<_DialogoEditarSeccion> createState() => _DialogoEditarSeccionState();
+}
+
+class _DialogoEditarSeccionState extends State<_DialogoEditarSeccion> {
+  final _forma = GlobalKey<FormState>();
+  late final TextEditingController _nombre;
+  late final TextEditingController _cupo;
+  late bool _activa;
+  bool _guardando = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _nombre = TextEditingController(text: widget.seccion.nombre);
+    _cupo = TextEditingController(
+      text: widget.seccion.cupoMaximo != null
+          ? widget.seccion.cupoMaximo.toString()
+          : '',
+    );
+    _activa = widget.seccion.activa;
+  }
+
+  @override
+  void dispose() {
+    _nombre.dispose();
+    _cupo.dispose();
+    super.dispose();
+  }
+
+  Future<void> _guardar() async {
+    if (!_forma.currentState!.validate()) return;
+    setState(() {
+      _guardando = true;
+      _error = null;
+    });
+
+    final sCupo = _cupo.text.trim();
+    final bool vaciarCupo = sCupo.isEmpty;
+    final int? cupoValor = vaciarCupo ? null : int.tryParse(sCupo);
+
+    final resultado = await widget.repo.actualizarSeccion(
+      widget.seccion.id,
+      CambiosSeccion(
+        nombre: _nombre.text.trim(),
+        cupoMaximo: cupoValor,
+        vaciarCupoMaximo: vaciarCupo,
+        activa: _activa,
+      ),
+    );
+
+    if (!mounted) return;
+    resultado.when(
+      success: (_) => Navigator.of(context).pop(true),
+      failure: (fallo) => setState(() {
+        _guardando = false;
+        _error = fallo.message;
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AlertDialog(
+      title: const Text('Editar sección'),
+      content: SizedBox(
+        width: 480,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _forma,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Programa: ${widget.nombrePrograma}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Materia: ${widget.nombreMateria}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Lapso: ${widget.seccion.periodo}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _nombre,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre corto (ej. A, B, SA, SC)',
+                    isDense: true,
+                  ),
+                  validator: (v) {
+                    final s = v?.trim() ?? '';
+                    if (s.isEmpty) return 'Obligatorio.';
+                    if (s.length > 5) return 'Máximo 5 caracteres.';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _cupo,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Cupo máximo (vacío = cupo global del centro)',
+                    hintText: 'Dejar vacío para heredar cupo global',
+                    isDense: true,
+                  ),
+                  validator: (s) {
+                    final v = s?.trim() ?? '';
+                    if (v.isNotEmpty && (int.tryParse(v) == null || int.parse(v) < 0)) {
+                      return 'Cupo debe ser un entero ≥ 0, o vacío.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  title: const Text('Sección activa'),
+                  subtitle: Text(
+                    _activa
+                        ? 'Acepta inscripciones y se muestra en el catálogo'
+                        : 'Archivada (no acepta inscripciones nuevas)',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  value: _activa,
+                  onChanged: (val) => setState(() => _activa = val),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  AvisoEnLinea(
+                    texto: _error!,
+                    icono: Icons.error_outline,
+                    tono: TonoAviso.peligro,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _guardando ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _guardando ? null : _guardar,
+          child: Text(_guardando ? 'Guardando…' : 'Guardar cambios'),
+        ),
+      ],
+    );
+  }
 }

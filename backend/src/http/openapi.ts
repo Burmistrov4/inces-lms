@@ -2153,6 +2153,35 @@ export function construirRegistro(): OpenAPIRegistry {
 
   registro.registerPath({
     ...admin,
+    method: 'patch',
+    path: '/api/v1/admin/usuarios/{id}/estado',
+    summary: 'Activa o desactiva (archiva) a un usuario',
+    description:
+      'Permite al administrador activar o archivar una cuenta. Bloquea desactivar al último administrador activo.',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: ParametroIdPerfil,
+      body: {
+        required: true,
+        content: { 'application/json': { schema: z.object({ activo: z.boolean() }) } },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Estado del usuario actualizado.',
+        content: { 'application/json': { schema: RespuestaPerfil } },
+      },
+      400: RESPUESTAS_ERROR[400],
+      401: RESPUESTAS_ERROR[401],
+      403: error('Sólo el Administrador Maestro puede cambiar estados.'),
+      404: error('El perfil no existe (PERFIL_INEXISTENTE).'),
+      409: error('No se puede desactivar al último administrador.'),
+      503: RESPUESTAS_ERROR[503],
+    },
+  });
+
+  registro.registerPath({
+    ...admin,
     method: 'post',
     path: '/api/v1/admin/usuarios/invitaciones',
     summary: 'Invita a un docente por correo (token de un solo uso)',
