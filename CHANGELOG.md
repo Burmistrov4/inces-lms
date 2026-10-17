@@ -2,6 +2,39 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.3.0] - 2026-10-17
+### Cierre Operativo de cPanel, Matriz Semanal de Guardias, Validaciones Venezolanas, Limpieza HACER y Landing Page Institucional
+- **Limpieza de Cuentas de Demostración y Gestión de Estado en `Usuarios y Roles` (M0):**
+  - Filtro tipo chip (`_ocultarCuentasDemo`) que oculta cuentas de testing (`@semilla.invalid` y sin nombre) en vistas y selectores del sistema.
+  - Endpoint `PATCH /api/v1/admin/usuarios/:id/estado` con protección estricta que impide desactivar al último administrador activo del centro.
+  - Botón de acción rápida para Activar / Desactivar (Archivar) cuentas en la tabla de usuarios con confirmación modal y respuesta visual inmediata.
+- **Módulo `Horarios de Clases` (M3):**
+  - Guía rápida compactada en una barra estilizada de una línea con interruptor funcional «Ver pasos detallados / Ocultar».
+  - Selector de docentes reemplazado por Autocomplete reactivo con filtrado por nombre, apellido y correo, limitación a 5-7 elementos visibles, barra de desplazamiento visible (`thumbVisibility: true`) y botón de acceso rápido `+ Invitar nuevo docente`.
+  - Bloques de horario con nombres descriptivos (ej. `Mañana · Bloque 1 (07:30 - 08:15)`) y modal administrativo para personalizar horas de inicio y fin por franja.
+- **Módulo `Guardias Docentes` (M3):**
+  - Implementada la vista "Rol de Guardia MTP / PNA - Pizarra Física": matriz semanal con espacios/talleres en filas y turnos Mañana (07:30 - 12:00) y Tarde (13:00 - 17:30) de Lunes a Sábado en columnas.
+  - Celdas táctiles con asignación directa mediante un clic en los espacios vacíos y chips visuales para docentes asignados.
+  - Selector conmutador en la cabecera para alternar entre `[ Matriz Semanal | Lista detallada ]`.
+- **Programas, Currículo y Secciones (M2 / M4):**
+  - Modal «Editar programa» que permite modificar nombre, requisito de pasantías y duración (valor y unidad) respetando la identidad institucional inmutable.
+  - Sincronización del rango etario oficial de aprendices PNA a «14 a 18 años».
+  - Cabeceras del pensum curricular actualizadas a «Módulo / Trimestre X».
+  - Resolución automática de UUIDs a nombres legibles de programas y materias en las tarjetas de sección.
+  - Modal «Editar sección» para ajustar nombre corto, cupo máximo (o herencia global) y estado de archivado.
+- **Validaciones Estrictas de Identidad y Contacto Venezolano:**
+  - Cédula de identidad validada entre 6 y 9 dígitos numéricos (o con formato oficial V/E).
+  - Teléfonos móviles y fijos validados en 10 u 11 dígitos contra los códigos de área y operadoras de Venezuela (0412, 0414, 0424, 0416, 0426, 0241, etc.).
+  - Nombres y apellidos restringidos a caracteres alfabéticos, tildes, diéresis y espacios, bloqueando números o caracteres especiales.
+- **Exportación HACER Limpia e Individual:**
+  - Depuración del serializador CSV/Excel para excluir UUIDs internos y metadata JSON cruda, entregando un formato institucional limpio para los directores del CFS.
+  - Botón de descarga directa de la «Planilla HACER (.xlsx)» individual por aspirante en el diálogo de inscritos de cada sección.
+- **Landing Page e Identidad Institucional:**
+  - Barra de búsqueda reactiva en tiempo real integrada en el encabezado de navegación.
+  - Medallones/chips interactivos de áreas técnicas (Soldadura Especializada, Mecánica Industrial, Electricidad, Refrigeración, Programas PNA, Gestión y Servicios).
+  - Sección «¿Quiénes somos?» enriquecida con la historia, misión y visión del CFS Nacional de Soldadura «Rafael Urdaneta» (La Isabelica, Valencia, Carabobo).
+  - Pie de página institucional completo de 4 columnas con sedes, horarios, enlaces al portal nacional HACER y créditos oficiales.
+
 ## [1.2.9] - 2026-10-16
 ### Ciclo Completo de Entrega de Tareas en Aula Virtual, Resiliencia Cold-Start y Sincronización Global
 - **Cierre del Ciclo Pedagógico de Tareas en el Campus Virtual (M6):**
