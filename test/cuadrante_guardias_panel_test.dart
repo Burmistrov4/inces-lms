@@ -45,6 +45,8 @@ void main() {
     );
     await tester.pump();
     await tester.pump();
+    await tester.pump();
+    await tester.pump();
     return tester.takeException();
   }
 
@@ -92,7 +94,7 @@ void main() {
 
       final excepcion = await montar(
         tester,
-        CpanelGuardiasPanel(repositorio: repo),
+        CpanelGuardiasPanel(repositorio: repo, vistaMatrizInicial: false),
       );
 
       expect(excepcion, isNull, reason: 'el layout no debe reventar');
@@ -121,7 +123,10 @@ void main() {
       ];
       gateway.totalGuardias = 1;
 
-      await montar(tester, CpanelGuardiasPanel(repositorio: repo));
+      await montar(
+        tester,
+        CpanelGuardiasPanel(repositorio: repo, vistaMatrizInicial: false),
+      );
 
       // Huérfano, pero nombrado: se distingue de «sin nombre» (R-21), que es
       // otra cosa.
@@ -145,7 +150,10 @@ void main() {
       ];
       gateway.totalGuardias = 1;
 
-      await montar(tester, CpanelGuardiasPanel(repositorio: repo));
+      await montar(
+        tester,
+        CpanelGuardiasPanel(repositorio: repo, vistaMatrizInicial: false),
+      );
 
       expect(find.text('Espacio no disponible'), findsOneWidget);
     });
@@ -166,7 +174,10 @@ void main() {
       ];
       gateway.totalGuardias = 1;
 
-      await montar(tester, CpanelGuardiasPanel(repositorio: repo));
+      await montar(
+        tester,
+        CpanelGuardiasPanel(repositorio: repo, vistaMatrizInicial: false),
+      );
 
       await tester.tap(find.byTooltip('Archivar'));
       await tester.pump();
@@ -194,7 +205,10 @@ void main() {
       ];
       gateway.totalGuardias = 1;
 
-      await montar(tester, CpanelGuardiasPanel(repositorio: repo));
+      await montar(
+        tester,
+        CpanelGuardiasPanel(repositorio: repo, vistaMatrizInicial: false),
+      );
 
       expect(find.text('Archivada'), findsOneWidget);
     });
@@ -221,7 +235,10 @@ void main() {
         code: codigoChoqueDeAgenda,
       );
 
-      await montar(tester, CpanelGuardiasPanel(repositorio: repo));
+      await montar(
+        tester,
+        CpanelGuardiasPanel(repositorio: repo, vistaMatrizInicial: false),
+      );
 
       await tester.tap(find.byTooltip('Reactivar'));
       await tester.pumpAndSettle();
@@ -249,7 +266,10 @@ void main() {
       ];
       gateway.totalGuardias = 60;
 
-      await montar(tester, CpanelGuardiasPanel(repositorio: repo));
+      await montar(
+        tester,
+        CpanelGuardiasPanel(repositorio: repo, vistaMatrizInicial: false),
+      );
 
       expect(find.text('Siguientes'), findsOneWidget);
     });
@@ -288,5 +308,65 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('la matriz semanal se pinta por defecto y muestra los espacios y docentes',
+        (tester) async {
+      sembrarCatalogo();
+      gateway.guardias = const [
+        Guardia(
+          id: 'g1',
+          docenteId: 'd1',
+          aulaId: 'a1',
+          periodo: '2026-1',
+          dia: 1,
+          bloque: 1,
+          turno: Turno.manana,
+          activa: true,
+        ),
+      ];
+      gateway.totalGuardias = 1;
+
+      final excepcion = await montar(
+        tester,
+        CpanelGuardiasPanel(repositorio: repo),
+      );
+
+      expect(excepcion, isNull);
+      expect(find.text('Espacio / Taller'), findsOneWidget);
+      expect(find.text('Taller de Soldadura Cabina A'), findsOneWidget);
+      expect(find.text('Luis Márquez'), findsOneWidget);
+      expect(find.textContaining('B1'), findsOneWidget);
+    });
+
+    testWidgets('puede alternar entre matriz semanal y lista detallada',
+        (tester) async {
+      sembrarCatalogo();
+      gateway.guardias = const [
+        Guardia(
+          id: 'g1',
+          docenteId: 'd1',
+          aulaId: 'a1',
+          periodo: '2026-1',
+          dia: 1,
+          bloque: 1,
+          turno: Turno.manana,
+          activa: true,
+        ),
+      ];
+      gateway.totalGuardias = 1;
+
+      await montar(tester, CpanelGuardiasPanel(repositorio: repo));
+
+      // Inicialmente en matriz semanal
+      expect(find.text('Espacio / Taller'), findsOneWidget);
+
+      // Alternar a lista detallada
+      await tester.tap(find.text('Lista detallada'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Lunes · Bloque 1'), findsOneWidget);
+      expect(find.byTooltip('Archivar'), findsOneWidget);
+    });
   });
 }
+

@@ -56,8 +56,10 @@ class CpanelInscripcionesPanel extends StatefulWidget {
     this.exportacion,
     this.planillaAdmin,
     this.selector,
+    this.onNavegarA,
   });
 
+  final void Function(String)? onNavegarA;
   final AdminInscripcionesRepository? repositorio;
 
   /// La nómina exportable. Se inyecta en pruebas.
@@ -294,6 +296,12 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel> {
       subtitulo: 'Ocupación de cada sección, ofertas en el aire y acciones de '
           'cupo. Amplía la capacidad antes de «Promover siguiente».',
       acciones: [
+        if (widget.onNavegarA != null)
+          OutlinedButton.icon(
+            onPressed: () => widget.onNavegarA?.call('Campos de Inscripción'),
+            icon: const Icon(Icons.tune_outlined, size: 17),
+            label: const Text('Campos del Formulario'),
+          ),
         OutlinedButton.icon(
           onPressed: _expirando ? null : _expirar,
           icon: _expirando

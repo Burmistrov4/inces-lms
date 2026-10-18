@@ -343,7 +343,7 @@ void main() {
       expect(lineas.first.split(';').length, columnasExportacionHacer.length);
       expect(
         lineas.first,
-        startsWith('${marcaOrdenDeBytes}inscripcion_id;seccion_id;lapso'),
+        startsWith('$marcaOrdenDeBytes${columnasExportacionHacer.take(3).join(';')}'),
       );
 
       // Y la fila lleva los datos del matriculado, no sólo la cabecera: la

@@ -25,6 +25,7 @@ import 'gestor_documental_panel.dart';
 import 'mis_aulas_panel.dart';
 import 'mis_inscripciones_panel.dart';
 import 'perfil_panel.dart';
+import '../widgets/walkthrough_interactivo.dart';
 
 /// Panel del aspirante y del estudiante.
 ///
@@ -330,6 +331,15 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
           tooltip: 'Descargar Planilla Oficial PDF',
           icon: const Icon(Icons.download_rounded, size: 20),
           onPressed: _descargarPlanilla,
+        ),
+        IconButton(
+          tooltip: 'Guía Interactiva del Aprendiz',
+          icon: const Icon(Icons.help_outline_rounded, size: 20),
+          onPressed: () => WalkthroughInteractivoCard.mostrarModal(
+            context,
+            rol: RolWalkthrough.estudiante,
+            onNavegarA: _navegarA,
+          ),
         ),
       ],
       contenido: _contenido(),

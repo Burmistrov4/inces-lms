@@ -32,9 +32,14 @@ import 'cpanel_invitaciones_panel.dart';
 /// en una sección que la base no conoce. Cuando el currículo aporte su listado,
 /// bastará con enchufarlo aquí.
 class CpanelCuadrantePanel extends StatefulWidget {
-  const CpanelCuadrantePanel({super.key, this.repositorio});
+  const CpanelCuadrantePanel({
+    super.key,
+    this.repositorio,
+    this.onNavegarA,
+  });
 
   final CuadranteRepository? repositorio;
+  final void Function(String)? onNavegarA;
 
   @override
   State<CpanelCuadrantePanel> createState() => _CpanelCuadrantePanelState();
@@ -250,6 +255,20 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
       acciones: [
         if (_periodos.isNotEmpty) _selectorDeLapso(),
         const SizedBox(width: 8),
+        if (widget.onNavegarA != null) ...[
+          OutlinedButton.icon(
+            onPressed: () => widget.onNavegarA?.call('Espacios y Aulas'),
+            icon: const Icon(Icons.meeting_room_outlined, size: 16),
+            label: const Text('Aulas'),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton.icon(
+            onPressed: () => widget.onNavegarA?.call('Guardias Docentes'),
+            icon: const Icon(Icons.shield_outlined, size: 16),
+            label: const Text('Guardias'),
+          ),
+          const SizedBox(width: 8),
+        ],
         OutlinedButton.icon(
           onPressed: _abrirEditorDeBloques,
           icon: const Icon(Icons.schedule_outlined, size: 18),
@@ -650,8 +669,11 @@ class _DialogoClaseState extends State<_DialogoClase> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
           children: [
             Text(
               'Docente / Facilitador',

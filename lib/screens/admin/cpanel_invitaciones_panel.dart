@@ -159,7 +159,9 @@ class _CpanelInvitacionesPanelState extends State<CpanelInvitacionesPanel> {
         // real de entrega lo muestra la tarjeta del enlace.
         mostrarAviso(
           context,
-          'Invitación creada. El enlace está listo para entregar.',
+          invitacion.correoEnviado
+              ? 'Invitación enviada exitosamente por correo al docente. Enlace directo disponible abajo.'
+              : 'Invitación creada. Enlace de activación listo para entrega directa o testing.',
           exito: true,
         );
         _cargarListado();

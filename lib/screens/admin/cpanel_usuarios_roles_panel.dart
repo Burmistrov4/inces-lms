@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/recuperacion_password.dart';
 import '../../models/usuario_admin.dart';
 import '../../repositories/recuperacion_repository.dart';
 import '../../repositories/usuario_admin_repository.dart';
+import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
 import 'cpanel_invitaciones_panel.dart';
 
@@ -282,17 +284,57 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
         const SizedBox(height: 16),
         _ResumenUsuarios(total: p?.total ?? 0, usuarios: users),
         const SizedBox(height: 16),
-        // La invitación va ARRIBA y **desplegada**. Era el otro fallo de
-        // descubribilidad que reportó el usuario: un acordeón cerrado al final de
-        // una lista larga no dice qué contiene, así que «Invitar docente» parecía
-        // un botón muerto. Mismo criterio que `_SeccionGrupo` en
-        // `cpanel_inscripcion_campos_panel.dart`, que arranca desplegado.
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(IncesTheme.radioControl),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.22),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.mark_email_read_outlined,
+                color: Theme.of(context).colorScheme.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Invitación de Profesores para Registro y Testing',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Puedes invitar a profesores ingresando sus datos abajo: el sistema envía un correo formal con el enlace de activación único (válido 48h). Una vez activada su cuenta, el docente podrá iniciar sesión para testing en el aula virtual y aparecerá en la tabla de usuarios registrados.',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
         ExpansionTile(
           initiallyExpanded: true,
           title: const Text('Invitar docente'),
           subtitle: const Text(
-            'Crea la cuenta por correo. Para incorporar un administrador, '
-            'invítalo aquí y después cámbiale el rol desde la tabla.',
+            'Emite la invitación por correo electrónico. El enlace generado también queda listo para entrega directa o pruebas rápidas.',
           ),
           leading: const Icon(Icons.person_add_alt_1_outlined),
           children: [
@@ -320,7 +362,7 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
               children: [
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final esEstrecho = constraints.maxWidth < 600;
+                    final esEstrecho = constraints.maxWidth < 850;
                     if (esEstrecho) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -38,9 +38,16 @@ import 'cpanel_invitaciones_panel.dart';
 /// hueco que ya no usa. Reactivar, en cambio, **sí** puede chocar: el hueco pudo
 /// ocuparlo otra presencia mientras tanto.
 class CpanelGuardiasPanel extends StatefulWidget {
-  const CpanelGuardiasPanel({super.key, this.repositorio});
+  const CpanelGuardiasPanel({
+    super.key,
+    this.repositorio,
+    this.onNavegarA,
+    this.vistaMatrizInicial = true,
+  });
 
   final CuadranteRepository? repositorio;
+  final void Function(String)? onNavegarA;
+  final bool vistaMatrizInicial;
 
   @override
   State<CpanelGuardiasPanel> createState() => _CpanelGuardiasPanelState();
@@ -71,7 +78,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
   int? _diaFiltro;
   int? _bloqueFiltro;
   bool? _activaFiltro;
-  bool _vistaMatriz = true;
+  late bool _vistaMatriz = widget.vistaMatrizInicial;
 
   bool _cargando = true;
   String? _error;
@@ -147,7 +154,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
       return;
     }
 
-    final limiteEfectivo = _vistaMatriz ? 250 : _limite;
+    final limiteEfectivo = _vistaMatriz ? 100 : _limite;
     final resultado = await _repo.listarGuardias(
       periodo: lapso,
       docenteId: _docenteFiltro,
@@ -343,6 +350,20 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
       subtitulo: 'Rol de Guardia MTP / PNA - Pizarra de control de talleres y espacios. '
           'Quién custodia cada espacio por día y bloque, haya clase o no.',
       acciones: [
+        if (widget.onNavegarA != null) ...[
+          OutlinedButton.icon(
+            onPressed: () => widget.onNavegarA?.call('Horarios de Clases'),
+            icon: const Icon(Icons.calendar_month_outlined, size: 16),
+            label: const Text('Horarios'),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton.icon(
+            onPressed: () => widget.onNavegarA?.call('Espacios y Aulas'),
+            icon: const Icon(Icons.meeting_room_outlined, size: 16),
+            label: const Text('Aulas'),
+          ),
+          const SizedBox(width: 8),
+        ],
         SegmentedButton<bool>(
           segments: const [
             ButtonSegment<bool>(
@@ -369,6 +390,26 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
   }
 
   Widget _matrizSemanal() {
+    if (_periodos.isEmpty) {
+      return const PanelVacio(
+        titulo: 'Todavía no hay lapsos registrados',
+        mensaje: 'Una guardia pertenece siempre a un lapso: es lo que acota el '
+            'chequeo de choques a una agenda concreta. Registra el lapso en '
+            'curso en «Lapsos académicos» y vuelve a esta pantalla.',
+        icono: Icons.event_note_outlined,
+      );
+    }
+
+    if (_lapso == null) {
+      return const PanelVacio(
+        titulo: 'No hay ningún lapso vigente',
+        mensaje: 'Elige un lapso en el filtro de arriba, o marca uno como '
+            'vigente en «Lapsos académicos». Cuál está en curso es una '
+            'decisión del centro, y el sistema no la toma por ti.',
+        icono: Icons.play_circle_outline,
+      );
+    }
+
     if (_aulas.isEmpty) {
       return const PanelVacio(
         titulo: 'No hay espacios registrados',
@@ -417,37 +458,40 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                         decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
                         child: Column(
                           children: [
-                            Container(
-                              height: 26,
-                              alignment: Alignment.center,
-                              color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                              child: Text(
-                                diasDeLaSemana[dia],
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: theme.colorScheme.primary,
-                                  fontSize: 12,
+                            Expanded(
+                              flex: 26,
+                              child: Container(
+                                alignment: Alignment.center,
+                                color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                                child: Text(
+                                  diasDeLaSemana[dia],
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.primary,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
                             ),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    height: 30,
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(border: Border(right: borderSide)),
-                                    child: const Text('Mañana (07:30-12)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+                            Expanded(
+                              flex: 29,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(border: Border(right: borderSide)),
+                                      child: const Text('Mañana (07:30-12)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+                                    ),
                                   ),
-                                ),
-                                Expanded(
-                                  child: Container(
-                                    height: 30,
-                                    alignment: Alignment.center,
-                                    child: const Text('Tarde (13:00-17:30)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+                                  Expanded(
+                                    child: Container(
+                                      alignment: Alignment.center,
+                                      child: const Text('Tarde (13:00-17:30)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -1168,8 +1212,11 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
           children: [
             Text(
               'Docente custodio',

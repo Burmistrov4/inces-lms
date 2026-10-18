@@ -28,9 +28,14 @@ import '../../widgets/comunes.dart';
 /// cuadrante están en `on delete restrict` para que borrar un aula en uso no sea
 /// posible ni por accidente.
 class CpanelAulasPanel extends StatefulWidget {
-  const CpanelAulasPanel({super.key, this.repositorio});
+  const CpanelAulasPanel({
+    super.key,
+    this.repositorio,
+    this.onNavegarA,
+  });
 
   final CuadranteRepository? repositorio;
+  final void Function(String)? onNavegarA;
 
   @override
   State<CpanelAulasPanel> createState() => _CpanelAulasPanelState();
@@ -208,6 +213,20 @@ class _CpanelAulasPanelState extends State<CpanelAulasPanel> {
       subtitulo: 'Aulas, talleres y zonas donde se dicta clase o se hace '
           'guardia. Sin espacios registrados el cuadrante no se puede usar.',
       acciones: [
+        if (widget.onNavegarA != null) ...[
+          OutlinedButton.icon(
+            onPressed: () => widget.onNavegarA?.call('Horarios de Clases'),
+            icon: const Icon(Icons.calendar_month_outlined, size: 16),
+            label: const Text('Horarios'),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton.icon(
+            onPressed: () => widget.onNavegarA?.call('Guardias Docentes'),
+            icon: const Icon(Icons.shield_outlined, size: 16),
+            label: const Text('Guardias'),
+          ),
+          const SizedBox(width: 8),
+        ],
         FilledButton.icon(
           onPressed: () => _abrirFormulario(),
           icon: const Icon(Icons.add_rounded, size: 18),

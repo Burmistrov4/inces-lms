@@ -27,6 +27,7 @@ import 'admin/cpanel_inscripcion_campos_panel.dart';
 import 'admin/cpanel_inscripciones_panel.dart';
 import 'admin/cpanel_secciones_panel.dart';
 import 'admin/cpanel_explorador_archivos_panel.dart';
+import '../widgets/walkthrough_interactivo.dart';
 import 'perfil_panel.dart';
 
 /// cPanel del Administrador Maestro.
@@ -298,6 +299,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           onPressed: () => _navegarA('Espacios y Aulas'),
         ),
         IconButton(
+          tooltip: 'Guía Interactiva (Walkthrough)',
+          icon: const Icon(Icons.help_outline_rounded, size: 20),
+          onPressed: () => WalkthroughInteractivoCard.mostrarModal(
+            context,
+            rol: RolWalkthrough.admin,
+            onNavegarA: _navegarA,
+          ),
+        ),
+        IconButton(
           tooltip: 'Generar Reporte',
           icon: const Icon(Icons.summarize_outlined, size: 20),
           onPressed: () => BarraAccionesSuperiores.mostrarDialogoReportes(
@@ -378,14 +388,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             child: CpanelProgramasPanel(),
           );
         case 'Inscripciones y Cupos':
-          return const ContenidoSeccion(
-            migas: ['Inicio', 'Gestión académica', 'Inscripciones y Cupos'],
-            child: CpanelInscripcionesPanel(),
+          return ContenidoSeccion(
+            migas: const ['Inicio', 'Gestión académica', 'Inscripciones y Cupos'],
+            child: CpanelInscripcionesPanel(onNavegarA: _navegarA),
           );
         case 'Campos de Inscripción':
-          return const ContenidoSeccion(
-            migas: ['Inicio', 'Gestión académica', 'Campos de Inscripción'],
-            child: CpanelInscripcionCamposPanel(),
+          return ContenidoSeccion(
+            migas: const ['Inicio', 'Gestión académica', 'Campos de Inscripción'],
+            child: CpanelInscripcionCamposPanel(onNavegarA: _navegarA),
           );
         case 'Secciones':
           return const ContenidoSeccion(
@@ -403,19 +413,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             child: CpanelExploradorArchivosPanel(),
           );
         case 'Horarios de Clases':
-          return const ContenidoSeccion(
-            migas: ['Inicio', 'Control de aulas', 'Horarios de Clases'],
-            child: CpanelCuadrantePanel(),
+          return ContenidoSeccion(
+            migas: const ['Inicio', 'Control de aulas', 'Horarios de Clases'],
+            child: CpanelCuadrantePanel(onNavegarA: _navegarA),
           );
         case 'Espacios y Aulas':
-          return const ContenidoSeccion(
-            migas: ['Inicio', 'Control de aulas', 'Espacios'],
-            child: CpanelAulasPanel(),
+          return ContenidoSeccion(
+            migas: const ['Inicio', 'Control de aulas', 'Espacios'],
+            child: CpanelAulasPanel(onNavegarA: _navegarA),
           );
         case 'Guardias Docentes':
-          return const ContenidoSeccion(
-            migas: ['Inicio', 'Control de aulas', 'Guardias'],
-            child: CpanelGuardiasPanel(),
+          return ContenidoSeccion(
+            migas: const ['Inicio', 'Control de aulas', 'Guardias'],
+            child: CpanelGuardiasPanel(onNavegarA: _navegarA),
           );
         case 'Mi Perfil':
           return const ContenidoSeccion(

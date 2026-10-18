@@ -15,6 +15,7 @@ import 'docente/docente_calificaciones_panel.dart';
 import 'gestor_documental_panel.dart';
 import 'mi_horario_panel.dart';
 import 'mis_aulas_panel.dart';
+import '../widgets/walkthrough_interactivo.dart';
 
 /// Panel del docente.
 ///
@@ -207,6 +208,15 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
           tooltip: 'Mi Horario',
           icon: const Icon(Icons.calendar_month_outlined, size: 20),
           onPressed: () => _navegarA('Mi horario'),
+        ),
+        IconButton(
+          tooltip: 'Guía Interactiva Docente',
+          icon: const Icon(Icons.help_outline_rounded, size: 20),
+          onPressed: () => WalkthroughInteractivoCard.mostrarModal(
+            context,
+            rol: RolWalkthrough.docente,
+            onNavegarA: _navegarA,
+          ),
         ),
       ],
       contenido: _contenido(),

@@ -224,7 +224,7 @@ class _LandingPageState extends State<LandingPage> {
   Widget _construirNavbar() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final esEstrecho = constraints.maxWidth < 750;
+        final esEstrecho = constraints.maxWidth < 990;
         return Column(
           children: [
             Row(

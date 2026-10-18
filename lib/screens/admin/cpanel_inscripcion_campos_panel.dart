@@ -27,9 +27,14 @@ import '../../widgets/comunes.dart';
 /// ese filtro apagar un campo lo haría desaparecer de la pantalla justo al
 /// apagarlo, así que no habría forma de volver a encenderlo.
 class CpanelInscripcionCamposPanel extends StatefulWidget {
-  const CpanelInscripcionCamposPanel({super.key, this.repositorio});
+  const CpanelInscripcionCamposPanel({
+    super.key,
+    this.repositorio,
+    this.onNavegarA,
+  });
 
   final PlanillaAdminRepository? repositorio;
+  final void Function(String)? onNavegarA;
 
   @override
   State<CpanelInscripcionCamposPanel> createState() =>
@@ -306,6 +311,12 @@ class _CpanelInscripcionCamposPanelState
               '${_campos.length} campos · $obligatorios obligatorios · '
               '$apagados apagados',
           acciones: [
+            if (widget.onNavegarA != null)
+              OutlinedButton.icon(
+                onPressed: () => widget.onNavegarA?.call('Inscripciones y Cupos'),
+                icon: const Icon(Icons.confirmation_number_outlined, size: 18),
+                label: const Text('Ver Inscripciones'),
+              ),
             FilledButton.icon(
               onPressed: _abrirNuevo,
               icon: const Icon(Icons.add_rounded, size: 18),
