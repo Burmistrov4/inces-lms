@@ -406,6 +406,16 @@ class _TextoState extends State<_Texto> {
   Widget build(BuildContext context) {
     final tieneOpciones = widget.opciones != null && widget.opciones!.isNotEmpty;
     final paleta = PaletaInces.de(context);
+    final textoActual = _controller.text.trim().toLowerCase();
+    final opcionesFiltradas = tieneOpciones
+        ? (textoActual.isEmpty
+            ? widget.opciones!
+            : widget.opciones!
+                .where((o) => o.etiqueta.toLowerCase().contains(textoActual))
+                .toList())
+        : const <OpcionCampo>[];
+    final opcionesParaMostrar =
+        opcionesFiltradas.isNotEmpty ? opcionesFiltradas : (widget.opciones ?? const []);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,6 +431,20 @@ class _TextoState extends State<_Texto> {
             paleta: paleta,
             icono: iconoDeCampo(widget.campo.codigo),
             ayuda: widget.campo.ayuda,
+            sufijo: _controller.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear_rounded, size: 16),
+                    tooltip: 'Limpiar',
+                    onPressed: () {
+                      setState(() {
+                        _controller.clear();
+                      });
+                      widget.onCambio(null);
+                    },
+                  )
+                : (tieneOpciones
+                    ? Icon(Icons.arrow_drop_down, color: paleta.textoSecundario)
+                    : null),
             error: widget.error,
           ),
           validator: (texto) {
@@ -430,6 +454,7 @@ class _TextoState extends State<_Texto> {
           },
           onChanged: (texto) {
             final limpio = texto.trim();
+            setState(() {});
             widget.onCambio(limpio.isEmpty ? null : limpio);
           },
         ),
@@ -442,86 +467,122 @@ class _TextoState extends State<_Texto> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(
-                      Icons.touch_app_outlined,
-                      size: 13,
-                      color: paleta.textoSecundario,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.touch_app_outlined,
+                          size: 13,
+                          color: paleta.textoSecundario,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Sugerencias (${opcionesParaMostrar.length}):',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: paleta.textoSecundario,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Sugerencias rápidas (pulsa para autocompletar):',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: paleta.textoSecundario,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: widget.opciones!.take(8).map((opcion) {
-                    final seleccionada = _controller.text.trim().toLowerCase() ==
-                        opcion.etiqueta.trim().toLowerCase();
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
+                    if (textoActual.isNotEmpty &&
+                        opcionesFiltradas.length < widget.opciones!.length)
+                      InkWell(
                         onTap: () {
                           setState(() {
-                            _controller.text = opcion.etiqueta;
-                            _controller.selection = TextSelection.fromPosition(
-                              TextPosition(offset: opcion.etiqueta.length),
-                            );
+                            _controller.clear();
                           });
-                          widget.onCambio(opcion.etiqueta);
+                          widget.onCambio(null);
                         },
-                        borderRadius: BorderRadius.circular(16),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: seleccionada
-                                ? IncesTheme.azulPrimario.withValues(alpha: 0.15)
-                                : paleta.rellenoDeCampo,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: seleccionada
-                                  ? IncesTheme.azulPrimario
-                                  : paleta.bordeDeCampo,
-                              width: seleccionada ? 1.5 : 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (seleccionada) ...[
-                                const Icon(
-                                  Icons.check_rounded,
-                                  size: 12,
-                                  color: IncesTheme.azulPrimario,
-                                ),
-                                const SizedBox(width: 4),
-                              ],
-                              Text(
-                                opcion.etiqueta,
-                                style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  fontWeight: seleccionada ? FontWeight.w600 : FontWeight.w500,
-                                  color: seleccionada
-                                      ? IncesTheme.azulPrimario
-                                      : paleta.textoSecundario,
-                                ),
-                              ),
-                            ],
+                        child: Text(
+                          'Ver todas (${widget.opciones!.length})',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: IncesTheme.azulPrimario,
                           ),
                         ),
                       ),
-                    );
-                  }).toList(),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 140),
+                  child: Scrollbar(
+                    thumbVisibility: opcionesParaMostrar.length > 5,
+                    child: SingleChildScrollView(
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: opcionesParaMostrar.map((opcion) {
+                          final seleccionada = _controller.text.trim().toLowerCase() ==
+                              opcion.etiqueta.trim().toLowerCase();
+                          return Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _controller.text = opcion.etiqueta;
+                                  _controller.selection = TextSelection.fromPosition(
+                                    TextPosition(offset: opcion.etiqueta.length),
+                                  );
+                                });
+                                widget.onCambio(opcion.etiqueta);
+                              },
+                              borderRadius: BorderRadius.circular(16),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 150),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: seleccionada
+                                      ? IncesTheme.azulPrimario.withValues(alpha: 0.15)
+                                      : paleta.rellenoDeCampo,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: seleccionada
+                                        ? IncesTheme.azulPrimario
+                                        : paleta.bordeDeCampo,
+                                    width: seleccionada ? 1.5 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (seleccionada) ...[
+                                      const Icon(
+                                        Icons.check_rounded,
+                                        size: 12,
+                                        color: IncesTheme.azulPrimario,
+                                      ),
+                                      const SizedBox(width: 4),
+                                    ],
+                                    Text(
+                                      opcion.etiqueta,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        fontWeight: seleccionada
+                                            ? FontWeight.w600
+                                            : FontWeight.w500,
+                                        color: seleccionada
+                                            ? IncesTheme.azulPrimario
+                                            : paleta.textoSecundario,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),

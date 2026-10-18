@@ -15,26 +15,26 @@ export const MISIONES_OFICIALES_ORDENADAS: Array<{ codigo: string; etiqueta: str
   { codigo: 'RIBAS', etiqueta: 'Ribas' },
   { codigo: 'MERCAL', etiqueta: 'Mercal' },
   { codigo: 'MADRES_DEL_BARRIO', etiqueta: 'Madres del Barrio' },
-  { codigo: 'HABITAT', etiqueta: 'HÃ¡bitat' },
+  { codigo: 'HABITAT', etiqueta: 'Hábitat' },
   // Columna 2
   { codigo: 'PIAR', etiqueta: 'PIAR' },
-  { codigo: 'NEGRA_HIPOLITA', etiqueta: 'Negra HipÃ³lita' },
+  { codigo: 'NEGRA_HIPOLITA', etiqueta: 'Negra Hipólita' },
   { codigo: 'BARRIO_ADENTRO', etiqueta: 'Barrio Adentro' },
   { codigo: 'MIRANDA', etiqueta: 'Miranda' },
   // Columna 3
   { codigo: 'IDENTIDAD', etiqueta: 'Identidad' },
-  { codigo: 'CASA_DE_ALIMENTACION', etiqueta: 'Casa de AlimentaciÃ³n' },
+  { codigo: 'CASA_DE_ALIMENTACION', etiqueta: 'Casa de Alimentación' },
   { codigo: 'GUAICAIPURO', etiqueta: 'Guaicaipuro' },
   { codigo: 'ROBINSON_I_Y_II', etiqueta: 'Robinson I y II' },
   // Columna 4
   { codigo: 'HIJOS_DE_VZLA', etiqueta: 'Hijos de Venezuela' },
   { codigo: 'SUCRE', etiqueta: 'Sucre' },
   { codigo: 'VUELVAN_CARAS', etiqueta: 'Vuelvan Caras' },
-  { codigo: 'VUELVAN_CARAS_JOVENES', etiqueta: 'Vuelvan Caras JÃ³venes' },
+  { codigo: 'VUELVAN_CARAS_JOVENES', etiqueta: 'Vuelvan Caras Jóvenes' },
   // Columna 5
-  { codigo: 'GM_VIVIENDA_VZLA', etiqueta: 'Gran MisiÃ³n Vivienda Venezuela' },
-  { codigo: 'GM_AGROVENEZUELA', etiqueta: 'Gran MisiÃ³n Agrovenezuela' },
-  { codigo: 'GM_SABER_Y_TRABAJO', etiqueta: 'Gran MisiÃ³n Saber y Trabajo' },
+  { codigo: 'GM_VIVIENDA_VZLA', etiqueta: 'Gran Misión Vivienda Venezuela' },
+  { codigo: 'GM_AGROVENEZUELA', etiqueta: 'Gran Misión Agrovenezuela' },
+  { codigo: 'GM_SABER_Y_TRABAJO', etiqueta: 'Gran Misión Saber y Trabajo' },
   { codigo: 'NINGUNA', etiqueta: 'Ninguna' },
 ];
 
@@ -46,18 +46,34 @@ function str(val: unknown): string | null {
 
 function calcularEdad(fechaIsoOTexto: string | null): number | null {
   if (!fechaIsoOTexto) return null;
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(fechaIsoOTexto);
-  if (!match) return null;
-  const [_, a, m, d] = match;
-  const nac = new Date(Number(a), Number(m) - 1, Number(d));
-  if (isNaN(nac.getTime())) return null;
-  const hoy = new Date();
-  let edad = hoy.getFullYear() - nac.getFullYear();
-  const mesDiff = hoy.getMonth() - nac.getMonth();
-  if (mesDiff < 0 || (mesDiff === 0 && hoy.getDate() < nac.getDate())) {
-    edad--;
+  const matchIso = /^(\d{4})-(\d{2})-(\d{2})/.exec(fechaIsoOTexto);
+  if (matchIso) {
+    const [_, a, m, d] = matchIso;
+    const nac = new Date(Number(a), Number(m) - 1, Number(d));
+    if (isNaN(nac.getTime())) return null;
+    const hoy = new Date();
+    let edad = hoy.getFullYear() - nac.getFullYear();
+    const mesDiff = hoy.getMonth() - nac.getMonth();
+    if (mesDiff < 0 || (mesDiff === 0 && hoy.getDate() < nac.getDate())) {
+      edad--;
+    }
+    return edad >= 0 && edad <= 120 ? edad : null;
   }
-  return edad >= 0 && edad <= 120 ? edad : null;
+
+  const matchVen = /^(\d{2})[/-](\d{2})[/-](\d{4})/.exec(fechaIsoOTexto);
+  if (matchVen) {
+    const [_, d, m, a] = matchVen;
+    const nac = new Date(Number(a), Number(m) - 1, Number(d));
+    if (isNaN(nac.getTime())) return null;
+    const hoy = new Date();
+    let edad = hoy.getFullYear() - nac.getFullYear();
+    const mesDiff = hoy.getMonth() - nac.getMonth();
+    if (mesDiff < 0 || (mesDiff === 0 && hoy.getDate() < nac.getDate())) {
+      edad--;
+    }
+    return edad >= 0 && edad <= 120 ? edad : null;
+  }
+  return null;
 }
 
 function desglosarFechaNac(fechaTexto: string | null): {
@@ -106,53 +122,107 @@ function normalizarEstadoAvance(val: unknown): EstadoAvanceFormacion {
 }
 
 /**
- * Adapta la entrada genÃ©rica `EntradaPlanilla` al modelo semÃ¡ntico fuertemente tipado
- * de la Planilla Oficial INCES fÃ­sica (612 Ã— 792 pt).
+ * Adapta la entrada genérica `EntradaPlanilla` al modelo semántico fuertemente tipado
+ * de la Planilla Oficial INCES física (612 × 792 pt).
  */
 export function adaptarAPlanillaOficial(
   entrada: EntradaPlanilla,
   contexto?: ContextoPlanillaOficial,
 ): PlanillaOficialData {
-  const datos = entrada.datosPlanilla ?? {};
-  const iden = entrada.identidad ?? {};
+  const entradaObj = entrada as unknown as Record<string, unknown>;
+  const datos = (entrada.datosPlanilla ?? {}) as Record<string, unknown>;
+  const iden = (entrada.identidad ?? {}) as Record<string, unknown>;
+
+  const hoyStr = (): string => {
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  };
 
   // 1. Cabecera (Derivada del contexto o datos)
   const cabeceraCtx = contexto?.cabecera ?? {};
+  const cursoEntrada =
+    str(iden.curso_seleccionado) ??
+    str(datos.proyecto) ??
+    str(datos.curso_seleccionado) ??
+    str(datos.curso) ??
+    str(entradaObj.curso_nombre) ??
+    str(entradaObj.programa);
+
+  const proyectoResuelto =
+    cabeceraCtx.proyecto ??
+    (cursoEntrada && !/^[0-9a-fA-F-]{36}$/.test(cursoEntrada)
+      ? cursoEntrada
+      : 'Soldadura Universal y Forja Industrial');
+
   const cabecera = {
-    fecha: cabeceraCtx.fecha ?? str(datos.fecha_inscripcion) ?? str(datos.fecha) ?? null,
+    fecha: cabeceraCtx.fecha ?? str(datos.fecha_inscripcion) ?? str(datos.fecha) ?? hoyStr(),
     numeroPreimpreso: cabeceraCtx.numeroPreimpreso ?? str(datos.numero_preimpreso) ?? null,
-    proyecto:
-      cabeceraCtx.proyecto ??
-      (iden.curso_seleccionado && !/^[0-9a-fA-F-]{36}$/.test(iden.curso_seleccionado)
-        ? iden.curso_seleccionado
-        : (str(datos.proyecto) && !/^[0-9a-fA-F-]{36}$/.test(str(datos.proyecto)!)
-            ? str(datos.proyecto)
-            : (str(datos.curso_seleccionado) && !/^[0-9a-fA-F-]{36}$/.test(str(datos.curso_seleccionado)!)
-                ? str(datos.curso_seleccionado)
-                : 'Soldadura Universal y Forja Industrial'))),
-    espacioIntegralSocialista: cabeceraCtx.espacioIntegralSocialista ?? str(datos.espacio_integral_socialista) ?? str(datos.espacio) ?? null,
-    horario: cabeceraCtx.horario ?? str(datos.horario) ?? null,
+    proyecto: proyectoResuelto,
+    espacioIntegralSocialista:
+      cabeceraCtx.espacioIntegralSocialista ??
+      str(datos.espacio_integral_socialista) ??
+      str(datos.espacio) ??
+      'CFS Rafael Urdaneta (La Isabelica)',
+    horario: cabeceraCtx.horario ?? str(datos.horario) ?? '07:30 - 12:00',
   };
 
   // 2. Identidad y Nombres
-  const primerNombre = str(datos.primer_nombre) ?? str(iden.primer_nombre) ?? (entrada.nombres ? entrada.nombres.split(' ')[0] ?? null : null);
-  const segundoNombre = str(datos.segundo_nombre) ?? str(iden.segundo_nombre) ?? (entrada.nombres && entrada.nombres.split(' ').length > 1 ? entrada.nombres.split(' ').slice(1).join(' ') : null);
-  const primerApellido = str(datos.primer_apellido) ?? str(iden.primer_apellido) ?? (entrada.apellidos ? entrada.apellidos.split(' ')[0] ?? null : null);
-  const segundoApellido = str(datos.segundo_apellido) ?? str(iden.segundo_apellido) ?? (entrada.apellidos && entrada.apellidos.split(' ').length > 1 ? entrada.apellidos.split(' ').slice(1).join(' ') : null);
+  const nombresCompletos = str(entrada.nombres) ?? str(datos.nombres) ?? str(iden.nombres);
+  const apellidosCompletos = str(entrada.apellidos) ?? str(datos.apellidos) ?? str(iden.apellidos);
+
+  const primerNombre =
+    str(datos.primer_nombre) ??
+    str(iden.primer_nombre) ??
+    (nombresCompletos ? nombresCompletos.split(/\s+/)[0] ?? null : null);
+  const segundoNombre =
+    str(datos.segundo_nombre) ??
+    str(iden.segundo_nombre) ??
+    (nombresCompletos && nombresCompletos.split(/\s+/).length > 1
+      ? nombresCompletos.split(/\s+/).slice(1).join(' ')
+      : null);
+  const primerApellido =
+    str(datos.primer_apellido) ??
+    str(iden.primer_apellido) ??
+    (apellidosCompletos ? apellidosCompletos.split(/\s+/)[0] ?? null : null);
+  const segundoApellido =
+    str(datos.segundo_apellido) ??
+    str(iden.segundo_apellido) ??
+    (apellidosCompletos && apellidosCompletos.split(/\s+/).length > 1
+      ? apellidosCompletos.split(/\s+/).slice(1).join(' ')
+      : null);
   const cedula = str(datos.cedula) ?? str(iden.cedula) ?? entrada.cedula;
-  const nacionalidad = str(datos.nacionalidad) ?? str(iden.nacionalidad);
+  const nacionalidad =
+    str(datos.nacionalidad) ??
+    str(iden.nacionalidad) ??
+    (cedula && cedula.toUpperCase().startsWith('E') ? 'Extranjero' : 'Venezolana');
 
   // 3. Nacimiento
-  const fechaNacRaw = str(datos.fecha_nac) ?? str(iden.fecha_nac);
+  const fechaNacRaw =
+    str(datos.fecha_nac) ??
+    str(datos.fecha_nacimiento) ??
+    str(iden.fecha_nac) ??
+    str(iden.fecha_nacimiento) ??
+    str(entradaObj.fechaNacimiento) ??
+    str(entradaObj.fecha_nacimiento) ??
+    str(entradaObj.fechaNac) ??
+    str((entradaObj.aspirante as Record<string, unknown> | undefined)?.fechaNacimiento) ??
+    str((entradaObj.aspirante as Record<string, unknown> | undefined)?.fecha_nacimiento);
+
   const { dia, mes, anio } = desglosarFechaNac(fechaNacRaw);
   const edadCalculada = calcularEdad(fechaNacRaw);
-  const edad = typeof datos.edad === 'number' ? datos.edad : (edadCalculada ?? (datos.edad ? Number(datos.edad) : null));
+  const edad =
+    typeof datos.edad === 'number' && !isNaN(datos.edad)
+      ? datos.edad
+      : (edadCalculada ?? (datos.edad && !isNaN(Number(datos.edad)) ? Number(datos.edad) : null));
 
   // 4. Sexo y Estado Civil
   const sexo = normalizarSexo(datos.sexo ?? iden.sexo);
-  const estadoCivil = normalizarEstadoCivil(datos.estado_civil);
+  const estadoCivil = normalizarEstadoCivil(datos.estado_civil ?? iden.estado_civil);
 
-  // 5. Pueblo IndÃ­gena
+  // 5. Pueblo Indígena
   const indigenaBool = esVerdadero(datos.pueblo_indigena);
   const indigenaCual = str(datos.pueblo_indigena_cual);
 
@@ -174,7 +244,7 @@ export function adaptarAPlanillaOficial(
   const debilidadIntelectual = discTexto.includes('INTELECT') || discTexto.includes('COGNIT');
   const ninguna = !tieneDiscapacidad || discTexto.includes('NINGUNA');
 
-  // 7. PrÃ¡cticas
+  // 7. Prácticas
   const deporteVal = str(datos.deporte);
   const deporteDesde = str(datos.deporte_desde);
   const culturalVal = str(datos.actividad_cultural);
@@ -182,21 +252,26 @@ export function adaptarAPlanillaOficial(
   const orgVal = str(datos.organizacion_social);
   const orgDesde = str(datos.organizacion_social_desde);
 
-  // 8. UbicaciÃ³n y Contacto
+  // 8. Ubicación y Contacto
   const ubicacion = {
-    estado: str(datos.estado),
-    municipio: str(datos.municipio),
-    parroquia: str(datos.parroquia),
+    estado: str(datos.estado) ?? str(iden.estado) ?? 'CARABOBO',
+    municipio: str(datos.municipio) ?? str(iden.municipio) ?? null,
+    parroquia: str(datos.parroquia) ?? str(iden.parroquia) ?? null,
     comunidad: str(datos.comunidad) ?? null,
     direccion: str(datos.direccion) ?? str(iden.direccion) ?? null,
-    telefonoCelular: str(datos.telefono) ?? str(iden.telefono) ?? str(datos.telefono_celular) ?? null,
-    telefonoFijo: str(datos.telefono_fijo) ?? null,
+    telefonoCelular:
+      str(datos.telefono) ??
+      str(iden.telefono) ??
+      str(datos.telefono_celular) ??
+      str(datos.celular) ??
+      null,
+    telefonoFijo: str(datos.telefono_fijo) ?? str(datos.fijo) ?? null,
     email: str(datos.email) ?? str(iden.email) ?? entrada.email,
     twitter: str(datos.twitter) ?? null,
     facebook: str(datos.facebook) ?? null,
   };
 
-  // 9. Familiares (hasta 5 filas para el formato fÃ­sico)
+  // 9. Familiares (hasta 5 filas para el formato físico)
   const familiaresRaw = Array.isArray(datos.familiares) ? (datos.familiares as Record<string, unknown>[]) : [];
   const familiares: FamiliarOficial[] = familiaresRaw.slice(0, 5).map((f) => ({
     cedula: str(f.cedula),
@@ -237,12 +312,23 @@ export function adaptarAPlanillaOficial(
     };
   });
 
-  // 11. FormaciÃ³n
+  // 11. Formación
   const formacion = {
     nivelEducativo: str(datos.nivel_educativo) ?? str(iden.nivel_educativo) ?? null,
     estadoAvance: normalizarEstadoAvance(datos.nivel_avance ?? datos.estado_avance),
-    ultimoAnio: str(datos.ultimo_anio) ?? null,
-    especialidad: str(datos.especialidad) ?? null,
+    ultimoAnio:
+      str(datos.ultimo_anio) ??
+      str(datos.ultimo_anio_cursado) ??
+      str(datos.anio_graduacion) ??
+      str(datos.anio) ??
+      str(iden.ultimo_anio) ??
+      null,
+    especialidad:
+      str(datos.especialidad) ??
+      str(datos.titulo_obtenido) ??
+      str(datos.mencion) ??
+      str(iden.especialidad) ??
+      null,
   };
 
   // 12. Otras Formaciones
@@ -258,7 +344,7 @@ export function adaptarAPlanillaOficial(
     }
   }
 
-  // 13. Experiencias EmpÃ­ricas
+  // 13. Experiencias Empíricas
   const experienciasRaw = Array.isArray(datos.experiencias) ? (datos.experiencias as Record<string, unknown>[]) : [];
   const experiencias: ExperienciaOficial[] = experienciasRaw.slice(0, 3).map((exp) => ({
     area: str(exp.area ?? exp.area_conocimiento),

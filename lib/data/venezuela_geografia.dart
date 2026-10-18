@@ -2,7 +2,8 @@
 ///
 /// Proporciona la jerarquía: Estado -> Municipio -> Parroquia -> Comunidades sugeridas,
 /// con especial granularidad en el estado Carabobo (sede del CFS Rafael Urdaneta / La Isabelica)
-/// y cobertura de todas las entidades federales de Venezuela.
+/// y cobertura integral de las 24 entidades federales de Venezuela con normalización
+/// robusta para códigos en mayúsculas (ej. CARABOBO, DISTRITO_CAPITAL) y tildes.
 library;
 
 class ParroquiaGeo {
@@ -27,9 +28,9 @@ class MunicipioGeo {
   final List<ParroquiaGeo> parroquias;
 
   ParroquiaGeo? buscarParroquia(String nombreParroquia) {
-    final limpio = nombreParroquia.trim().toLowerCase();
+    final limpio = VenezuelaGeografia.normalizarClave(nombreParroquia);
     for (final p in parroquias) {
-      if (p.nombre.toLowerCase() == limpio) return p;
+      if (VenezuelaGeografia.normalizarClave(p.nombre) == limpio) return p;
     }
     return parroquias.isNotEmpty ? parroquias.first : null;
   }
@@ -45,9 +46,9 @@ class EstadoGeo {
   final List<MunicipioGeo> municipios;
 
   MunicipioGeo? buscarMunicipio(String nombreMunicipio) {
-    final limpio = nombreMunicipio.trim().toLowerCase();
+    final limpio = VenezuelaGeografia.normalizarClave(nombreMunicipio);
     for (final m in municipios) {
-      if (m.nombre.toLowerCase() == limpio) return m;
+      if (VenezuelaGeografia.normalizarClave(m.nombre) == limpio) return m;
     }
     return municipios.isNotEmpty ? municipios.first : null;
   }
@@ -82,6 +83,33 @@ class VenezuelaGeografia {
     'Yaracuy',
     'Amazonas',
   ];
+
+  /// Normaliza una cadena para comparaciones geográficas insensibles a mayúsculas,
+  /// tildes y separadores como guiones bajos o espacios (ej. CARABOBO -> carabobo,
+  /// DISTRITO_CAPITAL -> distrito capital).
+  static String normalizarClave(String s) {
+    return s
+        .trim()
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ñ', 'n')
+        .replaceAll(RegExp(r'[\s_\-]+'), ' ');
+  }
+
+  static EstadoGeo? buscarEstado(String? estado) {
+    if (estado == null || estado.trim().isEmpty) return null;
+    final norm = normalizarClave(estado);
+    for (final entry in _datos.entries) {
+      if (normalizarClave(entry.key) == norm) {
+        return entry.value;
+      }
+    }
+    return null;
+  }
 
   static final Map<String, EstadoGeo> _datos = {
     'Carabobo': const EstadoGeo(
@@ -388,6 +416,18 @@ class VenezuelaGeografia {
             ParroquiaGeo(nombre: 'Los Teques', comunidadesSugeridas: ['Los Teques Centro', 'El Paso']),
           ],
         ),
+        MunicipioGeo(
+          nombre: 'Plaza',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Guarenas', comunidadesSugeridas: ['Guarenas Centro', 'Nueva Casarapa']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Zamora',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Guatire', comunidadesSugeridas: ['Guatire Centro', 'Castillejo']),
+          ],
+        ),
       ],
     ),
     'Aragua': const EstadoGeo(
@@ -407,6 +447,444 @@ class VenezuelaGeografia {
             ParroquiaGeo(nombre: 'Turmero', comunidadesSugeridas: ['Turmero Centro', 'La Julia']),
           ],
         ),
+        MunicipioGeo(
+          nombre: 'José Félix Ribas',
+          parroquias: [
+            ParroquiaGeo(nombre: 'La Victoria', comunidadesSugeridas: ['La Victoria Centro', 'Las Mercedes']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Mario Briceño Iragorry',
+          parroquias: [
+            ParroquiaGeo(nombre: 'El Limón', comunidadesSugeridas: ['El Limón', 'Caña de Azúcar']),
+          ],
+        ),
+      ],
+    ),
+    'Lara': const EstadoGeo(
+      nombre: 'Lara',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Iribarren',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Catedral', comunidadesSugeridas: ['Barquisimeto Este', 'Los Cardones']),
+            ParroquiaGeo(nombre: 'Concepción', comunidadesSugeridas: ['Centro Barquisimeto']),
+            ParroquiaGeo(nombre: 'Santa Rosa', comunidadesSugeridas: ['Pueblo de Santa Rosa']),
+            ParroquiaGeo(nombre: 'Unión', comunidadesSugeridas: ['Barrio Unión']),
+            ParroquiaGeo(nombre: 'Juan de Villegas', comunidadesSugeridas: ['La Carucieña', 'El Garabatal']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Palavecino',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Cabudare', comunidadesSugeridas: ['Cabudare Centro', 'Los Rastrojos']),
+            ParroquiaGeo(nombre: 'José Gregorio Bastidas', comunidadesSugeridas: ['La Piedad', 'El Palmar']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Torres',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Trinidad Samuel', comunidadesSugeridas: ['Carora Centro']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Morán',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Bolívar', comunidadesSugeridas: ['El Tocuyo']),
+          ],
+        ),
+      ],
+    ),
+    'Zulia': const EstadoGeo(
+      nombre: 'Zulia',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Maracaibo',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Chiquinquirá', comunidadesSugeridas: ['Casco Central', 'El Tránsito']),
+            ParroquiaGeo(nombre: 'Olegario Villalobos', comunidadesSugeridas: ['Bella Vista', '5 de Julio']),
+            ParroquiaGeo(nombre: 'Santa Lucía', comunidadesSugeridas: ['El Empedrao']),
+            ParroquiaGeo(nombre: 'Cristo de Aranza', comunidadesSugeridas: ['Los Haticos']),
+            ParroquiaGeo(nombre: 'Francisco Eugenio Bustamante', comunidadesSugeridas: ['Cuatricentenario']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'San Francisco',
+          parroquias: [
+            ParroquiaGeo(nombre: 'San Francisco', comunidadesSugeridas: ['La Coromoto', 'San Francisco Centro']),
+            ParroquiaGeo(nombre: 'Domitila Flores', comunidadesSugeridas: ['El Silencio']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Cabimas',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Ambrosio', comunidadesSugeridas: ['Casco Central Cabimas']),
+            ParroquiaGeo(nombre: 'Carmen Herrera', comunidadesSugeridas: ['Miraflores']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Lagunillas',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Alonso de Ojeda', comunidadesSugeridas: ['Ciudad Ojeda Centro']),
+          ],
+        ),
+      ],
+    ),
+    'Anzoátegui': const EstadoGeo(
+      nombre: 'Anzoátegui',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Simón Bolívar',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Barcelona', comunidadesSugeridas: ['Barcelona Casco Central']),
+            ParroquiaGeo(nombre: 'El Carmen', comunidadesSugeridas: ['Tronconal', 'Boyacá']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Juan Antonio Sotillo',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Puerto La Cruz', comunidadesSugeridas: ['Paseo Colón', 'Casco Central']),
+            ParroquiaGeo(nombre: 'Pozuelos', comunidadesSugeridas: ['Pozuelos']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Diego Bautista Urbaneja',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Lechería', comunidadesSugeridas: ['Playa Mansa', 'Morro']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Anaco',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Anaco', comunidadesSugeridas: ['Anaco Centro']),
+          ],
+        ),
+      ],
+    ),
+    'Falcón': const EstadoGeo(
+      nombre: 'Falcón',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Miranda',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Santa Ana', comunidadesSugeridas: ['Coro Casco Colonial']),
+            ParroquiaGeo(nombre: 'San Antonio', comunidadesSugeridas: ['Coro Este']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Carirubana',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Carirubana', comunidadesSugeridas: ['Punto Fijo Centro']),
+            ParroquiaGeo(nombre: 'Punta Cardón', comunidadesSugeridas: ['Comunidad Cardón']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Silva',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Tucacas', comunidadesSugeridas: ['Tucacas Centro']),
+          ],
+        ),
+      ],
+    ),
+    'Táchira': const EstadoGeo(
+      nombre: 'Táchira',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'San Cristóbal',
+          parroquias: [
+            ParroquiaGeo(nombre: 'La Concordia', comunidadesSugeridas: ['La Concordia Centro']),
+            ParroquiaGeo(nombre: 'San Juan Bautista', comunidadesSugeridas: ['Barrio Obrero', 'Pirineos']),
+            ParroquiaGeo(nombre: 'Pedro María Morantes', comunidadesSugeridas: ['Pueblo Nuevo']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Cárdenas',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Táriba', comunidadesSugeridas: ['Táriba Centro']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Bolívar',
+          parroquias: [
+            ParroquiaGeo(nombre: 'San Antonio del Táchira', comunidadesSugeridas: ['San Antonio Centro']),
+          ],
+        ),
+      ],
+    ),
+    'Mérida': const EstadoGeo(
+      nombre: 'Mérida',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Libertador',
+          parroquias: [
+            ParroquiaGeo(nombre: 'El Sagrario', comunidadesSugeridas: ['Mérida Casco Central']),
+            ParroquiaGeo(nombre: 'Milla', comunidadesSugeridas: ['La Hechicera', 'Santa Ana']),
+            ParroquiaGeo(nombre: 'Osuna Rodríguez', comunidadesSugeridas: ['Los Curos']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Campo Elías',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Matriz', comunidadesSugeridas: ['Ejido Centro']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Alberto Adriani',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Presidente Betancourt', comunidadesSugeridas: ['El Vigía']),
+          ],
+        ),
+      ],
+    ),
+    'Bolívar': const EstadoGeo(
+      nombre: 'Bolívar',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Caroní',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Cachamay', comunidadesSugeridas: ['Puerto Ordaz', 'Villa Central']),
+            ParroquiaGeo(nombre: 'Unare', comunidadesSugeridas: ['Unare 1', 'Unare 2', 'El Guamo']),
+            ParroquiaGeo(nombre: 'Dalla Costa', comunidadesSugeridas: ['San Félix']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Angostura del Orinoco',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Catedral', comunidadesSugeridas: ['Ciudad Bolívar Casco Histórico']),
+            ParroquiaGeo(nombre: 'Agua Salada', comunidadesSugeridas: ['Los Próceres']),
+          ],
+        ),
+      ],
+    ),
+    'Monagas': const EstadoGeo(
+      nombre: 'Monagas',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Maturín',
+          parroquias: [
+            ParroquiaGeo(nombre: 'San Simón', comunidadesSugeridas: ['Maturín Centro', 'Las Avenidas']),
+            ParroquiaGeo(nombre: 'Alto de Los Godos', comunidadesSugeridas: ['Los Godos']),
+            ParroquiaGeo(nombre: 'Boquerón', comunidadesSugeridas: ['Tipuro', 'Palma Real']),
+          ],
+        ),
+      ],
+    ),
+    'Sucre': const EstadoGeo(
+      nombre: 'Sucre',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Sucre',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Santa Inés', comunidadesSugeridas: ['Cumaná Casco Histórico']),
+            ParroquiaGeo(nombre: 'Altagracia', comunidadesSugeridas: ['Cumaná']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Bermúdez',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Santa Catalina', comunidadesSugeridas: ['Carúpano Centro']),
+          ],
+        ),
+      ],
+    ),
+    'Portuguesa': const EstadoGeo(
+      nombre: 'Portuguesa',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Páez',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Acarigua', comunidadesSugeridas: ['Acarigua Centro', 'Baraure']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Araure',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Araure', comunidadesSugeridas: ['Araure Centro', 'Tricentenaria']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Guanare',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Guanare', comunidadesSugeridas: ['Guanare Centro']),
+          ],
+        ),
+      ],
+    ),
+    'Barinas': const EstadoGeo(
+      nombre: 'Barinas',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Barinas',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Barinas', comunidadesSugeridas: ['Barinas Centro']),
+            ParroquiaGeo(nombre: 'Alto Barinas', comunidadesSugeridas: ['Alto Barinas Norte', 'Alto Barinas Sur']),
+          ],
+        ),
+      ],
+    ),
+    'Guárico': const EstadoGeo(
+      nombre: 'Guárico',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Juan Germán Roscio',
+          parroquias: [
+            ParroquiaGeo(nombre: 'San Juan de los Morros', comunidadesSugeridas: ['San Juan Centro']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Francisco de Miranda',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Calabozo', comunidadesSugeridas: ['Calabozo Centro']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Leonardo Infante',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Valle de la Pascua', comunidadesSugeridas: ['Valle de la Pascua']),
+          ],
+        ),
+      ],
+    ),
+    'Trujillo': const EstadoGeo(
+      nombre: 'Trujillo',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Valera',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Mercedes Díaz', comunidadesSugeridas: ['Valera Centro', 'Las Acacias']),
+            ParroquiaGeo(nombre: 'Juan Ignacio Montilla', comunidadesSugeridas: ['La Floresta']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Trujillo',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Chiquinquirá', comunidadesSugeridas: ['Trujillo Capital']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Boconó',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Boconó', comunidadesSugeridas: ['Boconó Centro']),
+          ],
+        ),
+      ],
+    ),
+    'Yaracuy': const EstadoGeo(
+      nombre: 'Yaracuy',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'San Felipe',
+          parroquias: [
+            ParroquiaGeo(nombre: 'San Felipe', comunidadesSugeridas: ['San Felipe Centro']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Independencia',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Independencia', comunidadesSugeridas: ['Independencia']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Peña',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Yaritagua', comunidadesSugeridas: ['Yaritagua Centro']),
+          ],
+        ),
+      ],
+    ),
+    'Cojedes': const EstadoGeo(
+      nombre: 'Cojedes',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Ezequiel Zamora',
+          parroquias: [
+            ParroquiaGeo(nombre: 'San Carlos de Austria', comunidadesSugeridas: ['San Carlos Centro']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Tinaquillo',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Tinaquillo', comunidadesSugeridas: ['Tinaquillo']),
+          ],
+        ),
+      ],
+    ),
+    'Nueva Esparta': const EstadoGeo(
+      nombre: 'Nueva Esparta',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Mariño',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Porlamar', comunidadesSugeridas: ['Porlamar Centro', 'Bella Vista']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Maneiro',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Pampatar', comunidadesSugeridas: ['Pampatar', 'Playa El Ángel']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Arismendi',
+          parroquias: [
+            ParroquiaGeo(nombre: 'La Asunción', comunidadesSugeridas: ['La Asunción Capital']),
+          ],
+        ),
+      ],
+    ),
+    'Apure': const EstadoGeo(
+      nombre: 'Apure',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'San Fernando',
+          parroquias: [
+            ParroquiaGeo(nombre: 'San Fernando', comunidadesSugeridas: ['San Fernando Centro']),
+            ParroquiaGeo(nombre: 'El Recreo', comunidadesSugeridas: ['El Recreo']),
+          ],
+        ),
+        MunicipioGeo(
+          nombre: 'Biruaca',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Biruaca', comunidadesSugeridas: ['Biruaca Centro']),
+          ],
+        ),
+      ],
+    ),
+    'La Guaira': const EstadoGeo(
+      nombre: 'La Guaira',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Vargas',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Maiquetía', comunidadesSugeridas: ['Maiquetía Centro', 'Aeropuerto']),
+            ParroquiaGeo(nombre: 'Catia La Mar', comunidadesSugeridas: ['Catia La Mar', 'Playa Grande']),
+            ParroquiaGeo(nombre: 'La Guaira', comunidadesSugeridas: ['La Guaira Casco Colonial']),
+            ParroquiaGeo(nombre: 'Caraballeda', comunidadesSugeridas: ['Caraballeda', 'Tanaguarena']),
+            ParroquiaGeo(nombre: 'Macuto', comunidadesSugeridas: ['Macuto']),
+          ],
+        ),
+      ],
+    ),
+    'Delta Amacuro': const EstadoGeo(
+      nombre: 'Delta Amacuro',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Tucupita',
+          parroquias: [
+            ParroquiaGeo(nombre: 'San Rafael', comunidadesSugeridas: ['Tucupita Centro']),
+          ],
+        ),
+      ],
+    ),
+    'Amazonas': const EstadoGeo(
+      nombre: 'Amazonas',
+      municipios: [
+        MunicipioGeo(
+          nombre: 'Atures',
+          parroquias: [
+            ParroquiaGeo(nombre: 'Fernando Girón Tovar', comunidadesSugeridas: ['Puerto Ayacucho']),
+          ],
+        ),
       ],
     ),
   };
@@ -414,28 +892,20 @@ class VenezuelaGeografia {
   /// Obtiene la lista de municipios para un estado dado.
   static List<String> municipiosDe(String? estado) {
     if (estado == null || estado.trim().isEmpty) return const [];
-    final geo = _datos[estado.trim()];
-    if (geo != null) {
+    final geo = buscarEstado(estado);
+    if (geo != null && geo.municipios.isNotEmpty) {
       return geo.municipios.map((m) => m.nombre).toList(growable: false);
     }
-    return [
-      'Municipio Capital',
-      'Municipio Centro',
-      'Municipio Foráneo',
-    ];
+    return const [];
   }
 
   /// Obtiene la lista de parroquias para un estado y municipio dados.
   static List<String> parroquiasDe(String? estado, String? municipio) {
-    if (estado == null || municipio == null) return const [];
-    final geo = _datos[estado.trim()];
-    if (geo == null) {
-      return ['Parroquia Principal', 'Parroquia Central'];
-    }
+    if (estado == null || municipio == null || municipio.trim().isEmpty) return const [];
+    final geo = buscarEstado(estado);
+    if (geo == null) return const [];
     final mun = geo.buscarMunicipio(municipio);
-    if (mun == null) {
-      return ['Parroquia Central'];
-    }
+    if (mun == null) return const [];
     return mun.parroquias.map((p) => p.nombre).toList(growable: false);
   }
 
@@ -446,7 +916,7 @@ class VenezuelaGeografia {
     required String? parroquia,
   }) {
     if (estado == null || municipio == null || parroquia == null) return const [];
-    final geo = _datos[estado.trim()];
+    final geo = buscarEstado(estado);
     if (geo == null) return const [];
     final mun = geo.buscarMunicipio(municipio);
     if (mun == null) return const [];
@@ -461,7 +931,7 @@ class VenezuelaGeografia {
     required String? parroquia,
   }) {
     if (estado == null || municipio == null || parroquia == null) return const [];
-    final geo = _datos[estado.trim()];
+    final geo = buscarEstado(estado);
     if (geo == null) return const [];
     final mun = geo.buscarMunicipio(municipio);
     if (mun == null) return const [];

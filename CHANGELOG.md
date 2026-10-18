@@ -2,6 +2,22 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.3.1] - 2026-10-18
+### Calibración Milimétrica de Planilla Oficial INCES, Catálogo Geográfico Nacional de 24 Estados y Autocompletado Dinámico
+- **Calibración Milimétrica de Impresión en Planilla Oficial INCES (612 × 792 pt Letter):**
+  - Centrado geométrico matemático exacto del glifo `[X]` en el centroide de cada casilla oficial (Género, Estado Civil, Pueblo Indígena, Diversidad Funcional, Estado de Avance de Formación y las 20 Misiones Oficiales).
+  - Eliminación definitiva del bug de superposición `SIX` en Pueblo Indígena donde la marca de `NO` caía encima de las letras `SI` (corregido a `cx = 541.88, cy = 558.88`).
+  - Elevación de las líneas base tipográficas (`y = 422.0` para estado/municipio/parroquia, `y = 395.0` para dirección/teléfonos, `y = 371.0` para correos, `y = 127.5` para formación) eliminando el contacto de texto contra los bordes de celda ("montado").
+  - Resolución resiliente multi-clave para fecha de nacimiento (`datos.fecha_nacimiento`, `iden.fecha_nacimiento`, `entrada.fechaNacimiento`, `aspirante.fechaNacimiento`) y cálculo dinámico de edad cronológica.
+  - Mapeo institucional de niveles educativos en el renderizador PDF a títulos formales legibles (`Educación Media General`, `Bachiller`, `Técnico Medio`, etc.) preservando el contrato semántico backend.
+  - Incorporación de bloque formal inferior de firmas (`Firma del Aspirante` y `Firma y Sello CFS Receptor`) junto con pie de verificación institucional para expediente interno.
+- **Catálogo Geográfico Nacional y UX de Selección Reactiva:**
+  - Expansión de `VenezuelaGeografia` a las 24 entidades federales con sus municipios y parroquias reales.
+  - Normalización insensible a mayúsculas, tildes, espacios y guiones bajos (`CARABOBO` -> `Carabobo`, `DISTRITO_CAPITAL` -> `Distrito Capital`), suprimiendo completamente las sugerencias de marcador de posición («Municipio Centro», «Municipio Capital», «Municipio Foráneo»).
+  - Componente de entrada con sugerencias dinámicas filtradas en tiempo real según lo escrito, contenedor desplazable con límite de altura y barra de desplazamiento visible (`thumbVisibility: true`), botón para limpiar campo y acción rápida «Ver todas».
+- **Evidencias Visuales de Producción:**
+  - Registrada captura calibrada de la planilla oficial renderizada en `docs/assets/production_ready/05_planilla_oficial_impresion_calibrada.png`.
+
 ## [1.3.0] - 2026-10-17
 ### Cierre Operativo de cPanel, Matriz Semanal de Guardias, Validaciones Venezolanas, Limpieza HACER y Landing Page Institucional
 - **Limpieza de Cuentas de Demostración y Gestión de Estado en `Usuarios y Roles` (M0):**
