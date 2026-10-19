@@ -661,7 +661,7 @@ export const esquemaListadoGuardias = z.object({
     .enum(['true', 'false'])
     .transform((valor) => valor === 'true')
     .optional(),
-  limite: z.coerce.number().int().min(1).max(100).default(25),
+  limite: z.coerce.number().int().min(1).max(250).default(25),
   desplazamiento: z.coerce.number().int().min(0).default(0),
 });
 

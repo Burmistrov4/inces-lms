@@ -189,7 +189,8 @@ class CuadranteRepository {
     int desplazamiento = 0,
   }) {
     return Result.guard(() async {
-      _validarPaginacion(limite: limite, desplazamiento: desplazamiento);
+      final limiteSaneado = limite.clamp(1, 100);
+      _validarPaginacion(limite: limiteSaneado, desplazamiento: desplazamiento);
       if (dia != null) _validarDia(dia);
       if (bloque != null) _validarBloque(bloque);
       if (docenteId != null && docenteId.isNotEmpty) {
@@ -206,7 +207,7 @@ class CuadranteRepository {
         dia: dia,
         bloque: bloque,
         activa: activa,
-        limite: limite,
+        limite: limiteSaneado,
         desplazamiento: desplazamiento,
       );
     });
