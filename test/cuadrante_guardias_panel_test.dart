@@ -367,6 +367,60 @@ void main() {
       expect(find.text('Lunes · Bloque 1'), findsOneWidget);
       expect(find.byTooltip('Archivar'), findsOneWidget);
     });
+
+    testWidgets('muestra Pizarra Mural INCES con secciones MTP y PNA',
+        (tester) async {
+      sembrarCatalogo();
+      gateway.guardias = const [
+        Guardia(
+          id: 'g1',
+          docenteId: 'd1',
+          aulaId: 'a1',
+          periodo: '2026-1',
+          dia: 3,
+          bloque: 1,
+          turno: Turno.manana,
+          activa: true,
+          notas: '[MTP - Puesto 1] Apertura cabina',
+        ),
+      ];
+      gateway.totalGuardias = 1;
+
+      await montar(tester, CpanelGuardiasPanel(repositorio: repo));
+
+      // Alternar a subvista Pizarra Mural
+      await tester.tap(find.textContaining('Pizarra Mural'));
+      await tester.pumpAndSettle();
+
+      // Debe mostrar encabezados de M.T.P. y P.N.A.
+      expect(find.textContaining('MEDIO TIEMPO PEDAGÓGICO'), findsOneWidget);
+      expect(find.textContaining('PROGRAMA NACIONAL DE APRENDIZAJE'), findsOneWidget);
+
+      // Y encontrar al docente asignado en su puesto
+      expect(find.text('Luis Márquez'), findsOneWidget);
+    });
+
+    testWidgets('permite alternar entre semana laboral de 5 días y 6 días (+Sábado)',
+        (tester) async {
+      sembrarCatalogo();
+      gateway.guardias = const [];
+      gateway.totalGuardias = 0;
+
+      await montar(tester, CpanelGuardiasPanel(repositorio: repo));
+
+      // Por defecto muestra Lun - Vie (5 días laborales)
+      expect(find.text('Lun - Vie (Laboral)'), findsOneWidget);
+      expect(find.text('Viernes'), findsOneWidget);
+      // Sábado no debe estar visible en la vista de 5 días
+      expect(find.text('Sábado'), findsNothing);
+
+      // Alternar a Lun - Sáb (+Sábado)
+      await tester.tap(find.text('Lun - Sáb (+Sábado)'));
+      await tester.pumpAndSettle();
+
+      // Ahora sí se debe encontrar Sábado
+      expect(find.text('Sábado'), findsOneWidget);
+    });
   });
 }
 

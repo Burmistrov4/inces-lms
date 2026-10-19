@@ -78,7 +78,11 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
   int? _diaFiltro;
   int? _bloqueFiltro;
   bool? _activaFiltro;
+  String? _modalidadFiltro;
   late bool _vistaMatriz = widget.vistaMatrizInicial;
+  bool _subvistaPizarraMural = false;
+  int _diasAMostrar = 5;
+  final ScrollController _scrollHorizontalCtrl = ScrollController();
 
   bool _cargando = true;
   String? _error;
@@ -93,6 +97,12 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
   void initState() {
     super.initState();
     _cargar();
+  }
+
+  @override
+  void dispose() {
+    _scrollHorizontalCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _cargar() async {
@@ -228,7 +238,44 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
       _aulaFiltro != null ||
       _diaFiltro != null ||
       _bloqueFiltro != null ||
-      _activaFiltro != null;
+      _activaFiltro != null ||
+      _modalidadFiltro != null;
+
+  bool _coincideModalidad(Guardia g) {
+    if (_modalidadFiltro == null) return true;
+    final notas = (g.notas ?? '').toUpperCase();
+    if (_modalidadFiltro == 'MTP') {
+      return notas.contains('MTP') || !notas.contains('PNA');
+    }
+    if (_modalidadFiltro == 'PNA') {
+      return notas.contains('PNA');
+    }
+    return true;
+  }
+
+  Guardia? _guardiaParaPuesto(int dia, String modalidad, int puesto) {
+    for (final g in _guardias) {
+      if (!g.activa || g.dia != dia) continue;
+      final notas = (g.notas ?? '').toUpperCase();
+      final esMod = modalidad == 'PNA' ? notas.contains('PNA') : (notas.contains('MTP') || !notas.contains('PNA'));
+      if (esMod) {
+        if (notas.contains('PUESTO $puesto') || notas.contains('PUESTO: $puesto') || notas.contains('($puesto)')) {
+          return g;
+        }
+      }
+    }
+    final coincidentes = _guardias.where((g) {
+      if (!g.activa || g.dia != dia) return false;
+      final notas = (g.notas ?? '').toUpperCase();
+      if (modalidad == 'PNA') return notas.contains('PNA');
+      return notas.contains('MTP') || !notas.contains('PNA');
+    }).toList();
+
+    if (coincidentes.length >= puesto) {
+      return coincidentes[puesto - 1];
+    }
+    return null;
+  }
 
   /// El nombre del docente, o `null` si no está en el catálogo.
   ///
@@ -257,6 +304,8 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     String? aulaIdInicial,
     int? diaInicial,
     int? bloqueInicial,
+    String? modalidadInicial,
+    int? puestoInicial,
   }) async {
     final lapso = _lapso;
     if (lapso == null) return;
@@ -272,6 +321,8 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
         aulaIdInicial: aulaIdInicial,
         diaInicial: diaInicial,
         bloqueInicial: bloqueInicial,
+        modalidadInicial: modalidadInicial,
+        puestoInicial: puestoInicial,
       ),
     );
 
@@ -329,10 +380,96 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
             cargando: _cargando,
             error: _error,
             onReintentar: _cargar,
-            child: _vistaMatriz ? _matrizSemanal() : _lista(),
+            child: _vistaMatriz
+                ? (_subvistaPizarraMural ? _pizarraMural() : _matrizSemanal())
+                : _lista(),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _barraSubVistasYControles() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment<bool>(
+                value: false,
+                icon: Icon(Icons.table_chart_outlined, size: 16),
+                label: Text('Por Talleres / Espacios'),
+              ),
+              ButtonSegment<bool>(
+                value: true,
+                icon: Icon(Icons.dashboard_outlined, size: 16),
+                label: Text('Pizarra Mural INCES (MTP / PNA)'),
+              ),
+            ],
+            selected: {_subvistaPizarraMural},
+            onSelectionChanged: (set) =>
+                setState(() => _subvistaPizarraMural = set.first),
+          ),
+          Wrap(
+            spacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              SegmentedButton<int>(
+                segments: const [
+                  ButtonSegment<int>(
+                    value: 5,
+                    label: Text('Lun - Vie (Laboral)'),
+                  ),
+                  ButtonSegment<int>(
+                    value: 6,
+                    label: Text('Lun - Sáb (+Sábado)'),
+                  ),
+                ],
+                selected: {_diasAMostrar},
+                onSelectionChanged: (set) =>
+                    setState(() => _diasAMostrar = set.first),
+              ),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                ),
+                onPressed: () {
+                  if (_scrollHorizontalCtrl.hasClients) {
+                    _scrollHorizontalCtrl.animateTo(
+                      (_scrollHorizontalCtrl.offset - 250).clamp(0, _scrollHorizontalCtrl.position.maxScrollExtent),
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  }
+                },
+                icon: const Icon(Icons.chevron_left, size: 18),
+                label: const Text('Anterior'),
+              ),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                ),
+                onPressed: () {
+                  if (_scrollHorizontalCtrl.hasClients) {
+                    _scrollHorizontalCtrl.animateTo(
+                      (_scrollHorizontalCtrl.offset + 250).clamp(0, _scrollHorizontalCtrl.position.maxScrollExtent),
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  }
+                },
+                icon: const Text('Siguiente'),
+                label: const Icon(Icons.chevron_right, size: 18),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -420,140 +557,431 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
 
     final theme = Theme.of(context);
     final borderSide = BorderSide(color: theme.dividerColor.withValues(alpha: 0.6));
+    final limiteDia = _diasAMostrar.clamp(1, diaMaximo);
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: borderSide,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.vertical,
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Cabecera: Días y turnos
-              Container(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 170,
-                      height: 56,
-                      alignment: Alignment.centerLeft,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
-                      child: Text(
-                        'Espacio / Taller',
-                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    for (var dia = 1; dia <= diaMaximo; dia++)
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _barraSubVistasYControles(),
+        Expanded(
+          child: Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: borderSide,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Scrollbar(
+              controller: _scrollHorizontalCtrl,
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                controller: _scrollHorizontalCtrl,
+                scrollDirection: Axis.horizontal,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.vertical,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Cabecera: Días y turnos
                       Container(
-                        width: 280,
-                        height: 56,
-                        decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
-                        child: Column(
+                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                        child: Row(
                           children: [
-                            Expanded(
-                              flex: 26,
-                              child: Container(
-                                alignment: Alignment.center,
-                                color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                                child: Text(
-                                  diasDeLaSemana[dia],
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: theme.colorScheme.primary,
-                                    fontSize: 12,
-                                  ),
+                            Container(
+                              width: 150,
+                              height: 56,
+                              alignment: Alignment.centerLeft,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
+                              child: Text(
+                                'Espacio / Taller',
+                                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            for (var dia = 1; dia <= limiteDia; dia++)
+                              Container(
+                                width: 190,
+                                height: 56,
+                                decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
+                                child: Column(
+                                  children: [
+                                    Expanded(
+                                      flex: 26,
+                                      child: Container(
+                                        alignment: Alignment.center,
+                                        color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                                        child: Text(
+                                          diasDeLaSemana[dia],
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: theme.colorScheme.primary,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      flex: 29,
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Container(
+                                              alignment: Alignment.center,
+                                              decoration: BoxDecoration(border: Border(right: borderSide)),
+                                              child: const Text('Mañana (07:30-12)', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600)),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Container(
+                                              alignment: Alignment.center,
+                                              child: const Text('Tarde (13:00-17:30)', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600)),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
-                            Expanded(
-                              flex: 29,
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(border: Border(right: borderSide)),
-                                      child: const Text('Mañana (07:30-12)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Container(
-                                      alignment: Alignment.center,
-                                      child: const Text('Tarde (13:00-17:30)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                           ],
                         ),
                       ),
-                  ],
-                ),
-              ),
-              // Filas por espacio / aula
-              for (final aula in _aulas)
-                Container(
-                  decoration: BoxDecoration(border: Border(bottom: borderSide)),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 170,
-                        constraints: const BoxConstraints(minHeight: 64),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        alignment: Alignment.centerLeft,
-                        decoration: BoxDecoration(border: Border(right: borderSide)),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              aula.nombre,
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                            ),
-                            Text(
-                              aula.tipo.etiqueta,
-                              style: theme.textTheme.bodySmall?.copyWith(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
-                            ),
-                          ],
-                        ),
-                      ),
-                      for (var dia = 1; dia <= diaMaximo; dia++)
+                      // Filas por espacio / aula
+                      for (final aula in _aulas)
                         Container(
-                          width: 280,
-                          constraints: const BoxConstraints(minHeight: 64),
-                          decoration: BoxDecoration(border: Border(right: borderSide)),
+                          decoration: BoxDecoration(border: Border(bottom: borderSide)),
                           child: Row(
                             children: [
-                              Expanded(
-                                child: Container(
+                              Container(
+                                width: 150,
+                                constraints: const BoxConstraints(minHeight: 64),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                alignment: Alignment.centerLeft,
+                                decoration: BoxDecoration(border: Border(right: borderSide)),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      aula.nombre,
+                                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
+                                    ),
+                                    Text(
+                                      aula.tipo.etiqueta,
+                                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 10.5, color: theme.colorScheme.onSurfaceVariant),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              for (var dia = 1; dia <= limiteDia; dia++)
+                                Container(
+                                  width: 190,
                                   constraints: const BoxConstraints(minHeight: 64),
                                   decoration: BoxDecoration(border: Border(right: borderSide)),
-                                  child: _celdaMatriz(aula: aula, dia: dia, turno: Turno.manana),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Container(
+                                          constraints: const BoxConstraints(minHeight: 64),
+                                          decoration: BoxDecoration(border: Border(right: borderSide)),
+                                          child: _celdaMatriz(aula: aula, dia: dia, turno: Turno.manana),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Container(
+                                          constraints: const BoxConstraints(minHeight: 64),
+                                          child: _celdaMatriz(aula: aula, dia: dia, turno: Turno.tarde),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Expanded(
-                                child: Container(
-                                  constraints: const BoxConstraints(minHeight: 64),
-                                  child: _celdaMatriz(aula: aula, dia: dia, turno: Turno.tarde),
-                                ),
-                              ),
                             ],
                           ),
                         ),
                     ],
                   ),
                 ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _pizarraMural() {
+    final theme = Theme.of(context);
+    final borderSide = BorderSide(color: theme.dividerColor.withValues(alpha: 0.6));
+    final limiteDia = _diasAMostrar.clamp(1, diaMaximo);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _barraSubVistasYControles(),
+        Expanded(
+          child: Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: borderSide,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Scrollbar(
+              controller: _scrollHorizontalCtrl,
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                controller: _scrollHorizontalCtrl,
+                scrollDirection: Axis.horizontal,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.vertical,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Encabezado descriptivo pizarra
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.draw_outlined, size: 18, color: theme.colorScheme.primary),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Pizarra Mural de Guardias INCES — CFS Rafael Urdaneta (La Isabelica)',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.primary),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Cabecera de Días
+                        Row(
+                          children: [
+                            Container(
+                              width: 140,
+                              height: 44,
+                              alignment: Alignment.centerLeft,
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                                border: Border(right: borderSide, bottom: borderSide),
+                              ),
+                              child: const Text('Programa / Puesto', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            ),
+                            for (var dia = 1; dia <= limiteDia; dia++)
+                              Container(
+                                width: 190,
+                                height: 44,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                                  border: Border(right: borderSide, bottom: borderSide),
+                                ),
+                                child: Text(
+                                  diasDeLaSemana[dia],
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary, fontSize: 13),
+                                ),
+                              ),
+                          ],
+                        ),
+
+                        // SECCIÓN M.T.P. (Puestos 1 al 7)
+                        Container(
+                          width: 140.0 + (limiteDia * 190.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          color: Colors.blue.shade50,
+                          child: Row(
+                            children: [
+                              Icon(Icons.school, size: 16, color: Colors.blue.shade800),
+                              const SizedBox(width: 6),
+                              Text(
+                                'M.T.P. — MEDIO TIEMPO PEDAGÓGICO (Puestos 1 al 7)',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blue.shade900),
+                              ),
+                            ],
+                          ),
+                        ),
+                        for (var puesto = 1; puesto <= 7; puesto++)
+                          Row(
+                            children: [
+                              Container(
+                                width: 140,
+                                height: 58,
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                alignment: Alignment.centerLeft,
+                                decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 11,
+                                      backgroundColor: Colors.blue.shade700,
+                                      child: Text('$puesto', style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text('Puesto $puesto', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12), overflow: TextOverflow.ellipsis),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              for (var dia = 1; dia <= limiteDia; dia++)
+                                Container(
+                                  width: 190,
+                                  height: 58,
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
+                                  child: _celdaPuestoMural(dia: dia, modalidad: 'MTP', puesto: puesto),
+                                ),
+                            ],
+                          ),
+
+                        const SizedBox(height: 12),
+
+                        // SECCIÓN P.N.A. (Puestos 1 al 5)
+                        Container(
+                          width: 140.0 + (limiteDia * 190.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          color: Colors.teal.shade50,
+                          child: Row(
+                            children: [
+                              Icon(Icons.engineering, size: 16, color: Colors.teal.shade800),
+                              const SizedBox(width: 6),
+                              Text(
+                                'P.N.A. — PROGRAMA NACIONAL DE APRENDIZAJE (Puestos 1 al 5)',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.teal.shade900),
+                              ),
+                            ],
+                          ),
+                        ),
+                        for (var puesto = 1; puesto <= 5; puesto++)
+                          Row(
+                            children: [
+                              Container(
+                                width: 140,
+                                height: 58,
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                alignment: Alignment.centerLeft,
+                                decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 11,
+                                      backgroundColor: Colors.teal.shade700,
+                                      child: Text('$puesto', style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text('Puesto $puesto', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12), overflow: TextOverflow.ellipsis),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              for (var dia = 1; dia <= limiteDia; dia++)
+                                Container(
+                                  width: 190,
+                                  height: 58,
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
+                                  child: _celdaPuestoMural(dia: dia, modalidad: 'PNA', puesto: puesto),
+                                ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _celdaPuestoMural({required int dia, required String modalidad, required int puesto}) {
+    final guardia = _guardiaParaPuesto(dia, modalidad, puesto);
+
+    if (guardia == null) {
+      return InkWell(
+        onTap: () => _abrirFormulario(
+          diaInicial: dia,
+          bloqueInicial: puesto <= 6 ? puesto : 1,
+          modalidadInicial: modalidad,
+          puestoInicial: puesto,
+        ),
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+            borderRadius: BorderRadius.circular(4),
+            color: Colors.grey.shade50.withValues(alpha: 0.5),
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.add, size: 14, color: Colors.grey.shade600),
+              const SizedBox(width: 4),
+              Text('Asignar', style: TextStyle(fontSize: 10.5, color: Colors.grey.shade600)),
             ],
           ),
+        ),
+      );
+    }
+
+    final nombreDoc = _nombreDelDocente(guardia.docenteId) ?? 'Docente asignado';
+    final nombreAula = _nombreDelAula(guardia.aulaId) ?? 'Espacio asignado';
+    final esPna = modalidad == 'PNA';
+
+    return InkWell(
+      onTap: () => _abrirFormulario(existente: guardia),
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          color: esPna ? Colors.teal.shade50 : Colors.blue.shade50,
+          border: Border.all(color: esPna ? Colors.teal.shade300 : Colors.blue.shade300),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              nombreDoc,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+                color: esPna ? Colors.teal.shade900 : Colors.blue.shade900,
+              ),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    nombreAula,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 9.5, color: Colors.grey.shade700),
+                  ),
+                ),
+                Text(
+                  'B${guardia.bloque}',
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Colors.grey.shade800),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -564,6 +992,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
         g.aulaId == aula.id &&
         g.dia == dia &&
         g.activa &&
+        _coincideModalidad(g) &&
         turnoDeBloque(g.bloque) == turno).toList();
 
     if (guardias.isEmpty) {
@@ -572,6 +1001,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
           aulaIdInicial: aula.id,
           diaInicial: dia,
           bloqueInicial: turno == Turno.manana ? 1 : 7,
+          modalidadInicial: _modalidadFiltro ?? 'MTP',
         ),
         child: Container(
           alignment: Alignment.center,
@@ -586,7 +1016,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(3),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -597,7 +1027,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
               borderRadius: BorderRadius.circular(4),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 2),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
                 decoration: BoxDecoration(
                   color: PaletaAulasCuadrante.colorGuardia.withValues(alpha: 0.15),
                   border: Border.all(color: PaletaAulasCuadrante.colorGuardia.withValues(alpha: 0.5), width: 1),
@@ -607,15 +1037,35 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if ((g.notas ?? '').toUpperCase().contains('PNA'))
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.teal.shade700,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: const Text('PNA', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold)),
+                      )
+                    else
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.indigo.shade700,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: const Text('MTP', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold)),
+                      ),
                     Text(
                       _nombreDelDocente(g.docenteId) ?? 'Docente asignado',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       'B${g.bloque} (${horaLegibleDeBloque(g.bloque)})',
-                      style: const TextStyle(fontSize: 10, color: Colors.black87),
+                      style: const TextStyle(fontSize: 9.5, color: Colors.black87),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -748,6 +1198,17 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
           ],
           onCambiar: (valor) => _refiltrar(() => _activaFiltro = valor),
         ),
+        _Desplegable<String?>(
+          etiqueta: 'Modalidad',
+          ancho: 170,
+          valor: _modalidadFiltro,
+          opciones: const [
+            DropdownMenuItem(value: null, child: Text('Todas')),
+            DropdownMenuItem(value: 'MTP', child: Text('M.T.P. (Medio Tiempo)')),
+            DropdownMenuItem(value: 'PNA', child: Text('P.N.A. (Aprendizaje)')),
+          ],
+          onCambiar: (valor) => _refiltrar(() => _modalidadFiltro = valor),
+        ),
         if (_total > 0)
           Padding(
             padding: const EdgeInsets.only(left: 4),
@@ -784,12 +1245,14 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
       );
     }
 
-    if (_guardias.isEmpty) {
+    final guardiasAMostrar = _guardias.where(_coincideModalidad).toList();
+
+    if (guardiasAMostrar.isEmpty) {
       if (_filtrando) {
         return const PanelVacio(
           titulo: 'Ninguna guardia coincide con el filtro',
           mensaje: 'Prueba con otro día, otro bloque o quita el filtro de '
-              'estado. Las guardias archivadas no aparecen salvo que las pidas.',
+              'estado o modalidad. Las guardias archivadas no aparecen salvo que las pidas.',
           icono: Icons.filter_alt_off_outlined,
         );
       }
@@ -831,10 +1294,10 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
         Expanded(
           child: ListView.separated(
             padding: EdgeInsets.zero,
-            itemCount: _guardias.length,
+            itemCount: guardiasAMostrar.length,
             separatorBuilder: (_, _) => const SizedBox(height: 10),
             itemBuilder: (context, indice) {
-              final guardia = _guardias[indice];
+              final guardia = guardiasAMostrar[indice];
 
               return _FilaGuardia(
                 guardia: guardia,
@@ -1033,6 +1496,18 @@ class _FilaGuardia extends StatelessWidget {
                         texto: aula ?? 'Espacio no disponible',
                         color: colorAula,
                       ),
+                      if (guardia.notas != null) ...[
+                        if (guardia.notas!.toUpperCase().contains('[MTP'))
+                          const Etiqueta(
+                            texto: 'M.T.P.',
+                            color: Colors.blue,
+                          ),
+                        if (guardia.notas!.toUpperCase().contains('[PNA'))
+                          const Etiqueta(
+                            texto: 'P.N.A.',
+                            color: Colors.deepOrange,
+                          ),
+                      ],
                       if (archivada) const Etiqueta(texto: 'Archivada'),
                     ],
                   ),
@@ -1101,6 +1576,8 @@ class _DialogoGuardia extends StatefulWidget {
     this.aulaIdInicial,
     this.diaInicial,
     this.bloqueInicial,
+    this.modalidadInicial,
+    this.puestoInicial,
   });
 
   final CuadranteRepository repo;
@@ -1111,6 +1588,8 @@ class _DialogoGuardia extends StatefulWidget {
   final String? aulaIdInicial;
   final int? diaInicial;
   final int? bloqueInicial;
+  final String? modalidadInicial;
+  final int? puestoInicial;
 
   @override
   State<_DialogoGuardia> createState() => _DialogoGuardiaState();
@@ -1122,8 +1601,10 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
   late int _dia = widget.existente?.dia ?? widget.diaInicial ?? 1;
   late int _bloque = widget.existente?.bloque ?? widget.bloqueInicial ?? 1;
 
-  late final TextEditingController _notasCtrl =
-      TextEditingController(text: widget.existente?.notas ?? '');
+  late String? _modalidad;
+  late int? _puesto;
+
+  late final TextEditingController _notasCtrl = TextEditingController();
 
   bool _guardando = false;
   String? _error;
@@ -1132,6 +1613,40 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
 
   List<DocenteResumen> get _docentesLimpios =>
       widget.docentes.where((d) => !d.esTestOSemilla).toList();
+
+  @override
+  void initState() {
+    super.initState();
+    final n = widget.existente?.notas ?? '';
+    final matchMtp = RegExp(r'\[MTP(?:\s*-\s*Puesto\s*(\d+))?\]', caseSensitive: false).firstMatch(n);
+    final matchPna = RegExp(r'\[PNA(?:\s*-\s*Puesto\s*(\d+))?\]', caseSensitive: false).firstMatch(n);
+    if (matchMtp != null) {
+      _modalidad = 'MTP';
+      _puesto = int.tryParse(matchMtp.group(1) ?? '') ?? 1;
+    } else if (matchPna != null) {
+      _modalidad = 'PNA';
+      _puesto = int.tryParse(matchPna.group(1) ?? '') ?? 1;
+    } else {
+      _modalidad = widget.modalidadInicial;
+      _puesto = widget.puestoInicial ?? (_modalidad != null ? 1 : null);
+    }
+    final notasLimpias = n
+        .replaceAll(RegExp(r'\[(?:MTP|PNA)[^\]]*\]\s*', caseSensitive: false), '')
+        .trim();
+    _notasCtrl.text = notasLimpias;
+  }
+
+  String _construirNotasFinales() {
+    final texto = _notasCtrl.text.trim();
+    if (_modalidad == 'MTP') {
+      final tag = _puesto != null ? '[MTP - Puesto $_puesto]' : '[MTP]';
+      return texto.isNotEmpty ? '$tag $texto' : tag;
+    } else if (_modalidad == 'PNA') {
+      final tag = _puesto != null ? '[PNA - Puesto $_puesto]' : '[PNA]';
+      return texto.isNotEmpty ? '$tag $texto' : tag;
+    }
+    return texto;
+  }
 
   @override
   void dispose() {
@@ -1367,13 +1882,13 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
           periodo: widget.periodo,
           dia: _dia,
           bloque: _bloque,
-          notas: _notasCtrl.text,
+          notas: _construirNotasFinales(),
         ),
       );
 
   Future<Result<Guardia>> _guardarCambios() {
     final antes = widget.existente!;
-    final notas = _notasCtrl.text.trim();
+    final notas = _construirNotasFinales();
     final teniaNotas = antes.notas?.trim().isNotEmpty ?? false;
 
     return widget.repo.actualizarGuardia(
@@ -1441,6 +1956,66 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
                 valor: _aulaId,
                 opciones: _opcionesDeAula(),
                 onCambiar: (valor) => setState(() => _aulaId = valor),
+              ),
+              const SizedBox(height: 14),
+              // Modalidad de Guardia (MTP / PNA / General)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Modalidad de Guardia (Pizarra INCES)',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  SegmentedButton<String?>(
+                    segments: const [
+                      ButtonSegment<String?>(
+                        value: null,
+                        label: Text('Taller / General'),
+                        icon: Icon(Icons.build_circle_outlined, size: 16),
+                      ),
+                      ButtonSegment<String?>(
+                        value: 'MTP',
+                        label: Text('M.T.P.'),
+                        icon: Icon(Icons.school_outlined, size: 16),
+                      ),
+                      ButtonSegment<String?>(
+                        value: 'PNA',
+                        label: Text('P.N.A.'),
+                        icon: Icon(Icons.engineering_outlined, size: 16),
+                      ),
+                    ],
+                    selected: {_modalidad},
+                    onSelectionChanged: (set) {
+                      setState(() {
+                        _modalidad = set.first;
+                        if (_modalidad != null && _puesto == null) {
+                          _puesto = 1;
+                        }
+                      });
+                    },
+                  ),
+                  if (_modalidad != null) ...[
+                    const SizedBox(height: 10),
+                    _Desplegable<int>(
+                      etiqueta: 'Puesto en Pizarra Mural ($_modalidad)',
+                      ancho: double.infinity,
+                      valor: _puesto ?? 1,
+                      opciones: [
+                        for (var i = 1; i <= (_modalidad == 'MTP' ? 7 : 5); i++)
+                          DropdownMenuItem(
+                            value: i,
+                            child: Text('Puesto #$i (${_modalidad == 'MTP' ? 'M.T.P. fila $i' : 'P.N.A. fila $i'})'),
+                          ),
+                      ],
+                      onCambiar: (v) {
+                        if (v != null) setState(() => _puesto = v);
+                      },
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 14),
               Builder(
@@ -1530,7 +2105,7 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
                 maxLines: 3,
                 maxLength: CuadranteRepository.largoMaximoNotas,
                 decoration: const InputDecoration(
-                  labelText: 'Notas',
+                  labelText: 'Notas adicionales',
                   hintText: 'Apertura del taller, custodia del pasillo…',
                   helperText: 'Opcional. Déjalo vacío para no dejar ninguna.',
                 ),
