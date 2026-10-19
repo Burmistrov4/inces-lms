@@ -18,6 +18,10 @@ class FakePlanillaGateway implements PlanillaGateway {
   List<int> pdfDevuelto = const [37, 80, 68, 70];
   Object? errorAlDescargarPdf;
 
+  /// Lo que devuelve [descargarXlsx]. Un ZIP/XLSX mínimo por defecto (`PK..`).
+  List<int> xlsxDevuelto = const [80, 75, 3, 4];
+  Object? errorAlDescargarXlsx;
+
   /// La última planilla que llegó a [guardar].
   PlanillaInscripcion? ultimaPlanilla;
 
@@ -46,5 +50,13 @@ class FakePlanillaGateway implements PlanillaGateway {
     final error = errorAlDescargarPdf;
     if (error != null) throw error;
     return Uint8List.fromList(pdfDevuelto);
+  }
+
+  @override
+  Future<Uint8List> descargarXlsx() async {
+    llamadas.add('descargarXlsx');
+    final error = errorAlDescargarXlsx;
+    if (error != null) throw error;
+    return Uint8List.fromList(xlsxDevuelto);
   }
 }

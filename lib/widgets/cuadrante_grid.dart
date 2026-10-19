@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/cuadrante.dart';
+import '../theme/inces_theme.dart';
 
 /// Rejilla de días × bloques, compartida por el cuadrante del administrador y el
 /// horario del docente/estudiante.
@@ -253,23 +254,10 @@ class PaletaAulasCuadrante {
   const PaletaAulasCuadrante._();
 
   /// Doce colores armoniosos para aulas y talleres, legibles en temas claro y oscuro.
-  static const List<Color> colores = [
-    Color(0xFF0284C7), // Azul Primario INCES (Taller Soldadura 1)
-    Color(0xFF0D9488), // Verde Azulado / Teal (Taller Mecánica)
-    Color(0xFFD97706), // Ámbar / Ocre Técnico (Aula Teórica A1)
-    Color(0xFF7C3AED), // Violeta / Púrpura (Laboratorio Computación)
-    Color(0xFF059669), // Esmeralda Formativo (Aula Magna)
-    Color(0xFFEA580C), // Naranja Industrial (Taller Metalmecánico)
-    Color(0xFF4F46E5), // Índigo Metalúrgico (Laboratorio Ensayos)
-    Color(0xFFDB2777), // Magenta / Rosa Técnico (Aula B2)
-    Color(0xFF0891B2), // Cian CFS (Taller Soldadura 2)
-    Color(0xFF65A30D), // Lima Formación (Aula C1)
-    Color(0xFF9333EA), // Púrpura Institucional (Aula D1)
-    Color(0xFF2563EB), // Azul Real (Taller Electricidad)
-  ];
+  static const List<Color> colores = IncesTheme.coloresAulasCuadrante;
 
   /// Color distintivo para las guardias docentes (custodia y presencia institucional).
-  static const Color colorGuardia = Color(0xFF6366F1);
+  static const Color colorGuardia = IncesTheme.colorGuardiaCuadrante;
 
   /// Obtiene el color correspondiente a un identificador o nombre de aula.
   static Color colorParaAula(String? aulaId) {

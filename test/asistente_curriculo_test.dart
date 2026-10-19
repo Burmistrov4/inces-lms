@@ -169,7 +169,7 @@ void main() {
 
       await tocar(tester, find.byIcon(Icons.add_circle_outline).first);
 
-      expect(find.text('Período 1'), findsOneWidget);
+      expect(find.text('Módulo / Trimestre 1'), findsOneWidget);
       expect(find.text('1 materia · 96 h'), findsOneWidget);
       // Y desaparece el estado vacío.
       expect(find.text('El pensum está vacío. Añade materias desde el banco.'),
@@ -198,8 +198,8 @@ void main() {
       await tocar(tester, find.byIcon(Icons.add_circle_outline).first);
 
       // La materia entra en el período 2, que es el que quedó seleccionado.
-      expect(find.text('Período 2'), findsOneWidget);
-      expect(find.text('Período 1'), findsNothing);
+      expect(find.text('Módulo / Trimestre 2'), findsOneWidget);
+      expect(find.text('Módulo / Trimestre 1'), findsNothing);
     });
 
     testWidgets('registra una materia en caliente y la añade', (tester) async {

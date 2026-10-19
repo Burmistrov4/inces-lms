@@ -266,8 +266,10 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Selector de pestañas: Activos vs Historial Archivado
-        Row(
+        // Selector de pestañas: Activos vs Historial Archivado (Wrap para móviles)
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
             ChoiceChip(
               label: Text('En Curso y Planificación (${activos.length})'),
@@ -276,7 +278,6 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
                 if (sel) setState(() => _tabSeleccionado = 0);
               },
             ),
-            const SizedBox(width: 8),
             ChoiceChip(
               label: Text('Historial de Lapsos Archivados (${archivados.length})'),
               selected: _tabSeleccionado == 1,
@@ -671,17 +672,61 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
                 onElegir: () => _elegirFecha(esInicio: false),
                 onLimpiar: () => setState(() => _fin = null),
               ),
-              if (_inicio != null) ...[
+              if (_inicio == null) ...[
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
                   runSpacing: 4,
                   children: [
                     ActionChip(
-                      label: const Text('+3 meses (Soldadura)'),
+                      avatar: const Icon(Icons.today_outlined, size: 14),
+                      label: const Text('Iniciar hoy'),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () {
+                        final hoy = DateTime.now();
+                        final m = hoy.month.toString().padLeft(2, '0');
+                        final d = hoy.day.toString().padLeft(2, '0');
+                        final fIni = '${hoy.year}-$m-$d';
+                        setState(() {
+                          _inicio = fIni;
+                          _fin = sumarDuracion(fIni, 3, 'MESES');
+                        });
+                      },
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.calendar_month_outlined, size: 14),
+                      label: const Text('Próximo trimestre (+3m)'),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () {
+                        final hoy = DateTime.now();
+                        final proxMes = DateTime(hoy.year, hoy.month + 1, 1);
+                        final m = proxMes.month.toString().padLeft(2, '0');
+                        final fIni = '${proxMes.year}-$m-01';
+                        setState(() {
+                          _inicio = fIni;
+                          _fin = sumarDuracion(fIni, 3, 'MESES');
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ] else ...[
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    ActionChip(
+                      label: const Text('3 meses (Trimestre)'),
                       avatar: const Icon(Icons.bolt_rounded, size: 14),
                       visualDensity: VisualDensity.compact,
                       onPressed: () => setState(() => _fin = sumarDuracion(_inicio!, 3, 'MESES')),
+                    ),
+                    ActionChip(
+                      label: const Text('6 meses (Semestre)'),
+                      avatar: const Icon(Icons.school_outlined, size: 14),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => setState(() => _fin = sumarDuracion(_inicio!, 6, 'MESES')),
                     ),
                     ActionChip(
                       label: const Text('+12 semanas'),
@@ -691,12 +736,10 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
                     ActionChip(
                       label: const Text('+1 mes'),
                       visualDensity: VisualDensity.compact,
-                      onPressed: () => setState(() => _fin = sumarDuracion(_inicio!, 1, 'MESES')),
-                    ),
-                    ActionChip(
-                      label: const Text('+6 meses'),
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => setState(() => _fin = sumarDuracion(_inicio!, 6, 'MESES')),
+                      onPressed: () => setState(() {
+                        final base = _fin ?? _inicio!;
+                        _fin = sumarDuracion(base, 1, 'MESES');
+                      }),
                     ),
                   ],
                 ),

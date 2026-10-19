@@ -29,4 +29,7 @@ abstract interface class PlanillaGateway {
   /// aspirante. Devuelve `Uint8List` porque el cuerpo ya es binario: la pantalla
   /// lo pasa directo al selector de descarga, sin tocar JSON.
   Future<Uint8List> descargarPdf();
+
+  /// Descarga la misma planilla del llamante como libro de Excel (.xlsx editable).
+  Future<Uint8List> descargarXlsx();
 }

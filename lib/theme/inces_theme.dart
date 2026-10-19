@@ -59,6 +59,27 @@ class IncesTheme {
   /// Borde neutro para carruseles y tarjetas de inicio.
   static const Color bordeCarruselNeutro = Color(0xFFCBD5E1);
 
+  // --- Paleta de aulas y cuadrante de horarios ------------------------------
+
+  /// Doce colores armoniosos para aulas y talleres, legibles en temas claro y oscuro.
+  static const List<Color> coloresAulasCuadrante = [
+    Color(0xFF0284C7), // Azul Primario INCES (Taller Soldadura 1)
+    Color(0xFF0D9488), // Verde Azulado / Teal (Taller Mecánica)
+    Color(0xFFD97706), // Ámbar / Ocre Técnico (Aula Teórica A1)
+    Color(0xFF7C3AED), // Violeta / Púrpura (Laboratorio Computación)
+    Color(0xFF059669), // Esmeralda Formativo (Aula Magna)
+    Color(0xFFEA580C), // Naranja Industrial (Taller Metalmecánico)
+    Color(0xFF4F46E5), // Índigo Metalúrgico (Laboratorio Ensayos)
+    Color(0xFFDB2777), // Magenta / Rosa Técnico (Aula B2)
+    Color(0xFF0891B2), // Cian CFS (Taller Soldadura 2)
+    Color(0xFF65A30D), // Lima Formación (Aula C1)
+    Color(0xFF9333EA), // Púrpura Institucional (Aula D1)
+    Color(0xFF2563EB), // Azul Real (Taller Electricidad)
+  ];
+
+  /// Color distintivo para las guardias docentes (custodia y presencia institucional).
+  static const Color colorGuardiaCuadrante = Color(0xFF6366F1);
+
   // --- Superficies, modo claro -------------------------------------------------
 
   /// Gris frío de fondo. Deliberadamente no blanco puro: las tarjetas blancas

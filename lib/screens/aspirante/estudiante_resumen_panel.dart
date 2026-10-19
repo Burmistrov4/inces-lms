@@ -17,6 +17,7 @@ class EstudianteResumenPanel extends StatelessWidget {
     this.aspirante,
     this.onNavegarA,
     this.onDescargarPlanilla,
+    this.onDescargarExcel,
   });
 
   /// Ficha del estudiante con sus datos de matrícula.
@@ -27,6 +28,9 @@ class EstudianteResumenPanel extends StatelessWidget {
 
   /// Permite descargar el comprobante oficial en PDF.
   final VoidCallback? onDescargarPlanilla;
+
+  /// Permite descargar la planilla en formato Excel (.xlsx).
+  final VoidCallback? onDescargarExcel;
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +59,7 @@ class EstudianteResumenPanel extends StatelessWidget {
             onMisAulas: () => onNavegarA?.call('Mis aulas'),
             onAsistencia: () => onNavegarA?.call('Asistencia'),
             onDescargarPlanilla: onDescargarPlanilla,
+            onDescargarExcel: onDescargarExcel,
           ),
           _construirCabecera(theme, esOscuro, nombre, programa, cedula),
           const SizedBox(height: 20),

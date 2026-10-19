@@ -77,4 +77,12 @@ class BackendPlanillaGateway implements PlanillaGateway {
       token: _tokenSesion,
     );
   }
+
+  @override
+  Future<Uint8List> descargarXlsx() async {
+    return _api.getBytes(
+      '/api/v1/yo/planilla/xlsx',
+      token: _tokenSesion,
+    );
+  }
 }

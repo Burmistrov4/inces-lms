@@ -1419,8 +1419,8 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
 
     return AlertDialog(
       title: Text(_esEdicion ? 'Editar guardia' : 'Asignar guardia'),
-      content: SizedBox(
-        width: 480,
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1443,55 +1443,78 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
                 onCambiar: (valor) => setState(() => _aulaId = valor),
               ),
               const SizedBox(height: 14),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    flex: 4,
-                    child: _Desplegable<int>(
-                      etiqueta: 'Día',
-                      ancho: double.infinity,
-                      valor: _dia,
-                      opciones: [
-                        for (var dia = 1; dia <= diaMaximo; dia++)
-                          DropdownMenuItem(
-                            value: dia,
-                            child: Text(diasDeLaSemana[dia]),
+              Builder(
+                builder: (context) {
+                  final apilar = MediaQuery.sizeOf(context).width < 500;
+                  final campoDia = _Desplegable<int>(
+                    etiqueta: 'Día',
+                    ancho: double.infinity,
+                    valor: _dia,
+                    opciones: [
+                      for (var dia = 1; dia <= diaMaximo; dia++)
+                        DropdownMenuItem(
+                          value: dia,
+                          child: Text(diasDeLaSemana[dia]),
+                        ),
+                    ],
+                    onCambiar: (valor) {
+                      if (valor != null) setState(() => _dia = valor);
+                    },
+                  );
+
+                  final campoBloque = _Desplegable<int>(
+                    etiqueta: 'Bloque y Turno',
+                    ancho: double.infinity,
+                    valor: _bloque,
+                    opciones: [
+                      for (var bloque = 1; bloque <= bloqueMaximo; bloque++)
+                        DropdownMenuItem(
+                          value: bloque,
+                          child: Text(
+                            bloqueLegibleConTurno(bloque),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                      ],
-                      onCambiar: (valor) {
-                        if (valor != null) setState(() => _dia = valor);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 6,
-                    child: _Desplegable<int>(
-                      etiqueta: 'Bloque',
-                      ancho: double.infinity,
-                      valor: _bloque,
-                      opciones: [
-                        for (var bloque = 1; bloque <= bloqueMaximo; bloque++)
-                          DropdownMenuItem(
-                            value: bloque,
-                            child: Text(
-                              bloqueLegibleConTurno(bloque),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                      ],
-                      onCambiar: (valor) {
-                        if (valor != null) setState(() => _bloque = valor);
-                      },
-                    ),
-                  ),
-                  IconButton(
+                        ),
+                    ],
+                    onCambiar: (valor) {
+                      if (valor != null) setState(() => _bloque = valor);
+                    },
+                  );
+
+                  final botonEditarHora = IconButton(
                     tooltip: 'Personalizar hora de este bloque',
                     icon: const Icon(Icons.edit_calendar_outlined, size: 20),
                     onPressed: _abrirEditarBloqueActual,
-                  ),
-                ],
+                  );
+
+                  if (apilar) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        campoDia,
+                        const SizedBox(height: 12),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(child: campoBloque),
+                            const SizedBox(width: 4),
+                            botonEditarHora,
+                          ],
+                        ),
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(flex: 4, child: campoDia),
+                      const SizedBox(width: 8),
+                      Expanded(flex: 6, child: campoBloque),
+                      botonEditarHora,
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 8),
               Text(

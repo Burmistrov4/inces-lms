@@ -802,8 +802,8 @@ class _DialogoClaseState extends State<_DialogoClase> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(_esEdicion ? 'Editar clase' : 'Asignar clase'),
-      content: SizedBox(
-        width: 480,
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -846,51 +846,74 @@ class _DialogoClaseState extends State<_DialogoClase> {
               const SizedBox(height: 12),
               _selectorDocente(),
               const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    flex: 4,
-                    child: _Desplegable<int>(
-                      etiqueta: 'Día',
-                      ancho: double.infinity,
-                      valor: _dia,
-                      opciones: [
-                        for (var d = 1; d <= diaMaximo; d++)
-                          DropdownMenuItem(
-                            value: d,
-                            child: Text(diasDeLaSemana[d]),
+              Builder(
+                builder: (context) {
+                  final apilar = MediaQuery.sizeOf(context).width < 500;
+                  final campoDia = _Desplegable<int>(
+                    etiqueta: 'Día',
+                    ancho: double.infinity,
+                    valor: _dia,
+                    opciones: [
+                      for (var d = 1; d <= diaMaximo; d++)
+                        DropdownMenuItem(
+                          value: d,
+                          child: Text(diasDeLaSemana[d]),
+                        ),
+                    ],
+                    onChanged: (v) => setState(() => _dia = v ?? _dia),
+                  );
+
+                  final campoBloque = _Desplegable<int>(
+                    etiqueta: 'Bloque y Turno',
+                    ancho: double.infinity,
+                    valor: _bloque,
+                    opciones: [
+                      for (var b = 1; b <= bloqueMaximo; b++)
+                        DropdownMenuItem(
+                          value: b,
+                          child: Text(
+                            bloqueLegibleConTurno(b),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                      ],
-                      onChanged: (v) => setState(() => _dia = v ?? _dia),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 6,
-                    child: _Desplegable<int>(
-                      etiqueta: 'Bloque',
-                      ancho: double.infinity,
-                      valor: _bloque,
-                      opciones: [
-                        for (var b = 1; b <= bloqueMaximo; b++)
-                          DropdownMenuItem(
-                            value: b,
-                            child: Text(
-                              bloqueLegibleConTurno(b),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                      ],
-                      onChanged: (v) => setState(() => _bloque = v ?? _bloque),
-                    ),
-                  ),
-                  IconButton(
+                        ),
+                    ],
+                    onChanged: (v) => setState(() => _bloque = v ?? _bloque),
+                  );
+
+                  final botonEditarHora = IconButton(
                     tooltip: 'Personalizar hora de este bloque',
                     icon: const Icon(Icons.edit_calendar_outlined, size: 20),
                     onPressed: _abrirEditarBloqueActual,
-                  ),
-                ],
+                  );
+
+                  if (apilar) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        campoDia,
+                        const SizedBox(height: 12),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(child: campoBloque),
+                            const SizedBox(width: 4),
+                            botonEditarHora,
+                          ],
+                        ),
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(flex: 4, child: campoDia),
+                      const SizedBox(width: 8),
+                      Expanded(flex: 6, child: campoBloque),
+                      botonEditarHora,
+                    ],
+                  );
+                },
               ),
               if (_esEdicion) ...[
                 const SizedBox(height: 12),

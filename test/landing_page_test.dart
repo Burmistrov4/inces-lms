@@ -36,7 +36,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Rafael Urdaneta'), findsWidgets);
-    expect(find.text('INCES LMS'), findsOneWidget);
+    expect(find.text('INCES LMS'), findsWidgets);
     expect(find.text('INCES La Isabelica'), findsOneWidget);
   });
 
@@ -80,7 +80,7 @@ void main() {
     await tester.pumpWidget(montar());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Inscribirse'));
+    await tester.tap(find.text('Inscribirse').first);
     await tester.pumpAndSettle();
 
     expect(find.text('FORMULARIO'), findsOneWidget);

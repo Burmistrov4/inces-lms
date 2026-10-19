@@ -676,9 +676,8 @@ class _EnlaceActivacion extends StatelessWidget {
                 const AvisoEnLinea(
                   tono: TonoAviso.advertencia,
                   icono: Icons.warning_amber_outlined,
-                  texto: 'El correo no pudo entregarse (dominio de Resend sin '
-                      'verificar). Comparte este enlace por otro medio: es la '
-                      'vía de activación.',
+                  texto: 'El correo institucional no pudo entregarse automáticamente en este momento. '
+                      'Comparte este enlace oficial directamente con el docente: es la vía de activación.',
                 ),
               ],
               const SizedBox(height: 12),

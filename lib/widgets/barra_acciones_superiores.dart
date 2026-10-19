@@ -106,6 +106,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
     VoidCallback? onMisAulas,
     VoidCallback? onAsistencia,
     VoidCallback? onDescargarPlanilla,
+    VoidCallback? onDescargarExcel,
     VoidCallback? onVerLapsos,
     String periodo = 'SA26-2',
     String estadoSistema = 'Portal Aprendiz: En Línea',
@@ -161,8 +162,22 @@ class BarraAccionesSuperiores extends StatelessWidget {
         if (onDescargarPlanilla != null)
           OutlinedButton.icon(
             onPressed: onDescargarPlanilla,
-            icon: const Icon(Icons.download_rounded, size: 15),
+            icon: const Icon(Icons.picture_as_pdf_outlined, size: 15),
             label: const Text('Planilla PDF'),
+            style: OutlinedButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+              textStyle: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        if (onDescargarExcel != null)
+          OutlinedButton.icon(
+            onPressed: onDescargarExcel,
+            icon: const Icon(Icons.table_chart_outlined, size: 15),
+            label: const Text('Planilla Excel'),
             style: OutlinedButton.styleFrom(
               visualDensity: VisualDensity.compact,
               padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),

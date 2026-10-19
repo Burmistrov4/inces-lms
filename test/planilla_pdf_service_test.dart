@@ -96,5 +96,16 @@ void main() {
 
       await expectLater(servicio.descargarPlanillaPropia(), completes);
     });
+
+    test('descarga Excel (.xlsx) y lo entrega al navegador con su nombre', () async {
+      gateway.xlsxDevuelto = [80, 75, 3, 4]; // PK..
+
+      final resultado = await servicio.descargarPlanillaPropiaXlsx();
+
+      expect(resultado, isA<PlanillaDescargada>());
+      expect(selector.llamadas, ['descargarBytes']);
+      expect(selector.ultimoNombreDeBytesDescargado, endsWith('.xlsx'));
+      expect(selector.ultimoContenidoBytesDescargado, [80, 75, 3, 4]);
+    });
   });
 }

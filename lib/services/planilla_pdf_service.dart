@@ -121,18 +121,47 @@ class PlanillaPdfService {
         return PlanillaDescargada(nombreArchivo: nombre);
     }
   }
+
+  /// Descarga la planilla del llamante como hoja de cálculo Excel editable (.xlsx) y la entrega al navegador.
+  Future<ResultadoDescargaPlanilla> descargarPlanillaPropiaXlsx() async {
+    final resultado = await _repositorio.descargarXlsx();
+
+    switch (resultado) {
+      case Failure(error: final fallo):
+        if (fallo.code == 'SIN_FICHA_DE_ASPIRANTE') {
+          return const SinFichaDeAspirante();
+        }
+        return ConsultaFallida(fallo.message);
+
+      case Success(value: final bytes):
+        final nombre = nombreArchivoPlanillaXlsx();
+
+        try {
+          await _selector.descargarBytes(
+            nombre: nombre,
+            contenido: bytes,
+          );
+        } catch (_) {
+          return const DescargaFallida();
+        }
+
+        return PlanillaDescargada(nombreArchivo: nombre);
+    }
+  }
 }
 
-/// Nombre del archivo de descarga.
-///
-/// La ruta no devuelve la cédula del llamante —la ficha es suya, no se pide—,
-/// así que el nombre usa la fecha actual para que cada descarga sea
-/// distinguible. El servidor ya pone `Content-Disposition` con su propio
-/// nombre; este es el que el navegador usa por defecto al guardar.
+/// Nombre del archivo de descarga en formato PDF.
 String nombreArchivoPlanilla() {
   final ahora = DateTime.now();
   final marca = '${ahora.year}${_dos(ahora.month)}${_dos(ahora.day)}';
   return 'planilla-inscripcion-$marca.pdf';
+}
+
+/// Nombre del archivo de descarga en formato Excel (.xlsx).
+String nombreArchivoPlanillaXlsx() {
+  final ahora = DateTime.now();
+  final marca = '${ahora.year}${_dos(ahora.month)}${_dos(ahora.day)}';
+  return 'planilla-inscripcion-$marca.xlsx';
 }
 
 String _dos(int valor) => valor.toString().padLeft(2, '0');

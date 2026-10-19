@@ -124,6 +124,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
 
   bool _cargando = true;
   bool _descargandoPlanilla = false;
+  bool _descargandoExcel = false;
   AspiranteModel? _aspirante;
   String? _error;
 
@@ -269,6 +270,38 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
         mostrarAviso(
           context,
           'No pudimos entregar el PDF al navegador. Inténtalo de nuevo.',
+          error: true,
+        );
+    }
+  }
+
+  Future<void> _descargarPlanillaExcel() async {
+    if (_descargandoExcel) return;
+    setState(() => _descargandoExcel = true);
+
+    final resultado = await _planillaService.descargarPlanillaPropiaXlsx();
+    if (!mounted) return;
+    setState(() => _descargandoExcel = false);
+
+    switch (resultado) {
+      case PlanillaDescargada(:final nombreArchivo):
+        mostrarAviso(
+          context,
+          'Tu planilla en Excel se descargó ($nombreArchivo). Ya puedes abrirla y editarla.',
+          exito: true,
+        );
+      case SinFichaDeAspirante():
+        mostrarAviso(
+          context,
+          'No encontramos una ficha de inscripción para generar la planilla en Excel.',
+          error: true,
+        );
+      case ConsultaFallida(:final mensaje):
+        mostrarAviso(context, mensaje, error: true);
+      case DescargaFallida():
+        mostrarAviso(
+          context,
+          'No pudimos entregar el archivo Excel al navegador. Inténtalo de nuevo.',
           error: true,
         );
     }
@@ -613,6 +646,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
           aspirante: aspirante,
           onNavegarA: _navegarA,
           onDescargarPlanilla: _descargarPlanilla,
+          onDescargarExcel: _descargarPlanillaExcel,
         ),
         const SizedBox(height: 20),
         const Divider(),
@@ -719,24 +753,43 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
                   ),
                 ),
                 const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    key: const ValueKey('descargar-planilla-oficial'),
-                    onPressed: _descargandoPlanilla ? null : _descargarPlanilla,
-                    icon: _descargandoPlanilla
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.picture_as_pdf_outlined),
-                    label: Text(
-                      _descargandoPlanilla
-                          ? 'Generando PDF…'
-                          : 'Descargar planilla oficial (PDF)',
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 10,
+                  children: [
+                    FilledButton.icon(
+                      key: const ValueKey('descargar-planilla-oficial'),
+                      onPressed: _descargandoPlanilla ? null : _descargarPlanilla,
+                      icon: _descargandoPlanilla
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.picture_as_pdf_outlined),
+                      label: Text(
+                        _descargandoPlanilla
+                            ? 'Generando PDF…'
+                            : 'Descargar planilla oficial (PDF)',
+                      ),
                     ),
-                  ),
+                    OutlinedButton.icon(
+                      key: const ValueKey('descargar-planilla-excel'),
+                      onPressed: _descargandoExcel ? null : _descargarPlanillaExcel,
+                      icon: _descargandoExcel
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.table_chart_outlined),
+                      label: Text(
+                        _descargandoExcel
+                            ? 'Generando Excel…'
+                            : 'Descargar en Excel (.xlsx) editable',
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

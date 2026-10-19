@@ -47,6 +47,8 @@ class _LandingPageState extends State<LandingPage> {
   String? _aviso;
 
   final TextEditingController _busquedaCtrl = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _claveOferta = GlobalKey();
   String _areaSeleccionada = 'TODOS';
 
   @override
@@ -59,7 +61,19 @@ class _LandingPageState extends State<LandingPage> {
   @override
   void dispose() {
     _busquedaCtrl.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollearAOferta() {
+    final ctx = _claveOferta.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 550),
+        curve: Curves.easeInOutCubic,
+      );
+    }
   }
 
   List<OpcionCampo> get _cursosFiltrados {
@@ -150,13 +164,14 @@ class _LandingPageState extends State<LandingPage> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SingleChildScrollView(
+        controller: _scrollController,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _construirHero(),
             _construirPilares(),
             _construirQuienesSomos(),
-            _construirOferta(),
+            KeyedSubtree(key: _claveOferta, child: _construirOferta()),
             _construirRoles(),
             _construirCompromiso(),
             _construirPie(),
@@ -224,8 +239,11 @@ class _LandingPageState extends State<LandingPage> {
   Widget _construirNavbar() {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final theme = Theme.of(context);
         final esEstrecho = constraints.maxWidth < 990;
+        final hayBusqueda = _busquedaCtrl.text.trim().isNotEmpty;
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
@@ -233,10 +251,12 @@ class _LandingPageState extends State<LandingPage> {
                 const Spacer(),
                 if (!esEstrecho) ...[
                   SizedBox(
-                    width: 260,
+                    width: 280,
                     height: 40,
                     child: TextField(
                       controller: _busquedaCtrl,
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: (_) => _scrollearAOferta(),
                       onChanged: (_) => setState(() {}),
                       style: const TextStyle(color: Colors.white, fontSize: 13),
                       decoration: InputDecoration(
@@ -256,7 +276,7 @@ class _LandingPageState extends State<LandingPage> {
                               )
                             : null,
                         filled: true,
-                        fillColor: Colors.white.withValues(alpha: 0.15),
+                        fillColor: theme.colorScheme.onPrimary.withValues(alpha: 0.15),
                         contentPadding: const EdgeInsets.symmetric(vertical: 8),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),
@@ -306,12 +326,26 @@ class _LandingPageState extends State<LandingPage> {
                 ],
               ],
             ),
+            if (!esEstrecho && hayBusqueda) ...[
+              Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 230),
+                  child: SizedBox(
+                    width: 320,
+                    child: _construirSugerenciasBusqueda(),
+                  ),
+                ),
+              ),
+            ],
             if (esEstrecho) ...[
               const SizedBox(height: 14),
               SizedBox(
                 height: 40,
                 child: TextField(
                   controller: _busquedaCtrl,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => _scrollearAOferta(),
                   onChanged: (_) => setState(() {}),
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                   decoration: InputDecoration(
@@ -331,7 +365,7 @@ class _LandingPageState extends State<LandingPage> {
                           )
                         : null,
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.15),
+                    fillColor: theme.colorScheme.onPrimary.withValues(alpha: 0.15),
                     contentPadding: const EdgeInsets.symmetric(vertical: 8),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -348,10 +382,128 @@ class _LandingPageState extends State<LandingPage> {
                   ),
                 ),
               ),
+              if (hayBusqueda) _construirSugerenciasBusqueda(),
             ],
           ],
         );
       },
+    );
+  }
+
+  Widget _construirSugerenciasBusqueda() {
+    final query = _busquedaCtrl.text.trim();
+    if (query.isEmpty) return const SizedBox.shrink();
+
+    final resultados = _cursosFiltrados;
+    final theme = Theme.of(context);
+    final esOscuro = theme.brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      constraints: const BoxConstraints(maxHeight: 280),
+      decoration: BoxDecoration(
+        color: esOscuro ? IncesTheme.superficieOscura : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Material(
+          color: Colors.transparent,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                color: IncesTheme.azulPrimario.withValues(alpha: 0.08),
+                child: Row(
+                  children: [
+                    const Icon(Icons.search_rounded, size: 16, color: IncesTheme.azulPrimario),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        resultados.isEmpty
+                            ? 'Sin coincidencias para "$query"'
+                            : '${resultados.length} especialidad${resultados.length == 1 ? "" : "es"} encontrada${resultados.length == 1 ? "" : "s"}',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: IncesTheme.azulPrimario,
+                        ),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        _busquedaCtrl.clear();
+                        setState(() {});
+                      },
+                      child: const Icon(Icons.close_rounded, size: 16, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              if (resultados.isNotEmpty)
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    itemCount: resultados.length > 5 ? 5 : resultados.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1),
+                    itemBuilder: (ctx, idx) {
+                      final curso = resultados[idx];
+                      return ListTile(
+                        dense: true,
+                        leading: CircleAvatar(
+                          radius: 14,
+                          backgroundColor: IncesTheme.azulPrimario.withValues(alpha: 0.1),
+                          child: const Icon(Icons.school_outlined, size: 16, color: IncesTheme.azulPrimario),
+                        ),
+                        title: Text(
+                          curso.etiqueta,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: esOscuro ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.grey),
+                        onTap: () {
+                          _scrollearAOferta();
+                        },
+                      );
+                    },
+                  ),
+                ),
+              InkWell(
+                onTap: _scrollearAOferta,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  alignment: Alignment.center,
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  child: Text(
+                    'Ver resultados en catálogo ↓',
+                    style: GoogleFonts.inter(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: IncesTheme.azulPrimario,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1328,7 +1480,7 @@ class _LandingPageState extends State<LandingPage> {
       width: double.infinity,
       color: esOscuro
           ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
-          : const Color(0xFF0F172A), // Azul noche institucional
+          : IncesTheme.fondoOscuro,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
       child: Center(
         child: ConstrainedBox(
@@ -1382,7 +1534,7 @@ class _LandingPageState extends State<LandingPage> {
                     ),
                   ),
                   Text(
-                    'CFS La Isabelica · v1.2.9',
+                    'CFS Rafael Urdaneta · v1.3.2 (Prod 2026)',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: Colors.white54,
                       fontSize: 11,

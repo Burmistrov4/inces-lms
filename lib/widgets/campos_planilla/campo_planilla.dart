@@ -521,7 +521,7 @@ class _TextoState extends State<_Texto> {
                           final seleccionada = _controller.text.trim().toLowerCase() ==
                               opcion.etiqueta.trim().toLowerCase();
                           return Material(
-                            color: Colors.transparent,
+                            type: MaterialType.transparency,
                             child: InkWell(
                               onTap: () {
                                 setState(() {

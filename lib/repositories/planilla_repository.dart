@@ -35,4 +35,9 @@ class PlanillaRepository {
   Future<Result<Uint8List>> descargarPdf() {
     return Result.guard(() => _gateway.descargarPdf());
   }
+
+  /// Descarga la planilla del llamante como hoja de cálculo Excel editable (.xlsx).
+  Future<Result<Uint8List>> descargarXlsx() {
+    return Result.guard(() => _gateway.descargarXlsx());
+  }
 }

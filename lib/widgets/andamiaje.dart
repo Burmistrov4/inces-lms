@@ -497,7 +497,7 @@ class _MenuLateral extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.only(left: 14),
                           child: Text(
-                            'CFS Rafael Urdaneta · Prod 2026',
+                            'CFS Rafael Urdaneta · v1.3.2 (2026)',
                             style: GoogleFonts.inter(
                               fontSize: 10,
                               color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
