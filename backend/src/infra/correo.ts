@@ -44,7 +44,7 @@ function extraerTextoDeHtml(html: string): string {
   return html
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<br\s*[\/]?>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/p>/gi, '\n\n')
     .replace(/<\/li>/gi, '\n')
     .replace(/<\/div>/gi, '\n')

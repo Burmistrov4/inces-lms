@@ -3867,7 +3867,9 @@ class PlanillaSupabase implements PuertaPlanilla {
         if (resProg.data?.name) {
           nombrePrograma = resProg.data.name;
         }
-      } catch (_) {}
+      } catch {
+        void 0;
+      }
     }
 
     if (nombrePrograma) {
