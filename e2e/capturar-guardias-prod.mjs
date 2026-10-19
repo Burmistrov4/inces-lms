@@ -88,17 +88,24 @@ async function main() {
   
   // Esperar a que cargue el panel de guardias y las peticiones terminen
   console.log('Esperando carga completa de la matriz de guardias...');
-  await page.waitForTimeout(12000);
+  await esperarTexto(page, 'Por Talleres', 45000);
+  await page.waitForTimeout(4000);
 
-  const destArtifact = 'C:/Users/Loro/.gemini/antigravity/brain/fc938256-e2cd-45cb-99ec-a6d5c97a5f0e/07_guardias_docentes_produccion.png';
-  const destDocs = path.resolve('../docs/assets/dashboards/07_guardias_docentes_produccion.png');
+  const destMatriz = 'C:/Users/Loro/.gemini/antigravity/brain/fc938256-e2cd-45cb-99ec-a6d5c97a5f0e/07_guardias_docentes_matriz_semanal.png';
+  const destMural = 'C:/Users/Loro/.gemini/antigravity/brain/fc938256-e2cd-45cb-99ec-a6d5c97a5f0e/08_guardias_docentes_pizarra_mural_mtp_pna.png';
 
-  await page.screenshot({ path: destArtifact, fullPage: false });
-  try {
-    fs.copyFileSync(destArtifact, destDocs);
-  } catch (_) {}
+  console.log('Capturando vista 1: Matriz semanal (Lun - Vie visible)...');
+  await page.screenshot({ path: destMatriz, fullPage: false });
+  console.log(`✅ CAPTURA 1 GUARDADA EN: ${destMatriz}`);
 
-  console.log(`✅ CAPTURA GUARDADA EN: ${destArtifact}`);
+  console.log('Cambiando a subvista: Pizarra Mural INCES (MTP / PNA)...');
+  await pulsarTexto(page, 'Pizarra Mural INCES');
+  await page.waitForTimeout(4000);
+
+  console.log('Capturando vista 2: Pizarra Mural Digital INCES (MTP 1..7 y PNA 1..5)...');
+  await page.screenshot({ path: destMural, fullPage: false });
+  console.log(`✅ CAPTURA 2 GUARDADA EN: ${destMural}`);
+
   await browser.close();
 }
 
