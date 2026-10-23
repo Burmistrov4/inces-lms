@@ -1214,17 +1214,35 @@ void mostrarAviso(
 /// centrado mientras cargaban, que no dice *que* esta cargando. Este esqueleto
 /// pinta tarjetas con la misma forma que la lista real, con un pulso suave, para
 /// que la espera se perciba mas corta y no haya un salto cuando llegan los datos.
+/// Pluraliza de verdad: «1 sección» / «3 secciones».
+///
+/// Medido el 2026-10-23: siete sitios de la interfaz escribían el atajo
+/// «sección(es)», que en una aplicación se lee como descuido. Con uno o con
+/// mil, el texto sale bien.
+String plural(int n, String singular, [String? formaPlural]) {
+  final palabra = n == 1 ? singular : (formaPlural ?? '${singular}es');
+  return '$n $palabra';
+}
+
 class EsqueletoLista extends StatefulWidget {
   const EsqueletoLista({
     super.key,
     this.tarjetas = 4,
-    this.conBarraFiltros = true,
+    this.conBarraFiltros = false,
   });
 
   /// Cuantas tarjetas de mentira se pintan.
   final int tarjetas;
 
   /// Si se pinta tambien la barra de busqueda/filtros de arriba.
+  ///
+  /// **Es `false` por defecto a proposito.** Medido el 2026-10-23: con la
+  /// barra y las pastillas puestas por defecto, un panel que no tiene ninguna
+  /// de las dos cosas —Inscripciones y Cupos, por ejemplo— mostraba un
+  /// esqueleto que **contradecia** la forma real de lo que iba a aparecer. Un
+  /// esqueleto que promete una barra que no existe es peor que no tener
+  /// esqueleto: el usuario espera algo que no llega. Los paneles que sí tienen
+  /// barra la piden explicita.
   final bool conBarraFiltros;
 
   @override

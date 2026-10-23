@@ -739,10 +739,47 @@ class _ResumenUsuarios extends StatelessWidget {
                 (x) => SizedBox(
                   width: 180,
                   child: Card(
-                    child: ListTile(
-                      leading: Icon(x[2] as IconData),
-                      title: Text((x[1] as int).toString()),
-                      subtitle: Text(x[0] as String),
+                    child: Padding(
+                      // **Fila propia en vez de `ListTile`.** Medido el
+                      // 2026-10-23 a 390 px: el `ListTile` gasta 40 px de icono
+                      // y 32 de padding, y a «Administradores» le quedaban ~80
+                      // px: se partía en «Administrador» + «es». Con esta fila
+                      // le sobran ~30 px y cabe entera.
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(x[2] as IconData, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  (x[1] as int).toString(),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                Text(
+                                  x[0] as String,
+                                  maxLines: 2,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11.5,
+                                    color: Theme.of(c)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

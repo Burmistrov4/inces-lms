@@ -741,7 +741,7 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
             tono: TonoAviso.advertencia,
             icono: Icons.lock_outline,
             texto: 'Este pensum no se puede modificar: hay '
-                '${widget.detalleInicial!.seccionesActivas} sección(es) activa(s) '
+                '${plural(widget.detalleInicial!.seccionesActivas, 'sección activa', 'secciones activas')} '
                 'del período vigente cursando el programa. Archívalas primero.',
           ),
           const SizedBox(height: 16),

@@ -317,6 +317,9 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
             cargando: _cargando,
             error: _error,
             onReintentar: _cargar,
+            // Este panel **sí** tiene barra de busqueda y filtros, así que el
+            // esqueleto los pinta: coincide con lo que va a aparecer.
+            esqueleto: const EsqueletoLista(conBarraFiltros: true),
             child: _lista(),
           ),
         ),
@@ -821,7 +824,7 @@ class _DialogoDetallePrograma extends StatelessWidget {
                   tono: TonoAviso.advertencia,
                   icono: Icons.lock_outline,
                   texto: 'Pensum bloqueado: hay ${detalle.seccionesActivas} '
-                      'sección(es) activa(s) del período vigente cursando este '
+                      'secciones activas del período vigente cursando este '
                       'programa. Añadir materias sí está permitido; quitarlas o '
                       'reordenarlas, no.',
                 ),

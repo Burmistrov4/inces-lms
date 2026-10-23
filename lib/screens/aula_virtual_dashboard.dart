@@ -411,7 +411,7 @@ class _AulaVirtualDashboardScreenState
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '$totalTareas tarea(s) evaluativa(s) · $totalMateriales material(es) de lectura',
+                      '${plural(totalTareas, 'tarea evaluativa', 'tareas evaluativas')} · ${plural(totalMateriales, 'material de lectura', 'materiales de lectura')}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -502,7 +502,7 @@ class _AulaVirtualDashboardScreenState
                     hayPendientes
                         ? (proximoVencimiento != null
                             ? 'Próximo vencimiento: ${formatearFechaHora(proximoVencimiento)}'
-                            : '${pendientes.length} asignación(es) pendiente(s)')
+                            : plural(pendientes.length, 'asignación pendiente', 'asignaciones pendientes'))
                         : '¡Todo al día! No tienes entregas pendientes',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,

@@ -322,3 +322,38 @@ corrida (fallo de arranque del motor), así que el número real es todavía mejo
 
 **Además:** el timeout de arranque del motor de Flutter en la matriz subió de
 60 s a 120 s (con la máquina cargada se pasaba de 60 s y el login caducaba).
+
+## N. Pulido de calidad (2026-10-23, noche) — auditoría visual de las 186 capturas
+
+Revisadas las capturas de los tres roles en varios anchos. Cuatro defectos
+encontrados y corregidos:
+
+1. **La cuota de R2 cortaba el porcentaje.** A 840 px, «6.8 GB de 10 GB (68.0 %)»
+   no cabía y el `ellipsis` se comía el final: «6.8 GB de 10 GB (0...». El
+   porcentaje va ahora en su propio elemento, así que no depende de que sobre
+   sitio. (`cpanel_explorador_archivos_panel.dart`)
+2. **«Administradores» se partía a mitad de palabra** a 390 px. El `ListTile` de
+   las tarjetas de resumen gastaba 40 px de icono y 32 de padding, y a la palabra
+   le quedaban ~80 px. Reemplazado por una fila propia: le sobran ~30 px y cabe
+   entera. (`cpanel_usuarios_roles_panel.dart`)
+3. **El esqueleto genérico contradecía la forma real.** Pintaba barra de búsqueda
+   y pastillas en paneles que no tienen ninguna de las dos cosas. Ahora el
+   esqueleto por defecto es neutro y los paneles que sí tienen barra la piden
+   explícitamente. (`lib/widgets/comunes.dart`)
+4. **Diez pluralizaciones perezosas** («sección(es)», «disponible(s)»). Helper
+   `plural(n, singular, plural)` en `comunes.dart`; cero «(es)»/(s) en la
+   interfaz.
+
+### Bug del verificador encontrado por el camino
+
+La matriz marcaba un desborde de **197 px** en la pizarra de guardias a 600 px.
+Era un **rojo falso**: la pizarra vive dentro de un `SingleChildScrollView`
+horizontal, así que su contenido pasa del viewport a propósito. El detector
+medía todos los nodos contra el ancho de la ventana sin mirar si tenían un
+ancestro con scroll. Corregido: un nodo dentro de un scroll horizontal no
+desborda. **El rojo falso apareció porque la caché hizo que el panel cargara
+antes y la captura pasara a mostrar la matriz real en vez del esqueleto.**
+
+**Estado final:** 186 capturas · 0 desbordes · 0 page errors · 0 no navegables ·
+0 fallos de login · 0 sin datos · 0 peticiones fallidas · 167 peticiones
+(eran 328 al empezar el día).

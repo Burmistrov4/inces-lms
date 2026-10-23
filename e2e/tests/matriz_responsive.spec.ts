@@ -144,12 +144,34 @@ async function medirDesborde(
     let cuantos = 0;
     let total = 0;
     let peor: { texto: string; x: number; w: number } | undefined;
+
+    // **Un nodo dentro de un scroll horizontal NO desborda.** Medido el
+    // 2026-10-23: la pizarra de guardias vive dentro de un
+    // `SingleChildScrollView` horizontal, así que su contenido pasa de largo
+    // el viewport a propósito —el usuario lo desplaza—. Medirlo contra el ancho
+    // de la ventana daba un rojo falso de 197 px. Un desborde de verdad es el
+    // que se sale de la pantalla **y** de todo ancestro que pueda desplazarse.
+    const enScrollHorizontal = (n: Element): boolean => {
+      let p: Element | null = n.parentElement;
+      while (p) {
+        const st = getComputedStyle(p);
+        if (
+          (st.overflowX === 'auto' || st.overflowX === 'scroll') &&
+          p.scrollWidth > p.clientWidth
+        ) {
+          return true;
+        }
+        p = p.parentElement;
+      }
+      return false;
+    };
+
     for (const nodo of [...document.querySelectorAll('flt-semantics')]) {
       const r = nodo.getBoundingClientRect();
       total++;
       if (r.width <= 0) continue;
       const exceso = r.x + r.width - w;
-      if (exceso > 2) {
+      if (exceso > 2 && !enScrollHorizontal(nodo)) {
         cuantos++;
         if (exceso > max) {
           max = exceso;

@@ -166,7 +166,8 @@ class _PanelMisAulasState extends State<PanelMisAulas> {
       children: [
         TituloSeccion(
           'Mis aulas',
-          subtitulo: '${mis.aulas.length} sección(es) en este lapso.',
+          subtitulo:
+              '${plural(mis.aulas.length, 'sección', 'secciones')} en este lapso.',
           acciones: [
             if (!mis.esDocente && widget.onNavegarA != null)
               TextButton.icon(

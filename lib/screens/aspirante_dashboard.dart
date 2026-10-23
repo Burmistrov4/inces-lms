@@ -975,7 +975,7 @@ class _PanelOfertasState extends State<PanelOfertas> {
       children: [
         TituloSeccion(
           'Ofertas de cupos',
-          subtitulo: '${_secciones.length} sección(es) en este período.',
+          subtitulo: '${plural(_secciones.length, 'sección', 'secciones')} en este período.',
           acciones: [
             IconButton(
               tooltip: 'Actualizar',

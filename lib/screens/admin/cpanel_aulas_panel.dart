@@ -212,6 +212,9 @@ class _CpanelAulasPanelState extends State<CpanelAulasPanel>
             cargando: _cargando,
             error: _error,
             onReintentar: _cargar,
+            // Este panel **sí** tiene barra de busqueda y filtros, así que el
+            // esqueleto los pinta: coincide con lo que va a aparecer.
+            esqueleto: const EsqueletoLista(conBarraFiltros: true),
             child: _lista(),
           ),
         ),

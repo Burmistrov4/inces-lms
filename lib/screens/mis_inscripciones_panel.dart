@@ -223,7 +223,8 @@ class _PanelMisInscripcionesState extends State<PanelMisInscripciones> {
       children: [
         TituloSeccion(
           'Mis inscripciones',
-          subtitulo: '${_inscripciones.length} inscripción(es).',
+          subtitulo:
+              '${plural(_inscripciones.length, 'inscripción', 'inscripciones')}.',
           acciones: [
             IconButton(
               tooltip: 'Actualizar',

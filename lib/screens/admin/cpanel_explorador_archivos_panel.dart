@@ -2657,12 +2657,24 @@ class _CpanelExploradorArchivosPanelState
         ? '${(_cuotaUsadaGb * 1024).toStringAsFixed(1)} MB'
         : '${_cuotaUsadaGb.toStringAsFixed(2)} GB';
     final detalle = Text(
-      '$usadaTexto de ${_cuotaTotalGb.toStringAsFixed(0)} GB '
-      '(${(porcentaje * 100).toStringAsFixed(1)}%)',
+      '$usadaTexto de ${_cuotaTotalGb.toStringAsFixed(0)} GB',
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: GoogleFonts.inter(
         fontSize: 11.5,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+    // **El porcentaje va en su propio elemento, no dentro del texto.** Medido
+    // el 2026-10-23 a 840 px: «6.8 GB de 10 GB (68.0%)» no cabía y el ellipsis
+    // se comía el final, dejando «6.8 GB de 10 GB (0...». Ahora el número
+    // importante no depende de que sobre sitio.
+    final porcentajeTexto = Text(
+      '${(porcentaje * 100).toStringAsFixed(0)}%',
+      maxLines: 1,
+      style: GoogleFonts.inter(
+        fontSize: 11.5,
+        fontWeight: FontWeight.w600,
         color: theme.colorScheme.onSurfaceVariant,
       ),
     );
@@ -2702,6 +2714,8 @@ class _CpanelExploradorArchivosPanelState
                 Row(
                   children: [
                     Expanded(child: detalle),
+                    const SizedBox(width: 6),
+                    porcentajeTexto,
                     politica,
                   ],
                 ),
@@ -2716,6 +2730,8 @@ class _CpanelExploradorArchivosPanelState
                 progreso,
                 const SizedBox(width: 10),
                 Flexible(child: detalle),
+                const SizedBox(width: 6),
+                porcentajeTexto,
                 const Spacer(),
                 politica,
               ],

@@ -188,7 +188,7 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel>
           context,
           vencidas == 0
               ? 'No había ofertas caducadas pendientes.'
-              : 'Se vencieron $vencidas oferta(s) de cupo.',
+              : 'Se vencieron ${plural(vencidas, 'oferta de cupo', 'ofertas de cupo')}.',
           exito: vencidas > 0,
         );
         _cargar();
@@ -277,7 +277,7 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel>
         ):
         mostrarAviso(
           context,
-          'Nómina exportada: $total matriculado(s) en «$nombre».',
+          'Nómina exportada: ${plural(total, 'matriculado', 'matriculados')} en «$nombre».',
           exito: true,
         );
     }
@@ -473,7 +473,7 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel>
                     Etiqueta(texto: 'Cupo ${o.resumenCupo}'),
                     Etiqueta(
                       texto: o.cuposDisponibles > 0
-                          ? '${o.cuposDisponibles} disponible(s)'
+                          ? plural(o.cuposDisponibles, 'disponible', 'disponibles')
                           : 'Sin cupos disponibles',
                     ),
                     if (o.cuposDisponibles > 0)
