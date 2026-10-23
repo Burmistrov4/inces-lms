@@ -1,5 +1,6 @@
 import '../core/errors/app_exception.dart';
 import '../core/gateways/inscripcion_gateway.dart';
+import '../core/cache_lecturas.dart';
 import '../core/network/api_client.dart';
 import '../models/inscripcion.dart';
 import 'supabase_service.dart';
@@ -19,10 +20,16 @@ class BackendInscripcionGateway implements InscripcionGateway {
 
   @override
   Future<List<OcupacionSeccion>> obtenerOfertas({bool soloConCupo = false}) async {
-    final respuesta = await _api.get(
-      '/api/v1/ofertas',
-      token: _tokenSesion,
-      parametros: soloConCupo ? {'soloConCupo': 'true'} : null,
+    // **Cache compartida.** Se invalida tras inscribirse, renunciar o aceptar.
+    final clave = 'ofertas:${soloConCupo ? 'cupo' : 'todas'}';
+    final respuesta = await cacheDeLecturas.leer<Map<String, dynamic>>(
+      clave,
+      ttl: const Duration(seconds: 45),
+      fn: () => _api.get(
+        '/api/v1/ofertas',
+        token: _tokenSesion,
+        parametros: soloConCupo ? {'soloConCupo': 'true'} : null,
+      ),
     );
     final secciones =
         (respuesta['secciones'] as List?)?.cast<Map<String, dynamic>>();
@@ -31,12 +38,28 @@ class BackendInscripcionGateway implements InscripcionGateway {
 
   @override
   Future<List<InscripcionDetallada>> obtenerMisInscripciones() async {
-    final respuesta =
-        await _api.get('/api/v1/mis-inscripciones', token: _tokenSesion);
+    // **Cache compartida.** Se invalida tras inscribirse, renunciar o aceptar:
+    // si no, el estudiante veria «no inscrito» justo despues de inscribirse.
+    final respuesta = await cacheDeLecturas.leer<Map<String, dynamic>>(
+      'mis-inscripciones',
+      ttl: const Duration(seconds: 45),
+      fn: () => _api.get('/api/v1/mis-inscripciones', token: _tokenSesion),
+    );
     final inscripciones =
         (respuesta['inscripciones'] as List?)?.cast<Map<String, dynamic>>();
     return inscripciones?.map(InscripcionDetallada.fromJson).toList() ??
         const [];
+  }
+
+  /// Lo que una escritura de inscripciones deja obsoleto.
+  ///
+  /// Cachear lecturas sólo sirve si lo que se escribe invalida lo que se lee:
+  /// sin esto, el estudiante vería «no inscrito» durante los 45 s del TTL
+  /// justo después de inscribirse.
+  void _invalidarInscripciones() {
+    cacheDeLecturas.invalidarPorPrefijo('ofertas');
+    cacheDeLecturas.invalidarPorPrefijo('mis-inscripciones');
+    cacheDeLecturas.invalidarPorPrefijo('ocupacion');
   }
 
   @override
@@ -46,6 +69,7 @@ class BackendInscripcionGateway implements InscripcionGateway {
       cuerpo: {'seccionId': seccionId},
       token: _tokenSesion,
     );
+    _invalidarInscripciones();
     return EstadoInscripcion.desde(respuesta['estado'] as String?);
   }
 
@@ -57,6 +81,7 @@ class BackendInscripcionGateway implements InscripcionGateway {
       '/api/v1/inscripciones/$seccionId/renunciar',
       token: _tokenSesion,
     );
+    _invalidarInscripciones();
     return EstadoInscripcion.desde(respuesta['estado'] as String?);
   }
 
@@ -66,15 +91,23 @@ class BackendInscripcionGateway implements InscripcionGateway {
       '/api/v1/inscripciones/$seccionId/aceptar',
       token: _tokenSesion,
     );
+    _invalidarInscripciones();
     return EstadoInscripcion.desde(respuesta['estado'] as String?);
   }
 
   @override
   Future<List<OcupacionSeccion>> obtenerOcupacion({bool soloConCupo = false}) async {
-    final respuesta = await _api.get(
-      '/api/v1/admin/ocupacion',
-      token: _tokenSesion,
-      parametros: soloConCupo ? {'soloConCupo': 'true'} : null,
+    // **Cache compartida.** Medido el 2026-10-23: 37 peticiones en una corrida.
+    // Se invalida tras cada escritura de cupos (ver [promoverSiguiente]).
+    final clave = 'ocupacion:${soloConCupo ? 'cupo' : 'todas'}';
+    final respuesta = await cacheDeLecturas.leer<Map<String, dynamic>>(
+      clave,
+      ttl: const Duration(seconds: 45),
+      fn: () => _api.get(
+        '/api/v1/admin/ocupacion',
+        token: _tokenSesion,
+        parametros: soloConCupo ? {'soloConCupo': 'true'} : null,
+      ),
     );
     final secciones =
         (respuesta['secciones'] as List?)?.cast<Map<String, dynamic>>();
@@ -97,6 +130,7 @@ class BackendInscripcionGateway implements InscripcionGateway {
         'o ya hay una oferta de cupo en el aire.',
       );
     }
+    _invalidarInscripciones();
     return InscripcionDetallada.fromJson(promovida);
   }
 

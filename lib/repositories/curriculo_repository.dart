@@ -1,3 +1,4 @@
+import '../core/cache_lecturas.dart';
 import '../core/errors/app_exception.dart';
 import '../core/gateways/curriculo_gateway.dart';
 import '../core/reglas_curriculo.dart';
@@ -52,12 +53,21 @@ class CurriculoRepository {
       _validarPaginacion(limite: limite, desplazamiento: desplazamiento);
       _validarBusqueda(busqueda);
 
-      return _gateway.listarProgramas(
-        tipo: tipo,
-        activo: activo,
-        busqueda: busqueda,
-        limite: limite,
-        desplazamiento: desplazamiento,
+      // **Cache compartida.** Medido el 2026-10-23: `/admin/programas?limite=25`
+      // se pedia 30 veces en una sola corrida, todas con la misma URL. Con la
+      // cache es una peticion aunque algo la pida treinta.
+      final clave =
+          'programas:${[tipo?.name, activo?.toString(), busqueda, limite, desplazamiento].join('|')}';
+      return cacheDeLecturas.leer<PaginaProgramas>(
+        clave,
+        ttl: const Duration(seconds: 45),
+        fn: () => _gateway.listarProgramas(
+          tipo: tipo,
+          activo: activo,
+          busqueda: busqueda,
+          limite: limite,
+          desplazamiento: desplazamiento,
+        ),
       );
     });
   }

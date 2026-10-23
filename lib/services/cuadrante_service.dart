@@ -197,7 +197,18 @@ class BackendCuadranteGateway implements CuadranteGateway {
   }
 
   @override
-  Future<List<Periodo>> listarPeriodos() async {
+  Future<List<Periodo>> listarPeriodos() {
+    // **Cache compartida.** Medido el 2026-10-23: `/admin/periodos` se pedia 45
+    // veces en una corrida, todas con la misma URL (la piden Horarios, Cuadrante,
+    // Guardias, Lapsos e Inscripciones).
+    return cacheDeLecturas.leer<List<Periodo>>(
+      'periodos',
+      ttl: const Duration(seconds: 45),
+      fn: _listarPeriodosSinCache,
+    );
+  }
+
+  Future<List<Periodo>> _listarPeriodosSinCache() async {
     try {
       final respuesta = await _api.get(
         '$_base/periodos',

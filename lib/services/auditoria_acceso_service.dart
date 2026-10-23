@@ -1,4 +1,5 @@
 import '../core/gateways/auditoria_acceso_gateway.dart';
+import '../core/cache_lecturas.dart';
 import '../core/network/api_client.dart';
 import '../models/entrada_acceso.dart';
 import 'supabase_service.dart';
@@ -26,19 +27,27 @@ class BackendAuditoriaAccesoGateway implements AuditoriaAccesoGateway {
     int limite = 25,
     int desplazamiento = 0,
   }) async {
-    final respuesta = await _api.get(
-      '/api/v1/admin/acceso',
-      token: _tokenSesion,
-      parametros: {
-        // Los filtros que no se usan se omiten del todo con el elemento
-        // null-aware: mandar `email=` vacío haría que el backend lo rechazara
-        // con un 400 por cadena demasiado corta.
-        if (estado != null) 'estado': estado.valorApi,
-        'email': ?email,
-        'userId': ?userId,
-        'limite': '$limite',
-        'desplazamiento': '$desplazamiento',
-      },
+    // **Cache compartida.** Medido el 2026-10-23: `/admin/acceso?limite=25` se
+    // pedia 34 veces en una corrida, todas con la misma URL.
+    final clave =
+        'acceso:${[estado?.valorApi, email, userId, limite, desplazamiento].join('|')}';
+    final respuesta = await cacheDeLecturas.leer<Map<String, dynamic>>(
+      clave,
+      ttl: const Duration(seconds: 45),
+      fn: () => _api.get(
+        '/api/v1/admin/acceso',
+        token: _tokenSesion,
+        parametros: {
+          // Los filtros que no se usan se omiten del todo con el elemento
+          // null-aware: mandar `email=` vacío haría que el backend lo rechazara
+          // con un 400 por cadena demasiado corta.
+          if (estado != null) 'estado': estado.valorApi,
+          'email': ?email,
+          'userId': ?userId,
+          'limite': '$limite',
+          'desplazamiento': '$desplazamiento',
+        },
+      ),
     );
 
     final entradas = (respuesta['entradas'] as List<dynamic>? ?? const <dynamic>[])

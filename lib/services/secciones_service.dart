@@ -1,5 +1,6 @@
 import '../core/errors/app_exception.dart';
 import '../core/gateways/secciones_gateway.dart';
+import '../core/cache_lecturas.dart';
 import '../core/network/api_client.dart';
 import '../models/seccion.dart';
 import 'supabase_service.dart';
@@ -23,14 +24,22 @@ class BackendSeccionesGateway implements SeccionesGateway {
     int limite = 50,
     int desplazamiento = 0,
   }) async {
-    final respuesta = await _api.get(
-      '/api/v1/admin/secciones',
-      token: _tokenSesion,
-      parametros: {
-        if (soloActivas) 'soloActivas': 'true',
-        'limite': '$limite',
-        'desplazamiento': '$desplazamiento',
-      },
+    // **Cache compartida.** Medido el 2026-10-23: esta ruta se pedia 30 veces
+    // en una corrida, todas con la misma URL.
+    final clave =
+        'secciones:${[soloActivas, limite, desplazamiento].join('|')}';
+    final respuesta = await cacheDeLecturas.leer<Map<String, dynamic>>(
+      clave,
+      ttl: const Duration(seconds: 45),
+      fn: () => _api.get(
+        '/api/v1/admin/secciones',
+        token: _tokenSesion,
+        parametros: {
+          if (soloActivas) 'soloActivas': 'true',
+          'limite': '$limite',
+          'desplazamiento': '$desplazamiento',
+        },
+      ),
     );
     return PaginaSecciones(
       secciones: ((respuesta['secciones'] as List?) ?? const [])
@@ -57,6 +66,8 @@ class BackendSeccionesGateway implements SeccionesGateway {
       cuerpo: cuerpo,
       token: _tokenSesion,
     );
+    // La lista cacheada ya no tiene la seccion nueva.
+    cacheDeLecturas.invalidarPorPrefijo('secciones');
     return Seccion.fromJson(respuesta);
   }
 

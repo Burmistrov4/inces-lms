@@ -77,6 +77,15 @@ class CacheLecturas {
     });
   }
 
+  /// Borra todas las entradas cuya clave empieza por [prefijo].
+  ///
+  /// Es lo que se llama **después de una escritura**: cachear lecturas sirve
+  /// sólo si lo que se esribe invalida lo que se lee. Sin esto, un estudiante
+  /// que se inscribe vería «no inscrito» durante el TTL.
+  void invalidarPorPrefijo(String prefijo) {
+    _entradas.removeWhere((clave, _) => clave.startsWith(prefijo));
+  }
+
   /// Vacía todo. Se llama al cerrar sesión.
   void invalidarTodo() => _entradas.clear();
 

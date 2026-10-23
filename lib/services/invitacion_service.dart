@@ -1,4 +1,5 @@
 import '../core/gateways/invitacion_gateway.dart';
+import '../core/cache_lecturas.dart';
 import '../core/network/api_client.dart';
 import '../models/invitacion_docente.dart';
 import 'supabase_service.dart';
@@ -49,9 +50,16 @@ class BackendInvitacionGateway implements InvitacionGateway {
 
   @override
   Future<List<InvitacionListada>> listarInvitaciones() async {
-    final respuesta = await _api.get(
-      '/api/v1/admin/usuarios/invitaciones',
-      token: _tokenSesion,
+    // **Cache compartida.** Medido el 2026-10-23: esta ruta se pedia 30 veces
+    // en una corrida, todas con la misma URL.
+    final clave = 'invitaciones';
+    final respuesta = await cacheDeLecturas.leer<Map<String, dynamic>>(
+      clave,
+      ttl: const Duration(seconds: 45),
+      fn: () => _api.get(
+        '/api/v1/admin/usuarios/invitaciones',
+        token: _tokenSesion,
+      ),
     );
     final crudas = respuesta['invitaciones'] as List<dynamic>? ?? const [];
     return crudas

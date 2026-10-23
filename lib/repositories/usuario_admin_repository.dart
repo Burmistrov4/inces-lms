@@ -1,3 +1,4 @@
+import '../core/cache_lecturas.dart';
 import '../core/network/api_client.dart';
 import '../core/result.dart';
 import '../models/usuario_admin.dart';
@@ -19,6 +20,30 @@ class UsuariosAdminRepository {
     }
   }
   Future<Result<PaginaUsuarios>> listar({
+    String? rol,
+    bool? activo,
+    String? busqueda,
+    int limite = 25,
+    int desplazamiento = 0,
+  }) {
+    // **Cache compartida.** Medido el 2026-10-23: `/admin/usuarios?limite=25`
+    // se pedia 31 veces en una corrida, todas con la misma URL.
+    final clave =
+        'usuarios:${[rol, activo, busqueda, limite, desplazamiento].join('|')}';
+    return cacheDeLecturas.leer<Result<PaginaUsuarios>>(
+      clave,
+      ttl: const Duration(seconds: 45),
+      fn: () => _listarSinCache(
+        rol: rol,
+        activo: activo,
+        busqueda: busqueda,
+        limite: limite,
+        desplazamiento: desplazamiento,
+      ),
+    );
+  }
+
+  Future<Result<PaginaUsuarios>> _listarSinCache({
     String? rol,
     bool? activo,
     String? busqueda,
