@@ -1,4 +1,5 @@
 import '../core/gateways/cuadrante_gateway.dart';
+import '../core/cache_lecturas.dart';
 import '../core/network/api_client.dart';
 import '../models/cuadrante.dart';
 import 'supabase_service.dart';
@@ -545,7 +546,21 @@ class BackendCuadranteGateway implements CuadranteGateway {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<MiHorario> miHorario({String? periodo}) async {
+  /// **Caché compartida** con `AulaService.misAulas`: es la misma lectura de
+  /// `/mi-horario`. Medido el 2026-10-23: se pedía 56 veces en una sola
+  /// corrida porque cuatro paneles la leen cada uno por su cuenta. Con la caché
+  /// es una petición, y si dos paneles llegan a la vez comparten la misma.
+  @override
+  Future<MiHorario> miHorario({String? periodo}) {
+    final claveCache = 'mi-horario:${_limpiar(periodo) ?? ''}';
+    return cacheDeLecturas.leer<MiHorario>(
+      claveCache,
+      ttl: const Duration(seconds: 60),
+      fn: () => _miHorarioSinCache(periodo: periodo),
+    );
+  }
+
+  Future<MiHorario> _miHorarioSinCache({String? periodo}) async {
     try {
       final respuesta = await _api.get(
         _rutaMiHorario,

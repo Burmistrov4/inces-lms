@@ -1,3 +1,4 @@
+import { platform } from 'node:os';
 import { z } from 'zod';
 import {
   TTL_DESCARGA_SEGUNDOS,
@@ -34,7 +35,12 @@ const esquema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
   PORT: z.coerce.number().int().positive().max(65535).default(3000),
-  HOST: z.string().min(1).default('0.0.0.0'),
+  // **Dual-stack en Windows.** Medido el 2026-10-22: con '0.0.0.0' el
+  // backend sólo escucha IPv4, y `localhost` —que en Windows resuelve a `::1`—
+  // daba ERR_CONNECTION_REFUSED: la app mostraba «No pudimos conectar» con el
+  // servidor corriendo. En Linux se mantiene '0.0.0.0' porque allí '::' enlaza
+  // SÓLO IPv6 y dejaría ciego el servicio para IPv4 (Render y la CI).
+  HOST: z.string().min(1).default(platform() === 'win32' ? '::' : '0.0.0.0'),
 
   SUPABASE_URL: z.string().url('SUPABASE_URL debe ser una URL válida.'),
   SUPABASE_ANON_KEY: z.string().min(20, 'SUPABASE_ANON_KEY parece incompleta.'),
@@ -95,15 +101,10 @@ const esquema = z.object({
     .default(TTL_DESCARGA_SEGUNDOS),
 
   /**
-   * Resend (correo transaccional). La API key es opcional: sin ella el envío se
-   * considera "no entregado" y el flujo sigue funcionando porque el enlace de
-   * activación se devuelve en la respuesta de la invitación.
+   * Gmail SMTP (Nodemailer), vía prioritaria de correo.
+   * Si no está configurado o falla, la invitación de Supabase
+   * (`SUPABASE_SERVICE_ROLE_KEY`) actúa como red de seguridad.
    */
-  RESEND_API_KEY: textoOpcional,
-
-  /** Remitente de Resend. Sin dominio verificado, Resend exige `onboarding@resend.dev`. */
-  RESEND_FROM: textoOpcional,
-
   /**
    * Gmail SMTP (Nodemailer).
    * Configuración para envío real vía smtp.gmail.com (465 SSL o 587 TLS)

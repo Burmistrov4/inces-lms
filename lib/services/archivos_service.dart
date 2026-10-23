@@ -175,6 +175,39 @@ class BackendArchivosGateway implements ArchivosGateway {
   }
 
   @override
+  Future<List<Archivo>> listarMios({
+    TipoEntidadArchivo? entityType,
+    int limite = 100,
+    int desplazamiento = 0,
+  }) async {
+    // `tipo`, `limite` y `desplazamiento` van como parámetros de consulta: aquí
+    // sí filtran una colección, al revés que el tipo de entidad de
+    // `listarPorEntividad`, que es parte de la identidad del recurso. Los topes
+    // del servidor (1..200) hacen que un límite absurdo dé 400 en vez de una
+    // respuesta parcial engañosa.
+    final consulta = <String, String>{
+      'limite': '$limite',
+      'desplazamiento': '$desplazamiento',
+      if (entityType != null) 'tipo': entityType.valorRemoto,
+    };
+
+    final respuesta = await _api.get(
+      '$_base/mios',
+      token: _tokenSesion(),
+      parametros: consulta,
+    );
+
+    // Mismo trato que `archivos` en `listarPorEntidad`: sin valor por defecto,
+    // para que una respuesta que no es la nuestra no se disfrace de «no tengo
+    // archivos».
+    final lista = respuesta['archivos'] as List<dynamic>;
+
+    return lista
+        .map((crudo) => Archivo.fromJson(crudo as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  @override
   Future<Archivo> subir({
     required String nombreOriginal,
     required TipoEntidadArchivo entityType,

@@ -138,7 +138,11 @@ export class FlutterApp {
    * app real: ~3 s en caliente.
    */
   async esperarMotor(opciones: { timeout?: number } = {}): Promise<void> {
-    const timeout = opciones.timeout ?? 60_000;
+    // **120 s y no 60.** Medido el 2026-10-23: el motor tarda 8,8 s con el
+    // viewport por defecto y 22 s con el alto, pero con la maquina cargada
+    // (compilaciones y matrices seguidas) se pasaba de los 60 s y el login
+    // caducaba. El margen es para la maquina, no para la app.
+    const timeout = opciones.timeout ?? 120_000;
     await this.page.waitForSelector('flt-glass-pane', { state: 'attached', timeout });
     await this.page.waitForSelector('flt-semantics-placeholder, flt-semantics', {
       state: 'attached',

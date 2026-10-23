@@ -1,18 +1,32 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   crearRemitenteSMTP,
-  crearRemitenteResend,
+  crearRemitenteSupabase,
   crearRemitenteTransaccional,
 } from '../src/infra/correo.js';
 
+/**
+ * Cadena de entrega (decisión de Lorenzo, 2026-10-20):
+ *
+ *   1. Gmail SMTP — única vía que lleva NUESTRO asunto y NUESTRO HTML.
+ *   2. Supabase `/auth/v1/invite` — red de seguridad: el correo lo manda el
+ *      panel de Auth de Supabase. **Resend se retiró**: exigía dominio de pago.
+ *
+ * Estos pruebas fijan la cascada: si SMTP cae, la invitación de Supabase
+ * responde; si Supabase además falla (o la cuenta ya existe, 422), el sistema
+ * degrada a `entregado: false` y el flujo de invitación se apoya en el enlace
+ * directo. Un `entregado: false` nunca debe lanzar.
+ */
 describe('infraestructura de correo transaccional', () => {
-  it('sin configuración SMTP ni Resend, devuelve no entregado sin fallar', async () => {
+  const mensaje = {
+    para: 'test@inces.test',
+    asunto: 'Prueba',
+    html: '<p>Hola</p>',
+  };
+
+  it('sin configuración SMTP ni Supabase, devuelve no entregado sin fallar', async () => {
     const remitente = crearRemitenteTransaccional({});
-    const resultado = await remitente.enviar({
-      para: 'test@inces.test',
-      asunto: 'Prueba',
-      html: '<p>Hola</p>',
-    });
+    const resultado = await remitente.enviar(mensaje);
 
     expect(resultado.entregado).toBe(false);
     expect(resultado.proveedor).toBe('ninguno');
@@ -26,34 +40,25 @@ describe('infraestructura de correo transaccional', () => {
       pass: '',
     });
 
-    const resultado = await remitente.enviar({
-      para: 'test@inces.test',
-      asunto: 'Prueba',
-      html: '<p>Hola</p>',
-    });
+    const resultado = await remitente.enviar(mensaje);
 
     expect(resultado.entregado).toBe(false);
     expect(resultado.proveedor).toBe('ninguno');
   });
 
-  it('crearRemitenteResend sin API key devuelve no entregado', async () => {
-    const remitente = crearRemitenteResend({
-      apiKey: '',
-      from: 'onboarding@resend.dev',
+  it('crearRemitenteSupabase sin service role devuelve no entregado', async () => {
+    const remitente = crearRemitenteSupabase({
+      url: 'https://proyecto.supabase.co',
+      serviceRoleKey: '',
     });
 
-    const resultado = await remitente.enviar({
-      para: 'test@inces.test',
-      asunto: 'Prueba',
-      html: '<p>Hola</p>',
-    });
+    const resultado = await remitente.enviar(mensaje);
 
     expect(resultado.entregado).toBe(false);
     expect(resultado.proveedor).toBe('ninguno');
   });
 
-  it('fallback automático: si SMTP no puede enviar, intenta vía Resend', async () => {
-    // Simulamos un remitente donde SMTP tiene credenciales pero falla en transporte
+  it('fallback automático: si SMTP no puede enviar, invita vía Supabase', async () => {
     const remitente = crearRemitenteTransaccional({
       smtp: {
         host: 'servidor-inexistente-12345.local',
@@ -61,17 +66,18 @@ describe('infraestructura de correo transaccional', () => {
         user: 'usuario@gmail.com',
         pass: 'clave-invalida',
       },
-      resend: {
-        apiKey: 're_dummy_test_key',
-        from: 'onboarding@resend.dev',
+      supabase: {
+        url: 'https://proyecto.supabase.co',
+        serviceRoleKey: 'service_role_de_prueba',
+        redirectTo: 'https://inces-lms.pages.dev/#/auth/activate',
       },
     });
 
-    // Mockeamos global.fetch para que Resend responda 200
     const fetchOriginal = globalThis.fetch;
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ id: 'email_123' }),
+      status: 200,
+      json: async () => ({ id: 'usuario-123' }),
     });
 
     try {
@@ -82,13 +88,13 @@ describe('infraestructura de correo transaccional', () => {
       });
 
       expect(resultado.entregado).toBe(true);
-      expect(resultado.proveedor).toBe('resend');
+      expect(resultado.proveedor).toBe('supabase');
     } finally {
       globalThis.fetch = fetchOriginal;
     }
   });
 
-  it('si tanto SMTP como Resend fallan, devuelve entregado: false de manera resiliente', async () => {
+  it('si tanto SMTP como Supabase fallan, devuelve entregado: false de manera resiliente', async () => {
     const remitente = crearRemitenteTransaccional({
       smtp: {
         host: 'servidor-inexistente-12345.local',
@@ -96,9 +102,9 @@ describe('infraestructura de correo transaccional', () => {
         user: 'usuario@gmail.com',
         pass: 'clave-invalida',
       },
-      resend: {
-        apiKey: 're_dummy_test_key',
-        from: 'onboarding@resend.dev',
+      supabase: {
+        url: 'https://proyecto.supabase.co',
+        serviceRoleKey: 'service_role_de_prueba',
       },
     });
 
@@ -118,6 +124,30 @@ describe('infraestructura de correo transaccional', () => {
 
       expect(resultado.entregado).toBe(false);
       expect(resultado.proveedor).toBe('ninguno');
+    } finally {
+      globalThis.fetch = fetchOriginal;
+    }
+  });
+
+  it('Supabase no reenvía si la cuenta ya existe (422): entregado false, sin lanzar', async () => {
+    const remitente = crearRemitenteSupabase({
+      url: 'https://proyecto.supabase.co',
+      serviceRoleKey: 'service_role_de_prueba',
+    });
+
+    const fetchOriginal = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 422,
+      text: async () => 'A user with this email address has already been registered',
+    });
+
+    try {
+      const resultado = await remitente.enviar(mensaje);
+
+      expect(resultado.entregado).toBe(false);
+      expect(resultado.proveedor).toBe('supabase');
+      expect(resultado.detalle).toContain('ya existe');
     } finally {
       globalThis.fetch = fetchOriginal;
     }

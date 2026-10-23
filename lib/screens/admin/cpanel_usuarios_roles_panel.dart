@@ -10,6 +10,7 @@ import '../../repositories/recuperacion_repository.dart';
 import '../../repositories/usuario_admin_repository.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
+import '../../core/refresco_secciones.dart';
 import 'cpanel_invitaciones_panel.dart';
 
 class CpanelUsuariosRolesPanel extends StatefulWidget {
@@ -27,7 +28,8 @@ class CpanelUsuariosRolesPanel extends StatefulWidget {
       _CpanelUsuariosRolesPanelState();
 }
 
-class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
+class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel>
+    with RefrescoAlVolver<CpanelUsuariosRolesPanel> {
   late final _repo = widget.repo ?? UsuariosAdminRepository();
   late final _repoRecuperacion =
       widget.repoRecuperacion ?? RecuperacionRepository();
@@ -62,10 +64,12 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
     super.dispose();
   }
 
-  Future<void> _cargar() async {
+  Future<void> _cargar({bool silencioso = false}) async {
     if (mounted) {
       setState(() {
-        _cargando = true;
+        // **Refresco en segundo plano:** si ya hay datos no se vuelve a mostrar
+        // el esqueleto; se conserva lo que hay hasta que llegue lo nuevo.
+        _cargando = silencioso ? false : true;
       });
     }
     final r = await _repo.listar(
@@ -81,6 +85,7 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
         _pagina = p;
         _error = null;
         _cargando = false;
+        marcarCarga();
       }),
       failure: (e) => setState(() {
         _error = e.message;
@@ -88,6 +93,12 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
       }),
     );
   }
+
+  @override
+  String get seccion => 'Usuarios y Roles';
+
+  @override
+  Future<void> refrescarEnSegundoPlano() => _cargar(silencioso: true);
 
   void _buscar(String _) {
     _debounce?.cancel();
@@ -360,22 +371,38 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final esEstrecho = constraints.maxWidth < 850;
-                    if (esEstrecho) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          TextField(
-                            controller: _busqueda,
-                            onChanged: _buscar,
-                            decoration: const InputDecoration(
-                              prefixIcon: Icon(Icons.search),
-                              labelText: 'Buscar usuario',
-                              hintText: 'Nombre, correo o cédula',
-                            ),
-                          ),
+                // **Barra de busqueda a todo el ancho, en su propia fila.**
+                // Patron de Google (Material 3 SearchBar): el campo de texto
+                // tiene su propia fila y los filtros van debajo, envueltos.
+                // Medido el 2026-10-22: antes compartia fila con los
+                // desplegables y habia dos copias de los filtros (estrecho/ancho).
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // `ListenableBuilder` para que el boton de limpiar aparezca
+                    // y desaparezca sin hacer setState en cada tecla.
+                    ListenableBuilder(
+                      listenable: _busqueda,
+                      builder: (context, _) => TextField(
+                        controller: _busqueda,
+                        onChanged: _buscar,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.search),
+                          labelText: 'Buscar usuario',
+                          hintText: 'Nombre, correo o cedula',
+                          suffixIcon: _busqueda.text.isNotEmpty
+                              ? IconButton(
+                                  tooltip: 'Limpiar busqueda',
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  onPressed: () {
+                                    _busqueda.clear();
+                                    _buscar('');
+                                  },
+                                )
+                              : null,
+                        ),
+                      ),
+                    ),
                           const SizedBox(height: 12),
                           Wrap(
                             spacing: 8,
@@ -448,92 +475,7 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
                               ),
                             ],
                           ),
-                        ],
-                      );
-                    }
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _busqueda,
-                            onChanged: _buscar,
-                            decoration: const InputDecoration(
-                              prefixIcon: Icon(Icons.search),
-                              labelText: 'Buscar usuario',
-                              hintText: 'Nombre, correo o cédula',
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        DropdownButton<String?>(
-                          value: _rol,
-                          hint: const Text('Todos los roles'),
-                          items: const [
-                            DropdownMenuItem<String?>(
-                              value: null,
-                              child: Text('Todos los roles'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'admin',
-                              child: Text('Administradores'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'docente',
-                              child: Text('Docentes'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'estudiante',
-                              child: Text('Estudiantes'),
-                            ),
-                          ],
-                          onChanged: (v) {
-                            setState(() {
-                              _rol = v;
-                              _paginaActual = 0;
-                            });
-                            _cargar();
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        DropdownButton<bool?>(
-                          value: _activo,
-                          hint: const Text('Estado'),
-                          items: const [
-                            DropdownMenuItem<bool?>(
-                              value: null,
-                              child: Text('Todos'),
-                            ),
-                            DropdownMenuItem(
-                              value: true,
-                              child: Text('Activos'),
-                            ),
-                            DropdownMenuItem(
-                              value: false,
-                              child: Text('Inactivos'),
-                            ),
-                          ],
-                          onChanged: (v) {
-                            setState(() {
-                              _activo = v;
-                              _paginaActual = 0;
-                            });
-                            _cargar();
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        FilterChip(
-                          label: const Text('Ocultar pruebas'),
-                          selected: _ocultarCuentasDemo,
-                          onSelected: (v) => setState(() => _ocultarCuentasDemo = v),
-                        ),
-                        IconButton(
-                          onPressed: _cargando ? null : _cargar,
-                          tooltip: 'Actualizar',
-                          icon: const Icon(Icons.refresh),
-                        ),
-                      ],
-                    );
-                  },
+                  ],
                 ),
                 if (_error != null)
                   Padding(
@@ -558,9 +500,33 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
                     ),
                   )
                 else
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DataTable(
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Menos de 900 px de ancho: tarjetas, no tabla.
+                      // El DataTable con celdas fijas (250 + 220 px mínimo)
+                      // obligaba a hacer zoom al 80-90 % para verse completo —
+                      // medido en la demo ante el Jefe de Centro, 2026-10-20. En
+                      // ventana estrecha cada usuario es una tarjeta; en ancha
+                      // sigue siendo tabla con scroll horizontal controlado.
+                      if (constraints.maxWidth < 900) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: users
+                              .map(
+                                (u) => _TarjetaUsuario(
+                                  usuario: u,
+                                  onCambiarRol: () => _cambiarRol(u),
+                                  onRestablecer: () => _restablecer(u),
+                                  onCambiarEstado: () =>
+                                      _cambiarEstado(u, !u.activo),
+                                ),
+                              )
+                              .toList(),
+                        );
+                      }
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
                       dataRowMinHeight: 68,
                       dataRowMaxHeight: 84,
                       columns: const [
@@ -704,7 +670,9 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel> {
                             ),
                           )
                           .toList(),
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -838,4 +806,147 @@ class _DialogoRolState extends State<_DialogoRol> {
       ),
     ],
   );
+}
+
+/// Tarjeta de un usuario para ventanas estrechas (< 900 px).
+///
+/// **Por qué existe.** La tabla fija no cabía sin zoom (demo del 2026-10-20);
+/// esta tarjeta es la misma información apilada, con las tres acciones a un
+/// toque. Comparte el contenido del `DataTable` para que ninguna de las dos
+/// vistas sepa algo que la otra no muestre.
+class _TarjetaUsuario extends StatelessWidget {
+  const _TarjetaUsuario({
+    required this.usuario,
+    required this.onCambiarRol,
+    required this.onRestablecer,
+    required this.onCambiarEstado,
+  });
+
+  final UsuarioAdmin usuario;
+  final VoidCallback onCambiarRol;
+  final VoidCallback onRestablecer;
+  final VoidCallback onCambiarEstado;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: usuario.esCuentaDemo
+                      ? theme.colorScheme.secondaryContainer
+                      : theme.colorScheme.primaryContainer,
+                  child: Text(
+                    (usuario.nombres.isNotEmpty
+                            ? usuario.nombres[0]
+                            : (usuario.email.isNotEmpty
+                                ? usuario.email[0]
+                                : 'U'))
+                        .toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: usuario.esCuentaDemo
+                          ? theme.colorScheme.onSecondaryContainer
+                          : theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        usuario.nombreCompleto,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      if (usuario.cedula != null &&
+                          usuario.cedula!.isNotEmpty)
+                        Text(
+                          'C.I. ${usuario.cedula}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                _RolChip(usuario.rol),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              usuario.email,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: usuario.activo
+                        ? Colors.green.shade600
+                        : Colors.grey.shade500,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(usuario.activo ? 'Activo' : 'Inactivo'),
+                if (usuario.esCuentaDemo) ...[
+                  const SizedBox(width: 8),
+                  const Etiqueta(texto: 'Cuenta de demostración'),
+                ],
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Cambiar rol',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: onCambiarRol,
+                  icon: const Icon(Icons.manage_accounts_outlined),
+                ),
+                IconButton(
+                  tooltip: 'Restablecer contraseña',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: onRestablecer,
+                  icon: const Icon(Icons.key_outlined),
+                ),
+                IconButton(
+                  tooltip: usuario.activo
+                      ? 'Desactivar usuario'
+                      : 'Activar usuario',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: onCambiarEstado,
+                  icon: Icon(
+                    usuario.activo
+                        ? Icons.person_off_outlined
+                        : Icons.person_add_alt_outlined,
+                    color: usuario.activo
+                        ? Colors.amber.shade800
+                        : Colors.green.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/inces_theme.dart';
+import 'guardia_toque.dart';
 
 /// Barra de acciones rápidas y panel superior del Dashboard institucional.
 ///
@@ -41,7 +42,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
       acciones: [
         if (onMisAulas != null)
           FilledButton.icon(
-            onPressed: onMisAulas,
+            onPressed: () => conGuardia(onMisAulas, 'barra-MisAulas'),
             icon: const Icon(Icons.class_outlined, size: 15),
             label: const Text('Mis Aulas'),
             style: FilledButton.styleFrom(
@@ -55,7 +56,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
           ),
         if (onAsistencia != null)
           FilledButton.tonalIcon(
-            onPressed: onAsistencia,
+            onPressed: () => conGuardia(onAsistencia, 'barra-Asistencia'),
             icon: const Icon(Icons.fact_check_outlined, size: 15),
             label: const Text('Asistencia QR'),
             style: FilledButton.styleFrom(
@@ -69,7 +70,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
           ),
         if (onCalificaciones != null)
           OutlinedButton.icon(
-            onPressed: onCalificaciones,
+            onPressed: () => conGuardia(onCalificaciones, 'barra-Calificaciones'),
             icon: const Icon(Icons.grading_outlined, size: 15),
             label: const Text('Calificaciones'),
             style: OutlinedButton.styleFrom(
@@ -83,7 +84,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
           ),
         if (onMiHorario != null)
           OutlinedButton.icon(
-            onPressed: onMiHorario,
+            onPressed: () => conGuardia(onMiHorario, 'barra-MiHorario'),
             icon: const Icon(Icons.calendar_month_outlined, size: 15),
             label: const Text('Mi Horario'),
             style: OutlinedButton.styleFrom(
@@ -119,7 +120,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
       acciones: [
         if (onOfertasCupos != null)
           FilledButton.icon(
-            onPressed: onOfertasCupos,
+            onPressed: () => conGuardia(onOfertasCupos, 'barra-OfertasCupos'),
             icon: const Icon(Icons.explore_outlined, size: 15),
             label: const Text('Ofertas de Cupos'),
             style: FilledButton.styleFrom(
@@ -133,7 +134,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
           ),
         if (onMisAulas != null)
           FilledButton.tonalIcon(
-            onPressed: onMisAulas,
+            onPressed: () => conGuardia(onMisAulas, 'barra-MisAulas'),
             icon: const Icon(Icons.class_outlined, size: 15),
             label: const Text('Mis Aulas'),
             style: FilledButton.styleFrom(
@@ -147,7 +148,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
           ),
         if (onAsistencia != null)
           OutlinedButton.icon(
-            onPressed: onAsistencia,
+            onPressed: () => conGuardia(onAsistencia, 'barra-Asistencia'),
             icon: const Icon(Icons.fact_check_outlined, size: 15),
             label: const Text('Marcar Asistencia'),
             style: OutlinedButton.styleFrom(
@@ -161,7 +162,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
           ),
         if (onDescargarPlanilla != null)
           OutlinedButton.icon(
-            onPressed: onDescargarPlanilla,
+            onPressed: () => conGuardia(onDescargarPlanilla, 'barra-DescargarPlanilla'),
             icon: const Icon(Icons.picture_as_pdf_outlined, size: 15),
             label: const Text('Planilla PDF'),
             style: OutlinedButton.styleFrom(
@@ -175,7 +176,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
           ),
         if (onDescargarExcel != null)
           OutlinedButton.icon(
-            onPressed: onDescargarExcel,
+            onPressed: () => conGuardia(onDescargarExcel, 'barra-DescargarExcel'),
             icon: const Icon(Icons.table_chart_outlined, size: 15),
             label: const Text('Planilla Excel'),
             style: OutlinedButton.styleFrom(
@@ -229,7 +230,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
             children: [
               // Estado del sistema con pulso verde
               InkWell(
-                onTap: onVerModulos,
+                onTap: () => conGuardia(onVerModulos, 'barra-VerModulos'),
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
                   padding:
@@ -267,7 +268,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
               ),
               // Insignia de período académico
               InkWell(
-                onTap: onVerLapsos,
+                onTap: () => conGuardia(onVerLapsos, 'barra-VerLapsos'),
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
                   padding:
@@ -307,7 +308,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
               [
                 if (onInscribirAspirante != null)
                   FilledButton.icon(
-                    onPressed: onInscribirAspirante,
+                    onPressed: () => conGuardia(onInscribirAspirante, 'barra-InscribirAspirante'),
                     icon: const Icon(Icons.person_add_alt_1_rounded, size: 15),
                     label: const Text('+ Inscribir Aspirante'),
                     style: FilledButton.styleFrom(
@@ -322,7 +323,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
                   ),
                 if (onAsignarClase != null)
                   FilledButton.tonalIcon(
-                    onPressed: onAsignarClase,
+                    onPressed: () => conGuardia(onAsignarClase, 'barra-AsignarClase'),
                     icon: const Icon(Icons.add_to_photos_rounded, size: 15),
                     label: const Text('+ Asignar Clase'),
                     style: FilledButton.styleFrom(
@@ -337,7 +338,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
                   ),
                 if (onVerAulas != null)
                   OutlinedButton.icon(
-                    onPressed: onVerAulas,
+                    onPressed: () => conGuardia(onVerAulas, 'barra-VerAulas'),
                     icon: const Icon(Icons.meeting_room_outlined, size: 15),
                     label: const Text('Ver Aulas'),
                     style: OutlinedButton.styleFrom(
@@ -352,7 +353,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
                   ),
                 if (onGenerarReporte != null)
                   OutlinedButton.icon(
-                    onPressed: onGenerarReporte,
+                    onPressed: () => conGuardia(onGenerarReporte, 'barra-GenerarReporte'),
                     icon: const Icon(Icons.summarize_outlined, size: 15),
                     label: const Text('Generar Reporte'),
                     style: OutlinedButton.styleFrom(

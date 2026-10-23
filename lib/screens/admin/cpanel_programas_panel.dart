@@ -10,6 +10,8 @@ import '../../models/programa.dart';
 import '../../repositories/curriculo_repository.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
+import '../../core/refresco_secciones.dart';
+import '../../widgets/responsivo.dart';
 import 'asistente_curriculo_screen.dart';
 
 /// Panel de programas académicos (Módulo 2).
@@ -30,7 +32,8 @@ class CpanelProgramasPanel extends StatefulWidget {
   State<CpanelProgramasPanel> createState() => _CpanelProgramasPanelState();
 }
 
-class _CpanelProgramasPanelState extends State<CpanelProgramasPanel> {
+class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
+    with RefrescoAlVolver<CpanelProgramasPanel> {
   late final CurriculoRepository _repo =
       widget.repositorio ?? CurriculoRepository();
 
@@ -65,10 +68,12 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel> {
     super.dispose();
   }
 
-  Future<void> _cargar() async {
+  Future<void> _cargar({bool silencioso = false}) async {
     setState(() {
-      _cargando = true;
-      _error = null;
+      // **Refresco en segundo plano:** si ya hay datos no se vuelve a mostrar el
+      // esqueleto; se conserva lo que hay hasta que llegue lo nuevo.
+      _cargando = silencioso ? false : true;
+      if (!silencioso) _error = null;
     });
 
     final resultado = await _repo.listarProgramas(
@@ -86,6 +91,7 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel> {
         _cargando = false;
         _programas = pagina.programas;
         _total = pagina.total;
+        marcarCarga();
       }),
       failure: (fallo) => setState(() {
         _cargando = false;
@@ -93,6 +99,12 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel> {
       }),
     );
   }
+
+  @override
+  String get seccion => 'Programas Académicos';
+
+  @override
+  Future<void> refrescarEnSegundoPlano() => _cargar(silencioso: true);
 
   void _buscar(String _) {
     _debounce?.cancel();
@@ -313,14 +325,18 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel> {
   }
 
   Widget _filtros() {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    // **Barra de busqueda a todo el ancho, en su propia fila.** Patron de
+    // Google (Material 3): el campo de texto tiene su propia fila y los filtros
+    // van debajo. Medido el 2026-10-23: con ancho fijo de 280 px quedaba
+    // angosto junto a los filtros.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(
-          width: 280,
-          child: TextField(
+        // `ListenableBuilder` para que el boton de limpiar aparezca y
+        // desaparezca sin hacer setState en cada tecla.
+        ListenableBuilder(
+          listenable: _busquedaCtrl,
+          builder: (context, _) => TextField(
             controller: _busquedaCtrl,
             onChanged: _buscar,
             decoration: const InputDecoration(
@@ -330,6 +346,12 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel> {
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
         SizedBox(
           width: 190,
           child: DropdownButtonFormField<TipoPrograma?>(
@@ -378,6 +400,8 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel> {
               }
             },
           ),
+        ),
+      ],
         ),
       ],
     );
@@ -755,7 +779,7 @@ class _DialogoDetallePrograma extends StatelessWidget {
         ],
       ),
       content: SizedBox(
-        width: 560,
+        width: anchoDialogoSeguro(context, 560),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -947,7 +971,7 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
     return AlertDialog(
       title: const Text('Editar programa formativo'),
       content: SizedBox(
-        width: 480,
+        width: anchoDialogoSeguro(context, 480),
         child: SingleChildScrollView(
           child: Form(
             key: _forma,

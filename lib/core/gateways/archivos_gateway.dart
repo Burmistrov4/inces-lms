@@ -82,6 +82,22 @@ abstract interface class ArchivosGateway {
     required String entidadId,
   });
 
+  /// Los archivos propios (o todos, si quien pregunta es administrador).
+  ///
+  /// Es la lectura que hidrata el gestor documental al abrirse: sin ella la
+  /// lista vivía sólo en memoria y en `SharedPreferences`, así que al recargar
+  /// parecía que no se había subido nada. [entityType] filtra por clase de
+  /// entidad cuando viene —el gestor pide `TipoEntidadArchivo.driveFile`, la
+  /// subida suelta—; sin él, trae todo lo del usuario.
+  ///
+  /// La visibilidad la decide la RLS en la base, igual que en el resto del
+  /// módulo: el dueño ve lo suyo y el administrador lo ve todo.
+  Future<List<Archivo>> listarMios({
+    TipoEntidadArchivo? entityType,
+    int limite = 100,
+    int desplazamiento = 0,
+  });
+
   /// Los tres pasos, en orden, devolviendo el archivo ya confirmado.
   ///
   /// Es el camino que usa la UI. Se ofrece además de los pasos sueltos porque

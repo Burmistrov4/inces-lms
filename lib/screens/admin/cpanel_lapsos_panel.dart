@@ -8,6 +8,7 @@ import '../../repositories/cuadrante_repository.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/guia_contextual_modulo.dart';
+import '../../widgets/responsivo.dart';
 
 /// Panel del catálogo de lapsos académicos (Módulo 3).
 ///
@@ -630,7 +631,7 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
     return AlertDialog(
       title: Text(_esEdicion ? 'Editar lapso' : 'Registrar lapso'),
       content: SizedBox(
-        width: 440,
+        width: anchoDialogoSeguro(context, 440),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,

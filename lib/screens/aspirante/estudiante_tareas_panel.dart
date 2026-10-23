@@ -300,32 +300,32 @@ class _EstudianteTareasPanelState extends State<EstudianteTareasPanel> {
   ) {
     final paleta = PaletaInces.de(context);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _botonPestana(
-            categoria: CategoriaTareaEstudiante.asignadas,
-            conteo: totalAsignadas,
-            colorActivo: IncesTheme.azulPrimario,
-            theme: theme,
-          ),
-          const SizedBox(width: 10),
-          _botonPestana(
-            categoria: CategoriaTareaEstudiante.vencidas,
-            conteo: totalVencidas,
-            colorActivo: paleta.error,
-            theme: theme,
-          ),
-          const SizedBox(width: 10),
-          _botonPestana(
-            categoria: CategoriaTareaEstudiante.completadas,
-            conteo: totalCompletadas,
-            colorActivo: paleta.exito,
-            theme: theme,
-          ),
-        ],
-      ),
+    // **Wrap y no Row con scroll horizontal.** Medido el 2026-10-22: con
+    // tres pestanas la tercera («Completadas y Calificadas») quedaba en x=434,
+    // fuera de la pantalla de 390. Envolverlas las muestra todas.
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        _botonPestana(
+          categoria: CategoriaTareaEstudiante.asignadas,
+          conteo: totalAsignadas,
+          colorActivo: IncesTheme.azulPrimario,
+          theme: theme,
+        ),
+        _botonPestana(
+          categoria: CategoriaTareaEstudiante.vencidas,
+          conteo: totalVencidas,
+          colorActivo: paleta.error,
+          theme: theme,
+        ),
+        _botonPestana(
+          categoria: CategoriaTareaEstudiante.completadas,
+          conteo: totalCompletadas,
+          colorActivo: paleta.exito,
+          theme: theme,
+        ),
+      ],
     );
   }
 

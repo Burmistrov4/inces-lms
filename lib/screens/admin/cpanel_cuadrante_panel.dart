@@ -8,6 +8,7 @@ import '../../repositories/cuadrante_repository.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/cuadrante_grid.dart';
 import '../../widgets/guia_contextual_modulo.dart';
+import '../../widgets/responsivo.dart';
 import 'cpanel_invitaciones_panel.dart';
 
 /// Rejilla maestra del cuadrante (Módulo 3).
@@ -51,6 +52,9 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
 
   List<Periodo> _periodos = const [];
   String? _lapso;
+
+  /// **Filtro de dia de la rejilla.** null = semana completa.
+  int? _diaFiltro;
   bool _hayVigente = false;
 
   List<ClaseCuadrante> _clases = const [];
@@ -385,9 +389,26 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
           ));
     }
 
+    // Dias que tienen algo, para el punto del selector.
+    final diasConContenido = <int>{};
+    for (final entrada in celdas.entries) {
+      final dia = int.tryParse(entrada.key.split('-').first);
+      if (dia != null && entrada.value.isNotEmpty) diasConContenido.add(dia);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // **Filtro de dia, junto a la rejilla.** Medido el 2026-10-22: no había
+        // forma de ver un solo día y los controles andaban repartidos entre la
+        // cabecera y el contenido. Ahora el filtro vive aquí, igual que en
+        // Guardias: «Todo» muestra la semana y un día concreto lo enfoca.
+        SelectorDeDias(
+          seleccionado: _diaFiltro,
+          onCambio: (dia) => setState(() => _diaFiltro = dia),
+          diasConContenido: diasConContenido,
+        ),
+        const SizedBox(height: 10),
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Wrap(
@@ -411,6 +432,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
         Expanded(
           child: CuadranteGrid(
             celdas: celdas,
+            diaFiltro: _diaFiltro,
             onCeldaTap: _razonParaNoAsignar() == null
                 ? (dia, bloque) =>
                     _abrirCreacion(diaInicial: dia, bloqueInicial: bloque)
@@ -601,8 +623,8 @@ class _DialogoClaseState extends State<_DialogoClase> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Invitar / Registrar nuevo docente'),
-        content: const SizedBox(
-          width: 520,
+        content: SizedBox(
+          width: anchoDialogoSeguro(context, 520),
           height: 480,
           child: SingleChildScrollView(
             child: CpanelInvitacionesPanel(),
@@ -848,7 +870,11 @@ class _DialogoClaseState extends State<_DialogoClase> {
               const SizedBox(height: 16),
               Builder(
                 builder: (context) {
-                  final apilar = MediaQuery.sizeOf(context).width < 500;
+                  // El umbral canónico vive en `responsivo.dart` (Material 3): apilar es
+                  // cosa de la ventana `compact`, < 600. El 500 de antes era un
+                  // umbral propio que se desviaba del contrato sin que nada lo
+                  // supiera.
+                  final apilar = esCompacto(context);
                   final campoDia = _Desplegable<int>(
                     etiqueta: 'Día',
                     ancho: double.infinity,
@@ -995,7 +1021,7 @@ class _DialogoEditarHorasBloquesState extends State<_DialogoEditarHorasBloques> 
     return AlertDialog(
       title: const Text('Configurar Horarios de Bloques'),
       content: SizedBox(
-        width: 480,
+        width: anchoDialogoSeguro(context, 480),
         height: 480,
         child: ListView(
           children: [

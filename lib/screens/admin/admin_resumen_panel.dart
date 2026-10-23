@@ -8,6 +8,7 @@ import '../../repositories/modulo_repository.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/barra_acciones_superiores.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/responsivo.dart';
 import '../../widgets/walkthrough_interactivo.dart';
 
 /// Panel de resumen ejecutivo del Administrador Maestro.
@@ -333,69 +334,39 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
         ? 'Sistema 100% Operativo'
         : '$operativos activos de $total';
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final ancho = constraints.maxWidth;
-        final columnas = ancho > 1100
-            ? 4
-            : ancho > 600
-                ? 2
-                : 1;
+    final items = [
+      TarjetaMetrica(
+        etiqueta: etiquetaModulos,
+        valor: modulosTexto,
+        icono: Icons.tune_rounded,
+        tono: TonoEstado.exito,
+        onTap: () => widget.onNavegarA?.call('Módulos del Sistema'),
+      ),
+      TarjetaMetrica(
+        etiqueta: 'Período académico',
+        valor: 'SA26-2',
+        icono: Icons.calendar_today_rounded,
+        tono: TonoEstado.info,
+        onTap: () => widget.onNavegarA?.call('Lapsos Académicos'),
+      ),
+      const TarjetaMetrica(
+        etiqueta: 'Seguridad RLS',
+        valor: '100% activa',
+        icono: Icons.shield_rounded,
+        tono: TonoEstado.exito,
+      ),
+      TarjetaMetrica(
+        etiqueta: 'Almacenamiento R2',
+        valor: 'Cloudflare',
+        icono: Icons.cloud_done_rounded,
+        tono: TonoEstado.info,
+        onTap: () => widget.onNavegarA?.call('Cloud CFS'),
+      ),
+    ];
 
-        final items = [
-          TarjetaMetrica(
-            etiqueta: etiquetaModulos,
-            valor: modulosTexto,
-            icono: Icons.tune_rounded,
-            tono: TonoEstado.exito,
-            onTap: () => widget.onNavegarA?.call('Módulos del Sistema'),
-          ),
-          TarjetaMetrica(
-            etiqueta: 'Período académico',
-            valor: 'SA26-2',
-            icono: Icons.calendar_today_rounded,
-            tono: TonoEstado.info,
-            onTap: () => widget.onNavegarA?.call('Lapsos Académicos'),
-          ),
-          const TarjetaMetrica(
-            etiqueta: 'Seguridad RLS',
-            valor: '100% activa',
-            icono: Icons.shield_rounded,
-            tono: TonoEstado.exito,
-          ),
-          TarjetaMetrica(
-            etiqueta: 'Almacenamiento R2',
-            valor: 'Cloudflare',
-            icono: Icons.cloud_done_rounded,
-            tono: TonoEstado.info,
-            onTap: () => widget.onNavegarA?.call('Gestor de Archivos (R2)'),
-          ),
-        ];
-
-        if (columnas == 1) {
-          return Column(
-            children: [
-              for (final item in items) ...[
-                item,
-                const SizedBox(height: 12),
-              ],
-            ],
-          );
-        }
-
-        return Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            for (final item in items)
-              SizedBox(
-                width: (ancho - (columnas - 1) * 16) / columnas,
-                child: item,
-              ),
-          ],
-        );
-      },
-    );
+    // 300 px por celda → 4 columnas a 1280 px (fila llena), 3 a 900, 2 a 600
+    // y 1 en teléfono. Antes eran umbrales propios de este panel (1100/600).
+    return rejillaDeTarjetas(hijos: items, anchoCelda: 300);
   }
 
   // ---------------------------------------------------------------------------
@@ -477,38 +448,13 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
           ],
         ),
         const SizedBox(height: 16),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final ancho = constraints.maxWidth;
-            final columnas = ancho > 1000
-                ? 3
-                : ancho > 640
-                    ? 2
-                    : 1;
-
-            if (columnas == 1) {
-              return Column(
-                children: [
-                  for (final item in acciones) ...[
-                    _construirTarjetaAccion(item, theme),
-                    const SizedBox(height: 12),
-                  ],
-                ],
-              );
-            }
-
-            return Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: [
-                for (final item in acciones)
-                  SizedBox(
-                    width: (ancho - (columnas - 1) * 16) / columnas,
-                    child: _construirTarjetaAccion(item, theme),
-                  ),
-              ],
-            );
-          },
+        // 400 px por celda → 3 columnas a 1280 px (6 acciones = 2 filas de 3),
+        // 2 a 900, 1 en teléfono. Antes eran umbrales propios (1000/640).
+        rejillaDeTarjetas(
+          hijos: [
+            for (final item in acciones) _construirTarjetaAccion(item, theme),
+          ],
+          anchoCelda: 400,
         ),
       ],
     );

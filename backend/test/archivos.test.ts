@@ -8,6 +8,7 @@ import {
   crearArnés,
   ID_ADMIN,
   ID_ALUMNO,
+  ID_DOCENTE,
   ID_ARCHIVO_CONFIRMADO,
   MODULOS_POR_DEFECTO,
   parametro,
@@ -53,6 +54,12 @@ const ID_TAREA = 'ffffffff-0000-4000-8000-000000000001';
 
 /** Un archivo del administrador, para los casos de «es de otro». */
 const ID_ARCHIVO_DEL_ADMIN = 'a1b2c3d4-0000-4000-8000-0000000000a1';
+
+/** Ids de las siembras propias de «mis archivos» (rutina del gestor). */
+const ID_ARCHIVO_MIO_DRIVE = 'd3a1f000-0000-4000-8000-000000000001';
+const ID_ARCHIVO_MIO_ENTREGA = 'd3a1f000-0000-4000-8000-000000000002';
+const ID_ARCHIVO_AJENO = 'd3a1f000-0000-4000-8000-0000000000a1';
+const ID_ARCHIVO_BORRADO = 'd3a1f000-0000-4000-8000-0000000000de';
 const CLAVE_ARCHIVO_DEL_ADMIN =
   `m5_archivos/${ID_ADMIN}/2026/09/${ID_ARCHIVO_DEL_ADMIN}.pdf`;
 
@@ -66,7 +73,7 @@ const ARCHIVO_DEL_ADMIN: ArchivoFalso = {
   entityType: 'TEACHER_GUIDE',
 };
 
-/** Las siete rutas, con un id válido, para las pruebas de acceso. */
+/** Las ocho rutas, con un id válido, para las pruebas de acceso. */
 const RUTAS = [
   { method: 'POST' as const, url: '/api/v1/archivos/firmar-subida' },
   { method: 'POST' as const, url: `/api/v1/archivos/${ID_ARCHIVO_CONFIRMADO}/confirmar` },
@@ -79,6 +86,9 @@ const RUTAS = [
   // El listado por entidad es la única lectura del módulo que no pide un id de
   // archivo: se pregunta por el contenido de una tarea o una guía.
   { method: 'GET' as const, url: `/api/v1/archivos/entidad/TASK_SUBMISSION/${ID_TAREA}` },
+  // «Mis archivos», la que hidrata el gestor documental. Se añadió el
+  // 2026-10-21 y debe pasar por las mismas guardias que las otras siete.
+  { method: 'GET' as const, url: '/api/v1/archivos/mios' },
 ];
 
 /** Un archivo de tarea, para sembrar el arnés en las pruebas del tope. */
@@ -143,7 +153,7 @@ function borrar(arnes: Arnés, id: string, token: string = TOKEN_ALUMNO) {
 }
 
 describe('control de acceso a los archivos', () => {
-  it('exige sesión en las siete rutas', async () => {
+  it('exige sesión en las ocho rutas', async () => {
     const arnes = crearArnés();
     app = arnes.app;
 
@@ -190,7 +200,7 @@ describe('control de acceso a los archivos', () => {
 });
 
 describe('despliegue sin almacenamiento configurado', () => {
-  it('las siete rutas responden 503 y no revientan', async () => {
+  it('las ocho rutas responden 503 y no revientan', async () => {
     const arnes = crearArnés({ sinAlmacenamiento: true });
     app = arnes.app;
 
@@ -236,7 +246,7 @@ describe('la guardia del módulo (m5_archivos)', () => {
     });
   }
 
-  it('con el módulo apagado, las siete rutas responden 403 y no llegan a tocar nada', async () => {
+  it('con el módulo apagado, las ocho rutas responden 403 y no llegan a tocar nada', async () => {
     // Ésta es la prueba que da sentido a la bandera, y sin ella la guardia sería
     // fe. El módulo arranca **encendido**, así que una guardia cableada a la
     // clave equivocada —`m5_archivo`, sin la ese final— nunca se notaría: todas
@@ -285,6 +295,165 @@ describe('la guardia del módulo (m5_archivos)', () => {
 
     expect(respuesta.statusCode).toBe(404);
     expect(respuesta.json().error.codigo).toBe('MODULO_DESCONOCIDO');
+  });
+});
+
+describe('mis archivos (hidratación del gestor)', () => {
+  /** Siembra dos archivos: uno del alumno y uno de otro dueño. */
+  function arnesConDosDuenios(): ReturnType<typeof crearArnés> {
+    return crearArnés({
+      archivos: [
+        {
+          id: ID_ARCHIVO_MIO_DRIVE,
+          propietarioId: ID_ALUMNO,
+          r2Key: 'm5/alumno/drive.pdf',
+          nombreOriginal: 'mi-material.pdf',
+          tamanoBytes: 1024,
+          estado: 'CONFIRMED',
+          entityType: 'DRIVE_FILE',
+        },
+        {
+          id: ID_ARCHIVO_AJENO,
+          propietarioId: ID_DOCENTE,
+          r2Key: 'm5/docente/ajeno.pdf',
+          nombreOriginal: 'de-otro.pdf',
+          tamanoBytes: 2048,
+          estado: 'CONFIRMED',
+          entityType: 'DRIVE_FILE',
+        },
+      ],
+    });
+  }
+
+  it('el alumno sólo ve lo suyo, aunque exista el archivo de otro', async () => {
+    const arnes = arnesConDosDuenios();
+    app = arnes.app;
+
+    const respuesta = await app.inject({
+      method: 'GET',
+      url: '/api/v1/archivos/mios',
+      headers: conToken(TOKEN_ALUMNO),
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    const { archivos } = respuesta.json();
+    expect(archivos).toHaveLength(1);
+    expect(archivos[0].nombreOriginal).toBe('mi-material.pdf');
+    // La RLS es la frontera: la prueba fija que el doble —y por tanto la
+    // consulta real— no filtrando por dueño sería un agujero, no un detalle.
+    expect(archivos.some((a: { id: string }) => a.id === ID_ARCHIVO_AJENO)).toBe(
+      false,
+    );
+  });
+
+  it('el administrador ve todos los archivos', async () => {
+    const arnes = arnesConDosDuenios();
+    app = arnes.app;
+
+    const respuesta = await app.inject({
+      method: 'GET',
+      url: '/api/v1/archivos/mios',
+      headers: conToken(TOKEN_ADMIN),
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    expect(respuesta.json().archivos).toHaveLength(2);
+  });
+
+  it('el filtro `tipo` acota por clase de entidad', async () => {
+    const arnes = crearArnés({
+      archivos: [
+        {
+          id: ID_ARCHIVO_MIO_DRIVE,
+          propietarioId: ID_ALUMNO,
+          r2Key: 'm5/alumno/drive.pdf',
+          nombreOriginal: 'suelto.pdf',
+          estado: 'CONFIRMED',
+          entityType: 'DRIVE_FILE',
+        },
+        {
+          id: ID_ARCHIVO_MIO_ENTREGA,
+          propietarioId: ID_ALUMNO,
+          r2Key: 'm5/alumno/entrega.pdf',
+          nombreOriginal: 'entrega.pdf',
+          estado: 'CONFIRMED',
+          entityType: 'TASK_SUBMISSION',
+          entidadId: ID_TAREA,
+        },
+      ],
+    });
+    app = arnes.app;
+
+    const respuesta = await app.inject({
+      method: 'GET',
+      url: '/api/v1/archivos/mios?tipo=DRIVE_FILE',
+      headers: conToken(TOKEN_ALUMNO),
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    const { archivos } = respuesta.json();
+    expect(archivos).toHaveLength(1);
+    expect(archivos[0].entityType).toBe('DRIVE_FILE');
+  });
+
+  it('un `limite` por encima del tope da 400, no una respuesta a medias', async () => {
+    const arnes = arnesConDosDuenios();
+    app = arnes.app;
+
+    const respuesta = await app.inject({
+      method: 'GET',
+      url: '/api/v1/archivos/mios?limite=999',
+      headers: conToken(TOKEN_ALUMNO),
+    });
+
+    expect(respuesta.statusCode).toBe(400);
+  });
+
+  it('un tipo de entidad inventado da 400 con el campo nombrado', async () => {
+    const arnes = arnesConDosDuenios();
+    app = arnes.app;
+
+    const respuesta = await app.inject({
+      method: 'GET',
+      url: '/api/v1/archivos/mios?tipo=FOTO_VACACIONES',
+      headers: conToken(TOKEN_ALUMNO),
+    });
+
+    expect(respuesta.statusCode).toBe(400);
+  });
+
+  it('los archivos borrados no aparecen nunca', async () => {
+    const arnes = crearArnés({
+      archivos: [
+        {
+          id: ID_ARCHIVO_MIO_DRIVE,
+          propietarioId: ID_ALUMNO,
+          r2Key: 'm5/alumno/vivo.pdf',
+          nombreOriginal: 'vivo.pdf',
+          estado: 'CONFIRMED',
+          entityType: 'DRIVE_FILE',
+        },
+        {
+          id: ID_ARCHIVO_BORRADO,
+          propietarioId: ID_ALUMNO,
+          r2Key: 'm5/alumno/borrado.pdf',
+          nombreOriginal: 'borrado.pdf',
+          estado: 'DELETED',
+          entityType: 'DRIVE_FILE',
+        },
+      ],
+    });
+    app = arnes.app;
+
+    const respuesta = await app.inject({
+      method: 'GET',
+      url: '/api/v1/archivos/mios',
+      headers: conToken(TOKEN_ALUMNO),
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    expect(respuesta.json().archivos).toHaveLength(1);
+    expect(respuesta.json().archivos[0].nombreOriginal).toBe('vivo.pdf');
   });
 });
 

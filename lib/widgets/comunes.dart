@@ -836,6 +836,7 @@ class EstadoPanel extends StatelessWidget {
     required this.error,
     required this.onReintentar,
     required this.child,
+    this.esqueleto,
   });
 
   final bool cargando;
@@ -843,15 +844,18 @@ class EstadoPanel extends StatelessWidget {
   final VoidCallback onReintentar;
   final Widget child;
 
+  /// Lo que se muestra mientras carga. Por defecto, un esqueleto genérico.
+  final Widget? esqueleto;
+
   @override
   Widget build(BuildContext context) {
     if (cargando) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(48),
-          child: CircularProgressIndicator(),
-        ),
-      );
+      // **Esqueleto y no spinner.** Medido el 2026-10-23: un
+      // `CircularProgressIndicator` centrado no dice que esta cargando ni
+      // cuanta falta. El esqueleto muestra la forma del contenido que viene y
+      // la espera se percibe mas corta (rendimiento percibido, limite de
+      // Nielsen de 1 s).
+      return esqueleto ?? const EsqueletoLista();
     }
 
     final mensaje = error;
@@ -963,12 +967,26 @@ class TituloSeccion extends StatelessWidget {
           const anchoMinimoParaFila = 640.0;
 
           if (restricciones.maxWidth >= anchoMinimoParaFila) {
+            // Las acciones van en un `Wrap` ACOTADO (`Flexible`), no sueltas en
+            // la `Row`: con 5 acciones (Guardias: Horarios, Aulas, Matriz/Lista,
+            // Asignar guardia) la fila desbordaba 15 px a 840 —medido el
+            // 2026-10-22—. `Flexible` les da un ancho máximo y el `Wrap` las
+            // pasa a otra línea cuando no caben, sin desbordar.
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(child: titulo),
                 const SizedBox(width: 16),
-                ...botones,
+                Flexible(
+                  flex: 2,
+                  child: Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: botones,
+                  ),
+                ),
               ],
             );
           }
@@ -1187,4 +1205,138 @@ void mostrarAviso(
         ),
       ),
     );
+}
+
+
+/// **Esqueleto de carga: la forma del contenido que viene.**
+///
+/// Medido el 2026-10-23: los paneles mostraban un `CircularProgressIndicator`
+/// centrado mientras cargaban, que no dice *que* esta cargando. Este esqueleto
+/// pinta tarjetas con la misma forma que la lista real, con un pulso suave, para
+/// que la espera se perciba mas corta y no haya un salto cuando llegan los datos.
+class EsqueletoLista extends StatefulWidget {
+  const EsqueletoLista({
+    super.key,
+    this.tarjetas = 4,
+    this.conBarraFiltros = true,
+  });
+
+  /// Cuantas tarjetas de mentira se pintan.
+  final int tarjetas;
+
+  /// Si se pinta tambien la barra de busqueda/filtros de arriba.
+  final bool conBarraFiltros;
+
+  @override
+  State<EsqueletoLista> createState() => _EsqueletoListaState();
+}
+
+class _EsqueletoListaState extends State<EsqueletoLista>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _control = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _control.dispose();
+    super.dispose();
+  }
+
+  Widget _bloque(BuildContext context, double alto, double fraccion) {
+    final theme = Theme.of(context);
+    return FadeTransition(
+      opacity: _control.drive(Tween<double>(begin: 0.45, end: 1)),
+      child: FractionallySizedBox(
+        widthFactor: fraccion,
+        alignment: Alignment.centerLeft,
+        child: Container(
+          height: alto,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest
+                .withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    Widget tarjeta() {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            FadeTransition(
+              opacity: _control.drive(Tween<double>(begin: 0.45, end: 1)),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _bloque(context, 13, 0.55),
+                  const SizedBox(height: 8),
+                  _bloque(context, 10, 0.35),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (widget.conBarraFiltros) ...[
+          Container(
+            height: 48,
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (var i = 0; i < 4; i++)
+                Container(
+                  width: 74,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+        for (var i = 0; i < widget.tarjetas; i++) tarjeta(),
+      ],
+    );
+  }
 }

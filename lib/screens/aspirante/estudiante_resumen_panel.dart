@@ -5,6 +5,7 @@ import '../../models/aspirante_model.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/barra_acciones_superiores.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/responsivo.dart';
 
 /// Panel de resumen académico del Aprendiz / Estudiante.
 ///
@@ -293,60 +294,30 @@ class EstudianteResumenPanel extends StatelessWidget {
   // ---------------------------------------------------------------------------
 
   Widget _construirMetricas(String programa) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final ancho = constraints.maxWidth;
-        final columnas = ancho > 1000
-            ? 3
-            : ancho > 600
-                ? 2
-                : 1;
+    final items = [
+      TarjetaMetrica(
+        etiqueta: 'Programa técnico',
+        valor: programa.length > 20 ? '${programa.substring(0, 18)}...' : programa,
+        icono: Icons.school_rounded,
+        tono: TonoEstado.info,
+      ),
+      const TarjetaMetrica(
+        etiqueta: 'Asistencia en aula',
+        valor: 'Control activo',
+        icono: Icons.fact_check_rounded,
+        tono: TonoEstado.exito,
+      ),
+      const TarjetaMetrica(
+        etiqueta: 'Campus Virtual',
+        valor: 'Activo',
+        icono: Icons.devices_rounded,
+        tono: TonoEstado.info,
+      ),
+    ];
 
-        final items = [
-          TarjetaMetrica(
-            etiqueta: 'Programa técnico',
-            valor: programa.length > 20 ? '${programa.substring(0, 18)}...' : programa,
-            icono: Icons.school_rounded,
-            tono: TonoEstado.info,
-          ),
-          const TarjetaMetrica(
-            etiqueta: 'Asistencia en aula',
-            valor: 'Control activo',
-            icono: Icons.fact_check_rounded,
-            tono: TonoEstado.exito,
-          ),
-          const TarjetaMetrica(
-            etiqueta: 'Campus Virtual',
-            valor: 'Activo',
-            icono: Icons.devices_rounded,
-            tono: TonoEstado.info,
-          ),
-        ];
-
-        if (columnas == 1) {
-          return Column(
-            children: [
-              for (final item in items) ...[
-                item,
-                const SizedBox(height: 12),
-              ],
-            ],
-          );
-        }
-
-        return Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            for (final item in items)
-              SizedBox(
-                width: (ancho - (columnas - 1) * 16) / columnas,
-                child: item,
-              ),
-          ],
-        );
-      },
-    );
+    // 400 px por celda → 3 columnas a 1280 px (fila llena), 2 a 900 y 1 en
+    // teléfono. Antes eran umbrales propios (1000/600).
+    return rejillaDeTarjetas(hijos: items, anchoCelda: 400);
   }
 
   // ---------------------------------------------------------------------------
@@ -428,38 +399,13 @@ class EstudianteResumenPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final ancho = constraints.maxWidth;
-            final columnas = ancho > 1000
-                ? 3
-                : ancho > 640
-                    ? 2
-                    : 1;
-
-            if (columnas == 1) {
-              return Column(
-                children: [
-                  for (final item in acciones) ...[
-                    _construirTarjetaAccion(item, theme),
-                    const SizedBox(height: 12),
-                  ],
-                ],
-              );
-            }
-
-            return Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: [
-                for (final item in acciones)
-                  SizedBox(
-                    width: (ancho - (columnas - 1) * 16) / columnas,
-                    child: _construirTarjetaAccion(item, theme),
-                  ),
-              ],
-            );
-          },
+        // 320 px por celda → 4 columnas a 1280 px (4 acciones = fila llena),
+        // 2 a 900 y 1 en teléfono. Antes eran umbrales propios (1000/640).
+        rejillaDeTarjetas(
+          hijos: [
+            for (final item in acciones) _construirTarjetaAccion(item, theme),
+          ],
+          anchoCelda: 320,
         ),
       ],
     );

@@ -8,6 +8,21 @@ import '../repositories/aspirante_repository.dart';
 import '../theme/inces_theme.dart';
 import '../theme/temas_formacion.dart';
 
+/// Rango de edad del Programa Nacional de Aprendizaje (PNA), editable.
+///
+/// **Fuente única para toda la landing.** Antes estaba escrito a mano en tres
+/// sitios («14-18», «14 a 18», «Jóvenes de 14 a 18»), que es justo como nacen
+/// las discrepancias: un cambio institucional habría que hacerlo tres veces y
+/// la página pública acabaría contando dos verdades. El 2026-10-20 Lorenzo fijó
+/// el rango en **14 a 17 años**.
+///
+/// El siguiente paso —que esto lo edite el administrador desde el panel de
+/// parámetros y la landing lo lea de la base— está en el plan de rediseño;
+/// mientras tanto, editar aquí cambia los tres sitios a la vez.
+const String kEdadPnaMin = '14';
+const String kEdadPnaMax = '17';
+const String kEdadPnaTexto = '$kEdadPnaMin a $kEdadPnaMax años';
+
 /// Página pública de aterrizaje: la raíz `/` cuando **no** hay sesión.
 ///
 /// Es la cara institucional del sistema. Antes, quien abría la aplicación sin
@@ -1112,7 +1127,7 @@ class _LandingPageState extends State<LandingPage> {
           children: [
             _chipCualidad(Icons.verified_user_outlined, 'Acreditación Oficial INCES'),
             _chipCualidad(Icons.workspace_premium_outlined, 'Estándares AWS y ASME'),
-            _chipCualidad(Icons.groups_outlined, 'Programa PNA 14-18 años'),
+            _chipCualidad(Icons.groups_outlined, 'Programa PNA $kEdadPnaTexto'),
             _chipCualidad(Icons.location_on_outlined, 'La Isabelica · Valencia'),
           ],
         ),
@@ -1264,7 +1279,7 @@ class _LandingPageState extends State<LandingPage> {
       (id: 'MECANICA', etiqueta: 'Mecánica Industrial', icono: Icons.build_outlined),
       (id: 'ELECTRICIDAD', etiqueta: 'Electricidad y Electrónica', icono: Icons.bolt_outlined),
       (id: 'REFRIGERACION', etiqueta: 'Refrigeración', icono: Icons.ac_unit_outlined),
-      (id: 'PNA', etiqueta: 'Programas PNA (14 a 18 años)', icono: Icons.school_outlined),
+      (id: 'PNA', etiqueta: 'Programas PNA ($kEdadPnaTexto)', icono: Icons.school_outlined),
       (id: 'GESTION', etiqueta: 'Gestión y Servicios', icono: Icons.business_center_outlined),
     ];
 
@@ -1601,27 +1616,33 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
+  /// Columna de **rutas de formación**, no de contacto.
+  ///
+  /// El 2026-10-20 Lorenzo pidió quitar de la landing los datos de contacto
+  /// del INCES (dirección, teléfonos, correos). Esta columna sustituye a la
+  /// vieja «Sede y Talleres», que publicaba la dirección física: ahora describe
+  /// las dos vías de formación sin exponer ningún dato de contacto.
   Widget _columnaFooterUbicacion() {
-    return const Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Sede y Talleres',
+        const Text(
+          'Rutas de Formación',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w700,
             fontSize: 14,
           ),
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
         Text(
-          'Av. Este-Oeste 3, Zona Industrial La Isabelica, Valencia, Edo. Carabobo.',
-          style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+          'Programa Nacional de Aprendizaje (PNA):\njóvenes de $kEdadPnaTexto.',
+          style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
         ),
-        SizedBox(height: 8),
-        Text(
-          'Horario de Talleres:\nLunes a Viernes 07:30 - 16:30',
-          style: TextStyle(color: Colors.white60, fontSize: 12),
+        const SizedBox(height: 8),
+        const Text(
+          'Maestro Técnico Productivo (MTP):\nformación para el trabajo.',
+          style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.4),
         ),
       ],
     );
@@ -1877,7 +1898,7 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
     _DatoSlideHero(
       imagen: 'assets/images/area_juvenil.jpg',
       badge: 'PROGRAMA JUVENIL PNA',
-      tag: 'Jóvenes de 14 a 18 años',
+      tag: 'Jóvenes de $kEdadPnaTexto',
       titulo: 'Aprendices INCES e Inserción Laboral',
       descripcion:
           'Programa Nacional de Aprendizaje con orientación vocacional integral, formación técnica dual y valores.',

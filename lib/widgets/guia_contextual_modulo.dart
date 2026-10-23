@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/inces_theme.dart';
+import 'responsivo.dart';
 
 /// Un ítem o paso dentro de una guía contextual de módulo.
 class PasoGuiaContextual {
@@ -278,7 +279,9 @@ class _GuiaContextualModuloState extends State<GuiaContextualModulo> {
     final theme = Theme.of(context);
     final paleta = PaletaInces.de(context);
     final esOscuro = theme.brightness == Brightness.dark;
-    final esMovil = MediaQuery.sizeOf(context).width < 768;
+    // «Móvil» es la ventana `compact` de Material 3 (< 600). El 768 de antes
+    // trataba una tableta de 700 px como móvil y encogía la guía sin necesidad.
+    final esMovil = esCompacto(context);
 
     if (_oculto) {
       // Botón flotante o discreto para consultar la guía nuevamente si se desea

@@ -22,7 +22,7 @@ export interface DependenciasRutas {
    * token y crear el usuario, cosas que el cliente anónimo no puede hacer.
    */
   reposAdmin: Repositorios;
-  /** Enviador de correo transaccional (Resend). */
+  /** Enviador de correo transaccional (SMTP de Gmail; Supabase de reserva). */
   enviarCorreo: EnvioCorreo;
   /**
    * Origen del frontend (Flutter web). Se usa para construir el enlace de

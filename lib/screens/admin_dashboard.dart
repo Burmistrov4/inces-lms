@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/tema_provider.dart';
+import '../core/refresco_secciones.dart';
 import '../repositories/modulo_repository.dart';
 import '../services/auth_service.dart';
 import '../theme/inces_theme.dart';
@@ -28,6 +29,7 @@ import 'admin/cpanel_inscripciones_panel.dart';
 import 'admin/cpanel_secciones_panel.dart';
 import 'admin/cpanel_explorador_archivos_panel.dart';
 import '../widgets/walkthrough_interactivo.dart';
+import '../widgets/guardia_toque.dart';
 import 'perfil_panel.dart';
 
 /// cPanel del Administrador Maestro.
@@ -85,24 +87,28 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     ItemNavegacion(
       icono: Icons.dashboard_customize_outlined,
       titulo: 'Centro de Mando',
+      etiquetaCorta: 'Inicio',
       categoria: 'Administración del sistema',
       modulo: 'm0_cpanel',
     ),
     ItemNavegacion(
       icono: Icons.tune_outlined,
       titulo: 'Módulos del Sistema',
+      etiquetaCorta: 'Módulos',
       categoria: 'Administración del sistema',
       modulo: 'm0_cpanel',
     ),
     ItemNavegacion(
       icono: Icons.settings_outlined,
       titulo: 'Parámetros',
+      etiquetaCorta: 'Ajustes',
       categoria: 'Administración del sistema',
       modulo: 'm0_cpanel',
     ),
     ItemNavegacion(
       icono: Icons.history_outlined,
       titulo: 'Historial de Configuración',
+      etiquetaCorta: 'Historial',
       categoria: 'Administración del sistema',
       modulo: 'm0_cpanel',
     ),
@@ -177,7 +183,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     ),
     ItemNavegacion(
       icono: Icons.folder_shared_outlined,
-      titulo: 'Gestor de Archivos (R2)',
+      titulo: 'Cloud CFS',
       categoria: 'Gestión académica',
       disponible: true,
       modulo: 'm0_cpanel',
@@ -254,7 +260,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               it.titulo.toLowerCase().contains('horarios')),
     );
     if (idx != -1) {
-      setState(() => _seleccionada = idx);
+      setState(() {
+        _seleccionada = idx;
+        // **Aviso de cambio de seccion.** Los paneles que mezclan
+        // `RefrescoAlVolver` recargan en segundo plano si sus datos pasaron del
+        // umbral: volver a una seccion es instantaneo, pero no muestra datos
+        // viejos.
+        RefrescoSecciones.notificar(menuConModulos(_items)[idx].titulo);
+      });
     }
   }
 
@@ -275,7 +288,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       // panel —la sección de arriba— se refleja aquí.
       items: menuConModulos(_items),
       seleccionado: _seleccionada,
-      onSeleccionar: (indice) => setState(() => _seleccionada = indice),
+      onSeleccionar: (indice) {
+        setState(() => _seleccionada = indice);
+        RefrescoSecciones.notificar(menuConModulos(_items)[indice].titulo);
+      },
       rolEtiqueta: 'Administrador Maestro',
       correoUsuario: _auth.emailActual,
       periodoActivo: _periodoActivo,
@@ -286,38 +302,44 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
         IconButton(
           tooltip: 'Inscribir Aspirante',
           icon: const Icon(Icons.person_add_alt_1_rounded, size: 20),
-          onPressed: () => _navegarA('Inscripciones y Cupos'),
+          onPressed: () => conGuardia(() => _navegarA('Inscripciones y Cupos'), 'nav-Inscripciones y Cupos'),
         ),
         IconButton(
           tooltip: 'Horarios de Clases',
           icon: const Icon(Icons.calendar_month_rounded, size: 20),
-          onPressed: () => _navegarA('Horarios de Clases'),
+          onPressed: () => conGuardia(() => _navegarA('Horarios de Clases'), 'nav-Horarios de Clases'),
         ),
         IconButton(
           tooltip: 'Espacios y Aulas',
           icon: const Icon(Icons.meeting_room_outlined, size: 20),
-          onPressed: () => _navegarA('Espacios y Aulas'),
+          onPressed: () => conGuardia(() => _navegarA('Espacios y Aulas'), 'nav-Espacios y Aulas'),
         ),
         IconButton(
           tooltip: 'Guía Interactiva (Walkthrough)',
           icon: const Icon(Icons.help_outline_rounded, size: 20),
-          onPressed: () => WalkthroughInteractivoCard.mostrarModal(
-            context,
-            rol: RolWalkthrough.admin,
-            onNavegarA: _navegarA,
+          onPressed: () => conGuardia(
+            () => WalkthroughInteractivoCard.mostrarModal(
+              context,
+              rol: RolWalkthrough.admin,
+              onNavegarA: _navegarA,
+            ),
+            'walkthrough-admin',
           ),
         ),
         IconButton(
           tooltip: 'Generar Reporte',
           icon: const Icon(Icons.summarize_outlined, size: 20),
-          onPressed: () => BarraAccionesSuperiores.mostrarDialogoReportes(
-            context,
-            onVerInscripciones: () => _navegarA('Inscripciones y Cupos'),
-            onVerHorarios: () => _navegarA('Horarios de Clases'),
-            onVerAccesos: () =>
-                _navegarA('Registro de Inicios de Sesión / Accesos'),
+          onPressed: () => conGuardia(
+            () => BarraAccionesSuperiores.mostrarDialogoReportes(
+              context,
+              onVerInscripciones: () => _navegarA('Inscripciones y Cupos'),
+              onVerHorarios: () => _navegarA('Horarios de Clases'),
+              onVerAccesos: () =>
+                  _navegarA('Registro de Inicios de Sesión / Accesos'),
+            ),
+            'reportes-admin',
           ),
-        ),
+          ),
       ],
       contenido: _contenido(),
     );
@@ -407,9 +429,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             migas: ['Inicio', 'Gestión académica', 'Lapsos'],
             child: CpanelLapsosPanel(),
           );
-        case 'Gestor de Archivos (R2)':
+        case 'Cloud CFS':
           return const ContenidoSeccion(
-            migas: ['Inicio', 'Gestión académica', 'Gestor de Archivos'],
+            migas: ['Inicio', 'Gestión académica', 'Cloud CFS'],
             child: CpanelExploradorArchivosPanel(),
           );
         case 'Horarios de Clases':

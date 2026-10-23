@@ -596,11 +596,11 @@
           },
           "enlaceActivacion": {
             "type": "string",
-            "description": "Enlace que el profesor debe abrir. Se devuelve aquí para que el flujo sea probable aunque el correo no llegue (sin dominio verificado en Resend)."
+            "description": "Enlace que el profesor debe abrir. Se devuelve aquí para que el flujo sea probable aunque el correo no llegue (SMTP caído o cuenta ya existente)."
           },
           "correoEnviado": {
             "type": "boolean",
-            "description": "Si Resend aceptó el envío. Si es false, usar enlaceActivacion."
+            "description": "Si el canal de correo aceptó el envío (SMTP o, en su defecto, la invitación de Supabase). Si es false, usar enlaceActivacion."
           }
         },
         "required": [
@@ -2824,7 +2824,8 @@
             "type": "string",
             "enum": [
               "TASK_SUBMISSION",
-              "TEACHER_GUIDE"
+              "TEACHER_GUIDE",
+              "DRIVE_FILE"
             ]
           },
           "entidadId": {
@@ -9553,6 +9554,114 @@
         }
       }
     },
+    "/api/v1/archivos/mios": {
+      "get": {
+        "tags": [
+          "Archivos"
+        ],
+        "summary": "Mis archivos: hidrata el gestor documental",
+        "description": "La lista arranca desde la base, no desde la memoria de la sesión: sin esta ruta el gestor sólo mostraba lo subido en la visita en curso y al recargar parecía vacío. **Quién ve qué lo decide la RLS** —el propietario ve lo suyo y el administrador lo ve todo, así que el mismo endpoint sirve al docente y al admin. `tipo` filtra por entidad cuando viene (el gestor pide `DRIVE_FILE`, la subida suelta que habilitó la migración `202610202001`); sin él, trae todo lo del usuario. Los `PENDING` se incluyen con su estado, para que una subida sin confirmar sea visible en vez de desaparecer sin explicación; los `DELETED`, nunca.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "TASK_SUBMISSION",
+                "TEACHER_GUIDE",
+                "DRIVE_FILE"
+              ],
+              "description": "Filtra por clase de entidad. `DRIVE_FILE` es la subida suelta al gestor."
+            },
+            "required": false,
+            "name": "tipo",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 100,
+              "description": "Cuántas filas como máximo. Tope 200."
+            },
+            "required": false,
+            "name": "limite",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "default": 0,
+              "description": "Filas ya consumidas. Con `limite` forma la página."
+            },
+            "required": false,
+            "name": "desplazamiento",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Los archivos del usuario, del más reciente al más antiguo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaListadoArchivos"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "El tipo no es uno de `TASK_SUBMISSION`, `TEACHER_GUIDE`, `DRIVE_FILE`, o la paginación está fuera de rango.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta la sesión o el token no es válido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El módulo de archivos está deshabilitado por el administrador (MODULO_DESHABILITADO).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El servicio o la base de datos no están disponibles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/archivos/entidad/{entityType}/{entidadId}": {
       "get": {
         "tags": [
@@ -9571,7 +9680,8 @@
               "type": "string",
               "enum": [
                 "TASK_SUBMISSION",
-                "TEACHER_GUIDE"
+                "TEACHER_GUIDE",
+                "DRIVE_FILE"
               ],
               "description": "Qué clase de entidad se lista: `TASK_SUBMISSION` (entregas) o `TEACHER_GUIDE` (material de apoyo)."
             },

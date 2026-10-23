@@ -3660,6 +3660,37 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       ).length;
     },
 
+    async listarMios(opciones?: {
+      entityType?: TipoEntidadArchivo;
+      limite?: number;
+      desplazamiento?: number;
+    }): Promise<ArchivoMetadata[]> {
+      revisar('archivos.listarMios');
+
+      // Igual que `listarPorEntidad`: se lee sobre lo **visible**, nunca sobre
+      // `estado.archivos`. El repositorio real va por PostgREST bajo RLS, así
+      // que el doble debe ser tan restrictivo como la base o las pruebas
+      // darían por bueno que alguien ve archivos ajenos.
+      const limite = opciones?.limite ?? 100;
+      const desplazamiento = opciones?.desplazamiento ?? 0;
+
+      return archivosVisibles()
+        .filter(
+          (archivo) =>
+            (opciones?.entityType === undefined ||
+              (archivo.entityType ?? 'TASK_SUBMISSION') ===
+                opciones.entityType) &&
+            (archivo.estado ?? 'PENDING') !== 'DELETED',
+        )
+        .sort(
+          (a, b) =>
+            new Date(b.creadoEn ?? CREADO_EN_FALSO).getTime() -
+            new Date(a.creadoEn ?? CREADO_EN_FALSO).getTime(),
+        )
+        .slice(desplazamiento, desplazamiento + limite)
+        .map(aArchivoFalso);
+    },
+
     async listarPorEntidad(
       entityType: TipoEntidadArchivo,
       entidadId: string,

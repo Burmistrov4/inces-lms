@@ -1,10 +1,14 @@
 # AGENT START HERE — INCES LMS
 
+> **INDICE DE DOCUMENTACION:** [`docs/README.md`](docs/README.md) — por donde empezar.
+> **PENDIENTES:** [`docs/BACKLOG_PENDIENTES.md`](docs/BACKLOG_PENDIENTES.md).
+> **CONTINUIDAD:** [`docs/handover/REPORTE_CONTINUIDAD_2026-10-22.md`](docs/handover/REPORTE_CONTINUIDAD_2026-10-22.md).
+
 ## Misión
 
 Tomar el estado real del repositorio y avanzar hasta cerrar lo que se pueda cerrar con evidencia. No depender del historial conversacional ni de un resumen de otra sesión: **el disco manda**.
 
-Este archivo es una ruta de trabajo, no un mandato de proyecto. Si te pidieron algo concreto, hazlo; si te pidieron «cerrar todo», usa como alcance [PLAN_MAESTRO.md](PLAN_MAESTRO.md) y [TODO_CIERRE_INTEGRAL_INCES_LMS.md](TODO_CIERRE_INTEGRAL_INCES_LMS.md).
+Este archivo es una ruta de trabajo, no un mandato de proyecto. Si te pidieron algo concreto, hazlo; si te pidieron «cerrar todo», usa como alcance [PLAN_MAESTRO.md](docs/historial/planes/PLAN_MAESTRO.md) y [TODO_CIERRE_INTEGRAL_INCES_LMS.md](docs/historial/planes/TODO_CIERRE_INTEGRAL_INCES_LMS.md).
 
 ## Ruta obligatoria — nueve pasos, en este orden
 
@@ -34,7 +38,7 @@ Para una tarea sencilla, los pasos 1–5 son lectura corta: **no hace falta leer
 
 **Consecuencia:** la verificación real del lado Flutter es CI (`flutter_ci.yml`, `e2e.yml`, `web_bundle.yml`, `android_bundle.yml`). Si el `231` algún día no se reproduce, **mídelo y regístralo con su fecha**; no borres la entrada anterior. Este bloqueo ha ido y vuelto entre sesiones.
 
-Detalle, causas y alternativas: [docs/AI_AGENT_BLOCKERS.md](docs/AI_AGENT_BLOCKERS.md) y [docs/handover/AUDITORIA_ADVERSARIAL_2026-10-13.md](docs/handover/AUDITORIA_ADVERSARIAL_2026-10-13.md).
+Detalle, causas y alternativas: [docs/AI_AGENT_PROTOCOLO.md](docs/AI_AGENT_PROTOCOLO.md) y [docs/handover/AUDITORIA_ADVERSARIAL_2026-10-13.md](docs/handover/AUDITORIA_ADVERSARIAL_2026-10-13.md).
 
 ## Regla de autonomía
 
@@ -57,7 +61,7 @@ Permitida sobre código, artefactos, bundles propios, sourcemaps, OpenAPI, migra
 | **H3** | Decisión de producto genuinamente ambigua y no deducible |
 | **H4** | Infraestructura externa que exige login interactivo, MFA, CAPTCHA o aprobación física |
 
-Un H1–H4 no detiene el resto del proyecto: se registra y se sigue con lo independiente. Los que están abiertos ahora están en [docs/AI_AGENT_BLOCKERS.md](docs/AI_AGENT_BLOCKERS.md).
+Un H1–H4 no detiene el resto del proyecto: se registra y se sigue con lo independiente. Los que están abiertos ahora están en [docs/AI_AGENT_PROTOCOLO.md](docs/AI_AGENT_PROTOCOLO.md).
 
 ## Evidencia
 
@@ -87,7 +91,7 @@ Nunca dejes únicamente «continuar».
 
 - [docs/AI_AGENT_TOKEN_EFFICIENT_AUTONOMY.md](docs/AI_AGENT_TOKEN_EFFICIENT_AUTONOMY.md) — continuidad económica de contexto.
 - [docs/PROJECT_PHASE_GATES.md](docs/PROJECT_PHASE_GATES.md) — puertas de aceptación.
-- [docs/AI_AGENT_OPERATING_PROTOCOL.md](docs/AI_AGENT_OPERATING_PROTOCOL.md) — protocolo de trabajo.
+- [docs/AI_AGENT_PROTOCOLO.md](docs/AI_AGENT_PROTOCOLO.md) — protocolo de trabajo.
 - [docs/AI_AGENT_AUTONOMY_AND_ENVIRONMENT_RECOVERY.md](docs/AI_AGENT_AUTONOMY_AND_ENVIRONMENT_RECOVERY.md) — recuperación de entorno.
 
 **Prompts legados archivados** (`docs/historial/prompts/`): no se leen ni se ejecutan en bloque. Son mandatos de sesiones pasadas; comprueba que su objetivo sigue vigente contra [ESTADO_DEL_SISTEMA.md](ESTADO_DEL_SISTEMA.md) antes de usarlos. Para referencia histórica con otro agente (Antigravity, Gemini), [PROMPT_MAESTRO_CICLO_VIDA_COMPLETO_AGENTE_IA.md](docs/historial/prompts/PROMPT_MAESTRO_CICLO_VIDA_COMPLETO_AGENTE_IA.md) y [PROMPT_ANTIGRAVITY_AUTONOMOUS_CLOSURE.md](docs/historial/prompts/PROMPT_ANTIGRAVITY_AUTONOMOUS_CLOSURE.md) están organizados en [docs/historial/prompts/](docs/historial/prompts/README.md).

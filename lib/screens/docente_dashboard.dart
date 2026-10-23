@@ -16,6 +16,7 @@ import 'gestor_documental_panel.dart';
 import 'mi_horario_panel.dart';
 import 'mis_aulas_panel.dart';
 import '../widgets/walkthrough_interactivo.dart';
+import '../widgets/guardia_toque.dart';
 
 /// Panel del docente.
 ///
@@ -114,12 +115,14 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
     ItemNavegacion(
       icono: Icons.dashboard_outlined,
       titulo: 'Mis aulas',
+      etiquetaCorta: 'Aulas',
       categoria: 'Control de aulas',
       modulo: 'm6_aula_virtual',
     ),
     ItemNavegacion(
       icono: Icons.fact_check_outlined,
       titulo: 'Asistencia',
+      etiquetaCorta: 'Asistencia',
       categoria: 'Control de aulas',
       disponible: true,
       modulo: 'm7_asistencia',
@@ -127,6 +130,7 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
     ItemNavegacion(
       icono: Icons.grading_outlined,
       titulo: 'Calificaciones',
+      etiquetaCorta: 'Notas',
       categoria: 'Control de aulas',
       disponible: true,
       modulo: 'm6_aula_virtual',
@@ -134,6 +138,7 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
     ItemNavegacion(
       icono: Icons.folder_open_outlined,
       titulo: 'Material de apoyo',
+      etiquetaCorta: 'Material',
       categoria: 'Recursos',
       disponible: true,
       modulo: 'm5_archivos',
@@ -192,30 +197,33 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
         IconButton(
           tooltip: 'Mis Aulas',
           icon: const Icon(Icons.class_outlined, size: 20),
-          onPressed: () => _navegarA('Mis aulas'),
+          onPressed: () => conGuardia(() => _navegarA('Mis aulas'), 'nav-Mis aulas'),
         ),
         IconButton(
           tooltip: 'Asistencia QR',
           icon: const Icon(Icons.fact_check_outlined, size: 20),
-          onPressed: () => _navegarA('Asistencia'),
+          onPressed: () => conGuardia(() => _navegarA('Asistencia'), 'nav-Asistencia'),
         ),
         IconButton(
           tooltip: 'Calificaciones',
           icon: const Icon(Icons.grading_outlined, size: 20),
-          onPressed: () => _navegarA('Calificaciones'),
+          onPressed: () => conGuardia(() => _navegarA('Calificaciones'), 'nav-Calificaciones'),
         ),
         IconButton(
           tooltip: 'Mi Horario',
           icon: const Icon(Icons.calendar_month_outlined, size: 20),
-          onPressed: () => _navegarA('Mi horario'),
+          onPressed: () => conGuardia(() => _navegarA('Mi horario'), 'nav-Mi horario'),
         ),
         IconButton(
           tooltip: 'Guía Interactiva Docente',
           icon: const Icon(Icons.help_outline_rounded, size: 20),
-          onPressed: () => WalkthroughInteractivoCard.mostrarModal(
-            context,
-            rol: RolWalkthrough.docente,
-            onNavegarA: _navegarA,
+          onPressed: () => conGuardia(
+            () => WalkthroughInteractivoCard.mostrarModal(
+              context,
+              rol: RolWalkthrough.docente,
+              onNavegarA: _navegarA,
+            ),
+            'walkthrough-docente',
           ),
         ),
       ],

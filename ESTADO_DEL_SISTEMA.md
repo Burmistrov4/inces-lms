@@ -104,7 +104,7 @@ Servicios y entornos: producción (Pages + Render + Supabase) y local (backend 3
 
 **Sin commit, sin push, sin migración y sin despliegue.** Nada de lo inspeccionado aquí cambia producción. Los 26 archivos modificados y las 31 entradas sin seguimiento siguen en el árbol de trabajo. Publicar exige autorización explícita.
 
-**Cómo se pasó de 24 a 26 modificados (verificado, no supuesto).** Los 24 iniciales siguen modificados, sin excepción. Los dos que se sumaron son `MEMORY.md` y `docs/AI_AGENT_BLOCKERS.md`: archivos **rastreados** que estaban limpios al empezar y que la Fase 1 editó. **Ningún archivo cambió de categoría**: un fichero no pasa de «sin seguimiento» a «modificado» sin un `git add`, y `git diff --cached` está vacío; `.gitignore` no se tocó (0 líneas de diff), así que tampoco se ocultó nada con una regla nueva. Del lado sin seguimiento, el único fichero añadido fue `docs/handover/FASE1_CONSOLIDACION_DOCUMENTAL_2026-10-13.md`, creado dentro de un directorio que ya aparecía como entrada única.
+**Cómo se pasó de 24 a 26 modificados (verificado, no supuesto).** Los 24 iniciales siguen modificados, sin excepción. Los dos que se sumaron son `MEMORY.md` y `docs/AI_AGENT_PROTOCOLO.md`: archivos **rastreados** que estaban limpios al empezar y que la Fase 1 editó. **Ningún archivo cambió de categoría**: un fichero no pasa de «sin seguimiento» a «modificado» sin un `git add`, y `git diff --cached` está vacío; `.gitignore` no se tocó (0 líneas de diff), así que tampoco se ocultó nada con una regla nueva. Del lado sin seguimiento, el único fichero añadido fue `docs/handover/FASE1_CONSOLIDACION_DOCUMENTAL_2026-10-13.md`, creado dentro de un directorio que ya aparecía como entrada única.
 
 ### Inventario Markdown, reconciliado el 2026-10-14
 
@@ -183,7 +183,7 @@ Las ejecuciones verdes de Flutter CI, E2E y web bundle (p. ej. las corridas 3805
 > 7. **Auditoría de Servidor Local Multi-dispositivo:** El backend Node escucha en `0.0.0.0:3001` (abierto a la LAN); se verificó la sesión concurrente simultánea de dos dispositivos distintos (Admin y Docente) contra la persistencia centralizada. Se ejecutó una prueba de escritura transaccional desde Dispositivo A y lectura inmediata desde Dispositivo B sobre `system_settings` confirmando consistencia atómica (**MATCH EXACTO**, latencia round-trip 1376 ms). En la arquitectura actual, la sincronización entre dispositivos no es reactiva por WebSocket para todos los paneles (solo Asistencia M7 usa WebSocket `/rt`), por lo que los paneles administrativos y listas leen el estado actualizado al recargar, paginar o navegar.
 > 8. **F2 — Cierre Funcional de Descarga de Planilla Oficial (Panel Aspirante):** Verificado de punta a punta. Se incorporó `test/aspirante_dashboard_descarga_test.dart` (**7/7 PASS**, exit 0) cubriendo: presencia del botón `descargar-planilla-oficial` en «Mi inscripción», invocación tipada a `PlanillaPdfService`, debounce y prevención de pulsaciones concurrentes, gestión elegante de `SinFichaDeAspirante`, propagación de `ConsultaFallida` y `DescargaFallida`, y desmontaje asíncrono seguro sin fugas de `setState`. En conjunto con `test/planilla_pdf_service_test.dart` (**5/5 PASS**) y las pruebas backend de planilla oficial (`test/planilla-oficial-*.test.ts`, **8/8 PASS** en vitest), el flujo digital está 100% verificado: PDF de 612 × 792 pt, 1 sola página sobreimprimiendo la plantilla oficial bit a bit idéntica a la institucional (`eccb284a2bb0883a8048bed8bf3dcbaea3e3aa9706d36f781bb256d656b056e8`), y aislamiento estricto horizontal vía JWT `/api/v1/yo/planilla/pdf`. La impresión física en papel en el Centro INCES La Isabelica queda catalogada como **Pendiente de Validación Institucional Externa**.
 
-**Pendientes:** Validación en despliegue de producción real; `SUPABASE_JWT_SECRET` para evaluación de verificación JWT local si el propietario lo habilita; Resend HTTP 401 como notificación externa secundaria opcional; comprobación física presencial de impresión en impresoras del centro. Ver `TODO_CIERRE_INTEGRAL_INCES_LMS.md` y `docs/AI_AGENT_BLOCKERS.md`.
+**Pendientes:** Validación en despliegue de producción real; `SUPABASE_JWT_SECRET` para evaluación de verificación JWT local si el propietario lo habilita; Resend HTTP 401 como notificación externa secundaria opcional; comprobación física presencial de impresión en impresoras del centro. Ver `docs/historial/planes/TODO_CIERRE_INTEGRAL_INCES_LMS.md` y `docs/AI_AGENT_PROTOCOLO.md`.
 >
 > **Antecedente histórico — 2026-09-28:** El Módulo 7 no funcionaba, se supo al medirlo, y ya está reparado, aplicado y comprobado en la nube. Auditar la deuda de M7 con la RLS **ejercida de verdad** —no leída—
 > encontró **tres defectos que llevaban desde el 2026-09-26 escondidos detrás de
@@ -1229,7 +1229,7 @@ llamante no tiene `EXECUTE` y **toda alta de guardia o de clase falla**.
 **Y no se detectó con 156 aserciones en verde**, porque las pruebas del trigger
 escribían como el **dueño** de las tablas, que se salta la comprobación de
 privilegios de función. Ver `REPORTE_ARIA.md` R-20 y
-`docs/CONTRATO_API_MODULO3.md` §10.
+`docs/historial/modulos-implementados/CONTRATO_API_MODULO3.md` §10.
 
 Hay **tres** redes para que no vuelva: la sección 14.8 de `supabase/tests`
 escribe como `authenticated` con claims de admin, `verificar-esquema.mjs`
@@ -1525,7 +1525,7 @@ el panel y deben surtir efecto sin desplegar.
 > segunda copia de la regla que se desviaría de la del trigger. La API escribe,
 > el trigger `exigir_agenda_libre()` decide y el repositorio convierte el `23514`
 > en un 409 reutilizando **el mensaje del propio trigger** —que ya nombra el día
-> y el bloque—. Ver `docs/CONTRATO_API_MODULO3.md` §8 y §9.
+> y el bloque—. Ver `docs/historial/modulos-implementados/CONTRATO_API_MODULO3.md` §8 y §9.
 
 **Las dos escrituras de M2 no usan `insert`.** `POST /programas` y
 `PATCH /programas/:id/pensum` van por las funciones `crear_programa_con_pensum` y
@@ -2533,7 +2533,7 @@ El JWT resultante lo firma GoTrue con el secreto del proyecto, así que ejercita
    2026-09-15, y `verificar-esquema.mjs` actualizado.
 3. ~~Implementar las rutas de M2 (`/api/v1/admin/programas`, `/materias`)~~ —
    **hecho**: las 7 rutas existen, el repositorio llama a las dos funciones por
-   `supabase.rpc(...)` y el contrato está en `docs/CONTRATO_API_MODULO2.md`.
+   `supabase.rpc(...)` y el contrato está en `docs/historial/modulos-implementados/CONTRATO_API_MODULO2.md`.
 4. ~~El asistente de tres pasos en Flutter~~ — **hecho**: es la parte de M2 que
    faltaba, y ya está con sus pruebas de widget.
 5. ~~Aplicar el esquema de M3~~ — **hecho** el 2026-09-15
@@ -2543,7 +2543,7 @@ El JWT resultante lo firma GoTrue con el secreto del proyecto, así que ejercita
    de administración bajo `/api/v1/admin` —`/aulas`, `/periodos`, `/guardias`,
    `/cuadrante`— más `/api/v1/mi-horario`. Incluye el código de error nuevo
    `CHOQUE_DE_AGENDA` (409) y la traducción del `23514` de colisión por el texto
-   del mensaje. Ver `docs/CONTRATO_API_MODULO3.md`.
+   del mensaje. Ver `docs/historial/modulos-implementados/CONTRATO_API_MODULO3.md`.
 7. ~~**El frontend de M3**~~ — **HECHO (2026-09-15):** rejilla del cuadrante
    (`CuadranteGrid`), `MiHorarioPanel`, y las pantallas de aulas, lapsos y guardias.
 8. ~~**Encender `m2_curriculo` y `m3_cuadrante` desde el cPanel**~~ — **HECHO
@@ -2585,7 +2585,7 @@ archivos —`supabase/migrations/202609150001_mod2_curriculo.sql` (las tres tabl
 y `supabase/migrations/202609160001_resolucion_d12_d13.sql` (las deudas)—: el
 validador de SQL los prueba en cada corrida, el esquema desplegado los tiene y
 `verificar-esquema.mjs` lo comprueba de forma independiente. El contrato de sus
-7 rutas está en `docs/CONTRATO_API_MODULO2.md` y el asistente de tres pasos en
+7 rutas está en `docs/historial/modulos-implementados/CONTRATO_API_MODULO2.md` y el asistente de tres pasos en
 Flutter ya está construido y probado.
 
 ### Las tres tablas
@@ -2923,7 +2923,7 @@ esquema
 —`supabase/migrations/202609180001_mod3_cuadrante_aulas.sql` (todo el diseño) y
 `supabase/migrations/202609180002_mod3_trigger_agenda_definer.sql` (la corrección
 de R-20)—. El contrato completo de las 14 rutas está en
-**`docs/CONTRATO_API_MODULO3.md`**, que es el documento que hay que leer antes de
+**`docs/historial/modulos-implementados/CONTRATO_API_MODULO3.md`**, que es el documento que hay que leer antes de
 tocar nada de este módulo.
 
 ### El backend (PASO 4, cerrado el 2026-09-15)
@@ -3013,7 +3013,7 @@ escrituras simultáneas se serializan con `pg_advisory_xact_lock` indexado por
 
 Los detalles completos —incluido el fallo `42501` que dejó el módulo inoperable y
 cómo se corrigió, y por qué 156 aserciones en verde no lo vieron— están en
-`REPORTE_ARIA.md` **R-20** y en `docs/CONTRATO_API_MODULO3.md` **§10**. **Es
+`REPORTE_ARIA.md` **R-20** y en `docs/historial/modulos-implementados/CONTRATO_API_MODULO3.md` **§10**. **Es
 lectura obligatoria antes de tocar esos triggers.**
 
 ### Lo que NO se inventó, y es deliberado

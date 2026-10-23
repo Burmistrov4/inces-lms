@@ -9,6 +9,8 @@ import '../../models/cuadrante.dart';
 import '../../repositories/cuadrante_repository.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
+import '../../core/refresco_secciones.dart';
+import '../../widgets/responsivo.dart';
 
 /// Panel del catálogo de espacios del centro (Módulo 3).
 ///
@@ -41,7 +43,8 @@ class CpanelAulasPanel extends StatefulWidget {
   State<CpanelAulasPanel> createState() => _CpanelAulasPanelState();
 }
 
-class _CpanelAulasPanelState extends State<CpanelAulasPanel> {
+class _CpanelAulasPanelState extends State<CpanelAulasPanel>
+    with RefrescoAlVolver<CpanelAulasPanel> {
   late final CuadranteRepository _repo =
       widget.repositorio ?? CuadranteRepository();
 
@@ -76,10 +79,12 @@ class _CpanelAulasPanelState extends State<CpanelAulasPanel> {
     super.dispose();
   }
 
-  Future<void> _cargar() async {
+  Future<void> _cargar({bool silencioso = false}) async {
     setState(() {
-      _cargando = true;
-      _error = null;
+      // **Refresco en segundo plano:** si ya hay datos no se vuelve a mostrar el
+      // esqueleto; se conserva lo que hay hasta que llegue lo nuevo.
+      _cargando = silencioso ? false : true;
+      if (!silencioso) _error = null;
     });
 
     final resultado = await _repo.listarAulas(
@@ -100,6 +105,7 @@ class _CpanelAulasPanelState extends State<CpanelAulasPanel> {
         _cargando = false;
         _aulas = pagina.aulas;
         _total = pagina.total;
+        marcarCarga();
       }),
       failure: (fallo) => setState(() {
         _cargando = false;
@@ -107,6 +113,12 @@ class _CpanelAulasPanelState extends State<CpanelAulasPanel> {
       }),
     );
   }
+
+  @override
+  String get seccion => 'Espacios y Aulas';
+
+  @override
+  Future<void> refrescarEnSegundoPlano() => _cargar(silencioso: true);
 
   void _buscar(String _) {
     _debounce?.cancel();
@@ -239,14 +251,18 @@ class _CpanelAulasPanelState extends State<CpanelAulasPanel> {
   Widget _filtros() {
     final theme = Theme.of(context);
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    // **Barra de busqueda a todo el ancho, en su propia fila.** Patron de
+    // Google (Material 3): el campo de texto tiene su propia fila y los filtros
+    // van debajo. Medido el 2026-10-23: con ancho fijo de 260 px quedaba
+    // angosto junto a los filtros.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(
-          width: 260,
-          child: TextField(
+        // `ListenableBuilder` para que el boton de limpiar aparezca y
+        // desaparezca sin hacer setState en cada tecla.
+        ListenableBuilder(
+          listenable: _busquedaCtrl,
+          builder: (context, _) => TextField(
             controller: _busquedaCtrl,
             onChanged: _buscar,
             // El campo NO se deshabilita mientras carga: un campo que se
@@ -258,6 +274,12 @@ class _CpanelAulasPanelState extends State<CpanelAulasPanel> {
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
         for (final opcion in _OpcionTipo.values)
           ChoiceChip(
             label: Text(opcion.etiqueta),
@@ -286,6 +308,8 @@ class _CpanelAulasPanelState extends State<CpanelAulasPanel> {
               ),
             ),
           ),
+      ],
+        ),
       ],
     );
   }
@@ -600,7 +624,7 @@ class _DialogoEspacioState extends State<_DialogoEspacio> {
     return AlertDialog(
       title: Text(_esEdicion ? 'Editar espacio' : 'Registrar espacio'),
       content: SizedBox(
-        width: 420,
+        width: anchoDialogoSeguro(context, 420),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,

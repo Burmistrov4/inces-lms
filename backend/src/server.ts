@@ -25,7 +25,9 @@ async function main(): Promise<void> {
   const clienteAnonimo = crearClienteAnonimo(env);
   const reposAdmin = crearRepositorios(crearClienteAdmin(env));
 
-  // Prioriza Gmail SMTP (Nodemailer) y utiliza Resend como fallback automático resiliente
+  // SMTP de Gmail primero; si falla o no está configurado, la invitación de
+  // Supabase como red de seguridad (Resend se retiró el 2026-10-20: exigía
+  // dominio de pago). `redirectTo` lleva al usuario a la activación propia.
   const enviarCorreo: EnvioCorreo = crearRemitenteTransaccional({
     smtp: (env.SMTP_USER && env.SMTP_PASS)
       ? {
@@ -37,10 +39,13 @@ async function main(): Promise<void> {
           from: env.SMTP_FROM,
         }
       : undefined,
-    resend: env.RESEND_API_KEY
+    supabase: (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY)
       ? {
-          apiKey: env.RESEND_API_KEY,
-          from: env.RESEND_FROM ?? 'onboarding@resend.dev',
+          url: env.SUPABASE_URL,
+          serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
+          redirectTo: env.FRONTEND_URL
+            ? `${env.FRONTEND_URL}/#/auth/activate`
+            : undefined,
         }
       : undefined,
   });

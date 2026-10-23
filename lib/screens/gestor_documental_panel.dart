@@ -499,6 +499,10 @@ class _GestorDocumentalPanelState extends State<GestorDocumentalPanel> {
         switch (widget.entityType) {
           TipoEntidadArchivo.taskSubmission => 'Mis entregas',
           TipoEntidadArchivo.teacherGuide => 'Material de apoyo',
+          // Subida suelta al gestor (el «Drive»). El título por defecto lo
+          // pone quien usa el panel; este caso existe para que el switch sea
+          // exhaustivo, no para quedarse con este texto.
+          TipoEntidadArchivo.driveFile => 'Archivos del gestor',
         };
 
     // Raíz desplazable: `ContenidoSeccion` entrega una altura **acotada**, y este

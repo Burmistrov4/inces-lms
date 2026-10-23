@@ -35,7 +35,7 @@ Siete archivos, verificados uno por uno el 2026-10-13. **Ninguno de ellos public
 Dos advertencias que evitan un falso positivo:
 
 - **`web_bundle.yml` no publica.** Su último paso es `actions/upload-artifact` con el nombre `web-produccion`. Publicar en Cloudflare es la §6, a mano.
-- **El APK de `android_bundle.yml` está firmado con la clave de depuración** (`signingConfig = debug` en `android/app/build.gradle.kts`). Sirve para instalar y probar en dispositivos del centro; **no** para Google Play, que exige la clave de distribución real del propietario (pendiente, `docs/AI_AGENT_BLOCKERS.md`).
+- **El APK de `android_bundle.yml` está firmado con la clave de depuración** (`signingConfig = debug` en `android/app/build.gradle.kts`). Sirve para instalar y probar en dispositivos del centro; **no** para Google Play, que exige la clave de distribución real del propietario (pendiente, `docs/AI_AGENT_PROTOCOLO.md`).
 
 ## 2. Reglas no negociables
 

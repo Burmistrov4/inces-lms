@@ -5,6 +5,7 @@ import '../../models/seccion.dart';
 import '../../repositories/curriculo_repository.dart';
 import '../../repositories/secciones_repository.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/responsivo.dart';
 
 /// Panel de CRUD de secciones (Módulo 4: Inscripciones y Cupos).
 ///
@@ -370,7 +371,7 @@ class _DialogoCrearSeccionState extends State<_DialogoCrearSeccion> {
     return AlertDialog(
       title: const Text('Nueva sección'),
       content: SizedBox(
-        width: 460,
+        width: anchoDialogoSeguro(context, 460),
         child: SingleChildScrollView(
           child: Form(
             key: _forma,
@@ -543,7 +544,7 @@ class _DialogoEditarSeccionState extends State<_DialogoEditarSeccion> {
     return AlertDialog(
       title: const Text('Editar sección'),
       content: SizedBox(
-        width: 480,
+        width: anchoDialogoSeguro(context, 480),
         child: SingleChildScrollView(
           child: Form(
             key: _forma,

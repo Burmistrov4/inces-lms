@@ -240,7 +240,12 @@ class _PerfilPanelState extends State<PerfilPanel> {
   Widget _formulario() {
     final theme = Theme.of(context);
 
-    return Card(
+    // **Formulario acotado a 720 px** —mismo patrón que la invitación de
+    // docentes (medido el 2026-10-22): a 1700 px los campos se estiraban a
+    // ~1400 px. Google acota sus formularios a un ancho legible.
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 720),
+      child: Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -313,6 +318,7 @@ class _PerfilPanelState extends State<PerfilPanel> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -17,6 +17,7 @@ import {
   esquemaBarrido,
   esquemaFirmarSubida,
   esquemaIdArchivo,
+  esquemaListarMios,
   esquemaRutaEntidad,
 } from '../esquemas.js';
 import { exigirAdmin, exigirSesion, reposDe } from '../plugins/autenticacion.js';
@@ -517,6 +518,43 @@ export function rutasArchivos(
       // `total` repite lo que ya dice la longitud del arreglo, y aun así se
       // manda: la pantalla lo usa para decidir si el tope de la entidad está
       // cerca, y calcularlo allí obligaría al cliente a conocer el parámetro.
+      return { archivos, total: archivos.length };
+    },
+  );
+
+  /**
+   * Mis archivos: la lectura que hidrata el gestor documental al abrirse.
+   *
+   * Sin ella, la lista del gestor vivía sólo en memoria y en
+   * `SharedPreferences`: al recargar la página parecía que no se había subido
+   * nada. Con ella, lo que el usuario (o el administrador) ve es lo que hay en
+   * la base.
+   *
+   * **La RLS decide qué filas entran, no esta ruta.** `files_metadata_read_own`
+   * limita al propietario y `files_metadata_admin_read` da «todo» al
+   * administrador: el mismo endpoint sirve al docente su gestor y al admin el
+   * del centro entero, sin una línea de autorización aquí.
+   *
+   * `tipo` filtra por entidad cuando viene (`DRIVE_FILE` para el gestor). Sin
+   * él, trae todo lo del usuario. Los `PENDING` se incluyen a propósito —ver la
+   * nota de `entidad/:tipo/:id`— y los `DELETED` nunca.
+   */
+  app.get<{ Querystring: { tipo?: string; limite?: string; desplazamiento?: string } }>(
+    '/api/v1/archivos/mios',
+    { preHandler: [exigirSesion(), exigirArchivos] },
+    async (request) => {
+      // Igual que el listado por entidad: sin R2 configurado, un listado es un
+      // panel roto. Mejor el 503 honesto que el 200 que promete enlaces muertos.
+      almacenamiento();
+
+      const consulta = esquemaListarMios.parse(request.query);
+
+      const archivos = await reposDe(request).archivos.listarMios({
+        entityType: consulta.tipo,
+        limite: consulta.limite,
+        desplazamiento: consulta.desplazamiento,
+      });
+
       return { archivos, total: archivos.length };
     },
   );

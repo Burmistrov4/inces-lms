@@ -52,7 +52,7 @@ test('Verificar INCES LMS v1.2.4 en producción con sesión administrativa', asy
   await page.mouse.move(100, 400);
   await page.mouse.wheel(0, 300);
   await page.waitForTimeout(500);
-  await login.app.pulsarReal('Gestor de Archivos (R2)', { tiempoLimiteMs: 15000 });
+  await login.app.pulsarReal('Cloud CFS', { tiempoLimiteMs: 15000 });
   await page.waitForTimeout(4000);
   await page.screenshot({
     path: 'C:/Users/Loro/.gemini/antigravity/brain/fc938256-e2cd-45cb-99ec-a6d5c97a5f0e/live_04_archivos.png',

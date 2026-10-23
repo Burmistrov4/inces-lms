@@ -146,7 +146,7 @@ class _WalkthroughInteractivoCardState
       descripcion:
           'Organiza manuales técnicos en Cloudflare R2 y vincula carpetas o videos de Google Drive directamente a cada especialidad y aula virtual para docentes y aprendices.',
       icono: Icons.folder_open_outlined,
-      seccionDestino: 'Gestor de Archivos (R2)',
+      seccionDestino: 'Cloud CFS',
       textoBoton: 'Abrir Gestor Documental',
     ),
   ];

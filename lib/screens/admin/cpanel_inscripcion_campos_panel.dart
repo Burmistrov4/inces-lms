@@ -4,6 +4,7 @@ import '../../core/result.dart';
 import '../../models/inscripcion_campo.dart';
 import '../../repositories/planilla_admin_repository.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/responsivo.dart';
 
 /// Administración del catálogo de campos de la planilla de inscripción.
 ///
@@ -749,7 +750,7 @@ class _DialogoCampoState extends State<_DialogoCampo> {
       // teclado abierto, un diálogo de alto fijo desborda en vertical, y el
       // desborde vertical de un `Column` **lanza** en pruebas.
       content: SizedBox(
-        width: 420,
+        width: anchoDialogoSeguro(context, 420),
         child: SingleChildScrollView(
           child: Form(
             key: _formulario,

@@ -930,6 +930,12 @@ export const esquemaIdArchivo = idDeRecurso('archivo');
 export const tipoEntidadArchivoSchema = z.enum([
   'TASK_SUBMISSION',
   'TEACHER_GUIDE',
+  // Subida suelta al gestor documental («Drive»): no cuelga de ninguna tarea
+  // ni entrega. Añadido el 2026-10-20 con la migración
+  // `202610202001_drive_file_subida_suelta.sql`, que amplía el CHECK de
+  // `files_metadata.entity_type` y endurece el trigger de M6 para que un
+  // DRIVE_FILE no pueda llevar `entidad_id`.
+  'DRIVE_FILE',
 ]);
 
 /**
@@ -1017,6 +1023,26 @@ export const esquemaRutaEntidad = z.object({
     message: 'El identificador de la entidad debe ser un UUID válido.',
   }),
 });
+
+/**
+ * Consulta de «mis archivos» (`GET /api/v1/archivos/mios`).
+ *
+ * `tipo` es opcional y se valida contra el mismo enum que escribió la base: un
+ * tipo inventado daría un 400 con nombre de campo en vez de una lista vacía
+ * indistinguible de «no tengo archivos».
+ *
+ * `limite` y `desplazamiento` van con topes: son una paginación, y sin tope un
+ * `limite=999999` es una forma de pedirle al bucket —a través de la base— que
+ * cuente todo. Los topes son de la consulta, no de la política de uso: la
+ * pantalla del gestor no muestra más de unos pocos cientos de filas.
+ */
+export const esquemaListarMios = z
+  .object({
+    tipo: tipoEntidadArchivoSchema.optional(),
+    limite: z.coerce.number().int().min(1).max(200).default(100),
+    desplazamiento: z.coerce.number().int().min(0).default(0),
+  })
+  .strict();
 
 // --- Módulo 6: aula virtual -------------------------------------------------
 

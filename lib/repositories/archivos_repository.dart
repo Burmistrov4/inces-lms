@@ -94,6 +94,25 @@ class ArchivosRepository {
         ),
       );
 
+  /// Los archivos propios (o todos, si es administrador), filtrables por tipo.
+  ///
+  /// Es la lectura del gestor documental: la lista arranca desde la base y no
+  /// desde la memoria de la sesión. Con [entityType] nulo trae todo lo del
+  /// usuario; el gestor pasa `TipoEntidadArchivo.driveFile` para ver sólo sus
+  /// subidas sueltas.
+  Future<Result<List<Archivo>>> listarMios({
+    TipoEntidadArchivo? entityType,
+    int limite = 100,
+    int desplazamiento = 0,
+  }) =>
+      Result.guard(
+        () => _gateway.listarMios(
+          entityType: entityType,
+          limite: limite,
+          desplazamiento: desplazamiento,
+        ),
+      );
+
   /// Borra un archivo propio.
   Future<Result<Archivo>> borrar(String archivoId) =>
       Result.guard(() => _gateway.borrar(archivoId));

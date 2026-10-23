@@ -94,7 +94,10 @@ const servidor = createServer(async (peticion, respuesta) => {
   }
 });
 
-const HOST = process.env.HOST ?? '0.0.0.0';
+// El servidor estático del frontend escucha SIEMPRE en IPv4 (0.0.0.0). No debe
+// heredar `HOST=::` que se usa para el backend: medido el 2026-10-21, con `::`
+// el navegador no cargaba la página en 127.0.0.1:8090.
+const HOST = '0.0.0.0';
 
 servidor.listen(PUERTO, HOST, () => {
   console.log(`sirviendo ${RAIZ}`);

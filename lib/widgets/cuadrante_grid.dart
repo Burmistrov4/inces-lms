@@ -19,6 +19,7 @@ class CuadranteGrid extends StatelessWidget {
     super.key,
     required this.celdas,
     this.onCeldaTap,
+    this.diaFiltro,
   });
 
   /// Contenido de cada celda, por clave `'$dia-$bloque'`.
@@ -27,12 +28,19 @@ class CuadranteGrid extends StatelessWidget {
   /// Acción interactiva al pulsar sobre una celda (ej. celda vacía para asignar clase).
   final void Function(int dia, int bloque)? onCeldaTap;
 
+  /// **Filtro de día.** `null` = toda la semana. Con un día concreto la rejilla
+  /// muestra solo ese día (en lista, que se lee mejor que una columna suelta).
+  final int? diaFiltro;
+
   static String clave(int dia, int bloque) => '$dia-$bloque';
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dias = [for (var d = 1; d <= diaMaximo; d++) d];
+    // **Filtro de dia:** null = semana completa; un numero = solo ese dia.
+    final dias = diaFiltro == null
+        ? [for (var d = 1; d <= diaMaximo; d++) d]
+        : [diaFiltro!];
     final bloques = [for (var b = 1; b <= bloqueMaximo; b++) b];
 
     final borde = theme.colorScheme.outline.withValues(alpha: 0.25);
@@ -74,18 +82,39 @@ class CuadranteGrid extends StatelessWidget {
         ),
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SingleChildScrollView(
-        child: Table(
-          border: TableBorder.all(color: borde, width: 1),
-          defaultColumnWidth: const FixedColumnWidth(168),
-          columnWidths: const {
-            0: FixedColumnWidth(116),
-          },
-          children: hijos,
-        ),
-      ),
+    // **B5 — dos formas, no una tabla estirada.** Medido el 2026-10-22: la
+    // rejilla fija (116 + 6x168 = 1124 px) desbordaba 750 px a 390 y 136 px a
+    // 1280. Por debajo de 1200 px se muestra **selector de dia + lista
+    // vertical** (lo que cabe en un telefono); desde 1200, la tabla con ancho
+    // de columna adaptativo, que cabe sin scroll horizontal.
+    return LayoutBuilder(
+      builder: (context, restricciones) {
+        // Lista vertical si la pantalla es estrecha O si se filtro a un solo
+        // dia: una columna suelta se lee peor que la lista de bloques.
+        if (restricciones.maxWidth < 1200 || dias.length == 1) {
+          return _CuadrantePorDia(
+            celdas: celdas,
+            dias: dias,
+            onCeldaTap: onCeldaTap,
+          );
+        }
+        final anchoDia = ((restricciones.maxWidth - 116) / dias.length)
+            .clamp(140.0, 168.0)
+            .toDouble();
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SingleChildScrollView(
+            child: Table(
+              border: TableBorder.all(color: borde, width: 1),
+              defaultColumnWidth: FixedColumnWidth(anchoDia),
+              columnWidths: const {
+                0: FixedColumnWidth(116),
+              },
+              children: hijos,
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -446,4 +475,230 @@ Map<String, List<Widget>> agruparGuardias(
     (mapa[clave] ??= []).add(chip(guardia));
   }
   return mapa;
+}
+
+
+/// **B5 — la rejilla en vertical, para pantallas estrechas.**
+///
+/// Medido el 2026-10-22: la tabla de dias x bloques (1124 px fijos) desbordaba
+/// 750 px a 390 y obligaba a arrastrar en un telefono. En vez de estirar una
+/// tabla, se cambia de forma: **selector de dia** y los 12 bloques de ese dia
+/// en una lista vertical. Es el patron que usa Google en Calendario/Classroom
+/// en movil.
+class _CuadrantePorDia extends StatefulWidget {
+  const _CuadrantePorDia({
+    required this.celdas,
+    required this.dias,
+    this.onCeldaTap,
+  });
+
+  /// Contenido de cada celda, por clave '$dia-$bloque'.
+  final Map<String, List<Widget>> celdas;
+
+  /// Dias a mostrar. Con mas de uno se pintan las fichas para elegir.
+  final List<int> dias;
+
+  final void Function(int dia, int bloque)? onCeldaTap;
+
+  @override
+  State<_CuadrantePorDia> createState() => _CuadrantePorDiaState();
+}
+
+class _CuadrantePorDiaState extends State<_CuadrantePorDia> {
+  late int _dia;
+
+  @override
+  void initState() {
+    super.initState();
+    _dia = _primerDiaConContenido();
+  }
+
+  int _primerDiaConContenido() {
+    for (final d in widget.dias) {
+      for (var b = 1; b <= bloqueMaximo; b++) {
+        if ((widget.celdas[CuadranteGrid.clave(d, b)] ?? const []).isNotEmpty) {
+          return d;
+        }
+      }
+    }
+    return widget.dias.first;
+  }
+
+  bool _tieneContenido(int dia) {
+    for (var b = 1; b <= bloqueMaximo; b++) {
+      if ((widget.celdas[CuadranteGrid.clave(dia, b)] ?? const []).isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final borde = theme.colorScheme.outline.withValues(alpha: 0.25);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Selector de dia. El punto marca los dias que tienen algo.
+        // **Wrap y no ListView horizontal:** con 6 dias los chips se cortaban en
+        // el borde (medido el 2026-10-22: el ultimo chip quedaba en x=459, fuera
+        // de la pantalla de 390). Envolverlos muestra todos los dias de un
+        // vistazo y no esconde nada.
+        if (widget.dias.length > 1) ...[
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final dia in widget.dias)
+                ChoiceChip(
+                  label: Text(diasDeLaSemana[dia]),
+                  selected: dia == _dia,
+                  onSelected: (_) => setState(() => _dia = dia),
+                  avatar: _tieneContenido(dia) && dia != _dia
+                      ? Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        )
+                      : null,
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+        ],
+        // Bloques del dia elegido, en lista vertical.
+        Expanded(
+          child: ListView(
+            children: [
+              for (var bloque = 1; bloque <= bloqueMaximo; bloque++)
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: borde)),
+                    color: bloque > bloquesDeManana
+                        ? theme.colorScheme.tertiaryContainer
+                            .withValues(alpha: bloque % 2 == 0 ? 0.22 : 0.14)
+                        : (bloque % 2 == 0
+                            ? theme.colorScheme.primary.withValues(alpha: 0.04)
+                            : null),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 96,
+                        child: _CeldaGutter(bloque: bloque),
+                      ),
+                      Expanded(
+                        child: InkWell(
+                          onTap: widget.onCeldaTap != null
+                              ? () => widget.onCeldaTap!(_dia, bloque)
+                              : null,
+                          child: Container(
+                            constraints: const BoxConstraints(minHeight: 60),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: _contenido(_dia, bloque),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _contenido(int dia, int bloque) {
+    final hijos =
+        widget.celdas[CuadranteGrid.clave(dia, bloque)] ?? const <Widget>[];
+    if (hijos.isEmpty) {
+      return [
+        Text(
+          'Libre',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+      ];
+    }
+    return hijos;
+  }
+}
+
+/// **Filtro de día (Todo | Lun…Sáb), compartido por Horarios y Guardias.**
+///
+/// Medido el 2026-10-22: en Guardias no había forma de ver un solo día (solo
+/// «Lun–Vie / Lun–Sáb») y en Horarios el selector sólo aparecía en móvil. Este
+/// control es el mismo en los dos paneles: `Todo` muestra la semana completa y
+/// un día concreto enfoca ese día. El punto marca los días que tienen contenido.
+class SelectorDeDias extends StatelessWidget {
+  const SelectorDeDias({
+    super.key,
+    required this.seleccionado,
+    required this.onCambio,
+    this.diasConContenido = const {},
+  });
+
+  /// `null` = toda la semana.
+  final int? seleccionado;
+
+  final ValueChanged<int?> onCambio;
+
+  /// Días que tienen al menos una clase o guardia (para el punto).
+  final Set<int> diasConContenido;
+
+  static const _cortos = <int, String>{
+    1: 'Lun',
+    2: 'Mar',
+    3: 'Mié',
+    4: 'Jue',
+    5: 'Vie',
+    6: 'Sáb',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    Widget ficha(String etiqueta, int? dia) {
+      final activo = seleccionado == dia;
+      final tiene = dia != null && diasConContenido.contains(dia);
+      return ChoiceChip(
+        label: Text(etiqueta),
+        selected: activo,
+        onSelected: (_) => onCambio(dia),
+        avatar: tiene && !activo
+            ? Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  shape: BoxShape.circle,
+                ),
+              )
+            : null,
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        ficha('Todo', null),
+        for (var d = 1; d <= diaMaximo; d++) ficha(_cortos[d] ?? 'D$d', d),
+      ],
+    );
+  }
 }

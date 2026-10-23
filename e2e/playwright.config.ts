@@ -61,6 +61,22 @@ if (existsSync(ARCHIVO_LOCAL)) {
   }
 }
 
+// **Sin proxy para localhost.** Medido el 2026-10-23: este entorno define
+// `HTTP_PROXY` apuntando a un proxy del sandbox. El health check de Playwright
+// salía por ese proxy —que responde 502 cuando nadie escucha— y Playwright
+// interpretaba la respuesta como «servidor disponible», así que NUNCA arrancaba
+// el backend: 71 de 186 capturas cargaban sin datos. Con `NO_PROXY` el chequeo
+// va directo al puerto y el backend se levanta.
+for (const clave of ['NO_PROXY', 'no_proxy'] as const) {
+  const previo = (process.env[clave] ?? '')
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
+  process.env[clave] = [
+    ...new Set([...previo, 'localhost', '127.0.0.1', '::1']),
+  ].join(',');
+}
+
 /** Dónde está la app. En CI lo pone el flujo; en local, el valor por defecto. */
 const BASE_URL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:8090';
 
@@ -136,15 +152,34 @@ const servidores = ES_REMOTO ? [] : [
           // `npm run start` ejecuta `dist/server.js`, así que en CI hay que
           // compilar el backend antes. En local, `backend/.env` ya existe y lo
           // carga el propio script con `--env-file-if-exists`.
-          command: 'npm --prefix ../backend run start',
+          // **node directo, sin npm.** Medido el 2026-10-23: con
+          // `npm --prefix ../backend run start` Playwright NUNCA levantaba el
+          // backend (npm es `npm.cmd` en Windows y el spawn sin shell no lo
+          // encuentra): nada escuchaba en el 3001 y 72 de 186 capturas cargaban
+          // sin datos. Con `node` + `cwd` arranca igual y no depende del shell.
+          command: 'node --env-file-if-exists=.env dist/server.js',
+          cwd: '../backend',
           // `/salud` es liveness y no toca la base; se espera a esa y no a
           // `/salud/profundo`, porque lo que hace falta saber aquí es que el
           // proceso escucha, no que la nube responda.
-          url: `${BACKEND_URL}/salud`,
+          // **Se comprueba con `localhost`, el mismo host que usa la
+          // app.** Medido el 2026-10-23: con `127.0.0.1` un backend huerfano
+          // enlazado solo a IPv4 (codigo viejo) pasaba el chequeo, y luego la
+          // app —que llama a `localhost`, resuelto a `::1`— fallaba con
+          // ERR_CONNECTION_REFUSED: 72 de 186 capturas cargaban sin datos sin
+          // que la matriz lo viera. Comprobando con `localhost`, un backend
+          // incompleto se detecta y Playwright levanta uno nuevo (o falla alto).
+          url: `http://localhost:${new URL(BACKEND_URL).port || 3001}/salud`,
           reuseExistingServer: !process.env.CI,
           timeout: 120_000,
           stdout: 'pipe' as const,
           stderr: 'pipe' as const,
+          // **Dual-stack explícito.** Medido el 2026-10-21: el backend bindeado
+          // a `0.0.0.0` (IPv4) rechaza `localhost`, que en Windows resuelve a
+          // `::1` (IPv6), y la app muestra «No pudimos conectar». Con `HOST=::`
+          // responde por ambos. Se fija aquí porque el `HOST=::` del shell no
+          // llegaba al proceso hijo del webServer. `serve.mjs` ya ignora HOST.
+          env: { ...process.env, HOST: '::' } as Record<string, string>,
         },
       ]
     : []),

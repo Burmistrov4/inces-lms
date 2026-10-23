@@ -9,6 +9,7 @@ import '../../repositories/cuadrante_repository.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/cuadrante_grid.dart';
+import '../../widgets/responsivo.dart';
 import 'cpanel_invitaciones_panel.dart';
 
 /// Panel de guardias docentes (Módulo 3).
@@ -81,7 +82,9 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
   String? _modalidadFiltro;
   late bool _vistaMatriz = widget.vistaMatrizInicial;
   bool _subvistaPizarraMural = false;
-  int _diasAMostrar = 5;
+
+  /// **Filtro de dia de la rejilla.** null = toda la semana.
+  int? _diaRejilla;
   final ScrollController _scrollHorizontalCtrl = ScrollController();
 
   bool _cargando = true;
@@ -373,6 +376,11 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
         const SizedBox(height: 12),
         _filtros(),
         const SizedBox(height: 16),
+        // **Los controles de vista NO se ocultan al cargar.** Medido el
+        // 2026-10-22: con la barra dentro del `EstadoPanel` desaparecía durante
+        // la carga y el salto al aparecer movía todo el panel. Ahora sólo gira
+        // el contenido: el usuario siempre ve dónde está.
+        if (_vistaMatriz) _barraSubVistasYControles(),
         // `Expanded` y no un `ListView` suelto: `ContenidoSeccion` entrega una
         // altura **acotada**, así que aquí se reparte en lugar de crecer.
         Expanded(
@@ -419,20 +427,13 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
             spacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              SegmentedButton<int>(
-                segments: const [
-                  ButtonSegment<int>(
-                    value: 5,
-                    label: Text('Lun - Vie (Laboral)'),
-                  ),
-                  ButtonSegment<int>(
-                    value: 6,
-                    label: Text('Lun - Sáb (+Sábado)'),
-                  ),
-                ],
-                selected: {_diasAMostrar},
-                onSelectionChanged: (set) =>
-                    setState(() => _diasAMostrar = set.first),
+              // **Filtro de día.** Medido el 2026-10-22: sustituye al
+              // «Lun–Vie / Lun–Sáb», que no dejaba ver un solo día. «Todo»
+              // muestra la semana completa y un día concreto lo enfoca.
+              SelectorDeDias(
+                seleccionado: _diaRejilla,
+                onCambio: (dia) => setState(() => _diaRejilla = dia),
+                diasConContenido: {for (final g in _guardias) g.dia},
               ),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
@@ -557,12 +558,28 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
 
     final theme = Theme.of(context);
     final borderSide = BorderSide(color: theme.dividerColor.withValues(alpha: 0.6));
-    final limiteDia = _diasAMostrar.clamp(1, diaMaximo);
+    // **Filtro de dia:** null = toda la semana; un numero = solo ese.
+    final diasAMostrar = _diaRejilla == null
+        ? [for (var d = 1; d <= diaMaximo; d++) d]
+        : [_diaRejilla!];
+    final limiteDia = diasAMostrar.length;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    // **Rejilla de ancho adaptativo.** Medido el 2026-10-22: con columnas de
+    // día fijas de 190 px la tabla desbordaba 363 px a 840. Ahora el ancho del
+    // día se calcula del espacio disponible: cabe sin scroll desde ~840 px y
+    // sólo arrastra cuando la pantalla es móvil.
+    return LayoutBuilder(
+      builder: (context, restricciones) {
+        final anchoGutter = 150.0;
+        // Minimo 92 y margen de 8 px: con 6 dias y minimo 104 la tabla
+        // media 774 px y desbordaba 37 px a 840 (medido el 2026-10-22).
+        final anchoDia =
+            ((restricciones.maxWidth - anchoGutter - 8) / limiteDia)
+                .clamp(92.0, 168.0)
+                .toDouble();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _barraSubVistasYControles(),
         Expanded(
           child: Card(
             elevation: 0,
@@ -588,7 +605,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                         child: Row(
                           children: [
                             Container(
-                              width: 150,
+                              width: anchoGutter,
                               height: 56,
                               alignment: Alignment.centerLeft,
                               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -598,9 +615,9 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                                 style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                               ),
                             ),
-                            for (var dia = 1; dia <= limiteDia; dia++)
+                            for (final dia in diasAMostrar)
                               Container(
-                                width: 190,
+                                width: anchoDia,
                                 height: 56,
                                 decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
                                 child: Column(
@@ -653,7 +670,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                           child: Row(
                             children: [
                               Container(
-                                width: 150,
+                                width: anchoGutter,
                                 constraints: const BoxConstraints(minHeight: 64),
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                 alignment: Alignment.centerLeft,
@@ -673,9 +690,9 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                                   ],
                                 ),
                               ),
-                              for (var dia = 1; dia <= limiteDia; dia++)
+                              for (final dia in diasAMostrar)
                                 Container(
-                                  width: 190,
+                                  width: anchoDia,
                                   constraints: const BoxConstraints(minHeight: 64),
                                   decoration: BoxDecoration(border: Border(right: borderSide)),
                                   child: Row(
@@ -708,17 +725,35 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
         ),
       ],
     );
+      },
+    );
   }
 
   Widget _pizarraMural() {
     final theme = Theme.of(context);
     final borderSide = BorderSide(color: theme.dividerColor.withValues(alpha: 0.6));
-    final limiteDia = _diasAMostrar.clamp(1, diaMaximo);
+    // **Filtro de dia:** null = toda la semana; un numero = solo ese.
+    final diasAMostrar = _diaRejilla == null
+        ? [for (var d = 1; d <= diaMaximo; d++) d]
+        : [_diaRejilla!];
+    final limiteDia = diasAMostrar.length;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    // **Rejilla de ancho adaptativo.** Medido el 2026-10-22: con columnas de
+    // día fijas de 190 px la tabla desbordaba 363 px a 840. Ahora el ancho del
+    // día se calcula del espacio disponible: cabe sin scroll desde ~840 px y
+    // sólo arrastra cuando la pantalla es móvil.
+    return LayoutBuilder(
+      builder: (context, restricciones) {
+        final anchoGutter = 150.0;
+        // Minimo 92 y margen de 8 px: con 6 dias y minimo 104 la tabla
+        // media 774 px y desbordaba 37 px a 840 (medido el 2026-10-22).
+        final anchoDia =
+            ((restricciones.maxWidth - anchoGutter - 8) / limiteDia)
+                .clamp(92.0, 168.0)
+                .toDouble();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _barraSubVistasYControles(),
         Expanded(
           child: Card(
             elevation: 0,
@@ -766,7 +801,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                         Row(
                           children: [
                             Container(
-                              width: 140,
+                              width: anchoGutter,
                               height: 44,
                               alignment: Alignment.centerLeft,
                               padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -776,9 +811,9 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                               ),
                               child: const Text('Programa / Puesto', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                             ),
-                            for (var dia = 1; dia <= limiteDia; dia++)
+                            for (final dia in diasAMostrar)
                               Container(
-                                width: 190,
+                                width: anchoDia,
                                 height: 44,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
@@ -795,7 +830,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
 
                         // SECCIÓN M.T.P. (Puestos 1 al 7)
                         Container(
-                          width: 140.0 + (limiteDia * 190.0),
+                          width: anchoGutter + (limiteDia * anchoDia),
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           color: Colors.blue.shade50,
                           child: Row(
@@ -813,7 +848,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                           Row(
                             children: [
                               Container(
-                                width: 140,
+                                width: anchoGutter,
                                 height: 58,
                                 padding: const EdgeInsets.symmetric(horizontal: 10),
                                 alignment: Alignment.centerLeft,
@@ -832,9 +867,9 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                                   ],
                                 ),
                               ),
-                              for (var dia = 1; dia <= limiteDia; dia++)
+                              for (final dia in diasAMostrar)
                                 Container(
-                                  width: 190,
+                                  width: anchoDia,
                                   height: 58,
                                   padding: const EdgeInsets.all(4),
                                   decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
@@ -847,7 +882,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
 
                         // SECCIÓN P.N.A. (Puestos 1 al 5)
                         Container(
-                          width: 140.0 + (limiteDia * 190.0),
+                          width: anchoGutter + (limiteDia * anchoDia),
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           color: Colors.teal.shade50,
                           child: Row(
@@ -865,7 +900,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                           Row(
                             children: [
                               Container(
-                                width: 140,
+                                width: anchoGutter,
                                 height: 58,
                                 padding: const EdgeInsets.symmetric(horizontal: 10),
                                 alignment: Alignment.centerLeft,
@@ -884,9 +919,9 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                                   ],
                                 ),
                               ),
-                              for (var dia = 1; dia <= limiteDia; dia++)
+                              for (final dia in diasAMostrar)
                                 Container(
-                                  width: 190,
+                                  width: anchoDia,
                                   height: 58,
                                   padding: const EdgeInsets.all(4),
                                   decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
@@ -903,6 +938,8 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
           ),
         ),
       ],
+    );
+      },
     );
   }
 
@@ -1659,8 +1696,8 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Invitar / Registrar nuevo docente'),
-        content: const SizedBox(
-          width: 520,
+        content: SizedBox(
+          width: anchoDialogoSeguro(context, 520),
           height: 480,
           child: SingleChildScrollView(
             child: CpanelInvitacionesPanel(),
@@ -2020,7 +2057,9 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
               const SizedBox(height: 14),
               Builder(
                 builder: (context) {
-                  final apilar = MediaQuery.sizeOf(context).width < 500;
+                  // Igual que el cuadrante: el umbral es el canónico de Material 3
+                  // (`compact`, < 600), no un 500 propio.
+                  final apilar = esCompacto(context);
                   final campoDia = _Desplegable<int>(
                     etiqueta: 'Día',
                     ancho: double.infinity,

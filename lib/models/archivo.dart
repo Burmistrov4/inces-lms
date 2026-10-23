@@ -43,7 +43,11 @@ enum EstadoArchivo {
 /// un `CHECK` en la tabla: inventarse uno aquí daría un 400 en la primera llamada.
 enum TipoEntidadArchivo {
   taskSubmission('TASK_SUBMISSION'),
-  teacherGuide('TEACHER_GUIDE');
+  teacherGuide('TEACHER_GUIDE'),
+  /// Subida suelta al gestor documental (el «Drive» del sistema). Migración
+  /// `202610202001_drive_file_subida_suelta.sql`, aplicada el 2026-10-20 y
+  /// verificada end-to-end: firmar 201 → PUT 200 → confirmar 200.
+  driveFile('DRIVE_FILE');
 
   const TipoEntidadArchivo(this.valorRemoto);
 
@@ -52,6 +56,7 @@ enum TipoEntidadArchivo {
   static TipoEntidadArchivo desde(String? valor) => switch (valor) {
         'TASK_SUBMISSION' => taskSubmission,
         'TEACHER_GUIDE' => teacherGuide,
+        'DRIVE_FILE' => driveFile,
         _ => throw FormatException('Tipo de entidad desconocido: $valor'),
       };
 }

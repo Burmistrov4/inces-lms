@@ -49,6 +49,9 @@ function htmlInvitacion(enlace: string, nombres?: string): string {
     '  </div>',
     '  <p style="color:#64748b;font-size:12px;line-height:1.4;">Si el botón no abre directamente, copie y pegue el siguiente enlace en su navegador:</p>',
     `  <p style="word-break:break-all;font-size:11px;color:#0b5cab;"><a href="${enlace}" style="color:#0b5cab;">${enlace}</a></p>`,
+    '  <div style="background-color:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-top:20px;">',
+    '    <p style="color:#92400e;font-size:12.5px;line-height:1.5;margin:0;"><strong>¿No encuentra este correo en su bandeja principal?</strong> Revise la carpeta de <strong>correo no deseado (spam)</strong>. Si lo ve ahí, márquelo como «No es spam» para que las próximas notificaciones institucionales lleguen a su bandeja principal.</p>',
+    '  </div>',
     '  <p style="color:#94a3b8;font-size:12px;line-height:1.4;margin-top:24px;border-top:1px solid #e2e8f0;padding-top:16px;">Si no esperaba esta invitación institucional, puede ignorar este mensaje de forma segura.</p>',
     '</div>',
   ].join('\n');
@@ -99,8 +102,8 @@ async function crearInvitacionConEnlace(
   // enruta en cliente. Por eso el enlace lleva `#`.
   const enlace = `${deps.urlFrente}/#/auth/activate?token=${token}`;
 
-  // El correo es la vía de lujo. Sin dominio verificado en Resend el mensaje
-  // sólo llega a la cuenta dueña del proyecto, así que el enlace también se
+  // El correo es la vía de lujo. Puede no llegar (SMTP caído, o cuenta ya
+  // existente en Supabase, que no reenvía), así que el enlace también se
   // devuelve en la respuesta: el administrador puede usarlo o reenviarlo aunque
   // el correo no llegue. **La activación nunca depende del correo.**
   const correo = await deps.enviarCorreo.enviar({

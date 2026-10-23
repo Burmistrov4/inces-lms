@@ -10,6 +10,8 @@ import '../../services/hacer_export_service.dart';
 import '../../services/planilla_admin_pdf_service.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
+import '../../core/refresco_secciones.dart';
+import '../../widgets/responsivo.dart';
 import 'cpanel_inscripciones_cola_dialog.dart';
 import 'cpanel_inscripciones_inscritos_dialog.dart';
 
@@ -78,7 +80,8 @@ class CpanelInscripcionesPanel extends StatefulWidget {
       _CpanelInscripcionesPanelState();
 }
 
-class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel> {
+class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel>
+    with RefrescoAlVolver<CpanelInscripcionesPanel> {
   late final AdminInscripcionesRepository _repo =
       widget.repositorio ?? AdminInscripcionesRepository();
 
@@ -120,10 +123,12 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel> {
     _cargar();
   }
 
-  Future<void> _cargar() async {
+  Future<void> _cargar({bool silencioso = false}) async {
     setState(() {
-      _cargando = true;
-      _error = null;
+      // **Refresco en segundo plano:** si ya hay datos no se vuelve a mostrar
+      // el esqueleto; se conserva lo que hay hasta que llegue lo nuevo.
+      _cargando = silencioso ? false : true;
+      if (!silencioso) _error = null;
     });
 
     final resultado = await _repo.obtenerOcupacion();
@@ -134,11 +139,18 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel> {
       switch (resultado) {
         case Success(value: final secciones):
           _secciones = secciones;
+          marcarCarga();
         case Failure(error: final fallo):
           _error = fallo.message;
       }
     });
   }
+
+  @override
+  String get seccion => 'Inscripciones y Cupos';
+
+  @override
+  Future<void> refrescarEnSegundoPlano() => _cargar(silencioso: true);
 
   Future<void> _promover(OcupacionSeccion o) async {
     setState(() => _promoviendo.add(o.seccionId));
@@ -720,7 +732,7 @@ class _DialogoReincorporarState extends State<_DialogoReincorporar> {
     return AlertDialog(
       title: const Text('Reincorporar estudiante'),
       content: SizedBox(
-        width: 420,
+        width: anchoDialogoSeguro(context, 420),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,

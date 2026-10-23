@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/barra_acciones_superiores.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/responsivo.dart';
 
 /// Panel de resumen y control docente.
 ///
@@ -261,60 +262,30 @@ class DocenteResumenPanel extends StatelessWidget {
   // ---------------------------------------------------------------------------
 
   Widget _construirMetricas() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final ancho = constraints.maxWidth;
-        final columnas = ancho > 1000
-            ? 3
-            : ancho > 600
-                ? 2
-                : 1;
+    final items = [
+      const TarjetaMetrica(
+        etiqueta: 'Asistencia en vivo',
+        valor: 'QR + 6 dígitos',
+        icono: Icons.qr_code_scanner_rounded,
+        tono: TonoEstado.exito,
+      ),
+      const TarjetaMetrica(
+        etiqueta: 'Aula Virtual',
+        valor: 'Tablón y Tareas',
+        icono: Icons.class_rounded,
+        tono: TonoEstado.info,
+      ),
+      const TarjetaMetrica(
+        etiqueta: 'Materiales R2',
+        valor: 'Nube institucional',
+        icono: Icons.cloud_done_rounded,
+        tono: TonoEstado.info,
+      ),
+    ];
 
-        final items = [
-          const TarjetaMetrica(
-            etiqueta: 'Asistencia en vivo',
-            valor: 'QR + 6 dígitos',
-            icono: Icons.qr_code_scanner_rounded,
-            tono: TonoEstado.exito,
-          ),
-          const TarjetaMetrica(
-            etiqueta: 'Aula Virtual',
-            valor: 'Tablón y Tareas',
-            icono: Icons.class_rounded,
-            tono: TonoEstado.info,
-          ),
-          const TarjetaMetrica(
-            etiqueta: 'Materiales R2',
-            valor: 'Nube institucional',
-            icono: Icons.cloud_done_rounded,
-            tono: TonoEstado.info,
-          ),
-        ];
-
-        if (columnas == 1) {
-          return Column(
-            children: [
-              for (final item in items) ...[
-                item,
-                const SizedBox(height: 12),
-              ],
-            ],
-          );
-        }
-
-        return Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            for (final item in items)
-              SizedBox(
-                width: (ancho - (columnas - 1) * 16) / columnas,
-                child: item,
-              ),
-          ],
-        );
-      },
-    );
+    // 400 px por celda → 3 columnas a 1280 px (fila llena con las 3 métricas),
+    // 2 a 900 y 1 en teléfono. Antes eran umbrales propios (1000/600).
+    return rejillaDeTarjetas(hijos: items, anchoCelda: 400);
   }
 
   // ---------------------------------------------------------------------------
@@ -389,36 +360,13 @@ class DocenteResumenPanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final ancho = constraints.maxWidth;
-            final columnas = ancho > 900
-                ? 2
-                : 1;
-
-            if (columnas == 1) {
-              return Column(
-                children: [
-                  for (final item in acciones) ...[
-                    _construirTarjetaAccion(item, theme),
-                    const SizedBox(height: 12),
-                  ],
-                ],
-              );
-            }
-
-            return Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: [
-                for (final item in acciones)
-                  SizedBox(
-                    width: (ancho - 16) / 2,
-                    child: _construirTarjetaAccion(item, theme),
-                  ),
-              ],
-            );
-          },
+        // 400 px por celda → 3 columnas a 1280 px (5 acciones = 3 + 2),
+        // 2 a 900 y 1 en teléfono. Antes eran umbrales propios (900).
+        rejillaDeTarjetas(
+          hijos: [
+            for (final item in acciones) _construirTarjetaAccion(item, theme),
+          ],
+          anchoCelda: 400,
         ),
       ],
     );

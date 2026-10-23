@@ -13,6 +13,7 @@ import '../../models/programa.dart';
 import '../../repositories/curriculo_repository.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
+import '../../widgets/responsivo.dart';
 
 /// «1 materia» y «2 materias», no «1 materias».
 ///
@@ -1771,7 +1772,7 @@ class _DialogoNuevaMateriaState extends State<_DialogoNuevaMateria> {
     return AlertDialog(
       title: const Text('Registrar materia'),
       content: SizedBox(
-        width: 420,
+        width: anchoDialogoSeguro(context, 420),
         child: Form(
           key: _formKey,
           child: Column(

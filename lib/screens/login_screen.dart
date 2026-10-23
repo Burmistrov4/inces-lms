@@ -9,6 +9,7 @@ import 'package:inces_lms_app/screens/landing_page.dart';
 import 'package:inces_lms_app/screens/restablecer_con_codigo_screen.dart';
 import 'package:inces_lms_app/services/auth_service.dart';
 import 'package:inces_lms_app/theme/inces_theme.dart';
+import 'package:inces_lms_app/widgets/responsivo.dart';
 
 /// Pantalla de inicio de sesión.
 ///
@@ -194,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               content: SingleChildScrollView(
                 child: SizedBox(
-                  width: 420,
+                  width: anchoDialogoSeguro(context, 420),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,

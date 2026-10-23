@@ -747,11 +747,14 @@ export type PlanillaInscripcion = Record<string, unknown>;
  * `Rol` y `TipoPrograma`: la base guarda `text` con un `check`, y la unión es
  * lo que `z.infer` devuelve tal cual.
  */
-export type TipoEntidadArchivo = 'TASK_SUBMISSION' | 'TEACHER_GUIDE';
+export type TipoEntidadArchivo = 'TASK_SUBMISSION' | 'TEACHER_GUIDE' | 'DRIVE_FILE';
 
 export const TIPOS_ENTIDAD_ARCHIVO: readonly TipoEntidadArchivo[] = [
   'TASK_SUBMISSION',
   'TEACHER_GUIDE',
+  // Subida suelta al gestor documental (el «Drive» del sistema). Migración
+  // `202610202001_drive_file_subida_suelta.sql`, aplicada el 2026-10-20.
+  'DRIVE_FILE',
 ];
 
 export function esTipoEntidadArchivo(valor: unknown): valor is TipoEntidadArchivo {

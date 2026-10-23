@@ -1,14 +1,26 @@
 /**
  * Envío de correo transaccional.
  *
- * Soporta dos vías de entrega:
- *  1. SMTP de Gmail (Nodemailer): vía prioritaria y sin restricciones de dominio,
- *     usando `smtp.gmail.com` (465 SSL o 587 TLS) con Contraseña de Aplicación de Google.
- *  2. API REST de Resend: vía secundaria cuando se configura `RESEND_API_KEY`.
+ * **Dos vías, en este orden** (decisión de Lorenzo, 2026-10-20):
  *
- * El envío nunca es bloqueante ni lanza excepciones no controladas: si el proveedor
- * falla o no está configurado, devuelve `{ entregado: false }` para que el flujo
- * de negocio continúe de forma íntegra.
+ *  1. **Gmail SMTP (Nodemailer)** — vía prioritaria. Sin restricciones de dominio
+ *     y sin coste: basta una Contraseña de Aplicación de Google.
+ *  2. **Supabase Auth (`/auth/v1/invite`)** — red de seguridad cuando SMTP no
+ *     está configurado o falla. Supabase envía su propio correo de invitación
+ *     (plantilla del panel de Auth), así que el mensaje llega aunque nuestro
+ *     HTML no pueda salir. Es lo que permite no depender de ningún proveedor de
+ *     pago: **Resend se retiró por completo el 2026-10-20** porque exigía un
+ *     dominio de pago para enviar a destinatarios reales.
+ *
+ * **Honestidad sobre la vía 2.** Supabase sólo invita: si la dirección ya tiene
+ * cuenta en Auth, responde `422` y no reenvía nada. En ese caso el sistema queda
+ * en `{ entregado: false }` y la activación se apoya en el enlace directo que el
+ * administrador recibe en pantalla (el flujo de invitación lo devuelve siempre).
+ * La activación **nunca** depende del correo.
+ *
+ * El envío nunca es bloqueante ni lanza excepciones no controladas: si el
+ * proveedor falla o no está configurado, devuelve `{ entregado: false }` para
+ * que el flujo de negocio continúe íntegro.
  */
 
 import nodemailer from 'nodemailer';
@@ -23,7 +35,7 @@ export interface MensajeCorreo {
 export interface ResultadoEnvio {
   /** `true` si el proveedor aceptó el mensaje. */
   entregado: boolean;
-  proveedor?: 'smtp' | 'resend' | 'ninguno';
+  proveedor?: 'smtp' | 'supabase' | 'ninguno';
   detalle?: string;
 }
 
@@ -113,50 +125,81 @@ export function crearRemitenteSMTP(opciones: OpcionesRemitenteSMTP): EnvioCorreo
   };
 }
 
-export interface OpcionesRemitenteResend {
-  /** API key de Resend (`re_...`). Sin ella, el envío se considera no entregado. */
-  apiKey?: string;
-  /** Remitente. Sin dominio verificado, Resend exige `onboarding@resend.dev`. */
-  from: string;
+export interface OpcionesRemitenteSupabase {
+  /** URL del proyecto Supabase (`https://xxx.supabase.co`). */
+  url: string;
+  /** Clave `service_role`: la invites exigen privilegio de administrador. */
+  serviceRoleKey: string;
+  /** A dónde lleva el enlace del correo que Supabase envía. */
+  redirectTo?: string;
 }
 
 /**
- * Remitente basado en la API REST de Resend (`https://api.resend.com/emails`).
+ * Remitente de reserva: delegа el envío en Supabase Auth.
+ *
+ * **Sólo sabe invitar.** La Admin API de Supabase no envía correos arbitrarios:
+ * `/auth/v1/invite` crea (o reutiliza) el usuario y hace que el panel de Auth le
+ * mande su correo de invitación. Por eso la interfaz [MensajeCorreo] se degrada
+ * con honestidad: se usa `para` y, si viene, el `redirectTo`; el `asunto` y el
+ * `html` propios se descartan porque no hay dónde meterlos en la plantilla de
+ * Supabase. Es una red de seguridad, no un canal equivalente.
+ *
+ * El `422` de «usuario ya registrado» es el caso esperado cuando alguien reenvía
+ * una invitación: se devuelve `entregado: false` y quien llama decide (el flujo
+ * de invitación muestra el enlace directo al administrador).
  */
-export function crearRemitenteResend(opciones: OpcionesRemitenteResend): EnvioCorreo {
-  const { apiKey, from } = opciones;
+export function crearRemitenteSupabase(opciones: OpcionesRemitenteSupabase): EnvioCorreo {
+  const { url, serviceRoleKey, redirectTo } = opciones;
 
   return {
     async enviar(mensaje: MensajeCorreo): Promise<ResultadoEnvio> {
-      if (!apiKey) return { entregado: false, proveedor: 'ninguno' };
+      if (!serviceRoleKey || !url) {
+        return { entregado: false, proveedor: 'ninguno' };
+      }
 
       try {
-        const cuerpoTexto = mensaje.texto ?? extraerTextoDeHtml(mensaje.html);
-        const respuesta = await fetch('https://api.resend.com/emails', {
+        const respuesta = await fetch(`${url}/auth/v1/invite`, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${apiKey}`,
+            Authorization: `Bearer ${serviceRoleKey}`,
             'Content-Type': 'application/json',
+            apikey: serviceRoleKey,
           },
           body: JSON.stringify({
-            from,
-            to: [mensaje.para],
-            subject: mensaje.asunto,
-            html: mensaje.html,
-            text: cuerpoTexto,
+            email: mensaje.para,
+            ...(redirectTo ? { redirect_to: redirectTo } : {}),
           }),
         });
 
+        if (respuesta.status === 422) {
+          // Usuario ya existe: no hay reenvío posible por esta vía.
+          console.warn(
+            `Supabase no pudo invitar a ${mensaje.para}: la cuenta ya existe.`,
+          );
+          return {
+            entregado: false,
+            proveedor: 'supabase',
+            detalle: 'La cuenta ya existe en Supabase; el correo no se reenvía.',
+          };
+        }
+
         if (!respuesta.ok) {
           const errText = await respuesta.text().catch(() => '');
-          console.warn(`Envío vía Resend rechazado (HTTP ${respuesta.status}): ${errText}`);
-          return { entregado: false, proveedor: 'resend', detalle: errText };
+          console.warn(
+            `Invitación de Supabase rechazada (HTTP ${respuesta.status}): ${errText}`,
+          );
+          return {
+            entregado: false,
+            proveedor: 'supabase',
+            detalle: errText,
+          };
         }
-        return { entregado: true, proveedor: 'resend' };
+
+        return { entregado: true, proveedor: 'supabase' };
       } catch (error) {
         return {
           entregado: false,
-          proveedor: 'resend',
+          proveedor: 'supabase',
           detalle: error instanceof Error ? error.message : String(error),
         };
       }
@@ -166,26 +209,29 @@ export function crearRemitenteResend(opciones: OpcionesRemitenteResend): EnvioCo
 
 export interface OpcionesRemitenteTransaccional {
   smtp?: OpcionesRemitenteSMTP;
-  resend?: OpcionesRemitenteResend;
+  supabase?: OpcionesRemitenteSupabase;
 }
 
 /**
  * Remitente transaccional resiliente con tolerancia a fallos en cascada:
- * 1. Prioriza Gmail SMTP (Nodemailer) cuando están configuradas las credenciales de aplicación.
- * 2. Si SMTP falla o no está configurado, efectúa fallback automático a Resend (si tiene API Key).
- * 3. Si ambos fallan o no hay credenciales, devuelve `{ entregado: false, proveedor: 'ninguno' }`
- *    sin jamás lanzar excepciones no controladas que puedan abortar el flujo del usuario.
+ * 1. Prioriza Gmail SMTP (Nodemailer) cuando están configuradas las credenciales
+ *    de aplicación —es el único canal que lleva NUESTRO asunto y NUESTRO HTML.
+ * 2. Si SMTP falla o no está configurado, delega en Supabase (`/auth/v1/invite`),
+ *    que envía su propio correo de invitación. Red de seguridad, no equivalente.
+ * 3. Si ambos fallan o no hay credenciales, devuelve
+ *    `{ entregado: false, proveedor: 'ninguno' }` sin jamás lanzar excepciones
+ *    que puedan abortar el flujo del usuario.
  */
 export function crearRemitenteTransaccional(opciones: OpcionesRemitenteTransaccional): EnvioCorreo {
   const remitenteSmtp = (opciones.smtp?.user && opciones.smtp?.pass)
     ? crearRemitenteSMTP(opciones.smtp)
     : null;
 
-  const remitenteResend = opciones.resend?.apiKey
-    ? crearRemitenteResend(opciones.resend)
+  const remitenteSupabase = (opciones.supabase?.url && opciones.supabase?.serviceRoleKey)
+    ? crearRemitenteSupabase(opciones.supabase)
     : null;
 
-  if (!remitenteSmtp && !remitenteResend) {
+  if (!remitenteSmtp && !remitenteSupabase) {
     return {
       async enviar(): Promise<ResultadoEnvio> {
         return { entregado: false, proveedor: 'ninguno' };
@@ -201,20 +247,22 @@ export function crearRemitenteTransaccional(opciones: OpcionesRemitenteTransacci
           if (resSmtp.entregado) {
             return resSmtp;
           }
-          console.warn('Entrega SMTP no exitosa; recurriendo a fallback transaccional si está disponible...');
+          console.warn(
+            'Entrega SMTP no exitosa; recurriendo a la invitación de Supabase como red de seguridad...',
+          );
         } catch (error) {
           console.error('Error al intentar entrega SMTP:', error);
         }
       }
 
-      if (remitenteResend) {
+      if (remitenteSupabase) {
         try {
-          const resResend = await remitenteResend.enviar(mensaje);
-          if (resResend.entregado) {
-            return resResend;
+          const resSupabase = await remitenteSupabase.enviar(mensaje);
+          if (resSupabase.entregado) {
+            return resSupabase;
           }
         } catch (error) {
-          console.error('Error al intentar entrega fallback con Resend:', error);
+          console.error('Error al intentar entrega vía Supabase:', error);
         }
       }
 

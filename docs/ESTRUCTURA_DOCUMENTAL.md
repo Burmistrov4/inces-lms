@@ -31,7 +31,7 @@ Cuando dos documentos se contradigan, se aplica este orden. **La jerarquía no a
 | Entrada de agentes | AGENT_START_HERE.md | Lectura mínima y actuación segura. |
 | Índice | docs/README.md | Mapa, precedencia y enlaces. |
 | Estado real | ESTADO_DEL_SISTEMA.md | Fotografía vigente; entradas antiguas quedan como historial. |
-| Alcance | PLAN_MAESTRO.md, PLAN_CIERRE_100_FUNCIONAL_2026.md, TODO_CIERRE_INTEGRAL_INCES_LMS.md | Objetivos, aceptación y cola operativa, sin duplicar funciones. |
+| Alcance | PLAN_MAESTRO.md, PLAN_CIERRE_100_FUNCIONAL_2026.md, docs/historial/planes/TODO_CIERRE_INTEGRAL_INCES_LMS.md | Objetivos, aceptación y cola operativa, sin duplicar funciones. |
 | Gates y protocolo | docs/PROJECT_PHASE_GATES.md, docs/AI_AGENT_OPERATING_PROTOCOL.md | Criterios de calidad y reglas de trabajo. |
 | Arquitectura/contratos | Documentos de arquitectura, módulos, SQL/API y diseño | Validar contra código, esquema y permisos reales. |
 | Runbooks | Despliegue, arranque local, DevOps, E2E y R2 | Comandos reproducibles; secretos sólo en archivos locales protegidos. |
@@ -77,7 +77,7 @@ Trabajo documental hecho sin reestructurar el árbol, para no romper enlaces ni 
 2. `docs/CATALOGO_DOCUMENTAL.md` añade, para cada documento relevante, propósito, público, estado, documento canónico relacionado y acción recomendada. **El inventario automático se conserva como anexo**, porque es reproducible y permite localizar cualquier Markdown por ruta.
 3. La jerarquía de cinco niveles de este documento sustituye a la regla anterior de `ESTADO_DEL_SISTEMA.md` («si algo aquí contradice a otro archivo, manda este»), que quedó registrada como histórica en ese mismo archivo.
 4. `docs/PROCEDIMIENTO_DESPLIEGUE_PRODUCCION.md` es el **único** procedimiento oficial de despliegue. `RELEASE_AUDIT_20261010_0302.md` y `PROMPT_ANTIGRAVITY_RELEASE_PRODUCCION_HOY.md` quedan catalogados como histórico y como prompt: no son guías operativas y no deben divergir del canónico.
-5. `docs/AI_AGENT_BLOCKERS.md` lleva ahora en su cabecera la revalidación del 2026-10-13, que conserva las entradas antiguas con su fecha y marca cuáles quedaron superadas.
+5. `docs/AI_AGENT_PROTOCOLO.md` lleva ahora en su cabecera la revalidación del 2026-10-13, que conserva las entradas antiguas con su fecha y marca cuáles quedaron superadas.
 6. No se borró ni movió ningún documento. Los duplicados detectados quedan listados en el catálogo con su acción recomendada para una fase posterior.
 
 ## Fase posterior: movimiento físico no destructivo

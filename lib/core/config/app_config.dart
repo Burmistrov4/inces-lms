@@ -62,16 +62,35 @@ class AppConfig {
     return false;
   }
 
-  static void validate() {
+  /// Devuelve un mensaje descriptivo si falta o está mal la configuración de
+  /// compilación, o `null` si todo está en orden.
+  ///
+  /// No se limita a comprobar que no esté vacío: una URL que aún lleva la
+  /// plantilla (`https://<project-ref>.supabase.co`) es no-vacía pero igual de
+  /// inútil, y antes pasaba desapercibida hasta que el login fallaba sin dar
+  /// pistas. Mejor fallar fuerte y temprano, con la causa nombrada.
+  static String? problemaConfiguracion() {
     if (supabaseUrl.isEmpty) {
-      throw StateError(
-        'Falta SUPABASE_URL. Ejecuta la app con --dart-define=SUPABASE_URL=...',
-      );
+      return 'Falta SUPABASE_URL. Compila con '
+          '--dart-define-from-file=.env.json';
+    }
+    if (supabaseUrl.contains('<') || supabaseUrl.contains('project-ref')) {
+      return 'SUPABASE_URL parece una plantilla sin rellenar '
+          '(contiene "<" o "project-ref"). Usa el .env.json real.';
     }
     if (supabaseAnonKey.isEmpty) {
-      throw StateError(
-        'Falta SUPABASE_ANON_KEY. Ejecuta la app con --dart-define=SUPABASE_ANON_KEY=...',
-      );
+      return 'Falta SUPABASE_ANON_KEY. Compila con '
+          '--dart-define-from-file=.env.json';
     }
+    return null;
+  }
+
+  /// Lanza [StateError] con un mensaje claro si la configuración de compilación
+  /// no está completa. Lo llama [main] antes de iniciar sesión; el error se
+  /// captura allí y se muestra una pantalla de fallo legible en lugar de una
+  /// excepción sin tratar en la consola.
+  static void validate() {
+    final problema = problemaConfiguracion();
+    if (problema != null) throw StateError(problema);
   }
 }

@@ -5,8 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/gateways/selector_archivos.dart';
+import '../../models/archivo.dart';
+import '../../repositories/archivos_repository.dart';
 import '../../services/selector_archivos_navegador.dart';
 import '../../theme/inces_theme.dart';
+import '../../widgets/comunes.dart';
+import '../../widgets/guardia_toque.dart';
+import '../../widgets/responsivo.dart';
 
 
 /// Tipo de elemento en el explorador de archivos.
@@ -51,6 +57,8 @@ class ElementoArchivo {
     this.actividad = const [],
     this.aulaVirtual = 'General CFS (Todos)',
     this.materia = 'Formación Técnica General',
+    this.esRemoto = false,
+    this.estadoRemoto,
   });
 
   final String id;
@@ -67,6 +75,19 @@ class ElementoArchivo {
   List<EventoActividad> actividad;
   String aulaVirtual;
   String materia;
+
+  /// `true` si el elemento llegó del servidor (hidratado o subido y confirmado).
+  ///
+  /// La distinción importa: un archivo remoto vive en R2 y su borrado pasa por
+  /// el backend, mientras que una carpeta local sólo existe en este dispositivo.
+  /// Confundirlos haría que «borrar» mintiera sobre lo que borra.
+  final bool esRemoto;
+
+  /// Estado del archivo remoto (`PENDING`, `CONFIRMED`), si es remoto.
+  ///
+  /// Un `PENDING` es una subida que no llegó a confirmarse: se muestra con su
+  /// etiqueta en vez de esconderse, para que quien subió sepa que sigue ahí.
+  final String? estadoRemoto;
 
   bool get esCarpeta => tipo == TipoElemento.carpeta;
 
@@ -93,6 +114,8 @@ class ElementoArchivo {
         'urlDrive': urlDrive,
         'permiso': permiso,
         'aulaVirtual': aulaVirtual,
+        'esRemoto': esRemoto,
+        'estadoRemoto': estadoRemoto,
         'materia': materia,
       };
 
@@ -123,6 +146,8 @@ class ElementoArchivo {
       permiso: map['permiso'] as String? ?? 'Docentes y Estudiantes',
       aulaVirtual: map['aulaVirtual'] as String? ?? 'General CFS (Todos)',
       materia: map['materia'] as String? ?? 'Formación Técnica General',
+      esRemoto: map['esRemoto'] as bool? ?? false,
+      estadoRemoto: map['estadoRemoto'] as String?,
     );
   }
 }
@@ -146,7 +171,15 @@ int? _colorAIndice(Color? c) {
 
 /// Explorador de Archivos estilo Google Drive para Cloudflare R2.
 class CpanelExploradorArchivosPanel extends StatefulWidget {
-  const CpanelExploradorArchivosPanel({super.key});
+  const CpanelExploradorArchivosPanel({
+    super.key,
+    this.repositorio,
+    this.selector,
+  });
+
+  /// Inyectables para pruebas; en producción se resuelven solos.
+  final ArchivosRepository? repositorio;
+  final SelectorDeArchivos? selector;
 
   @override
   State<CpanelExploradorArchivosPanel> createState() =>
@@ -157,18 +190,51 @@ class _CpanelExploradorArchivosPanelState
     extends State<CpanelExploradorArchivosPanel> {
   bool _vistaCuadricula = true;
   bool _mostrarPanelLateral = true;
+
+  /// Motor real de subida (Módulo 5): selector del navegador + los tres pasos
+  /// firmar → PUT a R2 → confirmar. Desde el 2026-10-20 la subida es de verdad;
+  /// antes era una simulación que insertía un elemento local sin tocar R2.
+  late final ArchivosRepository _repoArchivos =
+      widget.repositorio ?? ArchivosRepository();
+  late final SelectorDeArchivos _selectorArchivos =
+      widget.selector ?? SelectorDeArchivosDelNavegador();
+  bool _subiendoArchivo = false;
+  String _pasoSubida = '';
+  String? _errorSubida;
   int _tabLateral = 0; // 0: Detalles, 1: Actividad
   String _filtroBusqueda = '';
   final _busquedaController = TextEditingController();
+
+  /// ¿Se muestra la tarjeta informativa de almacenamiento híbrido?
+  ///
+  /// **Antes era fija** y ocupaba media pantalla sin poder cerrarse; Lorenzo lo
+  /// señaló el 2026-10-21 («no se puede ni deslizar ni ocultar»). Ahora el
+  /// usuario puede quitarla y no vuelve hasta recargar.
+  bool _mostrarTarjetaInfo = true;
+
+  /// ¿El buscador está expandido a ancho completo?
+  ///
+  /// **Patrón de Google.** Medido el 2026-10-22: el campo inline de 260 px
+  /// quedaba en «Bu…» a 390 y no se podía escribir cómodo. En la barra va una
+  /// lupa; al tocarla, el buscador ocupa todo el ancho con flecha para volver.
+  bool _buscando = false;
 
   /// Pila de navegación para las migas de pan (Breadcrumbs).
   final List<String> _rutaActual = ['Mi Unidad (R2)'];
 
   ElementoArchivo? _seleccionado;
 
-  /// Cuota utilizada de Cloudflare R2: 1.84 GB de 10.0 GB (18.4%)
-  static const double _cuotaUsadaGb = 1.84;
   static const double _cuotaTotalGb = 10.0;
+
+  /// Cuota REALMENTE usada, calculada de los archivos de la unidad.
+  ///
+  /// **Antes era `const 1.84`** —un valor de demostración que se mostraba aunque
+  /// la nube estuviera vacía— y Lorenzo lo detectó en la captura del
+  /// 2026-10-21: «¿por qué 1.84 GB si no se ha subido nada?». Ahora se suma el
+  /// tamaño de los archivos listados; sin archivos, es 0.
+  double get _cuotaUsadaGb =>
+      _elementos.fold<int>(0, (suma, e) => suma + e.tamanoBytes) /
+      (1024 * 1024 * 1024);
 
   static const String _prefArchivosKey = 'inces_gestor_archivos_elementos_v2';
 
@@ -180,11 +246,69 @@ class _CpanelExploradorArchivosPanelState
     super.initState();
     _inicializarDatos();
     _cargarArchivosPersistidos();
+    _hidratarDesdeServidor();
     _busquedaController.addListener(() {
       setState(() {
         _filtroBusqueda = _busquedaController.text.trim().toLowerCase();
       });
     });
+  }
+
+  /// Hidrata la lista del gestor desde la base al abrir el panel.
+  ///
+  /// **Qué trae y qué no.** Del servidor sólo vienen los archivos reales
+  /// (`DRIVE_FILE`, la subida suelta); las carpetas y los vínculos de Google
+  /// Drive siguen siendo locales —no tienen tabla en la base—, así que se
+  /// conservan donde estaban. La mezcla es por id: un archivo que ya está en la
+  /// lista local (porque se subió en esta sesión) no se duplica.
+  ///
+  /// Un fallo aquí **no** vacía la lista: si la lectura falla, el panel se queda
+  /// con lo local y con el banner de error, que es mejor que una pantalla en
+  /// blanco que parece «no tienes archivos».
+  Future<void> _hidratarDesdeServidor() async {
+    final resultado = await _repoArchivos.listarMios(
+      entityType: TipoEntidadArchivo.driveFile,
+    );
+
+    if (!mounted) return;
+
+    resultado.when(
+      success: (archivos) {
+        final idsLocales = _elementos.map((e) => e.id).toSet();
+        final nuevos = archivos
+            .where((a) => !idsLocales.contains(a.id))
+            .map(
+              (a) => ElementoArchivo(
+                id: a.id,
+                nombre: a.nombreOriginal,
+                tipo: TipoElemento.documento,
+                tamanoBytes: a.tamanoBytes ?? 0,
+                fechaModificacion: DateTime.tryParse(a.creadoEn) ?? DateTime.now(),
+                propietario: 'Administrador Maestro',
+                ruta: _rutaTexto,
+                permiso: 'Docentes y Estudiantes',
+                // Sólo lectura: el archivo vive en R2 y su borrado pasa por el
+                // backend, no por esta lista.
+                esRemoto: true,
+                estadoRemoto: a.estado.name,
+              ),
+            )
+            .toList();
+
+        if (nuevos.isEmpty) return;
+        setState(() {
+          // Los archivos del servidor van primero: son los más nuevos
+          // (`created_at` descendente en la consulta) y es lo que la persona
+          // espera encontrar arriba.
+          _elementos.insertAll(0, nuevos);
+        });
+      },
+      failure: (fallo) {
+        setState(() {
+          _errorSubida = 'No pudimos cargar tus archivos guardados: ${fallo.message}';
+        });
+      },
+    );
   }
 
   Future<void> _cargarArchivosPersistidos() async {
@@ -719,115 +843,175 @@ class _CpanelExploradorArchivosPanelState
     );
   }
 
-  void _simularSubidaArchivo() {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
-        ),
-        title: const Text('Subir documento a Cloudflare R2'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+  /// Sube un archivo **de verdad**: selector del navegador → firmar → `PUT`
+  /// directo a R2 → confirmar. Es el mismo motor que usa el gestor documental
+  /// del docente (`gestor_documental_panel.dart`), con `DRIVE_FILE` como tipo de
+  /// entidad: la subida suelta al gestor que habilito la migracion
+  /// `202610202001_drive_file_subida_suelta.sql` el 2026-10-20.
+  ///
+  /// **Que cambia respecto a la simulacion que habia aqui.** Antes el dialogo
+  /// ofrecia dos archivos precargados y, al tocarlos, insertia un elemento
+  /// LOCAL en la lista: R2 no recibia un solo byte. La demo del 2026-10-20 lo
+  /// dejo en evidencia («no se puede subir nada desde ninguna parte»). El
+  /// backend, medido end-to-end ese mismo dia (firmar 201, PUT 200, confirmar
+  /// 200), siempre funciono: lo que faltaba era que la UI lo llamase.
+  ///
+  /// Los errores llegan traducidos por el repositorio: «Extension no
+  /// permitida», «El archivo supera el limite», etc. —nunca «fallo del
+  /// servidor».
+  Future<void> _subirArchivoReal() async {
+    if (_subiendoArchivo) return;
+
+    setState(() {
+      _subiendoArchivo = true;
+      _pasoSubida = 'Elige el archivo...';
+      _errorSubida = null;
+    });
+
+    ArchivoElegido? elegido;
+    Object? falloSelector;
+    try {
+      elegido = await _selectorArchivos.elegir();
+    } catch (e) {
+      falloSelector = e;
+    }
+    if (!mounted) return;
+
+    if (falloSelector != null) {
+      setState(() {
+        _subiendoArchivo = false;
+        _pasoSubida = '';
+        _errorSubida = 'No pudimos abrir el selector de archivos del navegador.';
+      });
+      return;
+    }
+    if (elegido == null) {
+      // Cancelar no es un error: no se muestra ningun aviso.
+      setState(() {
+        _subiendoArchivo = false;
+        _pasoSubida = '';
+      });
+      return;
+    }
+
+    // Copia local NO nula: la promocion de nulabilidad no entra en el closure
+    // de `success` de abajo, y sin esto el compilador se niega a compilar.
+    final elegidoNoNulo = elegido;
+
+    setState(() => _pasoSubida = 'Subiendo "${elegidoNoNulo.nombre}"...');
+
+    final resultado = await _repoArchivos.subir(
+      nombreOriginal: elegidoNoNulo.nombre,
+      entityType: TipoEntidadArchivo.driveFile,
+      contenido: elegidoNoNulo.contenido,
+    );
+    if (!mounted) return;
+
+    setState(() {
+      _subiendoArchivo = false;
+      _pasoSubida = '';
+    });
+
+    resultado.when(
+      success: (archivo) {
+        final bytes = elegidoNoNulo.bytes;
+        setState(() {
+          _elementos.insert(
+            0,
+            ElementoArchivo(
+              id: archivo.id,
+              nombre: archivo.nombreOriginal,
+              tipo: TipoElemento.documento,
+              tamanoBytes: archivo.tamanoBytes ?? bytes,
+              fechaModificacion: DateTime.now(),
+              propietario: 'Administrador Maestro',
+              ruta: _rutaTexto,
+              permiso: 'Docentes y Estudiantes',
+              esRemoto: true,
+              estadoRemoto: archivo.estado == EstadoArchivo.confirmed
+                  ? 'CONFIRMED'
+                  : 'PENDING',
+              actividad: [
+                EventoActividad(
+                  accion: 'Documento subido a Cloudflare R2 (confirmado)',
+                  tiempo: 'Hace un momento',
+                  usuario: 'Administrador Maestro',
+                  icono: Icons.cloud_upload_outlined,
+                ),
+              ],
+            ),
+          );
+        });
+        _guardarArchivosPersistidos();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '«${archivo.nombreOriginal}» subido y confirmado en R2.',
+            ),
+            backgroundColor: IncesTheme.exito,
+          ),
+        );
+      },
+      failure: (fallo) {
+        setState(() => _errorSubida = fallo.message);
+      },
+    );
+  }
+
+  /// Estado visible de la subida: progreso mientras ocurre, error traducido
+  /// cuando falla. Nada cuando no hay nada, para no robar alto al listado.
+  Widget _bannerEstadoSubida(ThemeData theme) {
+    if (_subiendoArchivo) {
+      return Container(
+        width: double.infinity,
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
           children: [
-            const Text(
-              'Selecciona un documento para almacenar en la nube segura de Cloudflare R2.',
-              style: TextStyle(fontSize: 13),
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
-              title: const Text('Manual_Tecnico_Soldadura_TIG.pdf'),
-              subtitle: const Text('3.2 MB • Documento PDF'),
-              tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _pasoSubida,
+                style: theme.textTheme.bodySmall,
               ),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                setState(() {
-                  _elementos.insert(
-                    0,
-                    ElementoArchivo(
-                      id: 'f_${DateTime.now().millisecondsSinceEpoch}',
-                      nombre: 'Manual_Tecnico_Soldadura_TIG.pdf',
-                      tipo: TipoElemento.documento,
-                      tamanoBytes: 3355443, // 3.2 MB
-                      fechaModificacion: DateTime.now(),
-                      propietario: 'Administrador Maestro',
-                      ruta: _rutaTexto,
-                      permiso: 'Docentes y Estudiantes',
-                      actividad: [
-                        EventoActividad(
-                          accion: 'Documento subido a Cloudflare R2',
-                          tiempo: 'Hace un momento',
-                          usuario: 'Administrador Maestro',
-                          icono: Icons.file_upload_outlined,
-                        ),
-                      ],
-                    ),
-                  );
-                });
-                _guardarArchivosPersistidos();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Archivo subido con éxito a Cloudflare R2.'),
-                    backgroundColor: IncesTheme.exito,
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 10),
-            ListTile(
-              leading: const Icon(Icons.video_file, color: Colors.deepOrange),
-              title: const Text('Clase_Practica_Video_Taller.mp4'),
-              subtitle: const Text('185 MB • Video de alta definición'),
-              tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                // Simulación de bloqueo por política de video pesado > 25MB
-                showDialog<void>(
-                  context: context,
-                  builder: (ctxAviso) => AlertDialog(
-                    title: const Row(
-                      children: [
-                        Icon(Icons.warning_amber_rounded,
-                            color: IncesTheme.advertencia),
-                        SizedBox(width: 8),
-                        Text('Archivo superior a 25 MB'),
-                      ],
-                    ),
-                    content: const Text(
-                      'Este archivo de video pesa 185 MB y supera el límite de 25 MB para Cloudflare R2.\n\n'
-                      'Para no saturar los 10 GB de almacenamiento gratuito del centro, por favor súbelo a Google Drive y usa el botón «Vincular Google Drive».',
-                      style: TextStyle(height: 1.4),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctxAviso).pop(),
-                        child: const Text('Cancelar'),
-                      ),
-                      FilledButton.icon(
-                        onPressed: () {
-                          Navigator.of(ctxAviso).pop();
-                          _vincularDriveDialogo();
-                        },
-                        icon: const Icon(Icons.add_to_drive_rounded, size: 16),
-                        label: const Text('Vincular vía Google Drive'),
-                      ),
-                    ],
-                  ),
-                );
-              },
             ),
           ],
         ),
-      ),
-    );
+      );
+    }
+    if (_errorSubida != null) {
+      return Container(
+        width: double.infinity,
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.5),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline,
+                size: 16, color: theme.colorScheme.error),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _errorSubida!,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onErrorContainer),
+              ),
+            ),
+            IconButton(
+              tooltip: 'Cerrar',
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.close, size: 16),
+              onPressed: () => setState(() => _errorSubida = null),
+            ),
+          ],
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   void _renombrarElemento(ElementoArchivo item) {
@@ -1221,7 +1405,7 @@ class _CpanelExploradorArchivosPanelState
             ],
           ),
           content: SizedBox(
-            width: 440,
+            width: anchoDialogoSeguro(context, 440),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1329,11 +1513,12 @@ class _CpanelExploradorArchivosPanelState
                     children: [
                       _construirBarraRuta(theme),
                       const Divider(height: 1),
+                      _bannerEstadoSubida(theme),
                       Expanded(child: _construirContenidoPrincipal(theme)),
                     ],
                   ),
                 ),
-                if (_mostrarPanelLateral) ...[
+                if (_mostrarPanelLateral && cabenDosPaneles(context)) ...[
                   const VerticalDivider(width: 1),
                   SizedBox(
                     width: 320,
@@ -1350,6 +1535,52 @@ class _CpanelExploradorArchivosPanelState
   }
 
   Widget _construirBarraSuperior(ThemeData theme) {
+    // **Buscador expandido a ancho completo** (patrón de Google). Al pulsar la
+    // lupa, la cabecera entera se convierte en el campo de búsqueda, con
+    // autofoco y flecha para volver.
+    if (_buscando) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            IconButton(
+              tooltip: 'Volver',
+              icon: const Icon(Icons.arrow_back_rounded, size: 20),
+              onPressed: () => setState(() {
+                _buscando = false;
+                _busquedaController.clear();
+              }),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: SizedBox(
+                height: 38,
+                child: TextField(
+                  controller: _busquedaController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar archivo o carpeta...',
+                    prefixIcon: const Icon(Icons.search, size: 18),
+                    suffixIcon: _filtroBusqueda.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 16),
+                            onPressed: () => _busquedaController.clear(),
+                          )
+                        : null,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
@@ -1367,50 +1598,56 @@ class _CpanelExploradorArchivosPanelState
             ),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Gestor de Archivos y Documentos',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+          // `Expanded`: el título y el subtítulo tienen que poder ENCOGER. Sin
+          // esto, el subtítulo (una línea larga) fija el ancho intrínseco y la
+          // barra entera desborda en móvil/tablet —medido en la matriz: 297 px
+          // de exceso a 390 (2026-10-21)—. Con `Expanded` + `ellipsis`, el texto
+          // se recorta en vez de empujar la fila.
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Cloud CFS',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              Text(
-                'Cloudflare R2 Storage (10 GB) • Integrado con Google Drive',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+                if (!esCompacto(context))
+                  Text(
+                    'Archivos · Cloudflare R2 (10 GB) · Google Drive',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
           ),
           const Spacer(),
-          // Barra de búsqueda rápida
-          SizedBox(
-            width: 260,
-            height: 38,
-            child: TextField(
-              controller: _busquedaController,
-              decoration: InputDecoration(
-                hintText: 'Buscar archivo o carpeta...',
-                prefixIcon: const Icon(Icons.search, size: 18),
-                suffixIcon: _filtroBusqueda.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, size: 16),
-                        onPressed: () => _busquedaController.clear(),
-                      )
-                    : null,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                isDense: true,
-              ),
-            ),
+          // **Buscador que se expande.** Medido el 2026-10-22: el campo inline
+          // de 260 px quedaba en «Bu…» a 390 y no se podía escribir cómodo. En
+          // la barra va una lupa; al tocarla, el buscador ocupa todo el ancho
+          // (patrón de Google). El filtrado es en vivo: `_busquedaController`
+          // ya alimenta `_filtroBusqueda`.
+          IconButton(
+            tooltip: 'Buscar',
+            icon: const Icon(Icons.search_rounded, size: 20),
+            onPressed: () => setState(() => _buscando = true),
           ),
           const SizedBox(width: 12),
           PopupMenuButton<String>(
             tooltip: 'Crear o subir',
             onSelected: (val) {
               if (val == 'carpeta') _crearCarpetaDialogo();
-              if (val == 'archivo') _simularSubidaArchivo();
+              // Guardia anti rebote: dos pulsaciones rapidas lanzarian dos
+              // subidas del mismo archivo.
+              if (val == 'archivo') {
+                conGuardia(_subirArchivoReal, 'subir-archivo-drive');
+              }
               if (val == 'drive') _vincularDriveDialogo();
               if (val == 'politica') _mostrarPoliticaSubida();
             },
@@ -1464,33 +1701,45 @@ class _CpanelExploradorArchivosPanelState
                 color: IncesTheme.azulPrimario,
                 borderRadius: BorderRadius.circular(IncesTheme.radioControl),
               ),
-              child: const Row(
+              // En compacto, «Nuevo» va como icono «+» (patrón de Google en
+              // móvil): el texto robaba el ancho que necesita el título, que
+              // quedaba en «Archi…». El tooltip del menú explica la acción.
+              child: Row(
                 children: [
-                  Icon(Icons.add, color: Colors.white, size: 18),
-                  SizedBox(width: 6),
-                  Text(
-                    'Nuevo',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
+                  const Icon(Icons.add, color: Colors.white, size: 18),
+                  if (!esCompacto(context)) ...[
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Nuevo',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          // Alternador de cuadrícula / lista
-          IconButton(
-            tooltip: _vistaCuadricula ? 'Vista de lista' : 'Vista de cuadrícula',
-            icon: Icon(
-              _vistaCuadricula ? Icons.view_list_rounded : Icons.grid_view_rounded,
-              size: 20,
+          // En compacto el alternador de cuadrícula/lista se oculta: a 390 el
+          // encabezado se sobrecargaba (búsqueda + Nuevo + 2 iconos) y el
+          // título quedaba en «Ar…». El toggle es una preferencia secundaria;
+          // los detalles y «Nuevo» sí se conservan.
+          if (!esCompacto(context)) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              tooltip: _vistaCuadricula ? 'Vista de lista' : 'Vista de cuadrícula',
+              icon: Icon(
+                _vistaCuadricula
+                    ? Icons.view_list_rounded
+                    : Icons.grid_view_rounded,
+                size: 20,
+              ),
+              onPressed: () =>
+                  setState(() => _vistaCuadricula = !_vistaCuadricula),
             ),
-            onPressed: () =>
-                setState(() => _vistaCuadricula = !_vistaCuadricula),
-          ),
+          ],
           // Alternador de panel lateral
           IconButton(
             tooltip:
@@ -1502,8 +1751,25 @@ class _CpanelExploradorArchivosPanelState
               size: 20,
               color: _mostrarPanelLateral ? IncesTheme.azulPrimario : null,
             ),
-            onPressed: () =>
-                setState(() => _mostrarPanelLateral = !_mostrarPanelLateral),
+            onPressed: () {
+              if (cabenDosPaneles(context)) {
+                setState(() => _mostrarPanelLateral = !_mostrarPanelLateral);
+                return;
+              }
+              // Ventana estrecha: el panel lateral al lado aplastaba el
+              // listado a unas decenas de pixeles (medido: Row con Expanded
+              // + SizedBox fijo de 320). En su lugar se abre como hoja
+              // inferior, que es donde Google Drive pone los detalles en
+              // movil.
+              showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) => SizedBox(
+                  height: MediaQuery.sizeOf(context).height * 0.6,
+                  child: _construirPanelLateral(theme),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -1550,6 +1816,79 @@ class _CpanelExploradorArchivosPanelState
     final carpetas = _carpetasVisibles;
     final archivos = _archivosVisibles;
 
+    // **Menú contextual de la zona de contenido.** En Drive, el clic derecho
+    // sobre el espacio vacío de una carpeta abre «Nueva carpeta / Subir
+    // archivo / Pegar»; aquí eso sólo existía en el botón «Crear o subir» de la
+    // barra. El gesto es el mismo que el usuario espera por costumbre, y crea
+    // en la ubicación actual porque `_rutaActual` es la que consultan los
+    // diálogos. `onSecondaryTap` es el clic derecho en escritorio y el toque
+    // largo en móvil: un solo gesto, las dos plataformas.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onSecondaryTap: _mostrarMenuContextual,
+      onLongPress: _mostrarMenuContextual,
+      child: _contenidoVisible(theme, carpetas, archivos),
+    );
+  }
+
+  void _mostrarMenuContextual() {
+    // La guardia anti rebote va en el MENÚ, no aquí: este método puede
+    // invocarse desde el gesto o desde el botón, y el rebote de cualquiera de
+    // los dos abre dos diálogos.
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.create_new_folder_outlined),
+              title: const Text('Nueva carpeta'),
+              subtitle: Text('Se crea en «$_rutaTexto»'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _crearCarpetaDialogo();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.upload_file_outlined),
+              title: const Text('Subir documento'),
+              subtitle: Text('Se guarda en «$_rutaTexto»'),
+              onTap: () {
+                Navigator.pop(ctx);
+                conGuardia(
+                  _subirArchivoReal,
+                  'subir-archivo-drive',
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_to_drive_rounded),
+              title: const Text('Vincular Google Drive'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _vincularDriveDialogo();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.shield_outlined),
+              title: const Text('Política de subida'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _mostrarPoliticaSubida();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _contenidoVisible(
+    ThemeData theme,
+    List<ElementoArchivo> carpetas,
+    List<ElementoArchivo> archivos,
+  ) {
     if (carpetas.isEmpty && archivos.isEmpty) {
       return Center(
         child: Column(
@@ -1580,7 +1919,8 @@ class _CpanelExploradorArchivosPanelState
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Container(
+        if (_mostrarTarjetaInfo)
+          Container(
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -1619,6 +1959,12 @@ class _CpanelExploradorArchivosPanelState
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                tooltip: 'Ocultar',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.close_rounded, size: 18),
+                onPressed: () => setState(() => _mostrarTarjetaInfo = false),
               ),
             ],
           ),
@@ -1899,6 +2245,17 @@ class _CpanelExploradorArchivosPanelState
                           ),
                         ),
                         const Spacer(),
+                        // Un archivo remoto sin confirmar se etiqueta en vez de
+                        // esconderse: quien subió y no llegó a confirmar tiene
+                        // que ver que su archivo sigue ahí, no que desapareció.
+                        if (f.estadoRemoto == 'PENDING')
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Etiqueta(
+                              texto: 'Sin confirmar',
+                              color: IncesTheme.advertencia,
+                            ),
+                          ),
                         Text(
                           f.esDrive ? 'Google Drive' : 'R2 Cloudflare',
                           style: theme.textTheme.labelSmall?.copyWith(
@@ -2264,54 +2621,105 @@ class _CpanelExploradorArchivosPanelState
   // ---------------------------------------------------------------------------
 
   Widget _construirBarraCuota(ThemeData theme) {
-    const porcentaje = _cuotaUsadaGb / _cuotaTotalGb;
+    final porcentaje = _cuotaUsadaGb / _cuotaTotalGb;
+    // Dos filas hasta `expanded` (<840), no solo en compacto: medido el
+    // 2026-10-21, a 600 px exactos la fila ancha aún se pasaba 11 px (el botón
+    // «Política de 10 GB»). Desde 840 la fila única cabe.
+    final compacto = !esEscritorio(context);
+
+    final icono = const Icon(
+      Icons.cloud_queue_rounded,
+      size: 18,
+      color: IncesTheme.azulPrimario,
+    );
+    final etiqueta = Text(
+      'Almacenamiento R2:',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+    );
+    final progreso = SizedBox(
+      width: compacto ? 96 : 140,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: LinearProgressIndicator(
+          value: porcentaje,
+          minHeight: 6,
+          backgroundColor: theme.colorScheme.outline.withValues(alpha: 0.3),
+          valueColor:
+              const AlwaysStoppedAnimation<Color>(IncesTheme.azulPrimario),
+        ),
+      ),
+    );
+    // Formato legible: en MB si es poco, en GB con 2 decimales si no. Antes se
+    // interpolaba el double crudo y salía «0.006677582859929981 GB».
+    final usadaTexto = _cuotaUsadaGb < 0.1
+        ? '${(_cuotaUsadaGb * 1024).toStringAsFixed(1)} MB'
+        : '${_cuotaUsadaGb.toStringAsFixed(2)} GB';
+    final detalle = Text(
+      '$usadaTexto de ${_cuotaTotalGb.toStringAsFixed(0)} GB '
+      '(${(porcentaje * 100).toStringAsFixed(1)}%)',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: GoogleFonts.inter(
+        fontSize: 11.5,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+    final politica = TextButton.icon(
+      onPressed: _mostrarPoliticaSubida,
+      icon: const Icon(Icons.shield_outlined, size: 14),
+      label: const Text('Política de 10 GB'),
+      style: TextButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+        textStyle: const TextStyle(fontSize: 11.5),
+      ),
+    );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-      child: Row(
-        children: [
-          const Icon(Icons.cloud_queue_rounded,
-              size: 18, color: IncesTheme.azulPrimario),
-          const SizedBox(width: 8),
-          Text(
-            'Almacenamiento Cloudflare R2:',
-            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 140,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: porcentaje,
-                minHeight: 6,
-                backgroundColor: theme.colorScheme.outline.withValues(alpha: 0.3),
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(IncesTheme.azulPrimario),
-              ),
+      // **Responsive de verdad, no un `Row` rígido.** Medido el 2026-10-21: en
+      // un `Row` con icono + texto + barra de 140 + texto + Spacer + botón, la
+      // suma (~640 px) empujaba «Política de 10 GB» fuera de pantalla a 390
+      // (297 px de desborde). En compacto se reparte en dos filas; en ancho,
+      // una sola con los textos `Flexible` para que encojan con puntos
+      // suspensivos en vez de desbordar.
+      child: compacto
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    icono,
+                    const SizedBox(width: 8),
+                    Expanded(child: etiqueta),
+                    const SizedBox(width: 8),
+                    progreso,
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(child: detalle),
+                    politica,
+                  ],
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                icono,
+                const SizedBox(width: 8),
+                Flexible(child: etiqueta),
+                const SizedBox(width: 8),
+                progreso,
+                const SizedBox(width: 10),
+                Flexible(child: detalle),
+                const Spacer(),
+                politica,
+              ],
             ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            '$_cuotaUsadaGb GB de $_cuotaTotalGb GB (${(porcentaje * 100).toStringAsFixed(1)}%)',
-            style: GoogleFonts.inter(
-              fontSize: 11.5,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const Spacer(),
-          TextButton.icon(
-            onPressed: _mostrarPoliticaSubida,
-            icon: const Icon(Icons.shield_outlined, size: 14),
-            label: const Text('Política de 10 GB'),
-            style: TextButton.styleFrom(
-              visualDensity: VisualDensity.compact,
-              textStyle: const TextStyle(fontSize: 11.5),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

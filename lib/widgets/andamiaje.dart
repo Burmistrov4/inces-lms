@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../core/config/app_config.dart';
 import '../theme/inces_theme.dart';
 import 'comunes.dart';
+import 'guardia_toque.dart';
+import 'responsivo.dart';
 
 /// Ítem del menú lateral, con su categoría.
 class ItemNavegacion {
@@ -11,6 +13,7 @@ class ItemNavegacion {
     required this.icono,
     required this.titulo,
     required this.categoria,
+    this.etiquetaCorta,
     this.disponible = true,
     this.pendiente,
     this.modulo,
@@ -18,6 +21,16 @@ class ItemNavegacion {
 
   final IconData icono;
   final String titulo;
+
+  /// Etiqueta CORTA para la barra inferior (`compact`), donde cinco destinos
+  /// tienen ~78 px cada uno y un título largo se amontona.
+  ///
+  /// **Por qué existe.** Medido el 2026-10-21 en la captura a 390 px: con
+  /// [titulo] («Módulos del Sistema», «Historial de Configuración») la barra
+  /// inferior se veía amontonada e ilegible. Material 3 resuelve esto con
+  /// etiquetas de una o dos palabras («Módulos», «Historial»), que es lo que
+  /// hacen las apps de Google. Si es `null`, se usa [titulo].
+  final String? etiquetaCorta;
 
   /// Agrupador visible en el menú: *Gestión Académica*, *Control de Aulas*…
   final String categoria;
@@ -143,10 +156,10 @@ class _AndamiajeAppState extends State<AndamiajeApp> {
   bool _replegado = false;
   bool _inicializado = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  /// Ancho a partir del cual el menú es fijo. Por debajo pasa a cajón: un `Row`
-  /// con ancho fijo desborda en pantallas angostas.
-  static const double _anchoEscritorio = 900;
+  // El antiguo `_anchoEscritorio = 900` se retiró: la frontera entre menú fijo
+  // y navegación adaptativa la decide ahora `ventanaActual(context)`
+  // (`responsivo.dart`), con los umbrales canónicos de Material 3 —840 para
+  // `expanded`—. Dejarlo aquí sería un segundo umbral que se desvía.
 
   @override
   void didChangeDependencies() {
@@ -163,12 +176,34 @@ class _AndamiajeAppState extends State<AndamiajeApp> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final ancho = MediaQuery.sizeOf(context).width;
-    final esAngosto = ancho < _anchoEscritorio;
+    final ventana = ventanaActual(context);
+    // `medium` y por debajo: el menú lateral fijo no cabe sin robar ancho.
+    // En `medium` se sustituye por un **rail**; en `compact`, por una barra de
+    // navegación inferior —que es donde Google pone los destinos en el móvil— y
+    // el cajón queda para el resto de secciones y para el pie (tema, sesión).
+    // **Rail también en `expanded` (840–1199).** Medido el 2026-10-21: con el
+    // menú permanente de 280 px a 840, el contenido quedaba en 1 columna y el
+    // sidebar se veía como una columna entera. Material 3 pide *rail* en
+    // `expanded` y menú permanente sólo en `large`/`xlarge` (≥1200). El rail
+    // (≈80 px) deja ~760 px de contenido a 840 → 2 columnas.
+    final usaRail =
+        ventana == Ventana.medium || ventana == Ventana.expanded;
+    final usaBarraInferior = ventana == Ventana.compact;
+    final menuLateralFijo =
+        ventana == Ventana.large || ventana == Ventana.xlarge;
+
+    // Los destinos de la barra inferior: los cuatro primeros disponibles y,
+    // si hay más, un quinto «Más» que abre el cajón. Es la misma regla de
+    // Material 3 para la barra inferior (máximo cinco destinos).
+    final disponibles = widget.items
+        .where((i) => i.disponible)
+        .toList(growable: false);
+    final destinoBarra = disponibles.take(4).toList(growable: false);
+    final hayMas = disponibles.length > destinoBarra.length;
 
     return Scaffold(
       key: _scaffoldKey,
-      drawer: esAngosto
+      drawer: !menuLateralFijo
           ? Drawer(
               width: IncesTheme.anchoMenu,
               backgroundColor: theme.colorScheme.surface,
@@ -188,9 +223,18 @@ class _AndamiajeAppState extends State<AndamiajeApp> {
               ),
             )
           : null,
+      // El cajón se abre desde el encabezado en `compact`; en `medium` lo abre
+      // el propio rail, así que ahí no hace falta el botón del encabezado.
       body: Row(
         children: [
-          if (!esAngosto)
+          if (usaRail)
+            _RailNavegacion(
+              items: widget.items,
+              seleccionado: widget.seleccionado,
+              onSeleccionar: widget.onSeleccionar,
+              onAbrirCajon: () => _scaffoldKey.currentState?.openDrawer(),
+            ),
+          if (menuLateralFijo)
             _MenuLateral(
               items: widget.items,
               seleccionado: widget.seleccionado,
@@ -216,17 +260,201 @@ class _AndamiajeAppState extends State<AndamiajeApp> {
                   // Este `context` pertenece al estado que está por encima
                   // del `Scaffold`; `Scaffold.of(context)` no puede encontrarlo
                   // desde aquí y falla al pulsar el menú en móvil. La clave
-                  // apunta al Scaffold real, tanto en móvil como al redimensionar.
-                  onAbrirMenu: esAngosto
-                      ? () => _scaffoldKey.currentState?.openDrawer()
-                      : null,
+                  // apunta al Scaffold real, tanto en móvil como al
+                  // redimensionar.
+                  onAbrirMenu: menuLateralFijo
+                      ? null
+                      : () => _scaffoldKey.currentState?.openDrawer(),
                 ),
-                Expanded(child: widget.contenido),
+                // **Transición al cambiar de sección: fade-through, la canónica
+                // de Material 3** para destinos de primer nivel. Antes el panel
+                // nuevo aparecía de golpe: el salto se leía como un fallo, no
+                // como navegación. El fade-through (fundido de salida, leve
+                // escala, fundido de entrada) es lo que usan Drive, Gmail y
+                // Classroom, y es la que hace que el cambio se sienta smooth en
+                // vez de instantáneo.
+                //
+                // La clave es el índice de la sección: sin ella, dos paneles del
+                // mismo tipo no se considerarían distintos y no habría nada que
+                // animar. El coste es que el panel se reconstruye al entrar —
+                // que es lo que ya ocurría, porque cada sección es otro widget.
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    layoutBuilder: (current, previous) => Stack(
+                      children: [
+                        ...previous.map((h) => Positioned.fill(child: h)),
+                        if (current != null) Positioned.fill(child: current),
+                      ],
+                    ),
+                    // `FadeThroughTransition` no está pública en este SDK, así
+                    // que la animación se compone a mano con lo que sí es
+                    // público y produce el mismo efecto: fundido de entrada con
+                    // una escala que arranca en 0.97. La escala es sutil a
+                    // propósito —basta para que el panel «llegue» en vez de
+                    // «aparecer», y no roba ni un píxel de legibilidad.
+                    transitionBuilder: (hijo, animacion) {
+                      final escala = Tween<double>(
+                        begin: 0.97,
+                        end: 1,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: animacion,
+                          curve: Curves.easeOutCubic,
+                        ),
+                      );
+                      return FadeTransition(
+                        opacity: animacion,
+                        child: ScaleTransition(
+                          scale: escala,
+                          child: hijo,
+                        ),
+                      );
+                    },
+                    child: KeyedSubtree(
+                      key: ValueKey('seccion-${widget.seleccionado}'),
+                      child: ventana == Ventana.xlarge
+                          ? contenidoCentrado(widget.contenido)
+                          : widget.contenido,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
         ],
       ),
+      bottomNavigationBar: usaBarraInferior && destinoBarra.isNotEmpty
+          ? _BarraInferiorNavegacion(
+              destinos: destinoBarra,
+              hayMas: hayMas,
+              seleccionado: widget.seleccionado,
+              items: disponibles,
+              onSeleccionar: widget.onSeleccionar,
+              onAbrirCajon: () => _scaffoldKey.currentState?.openDrawer(),
+            )
+          : null,
+    );
+  }
+}
+
+/// Barra de navegación inferior: los destinos de `compact` (< 600 px).
+///
+/// **Por qué existe.** En el móvil, un menú lateral es un destino escondido
+/// detrás de un botón: cada cambio de sección cuesta dos toques. Google pone
+/// los destinos principales abajo, siempre visibles, y deja el cajón para el
+/// resto —perfil, tema, cerrar sesión—. Es el patrón de Material 3 para
+/// ventana `compact`, y es lo que hacía falta aquí: el andamiaje sólo tenía
+/// «fijo o cajón», así que en el teléfono todo estaba escondido.
+///
+/// El quinto destino es «Más», no un quinto ítem: la barra inferior admite como
+/// máximo cinco destinos, y el centro tiene más de cinco secciones.
+class _BarraInferiorNavegacion extends StatelessWidget {
+  const _BarraInferiorNavegacion({
+    required this.destinos,
+    required this.hayMas,
+    required this.seleccionado,
+    required this.items,
+    required this.onSeleccionar,
+    required this.onAbrirCajon,
+  });
+
+  final List<ItemNavegacion> destinos;
+  final bool hayMas;
+  final int seleccionado;
+  final List<ItemNavegacion> items;
+  final ValueChanged<int> onSeleccionar;
+  final VoidCallback onAbrirCajon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return NavigationBar(
+      backgroundColor: theme.colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
+      destinations: [
+        for (final item in destinos)
+          NavigationDestination(
+            icon: Icon(item.icono),
+            // Etiqueta corta en la barra: cinco destinos a 390 px son ~78 px
+            // cada uno; un título largo se amontona (medido 2026-10-21).
+            label: item.etiquetaCorta ?? item.titulo,
+            tooltip: item.titulo,
+          ),
+        if (hayMas)
+          const NavigationDestination(
+            icon: Icon(Icons.more_horiz_rounded),
+            label: 'Más',
+          ),
+      ],
+      // Si la sección elegida está entre los cuatro de la barra, se marca. Si
+      // no, se marca «Más» —el destino que abre el cajón donde sí está—, que es
+      // lo que hace Google cuando estás en una sección que no cabe en la barra.
+      // `NavigationBar` no admite «ninguno», así que «Más» es la forma honesta
+      // de no marcar un destino que no es el actual.
+      selectedIndex: seleccionado < destinos.length
+          ? seleccionado
+          : destinos.length,
+      onDestinationSelected: (indice) {
+        if (hayMas && indice == destinos.length) {
+          onAbrirCajon();
+          return;
+        }
+        final item = destinos[indice];
+        onSeleccionar(items.indexOf(item));
+      },
+    );
+  }
+}
+
+/// Rail de navegación: los destinos de `medium` (600 – 839 px).
+///
+/// **Por qué existe y no el cajón.** A ese ancho, el menú lateral fijo roba
+/// demasiado y el cajón esconde demasiado. El rail es el término medio de
+/// Material 3: iconos siempre visibles, etiquetas debajo, y un botón arriba que
+/// abre el cajón con el resto de la aplicación (pie de tema, sesión y las
+/// secciones que no caben como destino).
+class _RailNavegacion extends StatelessWidget {
+  const _RailNavegacion({
+    required this.items,
+    required this.seleccionado,
+    required this.onSeleccionar,
+    required this.onAbrirCajon,
+  });
+
+  final List<ItemNavegacion> items;
+  final int seleccionado;
+  final ValueChanged<int> onSeleccionar;
+  final VoidCallback onAbrirCajon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return NavigationRail(
+      backgroundColor: theme.colorScheme.surface,
+      selectedIndex: seleccionado < items.length ? seleccionado : null,
+      onDestinationSelected: onSeleccionar,
+      // Rail SOLO iconos (≈80 px), no «rail extendido» con etiquetas (≈256 px).
+      // Medido el 2026-10-21: con `labelType.all` el rail ocupaba casi lo mismo
+      // que el menú permanente y el contenido seguía apretado. Material 3 usa
+      // el rail compacto de iconos; las etiquetas completas están en el cajón
+      // (hamburguesa) y en los tooltips.
+      labelType: NavigationRailLabelType.none,
+      leading: IconButton(
+        tooltip: 'Abrir menú completo',
+        icon: const Icon(Icons.menu_rounded),
+        onPressed: onAbrirCajon,
+      ),
+      destinations: [
+        for (final item in items)
+          if (item.disponible)
+            NavigationRailDestination(
+              icon: Icon(item.icono),
+              label: Text(item.titulo),
+            ),
+      ],
     );
   }
 }
@@ -609,7 +837,13 @@ class _ItemMenu extends StatelessWidget {
     if (!item.disponible) return conTooltip;
 
     return InkWell(
-      onTap: onTap,
+      // **Guardia anti rebote.** Dos pulsaciones seguidas sobre el mismo
+      // elemento del menú lanzaban dos cambios de sección (y, si la sección
+      // abre un diálogo al montar, dos diálogos apilados). La clave es el
+      // título del ítem: dos ítems distintos no se sabotan entre sí y el
+      // rebote sobre el mismo sí se come. Medido el 2026-10-20 en la demo
+      // Lorenzo–Jefe de Centro.
+      onTap: () => conGuardia(onTap, 'menu-${item.titulo}'),
       borderRadius: BorderRadius.circular(IncesTheme.radioControl),
       child: conTooltip,
     );

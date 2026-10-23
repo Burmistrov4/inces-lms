@@ -160,7 +160,9 @@ class _CpanelInvitacionesPanelState extends State<CpanelInvitacionesPanel> {
         mostrarAviso(
           context,
           invitacion.correoEnviado
-              ? 'Invitación enviada exitosamente por correo al docente. Enlace directo disponible abajo.'
+              ? 'Invitación enviada exitosamente por correo al docente. '
+                    'Si no la ve en su bandeja principal, pídale revisar la '
+                    'carpeta de correo no deseado (spam). Enlace directo disponible abajo.'
               : 'Invitación creada. Enlace de activación listo para entrega directa o testing.',
           exito: true,
         );
@@ -207,9 +209,15 @@ class _CpanelInvitacionesPanelState extends State<CpanelInvitacionesPanel> {
               'reenviarlo por otro medio.',
         ),
         const SizedBox(height: 24),
-        Form(
-          key: _formKey,
-          child: Column(
+        // **Formulario acotado a 720 px.** Medido el 2026-10-22: a 1700 px los
+        // campos se estiraban a ~1300 px y se veían incómodos («campos muy
+        // largos», lo señaló Lorenzo). Google acota sus formularios: una línea
+        // de texto larga dificulta leer y encontrar cada campo.
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Form(
+            key: _formKey,
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -329,6 +337,7 @@ class _CpanelInvitacionesPanelState extends State<CpanelInvitacionesPanel> {
                 },
               ),
             ],
+          ),
           ),
         ),
         if (_error != null) ...[

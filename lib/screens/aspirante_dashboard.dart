@@ -26,6 +26,7 @@ import 'mis_aulas_panel.dart';
 import 'mis_inscripciones_panel.dart';
 import 'perfil_panel.dart';
 import '../widgets/walkthrough_interactivo.dart';
+import '../widgets/guardia_toque.dart';
 
 /// Panel del aspirante y del estudiante.
 ///
@@ -138,6 +139,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
     ItemNavegacion(
       icono: Icons.badge_outlined,
       titulo: 'Mi Expediente',
+      etiquetaCorta: 'Expediente',
       categoria: 'Mi cuenta',
     ),
     // El aprendiz corrige su nombre desde el primer día: `profiles` se crea en
@@ -149,17 +151,20 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
     ItemNavegacion(
       icono: Icons.account_circle_outlined,
       titulo: 'Mi Perfil',
+      etiquetaCorta: 'Perfil',
       categoria: 'Mi cuenta',
     ),
     ItemNavegacion(
       icono: Icons.explore_outlined,
       titulo: 'Ofertas de cupos',
+      etiquetaCorta: 'Ofertas',
       categoria: 'Académico',
       modulo: 'm4_inscripciones',
     ),
     ItemNavegacion(
       icono: Icons.playlist_add_check_outlined,
       titulo: 'Mis inscripciones',
+      etiquetaCorta: 'Inscripciones',
       categoria: 'Académico',
       modulo: 'm4_inscripciones',
     ),
@@ -348,17 +353,17 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
         IconButton(
           tooltip: 'Ofertas de cupos',
           icon: const Icon(Icons.explore_outlined, size: 20),
-          onPressed: () => _navegarA('Ofertas de cupos'),
+          onPressed: () => conGuardia(() => _navegarA('Ofertas de cupos'), 'nav-Ofertas de cupos'),
         ),
         IconButton(
           tooltip: 'Mis aulas',
           icon: const Icon(Icons.class_outlined, size: 20),
-          onPressed: () => _navegarA('Mis aulas'),
+          onPressed: () => conGuardia(() => _navegarA('Mis aulas'), 'nav-Mis aulas'),
         ),
         IconButton(
           tooltip: 'Marcar asistencia',
           icon: const Icon(Icons.fact_check_outlined, size: 20),
-          onPressed: () => _navegarA('Asistencia'),
+          onPressed: () => conGuardia(() => _navegarA('Asistencia'), 'nav-Asistencia'),
         ),
         IconButton(
           tooltip: 'Descargar Planilla Oficial PDF',
@@ -368,10 +373,13 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
         IconButton(
           tooltip: 'Guía Interactiva del Aprendiz',
           icon: const Icon(Icons.help_outline_rounded, size: 20),
-          onPressed: () => WalkthroughInteractivoCard.mostrarModal(
-            context,
-            rol: RolWalkthrough.estudiante,
-            onNavegarA: _navegarA,
+          onPressed: () => conGuardia(
+            () => WalkthroughInteractivoCard.mostrarModal(
+              context,
+              rol: RolWalkthrough.estudiante,
+              onNavegarA: _navegarA,
+            ),
+            'walkthrough-estudiante',
           ),
         ),
       ],

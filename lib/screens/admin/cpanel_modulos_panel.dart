@@ -7,6 +7,7 @@ import '../../repositories/modulo_repository.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
 import '../admin_dashboard.dart';
+import '../../widgets/responsivo.dart';
 import 'admin_resumen_panel.dart';
 
 /// Módulo que da acceso a este mismo panel.
@@ -354,7 +355,7 @@ class _DialogoRolesState extends State<_DialogoRoles> {
     return AlertDialog(
       title: Text('Acceso a ${widget.modulo.nombre}'),
       content: SizedBox(
-        width: 400,
+        width: anchoDialogoSeguro(context, 400),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,

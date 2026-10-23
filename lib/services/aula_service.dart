@@ -1,4 +1,5 @@
 import '../core/gateways/aula_gateway.dart';
+import '../core/cache_lecturas.dart';
 import '../core/network/api_client.dart';
 import '../models/cuadrante.dart';
 import 'supabase_service.dart';
@@ -74,13 +75,22 @@ class BackendAulaGateway implements AulaGateway {
 
   @override
   Future<MisAulas> misAulas({String? periodo}) async {
-    final respuesta = await _api.get(
-      _rutaMiHorario,
-      token: _tokenSesion(),
-      // Un período en blanco se omite: `ApiClient` descarta los parámetros
-      // vacíos, así que `null` y `''` acaban en la misma URL limpia y el
-      // backend no recibe un `periodo=` que rechazaría.
-      parametros: {'periodo': ?_limpiar(periodo)},
+    // **Caché compartida.** Medido el 2026-10-23: `/mi-horario` se pedía 56
+    // veces en una sola corrida porque cuatro paneles leen el mismo horario
+    // cada uno por su cuenta. Con la caché es una petición, y si dos paneles
+    // llegan a la vez comparten la misma (*single-flight*).
+    final claveCache = 'mi-horario:${_limpiar(periodo) ?? ''}';
+    final respuesta = await cacheDeLecturas.leer<Map<String, dynamic>>(
+      claveCache,
+      ttl: const Duration(seconds: 60),
+      fn: () => _api.get(
+        _rutaMiHorario,
+        token: _tokenSesion(),
+        // Un período en blanco se omite: `ApiClient` descarta los parámetros
+        // vacíos, así que `null` y `''` acaban en la misma URL limpia y el
+        // backend no recibe un `periodo=` que rechazaría.
+        parametros: {'periodo': ?_limpiar(periodo)},
+      ),
     );
 
     return _reducir(MiHorario.fromJson(respuesta));

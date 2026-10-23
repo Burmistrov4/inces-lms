@@ -1,3 +1,4 @@
+import '../core/cache_lecturas.dart';
 import '../core/errors/app_exception.dart';
 import '../core/gateways/auth_gateway.dart';
 import '../core/network/api_client.dart';
@@ -89,6 +90,10 @@ class AuthService {
 
   Future<void> cerrarSesion() async {
     await _gateway.cerrarSesion();
+    // **La caché de lecturas se vacía aquí.** Su clave es la URL, así que sin
+    // esto el siguiente usuario del mismo dispositivo vería los datos del
+    // anterior durante el TTL (60 s). Medido el 2026-10-23.
+    cacheDeLecturas.invalidarTodo();
   }
 
   Future<Result<bool>> enviarCorreoRecuperacion(String email) {

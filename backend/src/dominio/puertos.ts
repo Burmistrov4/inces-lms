@@ -784,6 +784,29 @@ export interface PuertaArchivos {
   ): Promise<ArchivoMetadata[]>;
 
   /**
+   * Los archivos del propio usuario, opcionalmente de un tipo concreto.
+   *
+   * Existe para el gestor documental: sin ella, la pantalla sólo mostraba lo
+   * subido en la sesión en curso (la lista vive en memoria y en
+   * `SharedPreferences`), así que al recargar parecía que no había nada
+   * guardado. Con ella, la lista se hidrata desde la base.
+   *
+   * **La autorización la pone la RLS, no esta firma.** Va por PostgREST con el
+   * cliente del usuario: `files_metadata_read_own` limita a las filas propias y
+   * `files_metadata_admin_read` deja ver todo al administrador. Un administrador
+   * que liste aquí ve el gestor completo; un docente, el suyo. Ninguno de los
+   * dos puede ver lo de un tercero.
+   *
+   * Se excluyen los `DELETED` y se ordena del más nuevo al más viejo: es lo que
+   * una persona espera encontrar arriba al abrir la pantalla.
+   */
+  listarMios(opciones?: {
+    entityType?: TipoEntidadArchivo;
+    limite?: number;
+    desplazamiento?: number;
+  }): Promise<ArchivoMetadata[]>;
+
+  /**
    * Las subidas `PENDING` más antiguas que un instante, hasta un tope.
    *
    * Existe para el barrido de abandonados (deuda D9). La fila nace `PENDING`

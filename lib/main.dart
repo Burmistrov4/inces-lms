@@ -30,15 +30,41 @@ SupabaseClient get supabase => Supabase.instance.client;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  AppConfig.validate();
-  unawaited(ApiClient.calentarBackend());
 
-  await Supabase.initialize(
-    url: AppConfig.supabaseUrl,
-    publishableKey: AppConfig.supabaseAnonKey,
-  );
+  // Un fallo de configuración de compilación (p. ej. el bundle se compiló sin
+  // `--dart-define-from-file=.env.json`) no debe quedar como una excepción sin
+  // capturar en la consola: se muestra una pantalla clara con la causa. Es la
+  // diferencia entre «la app se rompió» y «la app te dice qué falta».
+  try {
+    AppConfig.validate();
+    unawaited(ApiClient.calentarBackend());
+
+    await Supabase.initialize(
+      url: AppConfig.supabaseUrl,
+      publishableKey: AppConfig.supabaseAnonKey,
+    );
+  } catch (e) {
+    runApp(_PantallaFalloArranque(mensaje: _mensajeFalloArranque(e)));
+    return;
+  }
 
   runApp(const IncesLmsApp());
+}
+
+/// Convierte cualquier error de arranque en un texto legible para el usuario.
+String _mensajeFalloArranque(Object error) {
+  final texto = error.toString();
+  if (texto.contains('SUPABASE_URL')) {
+    return 'Falta la configuración del servidor (SUPABASE_URL). Recompila la '
+        'aplicación con:\n\n'
+        'flutter build web --release --dart-define-from-file=.env.json\n\n'
+        '(o define SUPABASE_URL y SUPABASE_ANON_KEY al compilar).';
+  }
+  if (texto.contains('SUPABASE_ANON_KEY')) {
+    return 'Falta la clave pública de Supabase (SUPABASE_ANON_KEY). Recompila '
+        'con --dart-define-from-file=.env.json.';
+  }
+  return 'La aplicación no pudo iniciar:\n\n$texto';
 }
 
 /// Pantallas alcanzables por nombre de ruta, indexadas por **camino**.
@@ -148,6 +174,19 @@ class IncesLmsApp extends StatelessWidget {
         return MaterialApp(
           title: 'INCES LMS — Sistema de Gestión Académica',
           debugShowCheckedModeBanner: false,
+
+          // **Física de scroll única para todo el sistema.** Sin esto, cada
+          // plataforma estira su propio comportamiento: el móvil rebota como
+          // goma, el escritorio dibuja un resplandor azul al pasar del límite,
+          // y rueda el ratón a distinta velocidad según el widget. Ninguna de
+          // las tres es un defecto grave, pero las tres juntas hacen que la app
+          // se sienta como tres aplicaciones distintas.
+          //
+          // La elección: rebote suave con **amortiguación**, que es lo que usan
+          // las apps de Google en el móvil, y overscroll invisible en
+          // escritorio —donde el resplandor de Material se lee como un error
+          // visual—. Un solo sitio, efecto en los 143 archivos.
+          scrollBehavior: const _ScrollSuaveInces(),
 
           // Localización en español, registrada una sola vez aquí. Sin estos
           // delegados, `MaterialApp` sólo cargaba la localización por defecto
@@ -338,5 +377,106 @@ class _AuthGateState extends State<AuthGate> {
       case UserRole.desconocido:
         return const AspiranteDashboardScreen();
     }
+  }
+}
+
+/// Física de scroll única para toda la aplicación.
+///
+/// **Qué hace y por qué existe.** `MaterialScrollBehavior` es el comportamiento
+/// por omisión de Material, y ya es correcto:usa la física de cada plataforma.
+/// El problema es que «la de cada plataforma» son tres sensaciones distintas, y
+/// el sistema se usa en las tres. Esta subclase cambia dos cosas y nada más:
+///
+///  1. **Escritorio: sin resplandor de overscroll.** El `StretchOverscroll` de
+///     Material estira el contenido con un brillo azul al pasar del límite; en
+///     una app de escritorio se lee como un fallo, no como una respuesta. Se
+///     sustituye por `ClampingScrollPhysics`, que simplemente se detiene.
+///  2. **Móvil: rebote con amortiguación.** `BouncingScrollPhysics` es el
+///     rebote que usan las apps de Google en el móvil, y ya es el que Material
+///     aplica en iOS; se declara explícito para que no dependa de la plataforma
+///     en la que se compile.
+///
+/// **No se toca la velocidad ni el ratón.** El scroll con rueda en Flutter web
+/// usa la del widget, y forzar aquí una velocidad distinta rompería el
+/// «desplazamiento suave» del navegador, que es mejor que cualquier imitación.
+class _ScrollSuaveInces extends MaterialScrollBehavior {
+  const _ScrollSuaveInces();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    // En web, `defaultTargetPlatform` reporta siempre la plataforma del
+    // compilador, así que no distingue nada. Lo honesto es el ancho: por debajo
+    // de 600 px es un teléfono (rebote), por encima es escritorio o tableta
+    // grande con ratón (sin resplandor).
+    final hayRaton = MediaQuery.of(context).size.shortestSide >= 600;
+
+    return hayRaton
+        ? const ClampingScrollPhysics()
+        : const BouncingScrollPhysics();
+  }
+}
+
+/// Pantalla de fallo de arranque: sustituye la excepción sin tratar en la
+/// consola por un mensaje legible. Sólo se muestra si [main] no pudo
+/// inicializar la sesión (configuración de compilación ausente, etc.).
+class _PantallaFalloArranque extends StatelessWidget {
+  const _PantallaFalloArranque({required this.mensaje});
+
+  final String mensaje;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: IncesTheme.claro(),
+      home: Scaffold(
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      gradient: IncesTheme.degradadoAzul,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Text(
+                      'I',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'No se pudo iniciar',
+                    style: theme.textTheme.headlineSmall,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    mensaje,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

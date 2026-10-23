@@ -40,7 +40,7 @@ export interface DependenciasApp {
   /** Repositorios atados al token del llamante, para que RLS siga aplicando. */
   reposDePeticion: (token: string | null) => Repositorios;
 
-  /** Enviador de correo transaccional (Resend) para invitaciones y avisos. */
+  /** Enviador de correo transaccional (SMTP de Gmail, con Supabase como red de seguridad). */
   enviarCorreo: EnvioCorreo;
 
   /**

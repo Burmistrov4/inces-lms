@@ -4035,6 +4035,46 @@ class ArchivosSupabase implements PuertaArchivos {
   }
 
   /**
+   * Los archivos propios (o todos, si quien pregunta es administrador).
+   *
+   * **La RLS es la frontera (ADR-003)**: esta consulta no filtra por
+   * propietario porque no debe hacerlo —la política `files_metadata_read_own` ya
+   * decide qué filas ve el cliente con el que se construyó este repositorio, y
+   * `files_metadata_admin_read` añade «todo» para el administrador. Repetir el
+   * filtro aquí sería una segunda copia de la regla, y dos copias se desvían.
+   *
+   * `entityType` filtra cuando viene (el gestor pide `DRIVE_FILE`); si no viene,
+   * trae todo lo del usuario, que es lo que la pantalla de «Mis archivos» quiere.
+   */
+  async listarMios(opciones?: {
+    entityType?: TipoEntidadArchivo;
+    limite?: number;
+    desplazamiento?: number;
+  }): Promise<ArchivoMetadata[]> {
+    const limite = opciones?.limite ?? 100;
+    const desplazamiento = opciones?.desplazamiento ?? 0;
+
+    let consulta = this.cliente
+      .from(TABLA_ARCHIVOS)
+      .select(COLUMNAS_ARCHIVO)
+      .neq('estado', 'DELETED');
+
+    if (opciones?.entityType) {
+      consulta = consulta.eq('entity_type', opciones.entityType);
+    }
+
+    const respuesta = await consulta
+      .order('created_at', { ascending: false })
+      .range(desplazamiento, desplazamiento + limite - 1);
+
+    if (respuesta.error) {
+      throw traducirError(respuesta.error, 'listar mis archivos');
+    }
+
+    return (respuesta.data ?? []).map((fila) => aArchivo(fila as Fila));
+  }
+
+  /**
    * Las subidas `PENDING` abandonadas, de la más vieja a la más nueva.
    *
    * Va por PostgREST y **no** por RPC, al revés que las escrituras: aquí la RLS

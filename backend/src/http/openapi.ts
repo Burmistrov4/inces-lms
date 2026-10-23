@@ -277,10 +277,12 @@ const RespuestaInvitacion = z
     enlaceActivacion: z.string().openapi({
       description:
         'Enlace que el profesor debe abrir. Se devuelve aquí para que el flujo sea ' +
-        'probable aunque el correo no llegue (sin dominio verificado en Resend).',
+        'probable aunque el correo no llegue (SMTP caído o cuenta ya existente).',
     }),
     correoEnviado: z.boolean().openapi({
-      description: 'Si Resend aceptó el envío. Si es false, usar enlaceActivacion.',
+      description:
+        'Si el canal de correo aceptó el envío (SMTP o, en su defecto, la ' +
+        'invitación de Supabase). Si es false, usar enlaceActivacion.',
     }),
   })
   .openapi('RespuestaInvitacion');
@@ -1637,6 +1639,43 @@ const ParametroEntidadArchivo = z
     }),
   })
   .openapi('ParametroEntidadArchivo');
+
+/**
+ * La consulta de «mis archivos».
+ *
+ * `tipo` es opcional: con él, el gestor pide sólo sus subidas sueltas
+ * (`DRIVE_FILE`); sin él, la respuesta trae todo lo del usuario. `limite` y
+ * `desplazamiento` llevan topes —1..200 y >=0— porque son una paginación y una
+ * paginación sin techo es una petición de «cuéntalo todo» disfrazada.
+ */
+const ConsultaListarMios = z
+  .object({
+    tipo: tipoEntidadArchivoSchema.optional().openapi({
+      param: { name: 'tipo', in: 'query' },
+      description:
+        'Filtra por clase de entidad. `DRIVE_FILE` es la subida suelta al gestor.',
+    }),
+    limite: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(200)
+      .default(100)
+      .openapi({
+        param: { name: 'limite', in: 'query' },
+        description: 'Cuántas filas como máximo. Tope 200.',
+      }),
+    desplazamiento: z.coerce
+      .number()
+      .int()
+      .min(0)
+      .default(0)
+      .openapi({
+        param: { name: 'desplazamiento', in: 'query' },
+        description: 'Filas ya consumidas. Con `limite` forma la página.',
+      }),
+  })
+  .openapi('ConsultaListarMios');
 
 /**
  * El listado de archivos de una entidad.
@@ -3697,6 +3736,37 @@ export function construirRegistro(): OpenAPIRegistry {
       ),
       409: error('El archivo no está `PENDING` (ESTADO_DE_ARCHIVO).'),
       413: RESPUESTAS_ERROR[413],
+      503: RESPUESTAS_ERROR[503],
+    },
+  });
+
+  registro.registerPath({
+    ...archivosTag,
+    method: 'get',
+    path: '/api/v1/archivos/mios',
+    summary: 'Mis archivos: hidrata el gestor documental',
+    description:
+      'La lista arranca desde la base, no desde la memoria de la sesión: sin ' +
+      'esta ruta el gestor sólo mostraba lo subido en la visita en curso y al ' +
+      'recargar parecía vacío. **Quién ve qué lo decide la RLS** —el propietario ' +
+      've lo suyo y el administrador lo ve todo, así que el mismo endpoint sirve ' +
+      'al docente y al admin. `tipo` filtra por entidad cuando viene (el gestor ' +
+      'pide `DRIVE_FILE`, la subida suelta que habilitó la migración ' +
+      '`202610202001`); sin él, trae todo lo del usuario. Los `PENDING` se ' +
+      'incluyen con su estado, para que una subida sin confirmar sea visible en ' +
+      'vez de desaparecer sin explicación; los `DELETED`, nunca.',
+    security: [{ bearerAuth: [] }],
+    request: { query: ConsultaListarMios },
+    responses: {
+      200: {
+        description: 'Los archivos del usuario, del más reciente al más antiguo.',
+        content: { 'application/json': { schema: RespuestaListadoArchivos } },
+      },
+      400: error(
+        'El tipo no es uno de `TASK_SUBMISSION`, `TEACHER_GUIDE`, `DRIVE_FILE`, o la paginación está fuera de rango.',
+      ),
+      401: RESPUESTAS_ERROR[401],
+      403: moduloApagado,
       503: RESPUESTAS_ERROR[503],
     },
   });

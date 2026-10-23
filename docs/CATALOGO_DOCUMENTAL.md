@@ -15,7 +15,7 @@ Estados usados: **vigente** (se usa hoy), **histórico** (se conserva por su fec
 | `docs/ESTRUCTURA_DOCUMENTAL.md` | Jerarquía de precedencia y reglas de mantenimiento | Todos | vigente | — | Es la jerarquía; no duplicarla en otros archivos |
 | `docs/CATALOGO_DOCUMENTAL.md` | Este catálogo | Todos | vigente | `docs/README.md` | Regenerar §2 al añadir o mover Markdown |
 | `ESTADO_DEL_SISTEMA.md` | Fotografía vigente + archivo histórico del estado | Todos | vigente (sección superior) · histórico (resto) | `docs/handover/*` | Sólo la sección vigente manda; cada cifra lleva su fecha |
-| `docs/AI_AGENT_BLOCKERS.md` | Bloqueos, su evidencia y seguimiento humano | Agentes · propietario | vigente, con revalidación del 2026-10-13 | `docs/handover/AUDITORIA_ADVERSARIAL_2026-10-13.md` | Revalidar antes de actuar: contiene historia |
+| `docs/AI_AGENT_PROTOCOLO.md` | Bloqueos, su evidencia y seguimiento humano | Agentes · propietario | vigente, con revalidación del 2026-10-13 | `docs/handover/AUDITORIA_ADVERSARIAL_2026-10-13.md` | Revalidar antes de actuar: contiene historia |
 | `MEMORY.md` | Índice de la memoria del proyecto | Agentes | vigente | `.workbuddy-ai/memory/MEMORY.md` | El detalle vive en `temas/`; no duplicar aquí |
 | `docs/PROJECT_PHASE_GATES.md` | Criterios de aceptación por fase | Equipo | vigente | `PLAN_CIERRE_100_FUNCIONAL_2026.md` | — |
 
@@ -37,7 +37,7 @@ Estados usados: **vigente** (se usa hoy), **histórico** (se conserva por su fec
 |---|---|---|---|---|---|
 | `docs/ARQUITECTURA_AULA_VIRTUAL.md` | Arquitectura del Módulo 6 (Aula Virtual) | Desarrollo | vigente | `backend/openapi.json` | — |
 | `docs/INVESTIGACION_AULA_VIRTUAL.md` | Investigación que originó el Módulo 6 | Historia | histórico (insumo) | `docs/ARQUITECTURA_AULA_VIRTUAL.md` | Conservar como origen, no como especificación |
-| `docs/CONTRATO_API_MODULO2.md` · `docs/CONTRATO_API_MODULO3.md` | Contratos HTTP de Módulos 2 y 3 | Desarrollo | vigente | `backend/openapi.json` | `openapi.test.ts` los compara con las rutas reales: si el contrato y el test discrepan, manda el test |
+| `docs/historial/modulos-implementados/CONTRATO_API_MODULO2.md` · `docs/historial/modulos-implementados/CONTRATO_API_MODULO3.md` | Contratos HTTP de Módulos 2 y 3 | Desarrollo | vigente | `backend/openapi.json` | `openapi.test.ts` los compara con las rutas reales: si el contrato y el test discrepan, manda el test |
 | `docs/BRIEFING_BACKEND_MODULO4.md` · `docs/BRIEFING_BACKEND_MODULO5.md` | Instrucciones para implementar fases ya cerradas | Historia | histórico | Contratos de API | No releer como especificación vigente: describen trabajo ya ejecutado |
 | `docs/INCES_PREMIUM_PRODUCT_DESIGN_SYSTEM.md` | Sistema de producto y diseño premium | Diseño | vigente | `lib/` | — |
 | `docs/REPORTE_INTERFAZ_RENOVADA.md` | Reporte de la interfaz renovada | Historia | histórico | `docs/INCES_PREMIUM_PRODUCT_DESIGN_SYSTEM.md` | — |
@@ -45,14 +45,14 @@ Estados usados: **vigente** (se usa hoy), **histórico** (se conserva por su fec
 | `docs/historial/auditorias/*` (`AUDITORIA_PLANILLA.md`, `AUDITORIA_M4.md`, `AUDITORIA_ESTADO_REAL.md`, `HANDOFF_ARIA_G3_*.md`, `RELEASE_AUDIT_*.md`, `REPORTE_ARIA.md`, etc.) | Auditorías y handoffs de fases anteriores | Historia | histórico | `docs/historial/auditorias/README.md` | No tratar sus cifras como vigentes |
 | `docs/DISENO_PERIODOS_DURACION_Y_CADUCIDAD_2026-10-10.md` | Diseño de duración y caducidad de períodos | Producto | vigente como diseño, **no implementado** | — | Requiere migración nueva + autorización + 5 decisiones institucionales |
 | `docs/AUDITORIA_RENDIMIENTO_2026-10-08.md` | Auditoría de rendimiento y causa raíz | Equipo | histórico con datos a revalidar | `ESTADO_DEL_SISTEMA.md` | Las mejoras de latency se re-miden antes de citarlas |
-| `docs/AUDITORIA_INVITAR_DOCENTE_Y_GESTION_ACADEMICA_2026-10-10.md` | Hallazgos de «Invitar docente» y gestión académica | Equipo · propietario | vigente como hallazgo | `docs/AI_AGENT_BLOCKERS.md` | Falta la verificación funcional en producción con cuenta autorizada |
+| `docs/AUDITORIA_INVITAR_DOCENTE_Y_GESTION_ACADEMICA_2026-10-10.md` | Hallazgos de «Invitar docente» y gestión académica | Equipo · propietario | vigente como hallazgo | `docs/AI_AGENT_PROTOCOLO.md` | Falta la verificación funcional en producción con cuenta autorizada |
 | `docs/CERTIFICACION_CIERRE_TOTAL.md` | Certificación de gates G1–G10 | Historia | histórico | `docs/PROJECT_PHASE_GATES.md` | — |
 
 ### 1.4 Planificación, prompts y contexto para IA
 
 | Ruta | Propósito | Público | Estado | Canónico relacionado | Acción recomendada |
 |---|---|---|---|---|---|
-| `PLAN_MAESTRO.md` · `ROADMAP.md` · `PLAN_CIERRE_100_FUNCIONAL_2026.md` · `TODO_CIERRE_INTEGRAL_INCES_LMS.md` | Alcance, prioridades y cola operativa | Equipo | vigente | `ESTADO_DEL_SISTEMA.md` | El TODO es la cola; no duplicar estados aquí |
+| `PLAN_MAESTRO.md` · `ROADMAP.md` · `PLAN_CIERRE_100_FUNCIONAL_2026.md` · `docs/historial/planes/TODO_CIERRE_INTEGRAL_INCES_LMS.md` | Alcance, prioridades y cola operativa | Equipo | vigente | `ESTADO_DEL_SISTEMA.md` | El TODO es la cola; no duplicar estados aquí |
 | `docs/contexto-ia/*` (9 archivos) | Paquete de contexto autocontenido para una IA sin acceso al repo | IA externa | vigente, **caduco por diseño** | `ESTADO_DEL_SISTEMA.md` | Cada cifra lleva su fecha (2026-10-12); re-medir antes de decidir con ella |
 | `docs/contexto-ia-unificado/CONTEXTO_COMPLETO_INCES_LMS.md` | Los nueve archivos fusionados en uno | IA externa | vigente, **caduco por diseño** | `docs/contexto-ia/` | Ver duplicado D-1 más abajo |
 | `docs/historial/prompts/*` (14 mandatos históricos) | Mandatos de sesiones pasadas archivados | Historia | histórico | `docs/historial/prompts/README.md` | **No ejecutar en bloque.** Comprobar que su objetivo sigue vigente antes de usarlo |
@@ -143,13 +143,13 @@ incluyen código, workflows, imágenes y especificaciones, y sólo 16 de ellos s
 - **RELEASE_AUDIT_20261010_0302.md** — AUDITORÍA DE RELEASE Y EVALUACIÓN DE DESPLIEGUE A PRODUCCIÓN — INCES LMS · 52 líneas · 4,9 KB · git
 - **REPORTE_ARIA.md** — REPORTE_ARIA — Contradicciones entre el documento y el código base · 1182 líneas · 60,1 KB · git
 - **ROADMAP.md** — ROADMAP — INCES LMS PROJECT · 254 líneas · 14,7 KB · git
-- **TODO_CIERRE_INTEGRAL_INCES_LMS.md** — TODO — Auditoría de cierre funcional y UX/UI de INCES-LMS · 1163 líneas · 67,9 KB · git
+- **docs/historial/planes/TODO_CIERRE_INTEGRAL_INCES_LMS.md** — TODO — Auditoría de cierre funcional y UX/UI de INCES-LMS · 1163 líneas · 67,9 KB · git
 - **ULTRA_MEGA_PROMPT_RETOMAR_ANTIGRAVITY_INCES_LMS_2026-10-10.md** — ULTRA-MEGA PROMPT PARA RETOMAR INCES-LMS EN ANTIGRAVITY · 550 líneas · 39,1 KB · git
 
 ## Documentación técnica de producto
 
 - **docs/AI_AGENT_AUTONOMY_AND_ENVIRONMENT_RECOVERY.md** — CONTRATO DE AUTONOMÍA TOTAL Y RECUPERACIÓN DE ENTORNO — INCES LMS · 496 líneas · 12,9 KB · git
-- **docs/AI_AGENT_BLOCKERS.md** — AI Agent Blockers / Human Follow-up · 156 líneas · 17,1 KB · git
+- **docs/AI_AGENT_PROTOCOLO.md** — AI Agent Blockers / Human Follow-up · 156 líneas · 17,1 KB · git
 - **docs/AI_AGENT_OPERATING_PROTOCOL.md** — PROTOCOLO DE OPERACIÓN AUTÓNOMA PARA AGENTES AI — INCES LMS · 462 líneas · 15,6 KB · git
 - **docs/AI_AGENT_TOKEN_EFFICIENT_AUTONOMY.md** — AUTONOMÍA EFICIENTE EN TOKENS — INCES LMS · 66 líneas · 2,2 KB · git
 - **docs/ARQUITECTURA_AULA_VIRTUAL.md** — Arquitectura del Aula Virtual (Módulo 6) · 451 líneas · 24,3 KB · git
@@ -162,8 +162,8 @@ incluyen código, workflows, imágenes y especificaciones, y sólo 16 de ellos s
 - **docs/CLINE_BLOQUE_E_ERROR_HANDLER.md** — BLOQUE E — Auditoría del error handler · 248 líneas · 10,3 KB · git
 - **docs/CLINE_FASE_0_5_BLOQUEADORES.md** — FASE 0.5 — Cierre de bloqueadores arquitectónicos · 336 líneas · 16,2 KB · git
 - **docs/CONFIGURACION_R2.md** — Configuración de Cloudflare R2 · 595 líneas · 27,7 KB · git
-- **docs/CONTRATO_API_MODULO2.md** — Contrato de API — Módulo 2 (Currículo y Pensum) · 478 líneas · 19,5 KB · git
-- **docs/CONTRATO_API_MODULO3.md** — Contrato de API — Módulo 3 (Cuadrante, Horarios, Aulas y Guardias Docentes) · 684 líneas · 30,8 KB · git
+- **docs/historial/modulos-implementados/CONTRATO_API_MODULO2.md** — Contrato de API — Módulo 2 (Currículo y Pensum) · 478 líneas · 19,5 KB · git
+- **docs/historial/modulos-implementados/CONTRATO_API_MODULO3.md** — Contrato de API — Módulo 3 (Cuadrante, Horarios, Aulas y Guardias Docentes) · 684 líneas · 30,8 KB · git
 - **docs/DISENO_PERIODOS_DURACION_Y_CADUCIDAD_2026-10-10.md** — Diseño — Duración configurable, caducidad e historial de períodos académicos · 244 líneas · 11,6 KB · git
 - **docs/ESTRUCTURA_DOCUMENTAL.md** — Estructura documental y reglas de mantenimiento · 94 líneas · 9 KB · no rastreado
 - **docs/INCES_PREMIUM_PRODUCT_DESIGN_SYSTEM.md** — Sistema de producto y diseño premium — INCES LMS · 123 líneas · 10,1 KB · git

@@ -7,6 +7,16 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- Precarga de la conexion con Google Fonts: el paquete `google_fonts`
+       baja la tipografia en runtime. `preconnect` abre el canal TCP+TLS
+       mientras el navegador todavia lee el HTML, asi la fuente llega antes y
+       el texto no pasa por el FOUT (flash de texto sin estilar). No sustituye
+       a auto-hospedar, que costaria reemplazar los 200 usos de
+       `GoogleFonts.inter` del codigo; es la version barata. Medido el
+       2026-10-21. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
   <!-- Metadatos de Búsqueda y Posicionamiento SEO -->
   <title>INCES LMS — Sistema de Gestión Académica | CFS Rafael Urdaneta La Isabelica</title>
   <meta name="description" content="INCES LMS: Sistema de gestión académica y aula virtual del CFS Nacional de Soldadura Rafael Urdaneta, INCES La Isabelica, Valencia, Carabobo. Inscripciones en línea, programas de formación técnica y seguimiento académico.">
@@ -39,7 +49,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="INCES LMS">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
   <link rel="icon" type="image/png" href="favicon.png">
 
   <link rel="manifest" href="manifest.json">

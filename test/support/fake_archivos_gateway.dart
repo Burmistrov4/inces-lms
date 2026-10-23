@@ -54,6 +54,12 @@ class FakeArchivosGateway implements ArchivosGateway {
   /// poder decidir qué recibe.
   List<Archivo> archivosListados = const [];
 
+  /// Lo que devuelve el listado del propio usuario (`GET /archivos/mios`).
+  ///
+  /// Separado de [archivosListados] a propósito: son dos rutas distintas y una
+  /// prueba no debe poder confundirlas.
+  List<Archivo> archivosMios = const [];
+
   // --- Fallos forzados ------------------------------------------------------
 
   Object? errorAlFirmar;
@@ -64,6 +70,7 @@ class FakeArchivosGateway implements ArchivosGateway {
   Object? errorAlBorrarComoAdmin;
   Object? errorAlSubir;
   Object? errorAlListar;
+  Object? errorAlListarMios;
 
   // --- Registro de llamadas -------------------------------------------------
 
@@ -159,6 +166,19 @@ class FakeArchivosGateway implements ArchivosGateway {
     ultimaEntidadId = entidadId;
     _lanzarSi(errorAlListar);
     return archivosListados;
+  }
+
+  @override
+  Future<List<Archivo>> listarMios({
+    TipoEntidadArchivo? entityType,
+    int limite = 100,
+    int desplazamiento = 0,
+  }) async {
+    final tipo = entityType?.valorRemoto ?? 'todos';
+    llamadas.add('listarMios:$tipo:$limite:$desplazamiento');
+    ultimoEntityType = entityType;
+    _lanzarSi(errorAlListarMios);
+    return archivosMios;
   }
 
   @override
