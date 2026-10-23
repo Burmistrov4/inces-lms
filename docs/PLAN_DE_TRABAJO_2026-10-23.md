@@ -158,3 +158,54 @@ paneles leían el mismo horario cada uno por su cuenta.
 | Fallos de login | 1 (flake) | **0** |
 
 Además: el timeout de arranque del motor en la matriz subió de 60 s a 120 s.
+
+
+---
+
+# CIERRE DE LA NOCHE — 2026-10-23
+
+## Lo que se hizo
+
+| # | Trabajo | Resultado medido |
+|---|---|---|
+| 1 | **Fase A.1** — esqueletos de carga | `EsqueletoLista` conectado a 16 paneles vía `EstadoPanel`; verificado con captura a 80 ms |
+| 2 | **Fase A.2** — caché + refresco en segundo plano | Mixin `RefrescoAlVolver` (umbral 45 s) en 4 paneles admin + Inscripciones |
+| 3 | **Fase C** — G6 y el endpoint lento | G6 no se reprodujo; la lentitud es de red a Supabase (281 ms local vs 349–1331 ms por viaje) |
+| 4 | **Arquitectura de datos** (lo que pidió Lorenzo) | Caché compartida con *single-flight* en los 9 endpoints más calientes |
+| 5 | **Pulido de calidad** — auditoría de las 186 capturas | 4 defectos de UI corregidos + 1 bug del verificador |
+| 6 | **Fase D** — documento de diseño | `docs/DISENO_MULTINUBE_DRIVE_2026-10-23.md`, espera decisión |
+
+## El número que resume la noche
+
+**328 → 167 peticiones por corrida completa de la matriz: un 49 % menos.**
+Y a la vez, **más capturas cargadas con datos reales** (la caché destapó un
+desborde latente que antes tapaba el esqueleto).
+
+| Endpoint | Antes | Después |
+|---|---|---|
+| `/mi-horario` | 56 | 5 |
+| `/admin/periodos` | 45 | 3 |
+| `/admin/programas` | 46 | 9 |
+| `/admin/acceso` | 36 | 6 |
+| `/admin/usuarios` | 32 | 5 |
+| `/admin/usuarios/invitaciones` | 30 | 5 |
+| `/admin/ocupacion` | 33 | 3 |
+| `/admin/secciones` | 30 | 6 |
+| **TOTAL** | **328** | **167** |
+
+## Estado verificado
+
+- Matriz: **186 capturas** · 0 desbordes · 0 page errors · 0 no navegables ·
+  0 fallos de login · 0 sin datos · 0 peticiones fallidas
+- Analizador Dart: **243 archivos, 0 errores / 0 avisos / 0 infos**
+- Backend: **712/712** pruebas
+
+## Lo que queda
+
+1. **Fase D (multi-nube con Drive)** — el documento de diseño está escrito con
+   tres opciones y una recomendación (B: Drive sólo para lo que no cabe). Faltan
+   las 4 decisiones de Lorenzo.
+2. **Refresco automático en el resto de paneles** — el mixin `RefrescoAlVolver`
+   está en 4 paneles; el patrón está documentado para enchufarlo a los demás.
+3. **Verificación funcional en navegador** de «Invitar docente» y de la promoción
+   de administradores en producción (falta una cuenta de prueba autorizada).
