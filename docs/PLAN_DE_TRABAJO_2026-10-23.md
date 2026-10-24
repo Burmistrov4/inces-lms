@@ -163,13 +163,29 @@ gestor que usa el aula (`TASK_SUBMISSION` con el id de la tarea), así que la
 entrega queda atada a la tarea exactamente igual. No es un camino paralelo: es el
 mismo, con un clic menos de por medio.
 
-**Lo que queda** (no es UI, es arquitectura):
-- Las **carpetas** del explorador siguen viviendo en `SharedPreferences` (sólo
-  ese navegador). Ya no se presentan como datos del centro, pero para que sean
-  reales hace falta tabla + endpoints. Decisión pendiente: ¿se quedan como
-  organización local o se hacen de servidor?
-- Las filas de los 4 parámetros muertos siguen en la base; borrarlas pide
-  migración.
+**Lo que quedaba** (arquitectura, no UI) — estado al 2026-10-24:
+
+**Parámetros muertos — RESUELTO en código, pendiente de aplicar en la nube.**
+Migración `202610240001_limpiar_parametros_sin_efecto.sql`: borra las cuatro
+filas y falla si alguna sobrevive. Validada con PGlite aplicando **todas** las
+migraciones: **546 aserciones, 0 fallos**. `validate.mjs` pasó de 11 a 7
+parámetros y sus dos aserciones dependientes se movieron a claves que sí existen.
+**Falta un paso humano:** aplicarla con `SUPABASE_ACCESS_TOKEN`.
+
+**Carpetas — decisión escrita, esperando a Lorenzo.**
+`docs/DECISION_CARPETAS_2026-10-24.md` con el coste medido de las dos opciones:
+
+| | Opción A (quitar) | Opción B (servidor) |
+|---|---|---|
+| Migraciones | **0** | 1 (tabla + RLS + FK) |
+| Endpoints | **0** | 4 |
+| Archivos Dart | 1 (el panel) | ~4 + el panel |
+| Riesgo | medio-bajo | medio-alto |
+| Alineado con Classroom | **sí** (`entity_type` ya es el eje) | no |
+
+**Recomendación: A.** El eje de organización correcto ya existe en el producto
+(`files_metadata.entity_type` + `entidad_id`); las carpetas añadían una segunda
+verdad que además sólo vivía en un navegador.
 
 ### Fase D — Producto: multi-nube con Google Drive (F1 → F2 → F3) — **LA QUE SIGUE**
 
