@@ -32,7 +32,7 @@ class DocenteResumenPanel extends StatelessWidget {
         children: [
           BarraAccionesSuperiores.docente(
             onMisAulas: () => onNavegarA?.call('Mis aulas'),
-            onAsistencia: () => onNavegarA?.call('Asistencia'),
+            onAsistencia: () => onNavegarA?.call('Pasar lista'),
             onCalificaciones: () => onNavegarA?.call('Calificaciones'),
             onMiHorario: () => onNavegarA?.call('Mi horario'),
           ),
@@ -296,10 +296,10 @@ class DocenteResumenPanel extends StatelessWidget {
     final paleta = PaletaInces.deBrillo(theme.brightness);
     final acciones = [
       _DocenteAccionData(
-        titulo: 'Tomar Asistencia QR',
+        titulo: 'Pasar lista',
         descripcion: 'Abrir sesión proyectable en pizarra con código efímero y verificación WebSocket.',
         icono: Icons.fact_check_outlined,
-        seccionDestino: 'Asistencia',
+        seccionDestino: 'Pasar lista',
         color: IncesTheme.azulPrimario,
       ),
       _DocenteAccionData(
@@ -324,10 +324,10 @@ class DocenteResumenPanel extends StatelessWidget {
         color: paleta.info,
       ),
       _DocenteAccionData(
-        titulo: 'Material de Apoyo',
-        descripcion: 'Subir guías pedagógicas y diagramas técnicos directamente a Cloudflare R2.',
+        titulo: 'Guías y materiales',
+        descripcion: 'Subir guías pedagógicas y diagramas técnicos para consulta de tus estudiantes.',
         icono: Icons.folder_open_outlined,
-        seccionDestino: 'Material de apoyo',
+        seccionDestino: 'Guías y materiales',
         color: paleta.advertencia,
       ),
     ];

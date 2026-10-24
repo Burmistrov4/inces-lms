@@ -56,9 +56,9 @@ class EstudianteResumenPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           BarraAccionesSuperiores.estudiante(
-            onOfertasCupos: () => onNavegarA?.call('Ofertas de cupos'),
+            onOfertasCupos: () => onNavegarA?.call('Inscribirme en un curso'),
             onMisAulas: () => onNavegarA?.call('Mis aulas'),
-            onAsistencia: () => onNavegarA?.call('Asistencia'),
+            onAsistencia: () => onNavegarA?.call('Marcar asistencia'),
             onDescargarPlanilla: onDescargarPlanilla,
             onDescargarExcel: onDescargarExcel,
           ),
@@ -328,10 +328,10 @@ class EstudianteResumenPanel extends StatelessWidget {
     final paleta = PaletaInces.deBrillo(theme.brightness);
     final acciones = [
       _EstudianteAccionData(
-        titulo: 'Marcar Asistencia a Clase',
+        titulo: 'Marcar asistencia',
         descripcion: 'Ingresar el código de 6 dígitos de la pizarra o escanear el QR proyectado.',
         icono: Icons.fact_check_outlined,
-        seccionDestino: 'Asistencia',
+        seccionDestino: 'Marcar asistencia',
         color: IncesTheme.azulPrimario,
       ),
       _EstudianteAccionData(
@@ -342,24 +342,24 @@ class EstudianteResumenPanel extends StatelessWidget {
         color: paleta.exito,
       ),
       _EstudianteAccionData(
-        titulo: 'Mis Entregas y Tareas',
+        titulo: 'Mis tareas',
         descripcion: 'Revisar tareas asignadas, fechas límite, entregas pendientes y notas oficiales obtenidas.',
         icono: Icons.assignment_turned_in_outlined,
-        seccionDestino: 'Mis entregas',
+        seccionDestino: 'Mis tareas',
         color: paleta.enlace,
       ),
       _EstudianteAccionData(
-        titulo: 'Mi Expediente y Planilla',
+        titulo: 'Mi inscripción',
         descripcion: 'Verificar los datos de registro y descargar la planilla oficial institucional.',
         icono: Icons.badge_outlined,
-        seccionDestino: 'Mi expediente',
+        seccionDestino: 'Mi inscripción',
         color: paleta.advertencia,
       ),
       _EstudianteAccionData(
-        titulo: 'Ofertas de Cupos',
+        titulo: 'Inscribirme en un curso',
         descripcion: 'Explorar las secciones académicas abiertas e inscribirse en nuevos cursos.',
         icono: Icons.explore_outlined,
-        seccionDestino: 'Ofertas de cupos',
+        seccionDestino: 'Inscribirme en un curso',
         color: IncesTheme.azulSecundario,
       ),
       _EstudianteAccionData(

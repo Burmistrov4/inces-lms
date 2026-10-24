@@ -100,7 +100,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     ),
     ItemNavegacion(
       icono: Icons.settings_outlined,
-      titulo: 'Parámetros',
+      titulo: 'Configuración del Centro',
       etiquetaCorta: 'Ajustes',
       categoria: 'Administración del sistema',
       modulo: 'm0_cpanel',
@@ -149,7 +149,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     ),
     ItemNavegacion(
       icono: Icons.class_outlined,
-      titulo: 'Secciones',
+      titulo: 'Secciones del Período',
       categoria: 'Gestión académica',
       disponible: true,
       modulo: 'm3_cuadrante',
@@ -183,14 +183,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     ),
     ItemNavegacion(
       icono: Icons.folder_shared_outlined,
-      titulo: 'Cloud CFS',
+      titulo: 'Archivos del Centro',
       categoria: 'Gestión académica',
       disponible: true,
       modulo: 'm0_cpanel',
     ),
     ItemNavegacion(
       icono: Icons.calendar_month_outlined,
-      titulo: 'Horarios de Clases',
+      titulo: 'Cuadrante de Horarios',
       categoria: 'Control de aulas',
       disponible: true,
       modulo: 'm3_cuadrante',
@@ -300,14 +300,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       onCambiarTema: tema?.cambiar,
       accionesEncabezado: [
         IconButton(
-          tooltip: 'Inscribir Aspirante',
+          tooltip: 'Inscripciones y Cupos',
           icon: const Icon(Icons.person_add_alt_1_rounded, size: 20),
           onPressed: () => conGuardia(() => _navegarA('Inscripciones y Cupos'), 'nav-Inscripciones y Cupos'),
         ),
         IconButton(
-          tooltip: 'Horarios de Clases',
+          tooltip: 'Cuadrante de Horarios',
           icon: const Icon(Icons.calendar_month_rounded, size: 20),
-          onPressed: () => conGuardia(() => _navegarA('Horarios de Clases'), 'nav-Horarios de Clases'),
+          onPressed: () => conGuardia(() => _navegarA('Cuadrante de Horarios'), 'nav-Cuadrante de Horarios'),
         ),
         IconButton(
           tooltip: 'Espacios y Aulas',
@@ -333,7 +333,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             () => BarraAccionesSuperiores.mostrarDialogoReportes(
               context,
               onVerInscripciones: () => _navegarA('Inscripciones y Cupos'),
-              onVerHorarios: () => _navegarA('Horarios de Clases'),
+              onVerHorarios: () => _navegarA('Cuadrante de Horarios'),
               onVerAccesos: () =>
                   _navegarA('Registro de Inicios de Sesión / Accesos'),
             ),
@@ -384,9 +384,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               mostrarResumenEjecutivo: false,
             ),
           );
-        case 'Parámetros':
+        case 'Configuración del Centro':
           return const ContenidoSeccion(
-            migas: ['Inicio', 'Administración del sistema', 'Parámetros'],
+            migas: ['Inicio', 'Administración del sistema', 'Configuración del Centro'],
             child: CpanelParametrosPanel(),
           );
         case 'Historial de Configuración':
@@ -419,9 +419,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             migas: const ['Inicio', 'Gestión académica', 'Campos de Inscripción'],
             child: CpanelInscripcionCamposPanel(onNavegarA: _navegarA),
           );
-        case 'Secciones':
+        case 'Secciones del Período':
           return const ContenidoSeccion(
-            migas: ['Inicio', 'Gestión académica', 'Secciones'],
+            migas: ['Inicio', 'Gestión académica', 'Secciones del Período'],
             child: CpanelSeccionesPanel(),
           );
         case 'Lapsos Académicos':
@@ -429,14 +429,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             migas: ['Inicio', 'Gestión académica', 'Lapsos'],
             child: CpanelLapsosPanel(),
           );
-        case 'Cloud CFS':
+        case 'Archivos del Centro':
           return const ContenidoSeccion(
-            migas: ['Inicio', 'Gestión académica', 'Cloud CFS'],
+            migas: ['Inicio', 'Gestión académica', 'Archivos del Centro'],
             child: CpanelExploradorArchivosPanel(),
           );
-        case 'Horarios de Clases':
+        case 'Cuadrante de Horarios':
           return ContenidoSeccion(
-            migas: const ['Inicio', 'Control de aulas', 'Horarios de Clases'],
+            migas: const ['Inicio', 'Control de aulas', 'Cuadrante de Horarios'],
             child: CpanelCuadrantePanel(onNavegarA: _navegarA),
           );
         case 'Espacios y Aulas':

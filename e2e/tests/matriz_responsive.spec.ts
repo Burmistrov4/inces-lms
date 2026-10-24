@@ -42,17 +42,17 @@ const ALUMNO = {
 const SECCIONES_ADMIN = [
   'Centro de Mando',
   'Módulos del Sistema',
-  'Parámetros',
+  'Configuración del Centro',
   'Historial de Configuración',
   'Registro de Inicios de Sesión / Accesos',
   'Usuarios y Roles',
   'Programas Académicos',
   'Inscripciones y Cupos',
   'Campos de Inscripción',
-  'Secciones',
+  'Secciones del Período',
   'Lapsos Académicos',
-  'Cloud CFS',
-  'Horarios de Clases',
+  'Archivos del Centro',
+  'Cuadrante de Horarios',
   'Espacios y Aulas',
   'Guardias Docentes',
   'Mi Perfil',
@@ -61,22 +61,22 @@ const SECCIONES_ADMIN = [
 // Las 5 del docente (`docente_dashboard.dart`).
 const SECCIONES_DOCENTE = [
   'Mis aulas',
-  'Asistencia',
+  'Pasar lista',
   'Calificaciones',
-  'Material de apoyo',
+  'Guías y materiales',
   'Mi horario',
 ];
 
 // Las 8 del estudiante (`aspirante_dashboard.dart`).
 const SECCIONES_ALUMNO = [
-  'Mi Expediente',
-  'Mi Perfil',
-  'Ofertas de cupos',
-  'Mis inscripciones',
   'Mis aulas',
-  'Mis entregas',
-  'Asistencia',
-  'Material de apoyo',
+  'Marcar asistencia',
+  'Mis tareas',
+  'Inscribirme en un curso',
+  'Mis inscripciones',
+  'Mi inscripción',
+  'Guías y materiales',
+  'Mi Perfil',
 ];
 
 // Los cinco perfiles canónicos de Material 3, con alturas realistas de cada

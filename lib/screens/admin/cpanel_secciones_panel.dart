@@ -149,7 +149,7 @@ class _CpanelSeccionesPanelState extends State<CpanelSeccionesPanel> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TituloSeccion(
-          'Secciones',
+          'Secciones del Período',
           subtitulo: 'Catálogo de grupos del lapso. Archivar retira la '
               'sección del catálogo sin perder su historial.',
           acciones: [

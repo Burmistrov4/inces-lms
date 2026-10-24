@@ -436,7 +436,7 @@ void main() {
         CpanelAuditoriaPanel(repositorio: ModuloRepository(gateway: fake)),
       );
 
-      expect(find.text('Todavía no hay cambios registrados.'), findsOneWidget);
+      expect(find.text('Todavía no hay cambios registrados'), findsOneWidget);
     });
 
     testWidgets('si la carga falla, lo indica con opción de reintentar', (
@@ -453,14 +453,14 @@ void main() {
       expect(find.text('No pudimos cargar esta sección'), findsOneWidget);
       expect(find.text('Reintentar'), findsOneWidget);
       // Un fallo NO debe parecer un historial vacío: son cosas distintas.
-      expect(find.text('Todavía no hay cambios registrados.'), findsNothing);
+      expect(find.text('Todavía no hay cambios registrados'), findsNothing);
 
       fake.errorAlListarAuditoria = null;
       await tester.tap(find.text('Reintentar'));
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('Todavía no hay cambios registrados.'), findsOneWidget);
+      expect(find.text('Todavía no hay cambios registrados'), findsOneWidget);
     });
   });
 }

@@ -498,7 +498,7 @@ class _GestorDocumentalPanelState extends State<GestorDocumentalPanel> {
     final titulo = widget.titulo ??
         switch (widget.entityType) {
           TipoEntidadArchivo.taskSubmission => 'Mis entregas',
-          TipoEntidadArchivo.teacherGuide => 'Material de apoyo',
+          TipoEntidadArchivo.teacherGuide => 'Guías y materiales',
           // Subida suelta al gestor (el «Drive»). El título por defecto lo
           // pone quien usa el panel; este caso existe para que el switch sea
           // exhaustivo, no para quedarse con este texto.

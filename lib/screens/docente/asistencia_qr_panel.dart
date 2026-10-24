@@ -7,8 +7,9 @@ import '../../core/gateways/aula_gateway.dart';
 import '../../core/result.dart';
 import '../../services/asistencia_service.dart';
 import '../../services/aula_service.dart';
+import '../../widgets/comunes.dart';
 
-/// Panel del docente «Asistencia» (M7).
+/// Panel del docente «Pasar lista» (M7).
 ///
 /// Tres pasos:
 ///   1. elegir la sección (la lista sale de `/mi-horario`, igual que «Mis aulas»);
@@ -192,7 +193,7 @@ class _AsistenciaQrPanelState extends State<AsistenciaQrPanel> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '{} · Asistencia'.replaceFirst('{}', _aulaEtiqueta.isEmpty ? 'Sección' : _aulaEtiqueta),
+                      '{} · Pasar lista'.replaceFirst('{}', _aulaEtiqueta.isEmpty ? 'Sección' : _aulaEtiqueta),
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     Text(
@@ -285,7 +286,7 @@ class _AsistenciaQrPanelState extends State<AsistenciaQrPanel> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('Toma asistencia', style: Theme.of(context).textTheme.headlineSmall),
+        Text('Pasar lista', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 4),
         Text(
           'Elige la sección. El QR lo proyectas en tu pantalla y caduca cada pocos segundos.',
@@ -324,7 +325,20 @@ class _AsistenciaQrPanelState extends State<AsistenciaQrPanel> {
 
   Widget _listado() {
     if (_marcas.isEmpty) {
-      return const Center(child: Text('Aún no hay marcas.'));
+      // El vacío enseña qué hacer en vez de quedarse en «no hay nada»: el
+      // docente que acaba de abrir la sesión no sabe aún que este tablero se
+      // llena solo, sin recargar, cuando los estudiantes marcan.
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: AvisoEnLinea(
+            texto: 'Cuando pases lista, aquí verás quién marcó: cada '
+                'estudiante aparecerá en cuanto escanee el QR o teclee el '
+                'código de 6 dígitos.',
+            tono: TonoAviso.info,
+          ),
+        ),
+      );
     }
     return ListView.builder(
       itemCount: _marcas.length,

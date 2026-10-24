@@ -58,7 +58,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
           FilledButton.tonalIcon(
             onPressed: () => conGuardia(onAsistencia, 'barra-Asistencia'),
             icon: const Icon(Icons.fact_check_outlined, size: 15),
-            label: const Text('Asistencia QR'),
+            label: const Text('Pasar lista'),
             style: FilledButton.styleFrom(
               visualDensity: VisualDensity.compact,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

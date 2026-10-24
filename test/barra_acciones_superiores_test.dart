@@ -103,7 +103,7 @@ void main() {
       );
 
       expect(find.text('Mis Aulas'), findsOneWidget);
-      expect(find.text('Asistencia QR'), findsOneWidget);
+      expect(find.text('Pasar lista'), findsOneWidget);
       expect(find.text('Calificaciones'), findsOneWidget);
       expect(find.text('Mi Horario'), findsOneWidget);
       expect(find.text('Portal Docente: En Línea'), findsOneWidget);
@@ -112,7 +112,7 @@ void main() {
       await tester.pump();
       expect(aulasPulsado, isTrue);
 
-      await tester.tap(find.text('Asistencia QR'));
+      await tester.tap(find.text('Pasar lista'));
       await tester.pump();
       expect(asistenciaPulsado, isTrue);
     });

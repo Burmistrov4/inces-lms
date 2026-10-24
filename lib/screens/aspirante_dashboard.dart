@@ -132,15 +132,78 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
   int _seleccionada = 0;
   final Map<String, Widget> _panelesCargados = {};
 
+  // Orden de uso real del aprendiz, no orden de construcción: el aula y la
+  // asistencia son lo que se abre todos los días; la inscripción, una vez.
   static const List<ItemNavegacion> _items = [
+    // «Mis aulas» es la entrada al Aula Virtual (M6). El listado sale de
+    // `/mi-horario` y el contenido del servicio real de M6: el módulo se enciende
+    // o se apaga desde el cPanel, y **eso es exactamente lo que ahora se lee**.
+    // Antes esta sección ignoraba el interruptor: con `m6_aula_virtual` apagado
+    // seguía encendida y el clic devolvía 403.
+    ItemNavegacion(
+      icono: Icons.class_outlined,
+      titulo: 'Mis aulas',
+      categoria: 'Académico',
+      modulo: 'm6_aula_virtual',
+    ),
+    // M7 — el estudiante marca su asistencia tecleando o escaneando el QR.
+    //
+    // Se ata a `m7_asistencia` **aunque `roles_permitidos` diga
+    // `['docente','admin']`**: esa lista dice quién puede usar las rutas del
+    // docente —abrir sesión, leer marcas, cerrar—, no quién ve el menú. El
+    // aprendiz es quien marca, y si el administrador apaga el módulo, la sección
+    // se apaga para todos. Ver la nota de `ItemNavegacion.modulo`.
+    ItemNavegacion(
+      icono: Icons.fact_check_outlined,
+      titulo: 'Marcar asistencia',
+      categoria: 'Académico',
+      disponible: true,
+      modulo: 'm7_asistencia',
+    ),
+    // «Mis tareas» es el gestor documental (M5) con el tipo de archivo de
+    // entrega: sube a R2 y funciona sin aula abierta, así que depende de
+    // `m5_archivos` y no de `m6_aula_virtual`.
+    ItemNavegacion(
+      icono: Icons.assignment_turned_in_outlined,
+      titulo: 'Mis tareas',
+      categoria: 'Académico',
+      disponible: true,
+      modulo: 'm5_archivos',
+    ),
+    ItemNavegacion(
+      icono: Icons.explore_outlined,
+      titulo: 'Inscribirme en un curso',
+      etiquetaCorta: 'Inscribirme',
+      categoria: 'Académico',
+      modulo: 'm4_inscripciones',
+    ),
+    ItemNavegacion(
+      icono: Icons.playlist_add_check_outlined,
+      titulo: 'Mis inscripciones',
+      etiquetaCorta: 'Inscripciones',
+      categoria: 'Académico',
+      modulo: 'm4_inscripciones',
+    ),
     // Sin `modulo:`: la ficha propia no es un módulo que se apague. Si el
     // administrador apagara «inscripciones», el aprendiz seguiría necesitando
     // ver el estado de la suya.
     ItemNavegacion(
       icono: Icons.badge_outlined,
-      titulo: 'Mi Expediente',
-      etiquetaCorta: 'Expediente',
+      titulo: 'Mi inscripción',
+      etiquetaCorta: 'Inscripción',
       categoria: 'Mi cuenta',
+    ),
+    // Se enciende al llegar la ruta de listado (D17). Lo que todavía **no**
+    // puede mostrar es contenido: un estudiante no sabe qué `entidadId`
+    // corresponde a las guías de su módulo hasta que el Aula Virtual (M6) ate
+    // cada guía a una sección. El panel lo dice en pantalla, en vez de fingir una
+    // lista vacía por no haber archivos.
+    ItemNavegacion(
+      icono: Icons.folder_open_outlined,
+      titulo: 'Guías y materiales',
+      categoria: 'Académico',
+      disponible: true,
+      modulo: 'm5_archivos',
     ),
     // El aprendiz corrige su nombre desde el primer día: `profiles` se crea en
     // la misma transacción del alta (`handle_new_user()`, migración
@@ -153,67 +216,6 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
       titulo: 'Mi Perfil',
       etiquetaCorta: 'Perfil',
       categoria: 'Mi cuenta',
-    ),
-    ItemNavegacion(
-      icono: Icons.explore_outlined,
-      titulo: 'Ofertas de cupos',
-      etiquetaCorta: 'Ofertas',
-      categoria: 'Académico',
-      modulo: 'm4_inscripciones',
-    ),
-    ItemNavegacion(
-      icono: Icons.playlist_add_check_outlined,
-      titulo: 'Mis inscripciones',
-      etiquetaCorta: 'Inscripciones',
-      categoria: 'Académico',
-      modulo: 'm4_inscripciones',
-    ),
-    // «Mis aulas» es la entrada al Aula Virtual (M6). El listado sale de
-    // `/mi-horario` y el contenido del servicio real de M6: el módulo se enciende
-    // o se apaga desde el cPanel, y **eso es exactamente lo que ahora se lee**.
-    // Antes esta sección ignoraba el interruptor: con `m6_aula_virtual` apagado
-    // seguía encendida y el clic devolvía 403.
-    ItemNavegacion(
-      icono: Icons.class_outlined,
-      titulo: 'Mis aulas',
-      categoria: 'Académico',
-      modulo: 'm6_aula_virtual',
-    ),
-    // «Mis entregas» es el gestor documental (M5) con el tipo de archivo de
-    // entrega: sube a R2 y funciona sin aula abierta, así que depende de
-    // `m5_archivos` y no de `m6_aula_virtual`.
-    ItemNavegacion(
-      icono: Icons.assignment_turned_in_outlined,
-      titulo: 'Mis entregas',
-      categoria: 'Académico',
-      disponible: true,
-      modulo: 'm5_archivos',
-    ),
-    // M7 — el estudiante marca su asistencia tecleando o escaneando el QR.
-    //
-    // Se ata a `m7_asistencia` **aunque `roles_permitidos` diga
-    // `['docente','admin']`**: esa lista dice quién puede usar las rutas del
-    // docente —abrir sesión, leer marcas, cerrar—, no quién ve el menú. El
-    // aprendiz es quien marca, y si el administrador apaga el módulo, la sección
-    // se apaga para todos. Ver la nota de `ItemNavegacion.modulo`.
-    ItemNavegacion(
-      icono: Icons.fact_check_outlined,
-      titulo: 'Asistencia',
-      categoria: 'Académico',
-      disponible: true,
-      modulo: 'm7_asistencia',
-    ),
-    // Se enciende al llegar la ruta de listado (D17). Lo que todavía **no**
-    // puede mostrar es contenido: un estudiante no sabe qué `entidadId`
-    // corresponde a las guías de su módulo hasta que el Aula Virtual (M6) ate
-    // cada guía a una sección. El panel lo dice en pantalla, en vez de fingir una
-    // lista vacía por no haber archivos.
-    ItemNavegacion(
-      icono: Icons.folder_open_outlined,
-      titulo: 'Material de apoyo',
-      categoria: 'Académico',
-      disponible: true,
-      modulo: 'm5_archivos',
     ),
   ];
 
@@ -241,7 +243,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
       switch (resultado) {
         case Success(value: final ficha):
           _aspirante = ficha;
-          _panelesCargados.remove('Ofertas de cupos');
+          _panelesCargados.remove('Inscribirme en un curso');
         case Failure(error: final fallo):
           _error = fallo.message;
       }
@@ -351,9 +353,9 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
       onCambiarTema: tema?.cambiar,
       accionesEncabezado: [
         IconButton(
-          tooltip: 'Ofertas de cupos',
+          tooltip: 'Inscribirme en un curso',
           icon: const Icon(Icons.explore_outlined, size: 20),
-          onPressed: () => conGuardia(() => _navegarA('Ofertas de cupos'), 'nav-Ofertas de cupos'),
+          onPressed: () => conGuardia(() => _navegarA('Inscribirme en un curso'), 'nav-Inscribirme en un curso'),
         ),
         IconButton(
           tooltip: 'Mis aulas',
@@ -363,7 +365,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
         IconButton(
           tooltip: 'Marcar asistencia',
           icon: const Icon(Icons.fact_check_outlined, size: 20),
-          onPressed: () => conGuardia(() => _navegarA('Asistencia'), 'nav-Asistencia'),
+          onPressed: () => conGuardia(() => _navegarA('Marcar asistencia'), 'nav-Marcar asistencia'),
         ),
         IconButton(
           tooltip: 'Descargar Planilla Oficial PDF',
@@ -391,7 +393,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
   ///
   /// **`switch` por TÍTULO y no por índice**, igual que el cPanel. Estaba por
   /// índice, y eso ata la rama a la POSICIÓN del ítem: al insertar «Mis
-  /// entregas» antes de «Material de apoyo», `case 4` habría pasado a abrir una
+  /// tareas» antes de «Guías y materiales», `case 4` habría pasado a abrir una
   /// sección distinta sin que nada avisara. Con el título, insertar o mover un
   /// ítem no cambia a dónde lleva.
   ///
@@ -416,12 +418,12 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
       );
     }
 
-    if (item.titulo == 'Mi Expediente') {
-      _panelesCargados['Mi Expediente'] = _panelMiInscripcion();
+    if (item.titulo == 'Mi inscripción') {
+      _panelesCargados['Mi inscripción'] = _panelMiInscripcion();
     } else {
       _panelesCargados.putIfAbsent(item.titulo, () {
         switch (item.titulo) {
-          case 'Mi Expediente':
+          case 'Mi inscripción':
             return _panelMiInscripcion();
 
           // El mismo panel que monta el administrador. Aquí no se le inyecta nada:
@@ -432,7 +434,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
               child: const PerfilPanel(),
             );
 
-          case 'Ofertas de cupos':
+          case 'Inscribirme en un curso':
             return PanelOfertas(
               repositorio: _inscripciones,
               programaAspirante: _aspirante?.programaNombre,
@@ -456,7 +458,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
               onNavegarA: _navegarA,
             );
 
-          case 'Mis entregas':
+          case 'Mis tareas':
             return ContenidoSeccion(
               migas: ['Inicio', item.categoria, item.titulo],
               child: DefaultTabController(
@@ -469,11 +471,11 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
                       tabs: [
                         Tab(
                           icon: Icon(Icons.assignment_turned_in_outlined),
-                          text: 'Tareas y Calificaciones',
+                          text: 'Tareas',
                         ),
                         Tab(
                           icon: Icon(Icons.folder_shared_outlined),
-                          text: 'Bóveda de Archivos Subidos',
+                          text: 'Mis archivos',
                         ),
                       ],
                     ),
@@ -500,14 +502,14 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
               ),
             );
 
-          // (M7) El estudiante marca su asistencia tecleando el código del QR.
-          case 'Asistencia':
+          // (M7) El estudiante marca su asistencia con el código de la pizarra.
+          case 'Marcar asistencia':
             return ContenidoSeccion(
               migas: ['Inicio', item.categoria, item.titulo],
               child: const MarcarAsistenciaPanel(),
             );
 
-          case 'Material de apoyo':
+          case 'Guías y materiales':
             // Sin `entidadId`: todavía no hay una guía concreta que pedir, porque
             // M6 no ha creado la tabla que las sostiene. El panel funciona en modo
             // sólo-subida y lo explica en pantalla. Se monta igualmente para que el
@@ -516,7 +518,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
               migas: ['Inicio', item.categoria, item.titulo],
               child: const GestorDocumentalPanel(
                 entityType: TipoEntidadArchivo.teacherGuide,
-                titulo: 'Material de apoyo',
+                titulo: 'Guías y materiales',
                 subtitulo: 'Las guías y el material que publique tu docente.',
               ),
             );
@@ -552,7 +554,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
 
   Widget _panelMiInscripcion() {
     return ContenidoSeccion(
-      migas: const ['Inicio', 'Mi cuenta', 'Mi Expediente y Planilla'],
+      migas: const ['Inicio', 'Mi cuenta', 'Mi inscripción y planilla'],
       child: _cargando
           ? const Padding(
               padding: EdgeInsets.all(48),
@@ -619,7 +621,8 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
       titulo: 'Tu inscripción está en revisión',
       mensaje:
           'Cuando el centro formativo apruebe tu solicitud verás aquí tu curso '
-          'y tu estado.',
+          'y tu estado. Mientras esperas, puedes pedir cupo en otra sección '
+          'desde «Inscribirme en un curso».',
       icono: Icons.pending_actions_outlined,
       nota:
           'Recibirás un correo cuando tu inscripción sea confirmada. Si no '
@@ -940,7 +943,7 @@ class _PanelOfertasState extends State<PanelOfertas> {
   @override
   Widget build(BuildContext context) {
     return ContenidoSeccion(
-      migas: const ['Inicio', 'Académico', 'Ofertas de cupos'],
+      migas: const ['Inicio', 'Académico', 'Inscribirme en un curso'],
       child: EstadoPanel(
         cargando: _cargando,
         error: _error,
@@ -961,6 +964,12 @@ class _PanelOfertasState extends State<PanelOfertas> {
             'Cuando el centro formativo habilite secciones con cupo las '
             'verás listadas aquí, con su disponibilidad en tiempo real.',
         icono: Icons.explore_outlined,
+        nota:
+            'Pedir cupo es sólo el primer paso: solicitas, el centro aprueba '
+            'y después quedas matriculado. Si una sección se llena, entras en '
+            'lista de espera y se te asignará un cupo en cuanto se libere. '
+            'Mientras tanto, revisa «Mis inscripciones» para ver el estado de '
+            'lo que ya pediste.',
       );
     }
 
@@ -974,7 +983,7 @@ class _PanelOfertasState extends State<PanelOfertas> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TituloSeccion(
-          'Ofertas de cupos',
+          'Inscribirme en un curso',
           subtitulo: '${plural(_secciones.length, 'sección', 'secciones')} en este período.',
           acciones: [
             IconButton(
@@ -1035,6 +1044,19 @@ class _PanelOfertasState extends State<PanelOfertas> {
           ),
           const SizedBox(height: 12),
         ],
+        // El ciclo completo, antes de la lista: sin él el aprendiz cree que
+        // pulsar «Inscribirme» ya es estar matriculado, y no lo es.
+        const AvisoEnLinea(
+          texto:
+              'Pedir cupo tiene tres pasos: solicitas aquí, el centro '
+              'formativo aprueba tu solicitud y después quedas matriculado. '
+              'Si la sección se llena antes de aprobarte, entras en lista de '
+              'espera: se te guarda el turno y se te asigna un cupo en cuanto '
+              'se libere uno. Puedes seguir el estado en «Mis inscripciones».',
+          icono: Icons.route_outlined,
+          tono: TonoAviso.info,
+        ),
+        const SizedBox(height: 12),
         const AvisoEnLinea(
           texto:
               'Si una sección dice «Asiento en asignación» no puedes pedirla: '

@@ -142,11 +142,11 @@ class _WalkthroughInteractivoCardState
     ),
     PasoWalkthrough(
       etiquetaCategoria: 'Paso 5 de 5 · Biblioteca Digital y Aulas',
-      titulo: 'Gestor Documental (Cloudflare R2 + Google Drive)',
+      titulo: 'Gestor Documental (la nube del centro + Google Drive)',
       descripcion:
-          'Organiza manuales técnicos en Cloudflare R2 y vincula carpetas o videos de Google Drive directamente a cada especialidad y aula virtual para docentes y aprendices.',
+          'Organiza manuales técnicos en la nube del centro y vincula carpetas o videos de Google Drive directamente a cada especialidad y aula virtual para docentes y aprendices.',
       icono: Icons.folder_open_outlined,
-      seccionDestino: 'Cloud CFS',
+      seccionDestino: 'Archivos del Centro',
       textoBoton: 'Abrir Gestor Documental',
     ),
   ];
@@ -163,12 +163,12 @@ class _WalkthroughInteractivoCardState
     ),
     PasoWalkthrough(
       etiquetaCategoria: 'Paso 2 de 5 · Asistencia Técnica',
-      titulo: 'Apertura de Sesión y Control de Asistencia',
+      titulo: 'Pasar lista en el taller',
       descripcion:
           'Inicia las jornadas de clase generando un código numérico temporal de 6 dígitos o el código QR dinámico para el registro presencial de los aprendices en el taller.',
       icono: Icons.fact_check_outlined,
-      seccionDestino: 'Asistencia',
-      textoBoton: 'Control de Asistencia',
+      seccionDestino: 'Pasar lista',
+      textoBoton: 'Ir a Pasar lista',
     ),
     PasoWalkthrough(
       etiquetaCategoria: 'Paso 3 de 5 · Evaluación Práctica',
@@ -181,12 +181,12 @@ class _WalkthroughInteractivoCardState
     ),
     PasoWalkthrough(
       etiquetaCategoria: 'Paso 4 de 5 · Biblioteca de Taller',
-      titulo: 'Material de Apoyo y Guías Técnicas',
+      titulo: 'Guías y materiales del taller',
       descripcion:
-          'Carga guías de seguridad industrial, planos y normas técnicas en Cloudflare R2 para consulta inmediata de los aprendices en el aula.',
+          'Carga guías de seguridad industrial, planos y normas técnicas para consulta inmediata de los aprendices en el aula.',
       icono: Icons.folder_open_outlined,
-      seccionDestino: 'Material de apoyo',
-      textoBoton: 'Material de Apoyo',
+      seccionDestino: 'Guías y materiales',
+      textoBoton: 'Ir a Guías y materiales',
     ),
     PasoWalkthrough(
       etiquetaCategoria: 'Paso 5 de 5 · Planificación',

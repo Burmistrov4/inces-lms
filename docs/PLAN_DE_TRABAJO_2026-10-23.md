@@ -66,13 +66,15 @@ cachear, no repetir peticiones y **mejorar el rendimiento percibido**.
 *Criterio de éxito:* volver a una sección ya vista debe pintar **sin espera**, y
 toda espera mayor de 1 s debe mostrar progreso.
 
-### Fase B — Terminar el patrón de buscador (G9), de uno en uno
+### Fase B — Patrón de buscador (G9) — **CERRADA**
 
-1. ~~Usuarios y Roles~~ **hecho** (barra a todo el ancho, filtros en `Wrap`).
-2. **Aulas** (`cpanel_aulas_panel.dart`).
-3. **Programas** (`cpanel_programas_panel.dart`).
+1. **Usuarios y Roles** — hecho (barra a todo el ancho, filtros en `Wrap`).
+2. **Aulas** — hecho (`cpanel_aulas_panel.dart:258-262`, con el comentario que
+   explica el patrón y por qué se abandonó el ancho fijo de 260 px).
+3. **Programas** — hecho (`cpanel_programas_panel.dart:340-347`).
 
-*Criterio:* el mismo patrón en los tres, verificado con la matriz cada vez.
+Los tres verificados en la matriz. **El plan estaba sin actualizar: el trabajo ya
+estaba hecho desde la primera tanda del día.**
 
 ### Fase C — Robustez y deudas menores — **CERRADA**
 
@@ -81,6 +83,45 @@ toda espera mayor de 1 s debe mostrar progreso.
 3. **Matriz con verificación de datos** — ya añadida: ahora Detecta el aviso
    «No pudimos conectar» y lo marca en el log (antes la matriz daba 0 desbordes
    con paneles vacíos).
+
+### Fase E — UI/UX e intuitividad — **CERRADA (primera tanda)**
+
+**Por qué existe:** Lorenzo lo señaló y tenía razón. Las fases A-C eran de
+rendimiento y robustez; ninguna se ocupaba de que un administrador, un instructor
+o un aprendiz **entiendan la app sin capacitación**. Se auditó la arquitectura de
+información de los tres roles y se encontró jerga, nombres triplicados y acciones
+que no hacen lo que prometen.
+
+**Cambios aplicados:**
+
+| Qué | Antes | Ahora |
+|---|---|---|
+| Admin: archivos | «Cloud CFS» (y dos nombres más para lo mismo) | **«Archivos del Centro»** |
+| Admin: configuración | «Parámetros» | **«Configuración del Centro»** |
+| Admin: secciones | «Secciones» | **«Secciones del Período»** |
+| Admin: horarios | «Horarios de Clases» | **«Cuadrante de Horarios»** |
+| Admin: botón del encabezado | «Inscribir Aspirante» (ese panel no inscribe a nadie) | **«Inscripciones y Cupos»** |
+| Docente: asistencia | «Asistencia» / «Asistencia QR» | **«Pasar lista»** (un solo nombre) |
+| Docente: materiales | «Material de apoyo» | **«Guías y materiales»** |
+| Estudiante: inscripción | «Ofertas de cupos» | **«Inscribirme en un curso»** |
+| Estudiante: tareas | «Mis entregas» / «Bóveda de Archivos» | **«Mis tareas»** / pestaña «Mis archivos» |
+| Estudiante: expediente | «Mi Expediente» | **«Mi inscripción»** |
+| Estudiante: materiales | «Material de apoyo» | **«Guías y materiales»** |
+| Estudiante: menú | orden por implementación | **lo más usado primero** (aulas → asistencia → tareas) |
+
+**También:**
+- Fuera la jerga técnica visible: ya no se le dice «Cloudflare R2» al usuario.
+- Estados vacíos que **enseñan qué hacer**, no sólo que no hay datos.
+- La matriz E2E actualizada a los nombres nuevos (navega por título).
+
+**Lo que queda de esta fase** (segunda tanda, cuando Lorenzo quiera):
+- Ocultar tras «Avanzado» cuatro parámetros que **nadie lee** en el backend
+  (`inscripciones_abiertas`, `max_faltas_consecutivas`, `enrollment_lock_days`,
+  `r2_presign_ttl_minutos`).
+- Unificar «Archivos del Centro» con el Gestor Documental real (hoy son dos
+  sitios para lo mismo; las carpetas del explorador viven sólo en el navegador).
+- Reducir los 5 clics de «entregar una tarea» (la tarea se ve en «Mis tareas»
+  pero sólo se entrega desde el aula).
 
 ### Fase D — Producto: multi-nube con Google Drive (F1 → F2 → F3) — **LA QUE SIGUE**
 

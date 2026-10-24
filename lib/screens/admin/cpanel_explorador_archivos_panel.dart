@@ -40,7 +40,7 @@ class EventoActividad {
   final IconData icono;
 }
 
-/// Representa un archivo o carpeta dentro del almacenamiento Cloudflare R2 / Google Drive.
+/// Representa un archivo o carpeta dentro del almacenamiento del centro o de Google Drive.
 class ElementoArchivo {
   ElementoArchivo({
     required this.id,
@@ -139,7 +139,7 @@ class ElementoArchivo {
           DateTime.tryParse(map['fechaModificacion'] as String? ?? '') ??
               DateTime.now(),
       propietario: map['propietario'] as String? ?? 'Administrador',
-      ruta: map['ruta'] as String? ?? 'Mi Unidad (R2)',
+      ruta: map['ruta'] as String? ?? 'Mi Unidad',
       colorCarpeta: col,
       esDrive: map['esDrive'] as bool? ?? false,
       urlDrive: map['urlDrive'] as String?,
@@ -169,7 +169,7 @@ int? _colorAIndice(Color? c) {
   return idx >= 0 ? idx : null;
 }
 
-/// Explorador de Archivos estilo Google Drive para Cloudflare R2.
+/// Explorador de Archivos estilo Google Drive para la nube del centro.
 class CpanelExploradorArchivosPanel extends StatefulWidget {
   const CpanelExploradorArchivosPanel({
     super.key,
@@ -220,7 +220,7 @@ class _CpanelExploradorArchivosPanelState
   bool _buscando = false;
 
   /// Pila de navegación para las migas de pan (Breadcrumbs).
-  final List<String> _rutaActual = ['Mi Unidad (R2)'];
+  final List<String> _rutaActual = ['Mi Unidad'];
 
   ElementoArchivo? _seleccionado;
 
@@ -368,7 +368,7 @@ class _CpanelExploradorArchivosPanelState
         colorCarpeta: IncesTheme.azulPrimario,
         fechaModificacion: DateTime.now().subtract(const Duration(days: 2)),
         propietario: 'Ing. Carlos Mendoza (Docente)',
-        ruta: 'Mi Unidad (R2)',
+        ruta: 'Mi Unidad',
         permiso: 'Docentes y Estudiantes',
         actividad: const [
           EventoActividad(
@@ -393,7 +393,7 @@ class _CpanelExploradorArchivosPanelState
         colorCarpeta: IncesTheme.advertencia,
         fechaModificacion: DateTime.now().subtract(const Duration(days: 4)),
         propietario: 'Lic. Elena Ramos (Docente)',
-        ruta: 'Mi Unidad (R2)',
+        ruta: 'Mi Unidad',
         permiso: 'Docentes y Estudiantes',
         actividad: const [
           EventoActividad(
@@ -412,7 +412,7 @@ class _CpanelExploradorArchivosPanelState
         colorCarpeta: IncesTheme.carpetaTeal,
         fechaModificacion: DateTime.now().subtract(const Duration(days: 1)),
         propietario: 'Coordinación Académica',
-        ruta: 'Mi Unidad (R2)',
+        ruta: 'Mi Unidad',
         permiso: 'Solo Coordinación',
         actividad: const [
           EventoActividad(
@@ -431,7 +431,7 @@ class _CpanelExploradorArchivosPanelState
         colorCarpeta: IncesTheme.carpetaVioleta,
         fechaModificacion: DateTime.now().subtract(const Duration(days: 6)),
         propietario: 'Dirección del Centro',
-        ruta: 'Mi Unidad (R2)',
+        ruta: 'Mi Unidad',
         permiso: 'Público',
         actividad: const [
           EventoActividad(
@@ -450,11 +450,11 @@ class _CpanelExploradorArchivosPanelState
         tamanoBytes: 2450000, // 2.3 MB
         fechaModificacion: DateTime.now().subtract(const Duration(days: 3)),
         propietario: 'Coordinación Legal',
-        ruta: 'Mi Unidad (R2)',
+        ruta: 'Mi Unidad',
         permiso: 'Público',
         actividad: const [
           EventoActividad(
-            accion: 'Documento oficial cargado a Cloudflare R2',
+            accion: 'Documento oficial cargado',
             tiempo: 'Hace 3 días',
             usuario: 'Coordinación Legal',
             icono: Icons.file_upload_outlined,
@@ -468,7 +468,7 @@ class _CpanelExploradorArchivosPanelState
         tamanoBytes: 520000, // 520 KB
         fechaModificacion: DateTime.now().subtract(const Duration(hours: 5)),
         propietario: 'Coordinador de Cuadrante',
-        ruta: 'Mi Unidad (R2)',
+        ruta: 'Mi Unidad',
         permiso: 'Docentes y Estudiantes',
         actividad: const [
           EventoActividad(
@@ -486,11 +486,11 @@ class _CpanelExploradorArchivosPanelState
         tamanoBytes: 4200000, // 4.0 MB
         fechaModificacion: DateTime.now().subtract(const Duration(days: 5)),
         propietario: 'Prof. Mario Alvarado',
-        ruta: 'Mi Unidad (R2)',
+        ruta: 'Mi Unidad',
         permiso: 'Docentes y Estudiantes',
         actividad: const [
           EventoActividad(
-            accion: 'Subido a Cloudflare R2 para descarga formativa',
+            accion: 'Subido para descarga formativa',
             tiempo: 'Hace 5 días',
             usuario: 'Prof. Mario Alvarado',
             icono: Icons.slideshow_outlined,
@@ -506,11 +506,11 @@ class _CpanelExploradorArchivosPanelState
         urlDrive: 'https://drive.google.com/drive/folders/inces-soldadura-tig',
         fechaModificacion: DateTime.now().subtract(const Duration(hours: 12)),
         propietario: 'Ing. Carlos Mendoza (Docente)',
-        ruta: 'Mi Unidad (R2)',
+        ruta: 'Mi Unidad',
         permiso: 'Docentes y Estudiantes',
         actividad: const [
           EventoActividad(
-            accion: 'Carpeta de Google Drive vinculada (ahorro de espacio R2)',
+            accion: 'Carpeta de Google Drive vinculada (ahorro de espacio)',
             tiempo: 'Hace 12 horas',
             usuario: 'Ing. Carlos Mendoza',
             icono: Icons.add_link_rounded,
@@ -571,7 +571,7 @@ class _CpanelExploradorArchivosPanelState
             const SizedBox(width: 10),
             const Expanded(
               child: Text(
-                'Política de Almacenamiento R2',
+                'Política de Almacenamiento',
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
               ),
             ),
@@ -597,7 +597,7 @@ class _CpanelExploradorArchivosPanelState
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Text(
-                      'Límite asignado: 10 GB en Cloudflare R2 sin costo de transferencia.',
+                      'Límite asignado: 10 GB en la nube del centro, sin costo de transferencia.',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -606,7 +606,7 @@ class _CpanelExploradorArchivosPanelState
             ),
             const SizedBox(height: 16),
             const Text(
-              'Reglas de carga directa en Cloudflare R2:\n\n'
+              'Reglas de carga en la nube del centro:\n\n'
               '• Archivos admitidos: PDF, Word, Excel, presentaciones e imágenes optimizadas (hasta 25 MB por archivo).\n'
               '• Videos y contenido pesado (> 25 MB): Deben alojarse en Google Drive y vincularse con la opción «Vincular Google Drive» para no agotar la cuota del centro.',
               style: TextStyle(fontSize: 13.5, height: 1.45),
@@ -933,7 +933,7 @@ class _CpanelExploradorArchivosPanelState
                   : 'PENDING',
               actividad: [
                 EventoActividad(
-                  accion: 'Documento subido a Cloudflare R2 (confirmado)',
+                  accion: 'Documento subido y confirmado',
                   tiempo: 'Hace un momento',
                   usuario: 'Administrador Maestro',
                   icono: Icons.cloud_upload_outlined,
@@ -946,7 +946,7 @@ class _CpanelExploradorArchivosPanelState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '«${archivo.nombreOriginal}» subido y confirmado en R2.',
+              '«${archivo.nombreOriginal}» subido y confirmado.',
             ),
             backgroundColor: IncesTheme.exito,
           ),
@@ -1063,7 +1063,7 @@ class _CpanelExploradorArchivosPanelState
       builder: (ctx) => AlertDialog(
         title: Text(item.esCarpeta ? 'Eliminar carpeta' : 'Eliminar archivo'),
         content: Text(
-          '¿Estás seguro de que deseas eliminar «${item.nombre}»? Esta acción liberará espacio en Cloudflare R2.',
+          '¿Estás seguro de que deseas eliminar «${item.nombre}»? Esta acción liberará espacio en la nube del centro.',
         ),
         actions: [
           TextButton(
@@ -1099,7 +1099,7 @@ class _CpanelExploradorArchivosPanelState
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Generando archivo ZIP de «${carpeta.nombre}» desde Cloudflare R2...',
+                'Generando archivo ZIP de «${carpeta.nombre}»...',
               ),
             ),
           ],
@@ -1141,7 +1141,7 @@ class _CpanelExploradorArchivosPanelState
     if (!item.esCarpeta) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Descargando «${item.nombre}» desde Cloudflare R2...'),
+          content: Text('Descargando «${item.nombre}»...'),
           backgroundColor: IncesTheme.azulPrimario,
           duration: const Duration(seconds: 3),
         ),
@@ -1290,7 +1290,7 @@ class _CpanelExploradorArchivosPanelState
     sb.writeln('0 -18 Td');
     sb.writeln('(Fecha de Registro: $fechaStr) Tj');
     sb.writeln('0 -18 Td');
-    sb.writeln('(Almacenamiento: Cloudflare R2 Object Storage - Edge Global) Tj');
+    sb.writeln('(Almacenamiento: Nube del Centro) Tj');
     sb.writeln('0 -18 Td');
     sb.writeln('(Tamano Reportado: ${escapePdf(item.tamanoFormateado)}) Tj');
     sb.writeln('ET');
@@ -1313,7 +1313,7 @@ class _CpanelExploradorArchivosPanelState
     sb.writeln('0 -14 Td');
     sb.writeln('(asignado al entorno curricular para su uso por estudiantes, aprendices e instructores.) Tj');
     sb.writeln('0 -14 Td');
-    sb.writeln('(Alojado bajo protocolo de alta disponibilidad con CDN Cloudflare R2.) Tj');
+    sb.writeln('(Alojado bajo protocolo de alta disponibilidad en la nube del centro.) Tj');
     sb.writeln('ET');
 
     // Footer line
@@ -1343,7 +1343,7 @@ class _CpanelExploradorArchivosPanelState
       '  /Title (${escapePdf(item.nombre)})\n'
       '  /Author (${escapePdf(item.propietario)})\n'
       '  /Subject (${escapePdf(item.materia)})\n'
-      '  /Creator (INCES LMS Cloudflare R2 Storage)\n'
+      '  /Creator (INCES LMS - Archivos del Centro)\n'
       '  /Producer (INCES CFS Rafael Urdaneta)\n'
       '>>\nendobj\n',
     );
@@ -1608,7 +1608,7 @@ class _CpanelExploradorArchivosPanelState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Cloud CFS',
+                  'Archivos del Centro',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -1617,7 +1617,7 @@ class _CpanelExploradorArchivosPanelState
                 ),
                 if (!esCompacto(context))
                   Text(
-                    'Archivos · Cloudflare R2 (10 GB) · Google Drive',
+                    'Archivos · la nube del centro (10 GB) · Google Drive',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelSmall?.copyWith(
@@ -1906,7 +1906,7 @@ class _CpanelExploradorArchivosPanelState
             ),
             const SizedBox(height: 6),
             Text(
-              'Usa el botón «Nuevo» para crear carpetas o subir documentos a Cloudflare R2.',
+              'Usa el botón «Nuevo» para crear carpetas o subir documentos a la nube del centro.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -1941,7 +1941,7 @@ class _CpanelExploradorArchivosPanelState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Almacenamiento Híbrido: Cloudflare R2 + Google Drive + Aulas Virtuales',
+                      'Almacenamiento Híbrido: la nube del centro + Google Drive + Aulas Virtuales',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface,
@@ -1949,8 +1949,8 @@ class _CpanelExploradorArchivosPanelState
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '• Documentos y Pensum (< 25 MB): Se almacenan directamente en Cloudflare R2 con descargas de alta velocidad.\n'
-                      '• Videos y Clases Grabadas (> 25 MB): Se enlazan vía Google Drive sin consumir la cuota de 10 GB de R2.\n'
+                      '• Documentos y Pensum (< 25 MB): Se almacenan directamente en la nube del centro con descargas de alta velocidad.\n'
+                      '• Videos y Clases Grabadas (> 25 MB): Se enlazan vía Google Drive sin consumir la cuota de 10 GB del centro.\n'
                       '• Asignación a Aulas: Puedes vincular cualquier archivo o carpeta a un aula o taller (ej. Soldadura Básica) para que sus docentes y aprendices lo tengan a mano.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
@@ -2257,7 +2257,7 @@ class _CpanelExploradorArchivosPanelState
                             ),
                           ),
                         Text(
-                          f.esDrive ? 'Google Drive' : 'R2 Cloudflare',
+                          f.esDrive ? 'Google Drive' : 'Nube del centro',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.primary,
                             fontWeight: FontWeight.w500,
@@ -2295,7 +2295,7 @@ class _CpanelExploradorArchivosPanelState
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    f.esDrive ? 'Google Drive' : 'Cloudflare R2',
+                    f.esDrive ? 'Google Drive' : 'Nube del centro',
                     style: TextStyle(
                       fontSize: 12,
                       color: f.esDrive
@@ -2478,7 +2478,7 @@ class _CpanelExploradorArchivosPanelState
         _propiedadFila('Tipo', item.tipo.name.toUpperCase()),
         _propiedadFila('Tamaño', item.tamanoFormateado),
         _propiedadFila('Almacenamiento',
-            item.esDrive ? 'Google Drive (Enlace)' : 'Cloudflare R2 (Directo)'),
+            item.esDrive ? 'Google Drive (Enlace)' : 'Nube del centro (Directo)'),
         _propiedadFila('🏛️ Aula Virtual', item.aulaVirtual),
         _propiedadFila('📚 Materia', item.materia),
         _propiedadFila('Ubicación', item.ruta),
@@ -2503,7 +2503,7 @@ class _CpanelExploradorArchivosPanelState
             FilledButton.icon(
               onPressed: () => _abrirODescargarElemento(item),
               icon: const Icon(Icons.download_rounded, size: 18),
-              label: const Text('Descargar archivo (R2)'),
+              label: const Text('Descargar archivo'),
             ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
@@ -2617,7 +2617,7 @@ class _CpanelExploradorArchivosPanelState
   }
 
   // ---------------------------------------------------------------------------
-  // Barra inferior: Medidor de Cuota Cloudflare R2
+  // Barra inferior: Medidor de Cuota de la Nube
   // ---------------------------------------------------------------------------
 
   Widget _construirBarraCuota(ThemeData theme) {
@@ -2633,7 +2633,7 @@ class _CpanelExploradorArchivosPanelState
       color: IncesTheme.azulPrimario,
     );
     final etiqueta = Text(
-      'Almacenamiento R2:',
+      'Almacenamiento:',
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),

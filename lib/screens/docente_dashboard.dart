@@ -121,8 +121,8 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
     ),
     ItemNavegacion(
       icono: Icons.fact_check_outlined,
-      titulo: 'Asistencia',
-      etiquetaCorta: 'Asistencia',
+      titulo: 'Pasar lista',
+      etiquetaCorta: 'Lista',
       categoria: 'Control de aulas',
       disponible: true,
       modulo: 'm7_asistencia',
@@ -137,8 +137,8 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
     ),
     ItemNavegacion(
       icono: Icons.folder_open_outlined,
-      titulo: 'Material de apoyo',
-      etiquetaCorta: 'Material',
+      titulo: 'Guías y materiales',
+      etiquetaCorta: 'Guías',
       categoria: 'Recursos',
       disponible: true,
       modulo: 'm5_archivos',
@@ -194,25 +194,17 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
       temaActual: tema?.modo,
       onCambiarTema: tema?.cambiar,
       accionesEncabezado: [
+        // **Sólo dos atajos, y ninguno duplica el menú.** Aquí había cuatro
+        // iconos —Mis aulas, Asistencia, Calificaciones, Mi horario— que
+        // repetían lo que ya ofrece el menú lateral, el rail y, en móvil, la
+        // barra inferior de `AndamiajeApp`: cinco destinos compitiendo por el
+        // mismo ancho en una pantalla de 390 px. Se deja el acceso a la
+        // planilla de asistencia —la acción de clase que no puede esperar a
+        // abrir el cajón— y la ayuda, que no es una sección.
         IconButton(
-          tooltip: 'Mis Aulas',
-          icon: const Icon(Icons.class_outlined, size: 20),
-          onPressed: () => conGuardia(() => _navegarA('Mis aulas'), 'nav-Mis aulas'),
-        ),
-        IconButton(
-          tooltip: 'Asistencia QR',
+          tooltip: 'Pasar lista',
           icon: const Icon(Icons.fact_check_outlined, size: 20),
-          onPressed: () => conGuardia(() => _navegarA('Asistencia'), 'nav-Asistencia'),
-        ),
-        IconButton(
-          tooltip: 'Calificaciones',
-          icon: const Icon(Icons.grading_outlined, size: 20),
-          onPressed: () => conGuardia(() => _navegarA('Calificaciones'), 'nav-Calificaciones'),
-        ),
-        IconButton(
-          tooltip: 'Mi Horario',
-          icon: const Icon(Icons.calendar_month_outlined, size: 20),
-          onPressed: () => conGuardia(() => _navegarA('Mi horario'), 'nav-Mi horario'),
+          onPressed: () => conGuardia(() => _navegarA('Pasar lista'), 'nav-Pasar lista'),
         ),
         IconButton(
           tooltip: 'Guía Interactiva Docente',
@@ -280,7 +272,7 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
             onNavegarA: _navegarA,
           );
 
-        case 'Asistencia':
+        case 'Pasar lista':
           return ContenidoSeccion(
             migas: ['Inicio', item.categoria, item.titulo],
             child: const AsistenciaQrPanel(),
@@ -302,13 +294,15 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
             child: MiHorarioPanel(),
           );
 
-        case 'Material de apoyo':
+        case 'Guías y materiales':
           return ContenidoSeccion(
             migas: ['Inicio', item.categoria, item.titulo],
             child: const GestorDocumentalPanel(
               entityType: TipoEntidadArchivo.teacherGuide,
-              subtitulo: 'Sube guías y material para tus estudiantes. Quedarán '
-                  'guardados en el almacenamiento del centro.',
+              subtitulo: 'Sube guías y material para tus estudiantes. Lo que '
+                  'subas aquí lo ven ellos en su sección «Material de apoyo» '
+                  'del panel de aprendiz, y queda guardado en el almacenamiento '
+                  'del centro.',
             ),
           );
 

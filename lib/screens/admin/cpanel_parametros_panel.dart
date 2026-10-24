@@ -89,7 +89,14 @@ class _CpanelParametrosPanelState extends State<CpanelParametrosPanel> {
 
   Widget _construirLista(BuildContext context) {
     if (_parametros.isEmpty) {
-      return const Center(child: Text('No hay parámetros configurados.'));
+      return const PanelVacio(
+        icono: Icons.tune_outlined,
+        titulo: 'No hay parámetros configurados',
+        mensaje: 'Aquí se ajustan los valores del sistema —cupos, fechas y '
+            'límites—. En cuanto el servidor los publique aparecerán en esta '
+            'lista; al guardar un cambio surte efecto al instante, sin '
+            'reiniciar nada.',
+      );
     }
 
     final porCategoria = <String, List<SystemSetting>>{};

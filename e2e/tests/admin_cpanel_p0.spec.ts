@@ -12,7 +12,7 @@ const MODULOS = [
   'Inscripciones y Cupos',
   'Lapsos Académicos',
   'Programas Académicos',
-  'Secciones',
+  'Secciones del Período',
 ] as const;
 
 test.describe.serial('CPanel P0 — carga real de módulos administrativos', () => {

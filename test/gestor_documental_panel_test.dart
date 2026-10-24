@@ -191,7 +191,7 @@ void main() {
         tipo: TipoEntidadArchivo.teacherGuide,
       );
 
-      expect(texto('Material de apoyo'), findsOneWidget);
+      expect(texto('Guías y materiales'), findsOneWidget);
     });
   });
 

@@ -168,7 +168,7 @@ void main() {
       );
 
       expect(tester.takeException(), isNull);
-      expect(find.text('Todavía no hay cambios registrados.'), findsOneWidget);
+      expect(find.text('Todavía no hay cambios registrados'), findsOneWidget);
     });
 
     testWidgets('Auditoría de Accesos', (tester) async {

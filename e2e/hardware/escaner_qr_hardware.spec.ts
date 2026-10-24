@@ -359,7 +359,7 @@ test.describe('Puente de hardware del escáner de QR', () => {
     await login.entrar(ALUMNO, CLAVE_ALUMNO, SENAL_DE_SESION_ALUMNO);
 
     // --- Autenticación → navegación ------------------------------------------
-    await app.pulsar('Asistencia');
+    await app.pulsar('Marcar asistencia');
     await expect
       .poll(async () => await app.cuantos('Marca tu asistencia'), {
         message: 'Se pulsó «Asistencia» pero no apareció el panel del alumno.\n' + (await app.diagnostico()),

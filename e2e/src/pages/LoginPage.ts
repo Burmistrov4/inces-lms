@@ -40,7 +40,7 @@ export const SENAL_DE_SESION = 'Inscripciones y Cupos';
  * que aparece aunque el administrador haya apagado medio cPanel. Es la señal más
  * estable que hay para decir «este alumno ya entró».
  */
-export const SENAL_DE_SESION_ALUMNO = 'Mi Expediente';
+export const SENAL_DE_SESION_ALUMNO = 'Mi inscripción';
 
 export class LoginPage {
   readonly app: FlutterApp;

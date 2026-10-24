@@ -490,7 +490,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
       acciones: [
         if (widget.onNavegarA != null) ...[
           OutlinedButton.icon(
-            onPressed: () => widget.onNavegarA?.call('Horarios de Clases'),
+            onPressed: () => widget.onNavegarA?.call('Cuadrante de Horarios'),
             icon: const Icon(Icons.calendar_month_outlined, size: 16),
             label: const Text('Horarios'),
           ),

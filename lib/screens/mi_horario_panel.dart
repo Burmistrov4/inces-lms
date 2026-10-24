@@ -100,10 +100,10 @@ class _MiHorarioPanelState extends State<MiHorarioPanel> {
             ),
             PasoGuiaContextual(
               numero: 3,
-              titulo: esEstudiante ? 'Aulas virtuales' : 'Asistencia y Calificaciones',
+              titulo: esEstudiante ? 'Aulas virtuales' : 'Pasar lista y Calificaciones',
               descripcion: esEstudiante
                   ? 'Dirígete a «Mis aulas» para entregar tus tareas y consultar materiales de los docentes.'
-                  : 'Desde «Asistencia» y «Calificaciones» puedes generar los códigos QR y asentar las evaluaciones.',
+                  : 'Desde «Pasar lista» y «Calificaciones» puedes generar los códigos QR y asentar las evaluaciones.',
             ),
           ],
         ),

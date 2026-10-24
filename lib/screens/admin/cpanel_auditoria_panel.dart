@@ -83,8 +83,14 @@ class _CpanelAuditoriaPanelState extends State<CpanelAuditoriaPanel> {
           const SizedBox(height: 8),
           Expanded(
             child: _entradas.isEmpty
-                ? const Center(
-                    child: Text('Todavía no hay cambios registrados.'),
+                ? const PanelVacio(
+                    icono: Icons.history_toggle_off_outlined,
+                    titulo: 'Todavía no hay cambios registrados',
+                    mensaje: 'Cada vez que se encienda o apague un módulo, o '
+                        'se ajuste un parámetro del sistema, el cambio quedará '
+                        'aquí con su autor, la fecha y el valor anterior y '
+                        'nuevo. La traza la escribe el propio servidor: no se '
+                        'puede omitir desde la aplicación.',
                   )
                 : RefreshIndicator(
                     onRefresh: _cargar,

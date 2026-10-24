@@ -79,7 +79,7 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
             onInscribirAspirante: () =>
                 widget.onNavegarA?.call('Inscripciones y Cupos'),
             onAsignarClase: () =>
-                widget.onNavegarA?.call('Horarios de Clases'),
+                widget.onNavegarA?.call('Cuadrante de Horarios'),
             onVerAulas: () =>
                 widget.onNavegarA?.call('Espacios y Aulas'),
             onGenerarReporte: () =>
@@ -88,7 +88,7 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
               onVerInscripciones: () =>
                   widget.onNavegarA?.call('Inscripciones y Cupos'),
               onVerHorarios: () =>
-                  widget.onNavegarA?.call('Horarios de Clases'),
+                  widget.onNavegarA?.call('Cuadrante de Horarios'),
               onVerAccesos: () =>
                   widget.onNavegarA?.call('Registro de Inicios de Sesión / Accesos'),
             ),
@@ -356,11 +356,11 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
         tono: TonoEstado.exito,
       ),
       TarjetaMetrica(
-        etiqueta: 'Almacenamiento R2',
-        valor: 'Cloudflare',
+        etiqueta: 'Archivos del Centro',
+        valor: '10 GB',
         icono: Icons.cloud_done_rounded,
         tono: TonoEstado.info,
-        onTap: () => widget.onNavegarA?.call('Cloud CFS'),
+        onTap: () => widget.onNavegarA?.call('Archivos del Centro'),
       ),
     ];
 
@@ -412,10 +412,10 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
         colorIcono: IncesTheme.azulSecundario,
       ),
       _AccionRapidaData(
-        titulo: 'Parámetros Globales',
+        titulo: 'Configuración del Centro',
         descripcion: 'Ajustar configuraciones institucionales y límites.',
         icono: Icons.settings_outlined,
-        seccionDestino: 'Parámetros',
+        seccionDestino: 'Configuración del Centro',
         colorIcono: paleta.neutro,
       ),
     ];

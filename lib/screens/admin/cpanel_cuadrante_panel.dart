@@ -253,7 +253,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
     );
 
     return TituloSeccion(
-      'Horarios de Clases',
+      'Cuadrante de Horarios',
       subtitulo: 'Planificación y distribución semanal de clases por día y bloque. '
           'Toca una clase para editarla o pulsa en cualquier bloque libre para asignar una nueva.',
       acciones: [

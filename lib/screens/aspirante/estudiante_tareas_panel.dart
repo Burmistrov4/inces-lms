@@ -403,7 +403,9 @@ class _EstudianteTareasPanelState extends State<EstudianteTareasPanel> {
     final (titulo, mensaje) = switch (_categoriaSeleccionada) {
       CategoriaTareaEstudiante.asignadas => (
         '¡Estás al día!',
-        'No tienes tareas asignadas pendientes por entregar.'
+        'No tienes tareas pendientes por entregar. Las tareas aparecen aquí '
+            'cuando tu docente las publique en «Mis aulas»; si todavía no '
+            'tienes curso, pide tu cupo en «Inscribirme en un curso».'
       ),
       CategoriaTareaEstudiante.vencidas => (
         '¡Excelente desempeño!',

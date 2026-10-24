@@ -65,7 +65,7 @@ test('1. Flujo Público y Responsive (Landing, Oferta, Móvil, Inscripción, Log
     console.log('[AUDITORÍA ADMIN] Navegando a Horarios de Clases...');
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
-    await login.app.pulsarReal('Horarios de Clases', { tiempoLimiteMs: 15000 });
+    await login.app.pulsarReal('Cuadrante de Horarios', { tiempoLimiteMs: 15000 });
     await page.waitForTimeout(7000);
     await page.screenshot({ path: `${BRAIN_DIR}/audit_08_admin_horarios.png` });
 
@@ -114,7 +114,7 @@ test('1. Flujo Público y Responsive (Landing, Oferta, Móvil, Inscripción, Log
     await page.mouse.move(100, 400);
     await page.mouse.wheel(0, 300);
     await page.waitForTimeout(500);
-    await login.app.pulsarReal('Cloud CFS', { tiempoLimiteMs: 15000 });
+    await login.app.pulsarReal('Archivos del Centro', { tiempoLimiteMs: 15000 });
     await page.waitForTimeout(4000);
     await page.screenshot({ path: `${BRAIN_DIR}/audit_13_admin_archivos.png` });
 

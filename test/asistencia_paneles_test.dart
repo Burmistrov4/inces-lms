@@ -91,7 +91,7 @@ void main() {
     testWidgets('lista las secciones que dicta, una por aula', (tester) async {
       await montarDocente(tester);
 
-      expect(find.text('Toma asistencia'), findsOneWidget);
+      expect(find.text('Pasar lista'), findsOneWidget);
       // La etiqueta la compone `AulaResumen.etiqueta`: materia · sección · programa.
       expect(
         find.text('Soldadura · Sección A · Formación Profesional'),
@@ -164,13 +164,19 @@ void main() {
       await montarDocente(tester);
       await abrirSesion(tester);
 
-      expect(find.text('Aún no hay marcas.'), findsOneWidget);
+      // El tablero vacío enseña qué hacer: quién marcó aparece aquí en cuanto
+      // el estudiante escanea el QR o teclea el código.
+      const vacio = 'Cuando pases lista, aquí verás quién marcó: cada '
+          'estudiante aparecerá en cuanto escanee el QR o teclee el '
+          'código de 6 dígitos.';
+
+      expect(find.text(vacio), findsOneWidget);
 
       fake.empujarMarca(estudianteId: 'Iris Vega');
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('Aún no hay marcas.'), findsNothing);
+      expect(find.text(vacio), findsNothing);
       expect(find.text('Iris Vega'), findsOneWidget);
       // El canal se abrió **una** vez: el panel no se re-suscribe en cada marca.
       expect(

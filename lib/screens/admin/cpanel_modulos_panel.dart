@@ -217,9 +217,13 @@ class _CpanelModulosPanelState extends State<CpanelModulosPanel> {
 
   Widget _construirPanel(BuildContext context) {
     if (_modulos.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(48),
-        child: Center(child: Text('No hay módulos registrados.')),
+      return const PanelVacio(
+        icono: Icons.dashboard_outlined,
+        titulo: 'No hay módulos registrados',
+        mensaje: 'El catálogo de módulos llega desde el servidor. En cuanto '
+            'cargue, desde aquí podrás encender o apagar cada módulo del '
+            'sistema y decidir qué roles lo ven. Si la lista sigue vacía, '
+            'pulsa «Reintentar» para volver a pedir los datos.',
       );
     }
 
