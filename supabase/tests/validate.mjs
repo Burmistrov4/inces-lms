@@ -200,18 +200,23 @@ async function main() {
   // 202609190001) + `m5_max_bytes` y `m5_max_archivos_por_entidad` (M5,
   // 202609210001). El conteo es fijo a propósito: obliga a actualizarlo —y a
   // pensarlo— cuando alguien añade un parámetro.
-  check('hay 11 parámetros sembrados', settings.length === 11, `hay ${settings.length}`);
+  // **Siete, no once.** La migración 202610240001 borró cuatro que no leía
+  // nadie (inscripciones_abiertas, max_faltas_consecutivas, enrollment_lock_days,
+  // r2_presign_ttl_minutos): se pintaban como interruptores y cambiarlos no
+  // cambiaba nada. El conteo sigue siendo fijo a propósito: obliga a pensarlo
+  // cuando alguien añade o quita un parámetro.
+  check('hay 7 parámetros sembrados', settings.length === 7, `hay ${settings.length}`);
   check(
     'modo_mantenimiento es público (la UI necesita leerlo)',
     settings.find((s) => s.clave === 'modo_mantenimiento')?.es_publico === true,
   );
   check(
-    'max_faltas_consecutivas es privado',
-    settings.find((s) => s.clave === 'max_faltas_consecutivas')?.es_publico === false,
+    'cupo_maximo_por_seccion es privado',
+    settings.find((s) => s.clave === 'cupo_maximo_por_seccion')?.es_publico === false,
   );
   check(
     'el tipo declarado es coherente con el valor',
-    settings.find((s) => s.clave === 'inscripciones_abiertas')?.tipo === 'boolean',
+    settings.find((s) => s.clave === 'habilitar_sistema_bids')?.tipo === 'boolean',
   );
 
   // ------------------------------------------------------ 4. cortacircuitos
@@ -256,15 +261,29 @@ async function main() {
     JSON.stringify({ antes: ultimo.valor_anterior?.habilitado, despues: ultimo.valor_nuevo?.habilitado }),
   );
 
-  await db.exec("update public.system_settings set valor = '5'::jsonb where clave = 'max_faltas_consecutivas'");
+  // **Sobre `bid_ttl_horas`, no sobre `max_faltas_consecutivas`.** La migración
+  // 202610240001 borró esa clave por no tener lector; usar un parámetro que sí
+  // existe mantiene la prueba midiendo lo que importa (que el trigger de
+  // auditoría guarde el antes y el después), sin depender de datos muertos.
+  const antesBid = (
+    await db.query(
+      "select (valor #>> '{}')::int as v from public.system_settings where clave = 'bid_ttl_horas'",
+    )
+  ).rows[0]?.v;
+  const despuesBid = (antesBid ?? 24) + 1;
+  await db.exec(
+    `update public.system_settings set valor = '${despuesBid}'::jsonb where clave = 'bid_ttl_horas'`,
+  );
   const auditSetting = (
     await db.query(
-      "select valor_anterior, valor_nuevo from public.config_audit_log where tabla = 'system_settings' and clave = 'max_faltas_consecutivas' order by created_at desc limit 1",
+      "select valor_anterior, valor_nuevo from public.config_audit_log where tabla = 'system_settings' and clave = 'bid_ttl_horas' order by created_at desc limit 1",
     )
   ).rows[0];
   check(
     'un cambio de parámetro también se audita',
-    auditSetting.valor_anterior?.valor === 3 && auditSetting.valor_nuevo?.valor === 5,
+    auditSetting.valor_anterior?.valor === antesBid &&
+      auditSetting.valor_nuevo?.valor === despuesBid,
+    JSON.stringify({ antes: auditSetting.valor_anterior?.valor, despues: auditSetting.valor_nuevo?.valor }),
   );
 
   // ------------------------------------------------------- 6. idempotencia

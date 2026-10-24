@@ -23,13 +23,18 @@ class CpanelParametrosPanel extends StatefulWidget {
   State<CpanelParametrosPanel> createState() => _CpanelParametrosPanelState();
 }
 
-/// Parámetros que **el sistema no lee** todavía.
+/// Parámetros que **el sistema no lee**.
 ///
-/// Medido el 2026-10-23: estas cuatro filas se siembran en la base y el panel las
-/// pinta como interruptores, pero ningún camino del backend las consulta. Un
-/// administrador que las cambia **no cambia nada** y no lo sabe: es la peor
-/// clase de control, el que miente. Se ocultan hasta que exista el código que
-/// las use; la fila sigue en la base (quitarla pide migración).
+/// Medido el 2026-10-23: estas cuatro filas se sembraban en la base y el panel
+/// las pintaba como interruptores, pero ningún camino del backend las consulta.
+/// Un administrador que las cambia **no cambia nada** y no lo sabe: es la peor
+/// clase de control, el que miente.
+///
+/// La migración `202610240001_limpiar_parametros_sin_efecto.sql` **borra las
+/// filas**. Este filtro se queda como red de seguridad: si alguien vuelve a
+/// sembrarlas —o si un entorno no tiene la migración aplicada— el panel no las
+/// muestra igual. Cuesta una línea y evita que la mentira vuelva por la puerta
+/// de atrás.
 const _parametrosSinEfecto = <String>{
   'inscripciones_abiertas',
   'max_faltas_consecutivas',
