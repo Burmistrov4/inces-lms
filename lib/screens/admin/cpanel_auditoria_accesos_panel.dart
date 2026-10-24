@@ -6,6 +6,7 @@ import '../../core/result.dart';
 import '../../models/entrada_acceso.dart';
 import '../../repositories/auditoria_acceso_repository.dart';
 import '../../theme/inces_theme.dart';
+import '../../core/refresco_secciones.dart';
 import '../../widgets/comunes.dart';
 
 /// Auditoría de accesos del cPanel (Módulo 1).
@@ -31,7 +32,8 @@ class CpanelAuditoriaAccesosPanel extends StatefulWidget {
 }
 
 class _CpanelAuditoriaAccesosPanelState
-    extends State<CpanelAuditoriaAccesosPanel> {
+    extends State<CpanelAuditoriaAccesosPanel>
+    with RefrescoAlVolver<CpanelAuditoriaAccesosPanel> {
   late final AuditoriaAccesoRepository _repo =
       widget.repositorio ?? AuditoriaAccesoRepository();
 
@@ -79,6 +81,14 @@ class _CpanelAuditoriaAccesosPanelState
 
   /// `silencioso` evita el indicador de carga en la recarga automática: parpadear
   /// cada 30 s haría ilegible una lista que el administrador está leyendo.
+  @override
+  String get seccion => 'Registro de Inicios de Sesión / Accesos';
+
+  /// Vuelve a pedir los datos sin pantalla de carga. El panel sigue mostrando
+  /// lo que tenia hasta que llega lo nuevo.
+  @override
+  Future<void> refrescarEnSegundoPlano() => _cargar(silencioso: true);
+
   Future<void> _cargar({bool silencioso = false}) async {
     if (!silencioso) {
       setState(() {
@@ -100,6 +110,7 @@ class _CpanelAuditoriaAccesosPanelState
 
     switch (resultado) {
       case Success(value: final pagina):
+        marcarCarga();
         setState(() {
           _cargando = false;
           _error = null;

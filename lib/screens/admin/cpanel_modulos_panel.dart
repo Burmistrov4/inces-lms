@@ -5,6 +5,7 @@ import '../../models/config_audit_entry.dart';
 import '../../models/system_module.dart';
 import '../../repositories/modulo_repository.dart';
 import '../../theme/inces_theme.dart';
+import '../../core/refresco_secciones.dart';
 import '../../widgets/comunes.dart';
 import '../admin_dashboard.dart';
 import '../../widgets/responsivo.dart';
@@ -63,7 +64,8 @@ class CpanelModulosPanel extends StatefulWidget {
   State<CpanelModulosPanel> createState() => _CpanelModulosPanelState();
 }
 
-class _CpanelModulosPanelState extends State<CpanelModulosPanel> {
+class _CpanelModulosPanelState extends State<CpanelModulosPanel>
+    with RefrescoAlVolver<CpanelModulosPanel> {
   late final ModuloRepository _repo = widget.repositorio ?? ModuloRepository();
 
   bool _cargando = true;
@@ -91,11 +93,23 @@ class _CpanelModulosPanelState extends State<CpanelModulosPanel> {
     _cargar();
   }
 
-  Future<void> _cargar() async {
-    setState(() {
-      _cargando = true;
-      _error = null;
-    });
+  @override
+  String get seccion => 'Módulos del Sistema';
+
+  /// Vuelve a pedir los datos sin pantalla de carga. El panel sigue mostrando
+  /// lo que tenia hasta que llega lo nuevo.
+  @override
+  Future<void> refrescarEnSegundoPlano() => _cargar(silencioso: true);
+
+  Future<void> _cargar({bool silencioso = false}) async {
+    // En silencio no se pinta la pantalla de carga: lo que ya se ve se queda
+    // hasta que llegue lo nuevo. Es la mitad del patron stale-while-revalidate.
+    if (!silencioso) {
+      setState(() {
+        _cargando = true;
+        _error = null;
+      });
+    }
 
     // Las dos peticiones viajan juntas: la auditoría no se espera a que terminen
     // los módulos, así que no alarga la carga.
@@ -112,6 +126,7 @@ class _CpanelModulosPanelState extends State<CpanelModulosPanel> {
       _cargando = false;
       switch (resultadoModulos) {
         case Success(value: final modulos):
+          marcarCarga();
           _modulos = modulos;
         case Failure(error: final fallo):
           _error = fallo.message;

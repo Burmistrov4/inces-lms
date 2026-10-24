@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/result.dart';
 import '../../models/config_audit_entry.dart';
 import '../../repositories/modulo_repository.dart';
+import '../../core/refresco_secciones.dart';
 import '../../widgets/comunes.dart';
 
 /// Historial de cambios de configuración.
@@ -21,7 +22,8 @@ class CpanelAuditoriaPanel extends StatefulWidget {
   State<CpanelAuditoriaPanel> createState() => _CpanelAuditoriaPanelState();
 }
 
-class _CpanelAuditoriaPanelState extends State<CpanelAuditoriaPanel> {
+class _CpanelAuditoriaPanelState extends State<CpanelAuditoriaPanel>
+    with RefrescoAlVolver<CpanelAuditoriaPanel> {
   late final ModuloRepository _repo = widget.repositorio ?? ModuloRepository();
 
   bool _cargando = true;
@@ -34,11 +36,23 @@ class _CpanelAuditoriaPanelState extends State<CpanelAuditoriaPanel> {
     _cargar();
   }
 
-  Future<void> _cargar() async {
-    setState(() {
-      _cargando = true;
-      _error = null;
-    });
+  @override
+  String get seccion => 'Historial de Configuración';
+
+  /// Vuelve a pedir los datos sin pantalla de carga. El panel sigue mostrando
+  /// lo que tenia hasta que llega lo nuevo.
+  @override
+  Future<void> refrescarEnSegundoPlano() => _cargar(silencioso: true);
+
+  Future<void> _cargar({bool silencioso = false}) async {
+    // En silencio no se pinta la pantalla de carga: lo que ya se ve se queda
+    // hasta que llegue lo nuevo. Es la mitad del patron stale-while-revalidate.
+    if (!silencioso) {
+      setState(() {
+        _cargando = true;
+        _error = null;
+      });
+    }
 
     final resultado = await _repo.obtenerAuditoria(limite: widget.limite);
     if (!mounted) return;
@@ -47,6 +61,7 @@ class _CpanelAuditoriaPanelState extends State<CpanelAuditoriaPanel> {
       _cargando = false;
       switch (resultado) {
         case Success(value: final entradas):
+          marcarCarga();
           _entradas = entradas;
         case Failure(error: final fallo):
           _error = fallo.message;
