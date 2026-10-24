@@ -9,6 +9,7 @@ import '../../core/gateways/selector_archivos.dart';
 import '../../models/archivo.dart';
 import '../../repositories/archivos_repository.dart';
 import '../../services/selector_archivos_navegador.dart';
+import '../../services/supabase_service.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/guardia_toque.dart';
@@ -284,7 +285,7 @@ class _CpanelExploradorArchivosPanelState
                 tipo: TipoElemento.documento,
                 tamanoBytes: a.tamanoBytes ?? 0,
                 fechaModificacion: DateTime.tryParse(a.creadoEn) ?? DateTime.now(),
-                propietario: 'Administrador Maestro',
+                propietario: _origenDelArchivo(a.entityType),
                 ruta: _rutaTexto,
                 permiso: 'Docentes y Estudiantes',
                 // Sólo lectura: el archivo vive en R2 y su borrado pasa por el
@@ -359,165 +360,49 @@ class _CpanelExploradorArchivosPanelState
   }
 
   void _inicializarDatos() {
-    _elementos = [
-      ElementoArchivo(
-        id: 'c1',
-        nombre: 'Metalmecánica y Soldadura',
-        tipo: TipoElemento.carpeta,
-        tamanoBytes: 0,
-        colorCarpeta: IncesTheme.azulPrimario,
-        fechaModificacion: DateTime.now().subtract(const Duration(days: 2)),
-        propietario: 'Ing. Carlos Mendoza (Docente)',
-        ruta: 'Mi Unidad',
-        permiso: 'Docentes y Estudiantes',
-        actividad: const [
-          EventoActividad(
-            accion: 'Carpeta creada y permisos asignados',
-            tiempo: 'Hace 2 días',
-            usuario: 'Administrador Maestro',
-            icono: Icons.create_new_folder_outlined,
-          ),
-          EventoActividad(
-            accion: 'Se agregaron 4 guías prácticas de soldadura TIG/MIG',
-            tiempo: 'Ayer, 03:20 PM',
-            usuario: 'Ing. Carlos Mendoza',
-            icono: Icons.upload_file_outlined,
-          ),
-        ],
-      ),
-      ElementoArchivo(
-        id: 'c2',
-        nombre: 'Alimentación y Gastronomía',
-        tipo: TipoElemento.carpeta,
-        tamanoBytes: 0,
-        colorCarpeta: IncesTheme.advertencia,
-        fechaModificacion: DateTime.now().subtract(const Duration(days: 4)),
-        propietario: 'Lic. Elena Ramos (Docente)',
-        ruta: 'Mi Unidad',
-        permiso: 'Docentes y Estudiantes',
-        actividad: const [
-          EventoActividad(
-            accion: 'Manual de Manipulación de Alimentos subido',
-            tiempo: 'Hace 4 días',
-            usuario: 'Lic. Elena Ramos',
-            icono: Icons.upload_file_outlined,
-          ),
-        ],
-      ),
-      ElementoArchivo(
-        id: 'c3',
-        nombre: 'Administración y Gestión',
-        tipo: TipoElemento.carpeta,
-        tamanoBytes: 0,
-        colorCarpeta: IncesTheme.carpetaTeal,
-        fechaModificacion: DateTime.now().subtract(const Duration(days: 1)),
-        propietario: 'Coordinación Académica',
-        ruta: 'Mi Unidad',
-        permiso: 'Solo Coordinación',
-        actividad: const [
-          EventoActividad(
-            accion: 'Planillas de control de aforo sincronizadas',
-            tiempo: 'Hoy, 09:15 AM',
-            usuario: 'Coordinación Académica',
-            icono: Icons.sync_rounded,
-          ),
-        ],
-      ),
-      ElementoArchivo(
-        id: 'c4',
-        nombre: 'Guías de Estudio y Normativas 2026',
-        tipo: TipoElemento.carpeta,
-        tamanoBytes: 0,
-        colorCarpeta: IncesTheme.carpetaVioleta,
-        fechaModificacion: DateTime.now().subtract(const Duration(days: 6)),
-        propietario: 'Dirección del Centro',
-        ruta: 'Mi Unidad',
-        permiso: 'Público',
-        actividad: const [
-          EventoActividad(
-            accion: 'Carpeta compartida con toda la comunidad',
-            tiempo: 'Hace 6 días',
-            usuario: 'Dirección del Centro',
-            icono: Icons.share_outlined,
-          ),
-        ],
-      ),
-      // Archivos en raíz
-      ElementoArchivo(
-        id: 'f1',
-        nombre: 'Reglamento_Interno_CFS_Rafael_Urdaneta_2026.pdf',
-        tipo: TipoElemento.documento,
-        tamanoBytes: 2450000, // 2.3 MB
-        fechaModificacion: DateTime.now().subtract(const Duration(days: 3)),
-        propietario: 'Coordinación Legal',
-        ruta: 'Mi Unidad',
-        permiso: 'Público',
-        actividad: const [
-          EventoActividad(
-            accion: 'Documento oficial cargado',
-            tiempo: 'Hace 3 días',
-            usuario: 'Coordinación Legal',
-            icono: Icons.file_upload_outlined,
-          ),
-        ],
-      ),
-      ElementoArchivo(
-        id: 'f2',
-        nombre: 'Calendario_Academico_SA26_2.xlsx',
-        tipo: TipoElemento.hojaCalculo,
-        tamanoBytes: 520000, // 520 KB
-        fechaModificacion: DateTime.now().subtract(const Duration(hours: 5)),
-        propietario: 'Coordinador de Cuadrante',
-        ruta: 'Mi Unidad',
-        permiso: 'Docentes y Estudiantes',
-        actividad: const [
-          EventoActividad(
-            accion: 'Actualización de horarios y turnos vespertinos',
-            tiempo: 'Hoy, 01:40 PM',
-            usuario: 'Coordinador de Cuadrante',
-            icono: Icons.edit_note_rounded,
-          ),
-        ],
-      ),
-      ElementoArchivo(
-        id: 'f3',
-        nombre: 'Presentacion_Induccion_Aprendices_PNA.pptx',
-        tipo: TipoElemento.presentacion,
-        tamanoBytes: 4200000, // 4.0 MB
-        fechaModificacion: DateTime.now().subtract(const Duration(days: 5)),
-        propietario: 'Prof. Mario Alvarado',
-        ruta: 'Mi Unidad',
-        permiso: 'Docentes y Estudiantes',
-        actividad: const [
-          EventoActividad(
-            accion: 'Subido para descarga formativa',
-            tiempo: 'Hace 5 días',
-            usuario: 'Prof. Mario Alvarado',
-            icono: Icons.slideshow_outlined,
-          ),
-        ],
-      ),
-      ElementoArchivo(
-        id: 'f4',
-        nombre: 'Clases_Magistrales_Soldadura_TIG_AWS.drive',
-        tipo: TipoElemento.enlaceDrive,
-        tamanoBytes: 0,
-        esDrive: true,
-        urlDrive: 'https://drive.google.com/drive/folders/inces-soldadura-tig',
-        fechaModificacion: DateTime.now().subtract(const Duration(hours: 12)),
-        propietario: 'Ing. Carlos Mendoza (Docente)',
-        ruta: 'Mi Unidad',
-        permiso: 'Docentes y Estudiantes',
-        actividad: const [
-          EventoActividad(
-            accion: 'Carpeta de Google Drive vinculada (ahorro de espacio)',
-            tiempo: 'Hace 12 horas',
-            usuario: 'Ing. Carlos Mendoza',
-            icono: Icons.add_link_rounded,
-          ),
-        ],
-      ),
-    ];
+    // **Vacío a propósito.** Antes sembraba carpetas y archivos de mentira
+    // —«Ing. Carlos Mendoza (Docente)», «Prof. Mario Alvarado», «Hace 5 días»—
+    // para que el panel no se viera vacío en la demostración. El problema: el
+    // administrador abría «Archivos del Centro» y veía personas y documentos
+    // que no existen. Los archivos reales llegan de `/archivos/mios`; lo que
+    // no hay, no se pinta. Un panel vacío con una frase que lo explica es más
+    // honesto que uno lleno de datos inventados.
+    _elementos = [];
+  }
+
+  /// De donde salio un archivo del servidor, para no inventarle un autor.
+  ///
+  /// El API solo devuelve `propietarioId` (un UUID), no el nombre. Antes se
+  /// pintaba «Administrador Maestro» para todos: un autor falso. Lo que el
+  /// administrador necesita saber no es quien lo subio sino **que es**, y eso si
+  /// lo dice el servidor.
+  static String _origenDelArchivo(TipoEntidadArchivo tipo) => switch (tipo) {
+        TipoEntidadArchivo.taskSubmission => 'Entrega de tarea',
+        TipoEntidadArchivo.teacherGuide => 'Guia del docente',
+        TipoEntidadArchivo.driveFile => 'Documento del centro',
+      };
+
+  /// Quien esta usando la app ahora mismo, para firmar lo que crea.
+  ///
+  /// Antes era la cadena «Administrador Maestro» escrita a mano: si un docente
+  /// entraba al panel, la carpeta seguia diciendo «Administrador Maestro».
+  String get _nombreDelUsuario {
+    final usuario = SupabaseService.instance.client.auth.currentUser;
+    final metadatos = usuario?.userMetadata;
+    final nombre = (metadatos?['nombres'] as String?) ??
+        (metadatos?['full_name'] as String?);
+    if (nombre != null && nombre.trim().isNotEmpty) return nombre.trim();
+    return usuario?.email ?? 'Usuario del sistema';
+  }
+
+  /// Tiempo relativo de verdad. «Hace un momento» escrito a mano mentia a los
+  /// dos dias.
+  static String _cuandoFue(DateTime cuando) {
+    final diferencia = DateTime.now().difference(cuando);
+    if (diferencia.inMinutes < 1) return 'Ahora mismo';
+    if (diferencia.inMinutes < 60) return 'Hace ${diferencia.inMinutes} min';
+    if (diferencia.inHours < 24) return 'Hace ${diferencia.inHours} h';
+    return 'Hace ${diferencia.inDays} dias';
   }
 
   String get _rutaTexto => _rutaActual.join(' > ');
@@ -718,14 +603,14 @@ class _CpanelExploradorArchivosPanelState
                         tamanoBytes: 0,
                         colorCarpeta: colorElegido,
                         fechaModificacion: DateTime.now(),
-                        propietario: 'Administrador Maestro',
+                        propietario: _nombreDelUsuario,
                         ruta: _rutaTexto,
                         permiso: 'Docentes y Estudiantes',
                         actividad: [
                           EventoActividad(
                             accion: 'Carpeta creada',
-                            tiempo: 'Hace un momento',
-                            usuario: 'Administrador Maestro',
+                            tiempo: _cuandoFue(DateTime.now()),
+                            usuario: _nombreDelUsuario,
                             icono: Icons.create_new_folder_outlined,
                           ),
                         ],
@@ -818,14 +703,14 @@ class _CpanelExploradorArchivosPanelState
                     esDrive: true,
                     urlDrive: urlLimpia,
                     fechaModificacion: DateTime.now(),
-                    propietario: 'Administrador Maestro',
+                    propietario: _nombreDelUsuario,
                     ruta: _rutaTexto,
                     permiso: 'Docentes y Estudiantes',
                     actividad: [
                       EventoActividad(
                         accion: 'Recurso de Google Drive vinculado al centro',
-                        tiempo: 'Hace un momento',
-                        usuario: 'Administrador Maestro',
+                        tiempo: _cuandoFue(DateTime.now()),
+                        usuario: _nombreDelUsuario,
                         icono: Icons.add_link_rounded,
                       ),
                     ],
@@ -924,7 +809,7 @@ class _CpanelExploradorArchivosPanelState
               tipo: TipoElemento.documento,
               tamanoBytes: archivo.tamanoBytes ?? bytes,
               fechaModificacion: DateTime.now(),
-              propietario: 'Administrador Maestro',
+              propietario: _nombreDelUsuario,
               ruta: _rutaTexto,
               permiso: 'Docentes y Estudiantes',
               esRemoto: true,
@@ -934,8 +819,8 @@ class _CpanelExploradorArchivosPanelState
               actividad: [
                 EventoActividad(
                   accion: 'Documento subido y confirmado',
-                  tiempo: 'Hace un momento',
-                  usuario: 'Administrador Maestro',
+                  tiempo: _cuandoFue(DateTime.now()),
+                  usuario: _nombreDelUsuario,
                   icono: Icons.cloud_upload_outlined,
                 ),
               ],
@@ -1040,8 +925,8 @@ class _CpanelExploradorArchivosPanelState
                     0,
                     EventoActividad(
                       accion: 'Nombre cambiado a «$nuevo»',
-                      tiempo: 'Hace un momento',
-                      usuario: 'Administrador Maestro',
+                      tiempo: _cuandoFue(DateTime.now()),
+                      usuario: _nombreDelUsuario,
                       icono: Icons.drive_file_rename_outline,
                     ),
                   );
@@ -1465,8 +1350,8 @@ class _CpanelExploradorArchivosPanelState
                   item.actividad = [
                     EventoActividad(
                       accion: 'Asignado a $aulaSeleccionada ($permisoSeleccionado)',
-                      tiempo: 'Hace un momento',
-                      usuario: 'Administrador Maestro',
+                      tiempo: _cuandoFue(DateTime.now()),
+                      usuario: _nombreDelUsuario,
                       icono: Icons.school_outlined,
                     ),
                     ...item.actividad,
@@ -1617,7 +1502,11 @@ class _CpanelExploradorArchivosPanelState
                 ),
                 if (!esCompacto(context))
                   Text(
-                    'Archivos · la nube del centro (10 GB) · Google Drive',
+                    // **Corto a proposito.** Medido el 2026-10-24 a 840 px:
+                    // «Archivos · la nube del centro (10 GB) · Google Drive» no
+                    // cabia y salia «(10 ...». Lo que el admin necesita saber es
+                    // de que va la pantalla, y eso cabe en cinco palabras.
+                    'Archivos del centro',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelSmall?.copyWith(

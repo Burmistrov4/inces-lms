@@ -23,6 +23,20 @@ class CpanelParametrosPanel extends StatefulWidget {
   State<CpanelParametrosPanel> createState() => _CpanelParametrosPanelState();
 }
 
+/// Parámetros que **el sistema no lee** todavía.
+///
+/// Medido el 2026-10-23: estas cuatro filas se siembran en la base y el panel las
+/// pinta como interruptores, pero ningún camino del backend las consulta. Un
+/// administrador que las cambia **no cambia nada** y no lo sabe: es la peor
+/// clase de control, el que miente. Se ocultan hasta que exista el código que
+/// las use; la fila sigue en la base (quitarla pide migración).
+const _parametrosSinEfecto = <String>{
+  'inscripciones_abiertas',
+  'max_faltas_consecutivas',
+  'enrollment_lock_days',
+  'r2_presign_ttl_minutos',
+};
+
 class _CpanelParametrosPanelState extends State<CpanelParametrosPanel> {
   late final ModuloRepository _repo = widget.repositorio ?? ModuloRepository();
 
@@ -49,7 +63,9 @@ class _CpanelParametrosPanelState extends State<CpanelParametrosPanel> {
       _cargando = false;
       switch (resultado) {
         case Success(value: final parametros):
-          _parametros = parametros;
+          _parametros = parametros
+              .where((p) => !_parametrosSinEfecto.contains(p.clave))
+              .toList();
         case Failure(error: final fallo):
           _error = fallo.message;
       }

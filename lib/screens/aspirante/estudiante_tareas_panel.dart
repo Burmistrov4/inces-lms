@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/gateways/aula_gateway.dart';
 import '../../core/result.dart';
+import '../../models/archivo.dart';
+import '../gestor_documental_panel.dart';
 import '../../theme/inces_theme.dart';
 import '../../theme/temas_formacion.dart';
 import '../../widgets/comunes.dart';
@@ -533,18 +535,59 @@ class _EstudianteTareasPanelState extends State<EstudianteTareasPanel> {
                     texto: 'Vence: ${formatearFechaHora(fecha)}',
                   ),
                 const Spacer(),
-                if (widget.onNavegarA != null)
+                // **Entregar aquí mismo.** Medido el 2026-10-23: entregar una
+                // tarea costaba cinco clics —Mis tareas → Abrir en Aula → el
+                // aula → la tarea → Entregar— y el botón ni siquiera abría la
+                // tarea: navegaba a «Mis aulas». Con esto son dos.
+                FilledButton.tonalIcon(
+                  onPressed: () => _entregarTarea(context, item),
+                  icon: const Icon(Icons.upload_file_rounded, size: 16),
+                  label: Text(
+                    item.entrega == null ? 'Entregar' : 'Ver entrega',
+                  ),
+                ),
+                if (widget.onNavegarA != null) ...[
+                  const SizedBox(width: 4),
                   TextButton.icon(
                     onPressed: () => widget.onNavegarA!('Mis aulas'),
                     icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                    label: const Text('Abrir en Aula'),
+                    label: const Text('Ir al aula'),
                   ),
+                ],
               ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// Abre la entrega de esta tarea sin salir de «Mis tareas».
+  ///
+  /// Usa el mismo gestor que el aula —`TASK_SUBMISSION` con el id de la tarea—
+  /// así que la entrega queda atada a la tarea igual que si se hubiera hecho
+  /// desde dentro del aula. No es un camino paralelo: es el mismo.
+  Future<void> _entregarTarea(BuildContext context, ItemTareaEstudiante item) async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640, maxHeight: 640),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: GestorDocumentalPanel(
+              entityType: TipoEntidadArchivo.taskSubmission,
+              entidadId: item.tarea.id,
+              titulo: item.tarea.titulo,
+              subtitulo: 'Entrega de la tarea',
+            ),
+          ),
+        ),
+      ),
+    );
+    if (!mounted) return;
+    // La tarjeta muestra si hay entrega: hay que releer para que se vea.
+    await _cargar();
   }
 
   Widget _construirInsigniaEstado(

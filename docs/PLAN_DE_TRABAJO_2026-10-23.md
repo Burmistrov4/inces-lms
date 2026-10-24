@@ -114,14 +114,47 @@ que no hacen lo que prometen.
 - Estados vacíos que **enseñan qué hacer**, no sólo que no hay datos.
 - La matriz E2E actualizada a los nombres nuevos (navega por título).
 
-**Lo que queda de esta fase** (segunda tanda, cuando Lorenzo quiera):
-- Ocultar tras «Avanzado» cuatro parámetros que **nadie lee** en el backend
-  (`inscripciones_abiertas`, `max_faltas_consecutivas`, `enrollment_lock_days`,
-  `r2_presign_ttl_minutos`).
-- Unificar «Archivos del Centro» con el Gestor Documental real (hoy son dos
-  sitios para lo mismo; las carpetas del explorador viven sólo en el navegador).
-- Reducir los 5 clics de «entregar una tarea» (la tarea se ve en «Mis tareas»
-  pero sólo se entrega desde el aula).
+#### Segunda tanda — **CERRADA**
+
+**1. Se quitó la mentira del explorador de archivos.** `_inicializarDatos()`
+sembraba carpetas y documentos inventados —«Ing. Carlos Mendoza (Docente)»,
+«Prof. Mario Alvarado», «Hace 5 días»— para que el panel no se viera vacío en la
+demostración. El administrador abría «Archivos del Centro» y veía **personas y
+documentos que no existen**. Ahora arranca vacío: lo real llega de
+`/archivos/mios` y lo que no hay, no se pinta. **151 líneas de datos falsos
+fuera.**
+
+**2. Autor y fecha reales.** El `propietario` estaba escrito a mano
+(«Administrador Maestro») incluso en los archivos que vienen del servidor, y el
+tiempo era siempre «Hace un momento». Ahora:
+- Los archivos del servidor muestran **de dónde vienen** (Entrega de tarea / Guía
+  del docente / Documento del centro), que es lo que el admin necesita saber y es
+  lo único que el API puede afirmar sin inventar (sólo devuelve `propietarioId`).
+- Lo que crea el usuario va firmado con **su** nombre, no con uno fijo.
+- El tiempo es relativo de verdad (`Ahora mismo` / `Hace N min` / `Hace N h`).
+
+**3. Cuatro parámetros que mentían, ocultos.** `inscripciones_abiertas`,
+`max_faltas_consecutivas`, `enrollment_lock_days` y `r2_presign_ttl_minutos` se
+pintaban como interruptores pero **ningún camino del backend los lee**: el
+administrador los cambiaba y no pasaba nada. Ocultos hasta que exista el código
+que los use. **Un control que no hace nada es peor que no tenerlo**, porque el
+usuario cree que configuró algo.
+
+**4. Entregar una tarea: de 5 clics a 2.** «Mis tareas» mostraba la tarea pero el
+botón decía «Abrir en Aula» y **ni siquiera abría la tarea**: navegaba a la
+sección «Mis aulas», desde donde había que buscar el aula, entrar, buscar la
+tarea y pulsar Entregar. Ahora cada tarjeta tiene **«Entregar»** y abre el mismo
+gestor que usa el aula (`TASK_SUBMISSION` con el id de la tarea), así que la
+entrega queda atada a la tarea exactamente igual. No es un camino paralelo: es el
+mismo, con un clic menos de por medio.
+
+**Lo que queda** (no es UI, es arquitectura):
+- Las **carpetas** del explorador siguen viviendo en `SharedPreferences` (sólo
+  ese navegador). Ya no se presentan como datos del centro, pero para que sean
+  reales hace falta tabla + endpoints. Decisión pendiente: ¿se quedan como
+  organización local o se hacen de servidor?
+- Las filas de los 4 parámetros muertos siguen en la base; borrarlas pide
+  migración.
 
 ### Fase D — Producto: multi-nube con Google Drive (F1 → F2 → F3) — **LA QUE SIGUE**
 
