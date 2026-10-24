@@ -1,6 +1,7 @@
-# Decisión pendiente: el modelo de carpetas
+# Decisión tomada: el modelo de carpetas
 
 **Fecha:** 2026-10-24 · **Autor:** Aria · **Para:** Lorenzo Roca
+**Estado:** **DECIDIDA — Opción A, e implementada el mismo día.**
 
 ---
 
@@ -113,3 +114,32 @@ siguen siendo locales**, y eso hoy no se anuncia en la interfaz.
 
 **Decisión que necesito:** ¿A o B? Con A avanzo en una sesión; con B necesito
 además que definas qué pasa al borrar una carpeta con archivos dentro.
+
+
+---
+
+# Resuelto: Opción A implementada
+
+Lorenzo eligió **A** («alineado con Classroom»). Lo que se hizo:
+
+| Cambio | Antes | Ahora |
+|---|---|---|
+| Persistencia | `SharedPreferences` (sólo ese navegador) | **ninguna**: los archivos vienen del servidor |
+| Carpetas | árbol con ruta, crear, abrir, ZIP | **quitadas** |
+| Organización | carpeta + tipo | **tipo** (entrega / guía / documento) + búsqueda |
+| Estado vacío | «Esta carpeta está vacía» | «Todavía no hay archivos» + qué hacer |
+| Tamaño del panel | 2 630 líneas | **2 247** (−383) |
+| `SharedPreferences` en el panel | 5 puntos | **0** |
+
+**Lo que se conserva:** subir documento, vincular enlace de Drive, buscar,
+descargar, renombrar, eliminar, asignar a aula virtual, la barra de cuota real y
+el diálogo de política de subida.
+
+**Lo que se pierde a propósito:** crear carpetas, navegar por ellas y descargar
+una carpeta en ZIP. Se puede volver a tener con la Opción B si el centro lo pide,
+pero entonces se hará sobre el eje nuevo ya limpio.
+
+**Nota técnica:** el campo `ruta` del modelo se conserva como opcional
+(`'Mi Unidad'`) para no romper los mapas ya guardados; ya no lo lee nadie. El
+tipo `TipoElemento.carpeta` sigue en el enum por la misma razón, pero el panel
+nunca produce elementos de ese tipo.

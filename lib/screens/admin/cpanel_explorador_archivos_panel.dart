@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/gateways/selector_archivos.dart';
 import '../../models/archivo.dart';
@@ -50,7 +49,11 @@ class ElementoArchivo {
     required this.tamanoBytes,
     required this.fechaModificacion,
     required this.propietario,
-    required this.ruta,
+    // **Opcional desde la Fase E.** El panel ya no navega por carpetas (Opción A
+    // de docs/DECISION_CARPETAS_2026-10-24.md), asi que la ruta dejo de ser un
+    // dato: se conserva el campo para no romper los mapas guardados y porque el
+    // modelo lo usan tambien las tarjetas de detalle.
+    this.ruta = 'Mi Unidad',
     this.colorCarpeta,
     this.esDrive = false,
     this.urlDrive,
@@ -221,7 +224,6 @@ class _CpanelExploradorArchivosPanelState
   bool _buscando = false;
 
   /// Pila de navegación para las migas de pan (Breadcrumbs).
-  final List<String> _rutaActual = ['Mi Unidad'];
 
   ElementoArchivo? _seleccionado;
 
@@ -237,7 +239,6 @@ class _CpanelExploradorArchivosPanelState
       _elementos.fold<int>(0, (suma, e) => suma + e.tamanoBytes) /
       (1024 * 1024 * 1024);
 
-  static const String _prefArchivosKey = 'inces_gestor_archivos_elementos_v2';
 
   /// Catálogo de archivos y carpetas del centro.
   late List<ElementoArchivo> _elementos;
@@ -246,7 +247,6 @@ class _CpanelExploradorArchivosPanelState
   void initState() {
     super.initState();
     _inicializarDatos();
-    _cargarArchivosPersistidos();
     _hidratarDesdeServidor();
     _busquedaController.addListener(() {
       setState(() {
@@ -286,7 +286,7 @@ class _CpanelExploradorArchivosPanelState
                 tamanoBytes: a.tamanoBytes ?? 0,
                 fechaModificacion: DateTime.tryParse(a.creadoEn) ?? DateTime.now(),
                 propietario: _origenDelArchivo(a.entityType),
-                ruta: _rutaTexto,
+                ruta: 'Mi Unidad',
                 permiso: 'Docentes y Estudiantes',
                 // Sólo lectura: el archivo vive en R2 y su borrado pasa por el
                 // backend, no por esta lista.
@@ -312,46 +312,6 @@ class _CpanelExploradorArchivosPanelState
     );
   }
 
-  Future<void> _cargarArchivosPersistidos() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final guardado = prefs.getString(_prefArchivosKey);
-      if (guardado != null && guardado.isNotEmpty) {
-        final List<dynamic> decodificado =
-            jsonDecode(guardado) as List<dynamic>;
-        final listaCargada = decodificado
-            .map((item) =>
-                ElementoArchivo.fromMap(item as Map<String, dynamic>))
-            .toList();
-        if (listaCargada.isNotEmpty && mounted) {
-          setState(() {
-            final idsExistentes = <String>{};
-            final combinados = <ElementoArchivo>[];
-            for (final el in listaCargada) {
-              if (idsExistentes.add(el.id)) {
-                combinados.add(el);
-              }
-            }
-            for (final el in _elementos) {
-              if (idsExistentes.add(el.id)) {
-                combinados.add(el);
-              }
-            }
-            _elementos = combinados;
-          });
-        }
-      }
-    } catch (_) {}
-  }
-
-  Future<void> _guardarArchivosPersistidos() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final codificado =
-          jsonEncode(_elementos.map((e) => e.toMap()).toList());
-      await prefs.setString(_prefArchivosKey, codificado);
-    } catch (_) {}
-  }
 
   @override
   void dispose() {
@@ -405,38 +365,21 @@ class _CpanelExploradorArchivosPanelState
     return 'Hace ${diferencia.inDays} dias';
   }
 
-  String get _rutaTexto => _rutaActual.join(' > ');
 
   List<ElementoArchivo> get _elementosFiltrados {
-    return _elementos.where((item) {
-      final coincideRuta = item.ruta == _rutaTexto;
-      if (_filtroBusqueda.isEmpty) return coincideRuta;
-      return coincideRuta &&
-          item.nombre.toLowerCase().contains(_filtroBusqueda);
-    }).toList();
+    if (_filtroBusqueda.isEmpty) return _elementos;
+    return _elementos
+        .where((item) => item.nombre.toLowerCase().contains(_filtroBusqueda))
+        .toList();
   }
 
-  List<ElementoArchivo> get _carpetasVisibles =>
-      _elementosFiltrados.where((e) => e.esCarpeta).toList();
+  /// **Siempre vacía.** La Opción A (docs/DECISION_CARPETAS_2026-10-24.md) quitó
+  /// las carpetas: el eje de organización es el tipo de archivo, que ya viene del
+  /// servidor. La lista se queda para no reescribir el layout, que ya sabe pintar
+  /// una pantalla sin carpetas.
+  List<ElementoArchivo> get _carpetasVisibles => const [];
 
-  List<ElementoArchivo> get _archivosVisibles =>
-      _elementosFiltrados.where((e) => !e.esCarpeta).toList();
-
-  void _abrirCarpeta(ElementoArchivo carpeta) {
-    setState(() {
-      _rutaActual.add(carpeta.nombre);
-      _seleccionado = null;
-    });
-  }
-
-  void _navegarARuta(int indice) {
-    setState(() {
-      while (_rutaActual.length > indice + 1) {
-        _rutaActual.removeLast();
-      }
-      _seleccionado = null;
-    });
-  }
+  List<ElementoArchivo> get _archivosVisibles => _elementosFiltrados;
 
   // ---------------------------------------------------------------------------
   // Acciones y diálogos
@@ -508,126 +451,6 @@ class _CpanelExploradorArchivosPanelState
     );
   }
 
-  void _crearCarpetaDialogo() {
-    final controller = TextEditingController();
-    Color colorElegido = IncesTheme.azulPrimario;
-
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (contextoModal, setModalState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
-            ),
-            title: const Text('Nueva carpeta'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: controller,
-                  autofocus: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre de la carpeta',
-                    hintText: 'ej. Guías de Soldadura TIG',
-                    prefixIcon: Icon(Icons.folder_outlined),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                const Text('Color de la carpeta:',
-                    style:
-                        TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    IncesTheme.azulPrimario,
-                    IncesTheme.advertencia,
-                    IncesTheme.exito,
-                    IncesTheme.rojoInces,
-                    IncesTheme.carpetaVioleta,
-                    IncesTheme.carpetaTeal,
-                    IncesTheme.carpetaNaranja,
-                    IncesTheme.carpetaPizarra,
-                  ].map((color) {
-                    final seleccionada = color == colorElegido;
-                    return InkWell(
-                      onTap: () => setModalState(() => colorElegido = color),
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: seleccionada ? Colors.white : Colors.transparent,
-                            width: 2.5,
-                          ),
-                          boxShadow: seleccionada
-                              ? [
-                                  BoxShadow(
-                                    color: color.withValues(alpha: 0.6),
-                                    blurRadius: 6,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: seleccionada
-                            ? const Icon(Icons.check, size: 16, color: Colors.white)
-                            : null,
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  final nombre = controller.text.trim();
-                  if (nombre.isEmpty) return;
-                  setState(() {
-                    _elementos.insert(
-                      0,
-                      ElementoArchivo(
-                        id: 'c_${DateTime.now().millisecondsSinceEpoch}',
-                        nombre: nombre,
-                        tipo: TipoElemento.carpeta,
-                        tamanoBytes: 0,
-                        colorCarpeta: colorElegido,
-                        fechaModificacion: DateTime.now(),
-                        propietario: _nombreDelUsuario,
-                        ruta: _rutaTexto,
-                        permiso: 'Docentes y Estudiantes',
-                        actividad: [
-                          EventoActividad(
-                            accion: 'Carpeta creada',
-                            tiempo: _cuandoFue(DateTime.now()),
-                            usuario: _nombreDelUsuario,
-                            icono: Icons.create_new_folder_outlined,
-                          ),
-                        ],
-                      ),
-                    );
-                  });
-                  _guardarArchivosPersistidos();
-                  Navigator.of(ctx).pop();
-                },
-                child: const Text('Crear'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
 
   void _vincularDriveDialogo() {
     final nombreCtrl = TextEditingController();
@@ -704,7 +527,7 @@ class _CpanelExploradorArchivosPanelState
                     urlDrive: urlLimpia,
                     fechaModificacion: DateTime.now(),
                     propietario: _nombreDelUsuario,
-                    ruta: _rutaTexto,
+                    ruta: 'Mi Unidad',
                     permiso: 'Docentes y Estudiantes',
                     actividad: [
                       EventoActividad(
@@ -717,7 +540,6 @@ class _CpanelExploradorArchivosPanelState
                   ),
                 );
               });
-              _guardarArchivosPersistidos();
               Navigator.of(ctx).pop();
             },
             icon: const Icon(Icons.link_rounded, size: 18),
@@ -810,7 +632,7 @@ class _CpanelExploradorArchivosPanelState
               tamanoBytes: archivo.tamanoBytes ?? bytes,
               fechaModificacion: DateTime.now(),
               propietario: _nombreDelUsuario,
-              ruta: _rutaTexto,
+              ruta: 'Mi Unidad',
               permiso: 'Docentes y Estudiantes',
               esRemoto: true,
               estadoRemoto: archivo.estado == EstadoArchivo.confirmed
@@ -827,7 +649,6 @@ class _CpanelExploradorArchivosPanelState
             ),
           );
         });
-        _guardarArchivosPersistidos();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -931,7 +752,6 @@ class _CpanelExploradorArchivosPanelState
                     ),
                   );
                 });
-                _guardarArchivosPersistidos();
               }
               Navigator.of(ctx).pop();
             },
@@ -962,7 +782,6 @@ class _CpanelExploradorArchivosPanelState
                 _elementos.remove(item);
                 if (_seleccionado == item) _seleccionado = null;
               });
-              _guardarArchivosPersistidos();
               Navigator.of(ctx).pop();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('«${item.nombre}» eliminado.')),
@@ -975,24 +794,6 @@ class _CpanelExploradorArchivosPanelState
     );
   }
 
-  void _descargarZipCarpeta(ElementoArchivo carpeta) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.archive_outlined, color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Generando archivo ZIP de «${carpeta.nombre}»...',
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: IncesTheme.azulPrimario,
-      ),
-    );
-  }
 
   Future<void> _abrirODescargarElemento(ElementoArchivo item) async {
     final selector = SelectorDeArchivosDelNavegador();
@@ -1357,7 +1158,6 @@ class _CpanelExploradorArchivosPanelState
                     ...item.actividad,
                   ];
                 });
-                _guardarArchivosPersistidos();
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -1396,7 +1196,7 @@ class _CpanelExploradorArchivosPanelState
                 Expanded(
                   child: Column(
                     children: [
-                      _construirBarraRuta(theme),
+
                       const Divider(height: 1),
                       _bannerEstadoSubida(theme),
                       Expanded(child: _construirContenidoPrincipal(theme)),
@@ -1531,7 +1331,6 @@ class _CpanelExploradorArchivosPanelState
           PopupMenuButton<String>(
             tooltip: 'Crear o subir',
             onSelected: (val) {
-              if (val == 'carpeta') _crearCarpetaDialogo();
               // Guardia anti rebote: dos pulsaciones rapidas lanzarian dos
               // subidas del mismo archivo.
               if (val == 'archivo') {
@@ -1541,16 +1340,6 @@ class _CpanelExploradorArchivosPanelState
               if (val == 'politica') _mostrarPoliticaSubida();
             },
             itemBuilder: (ctx) => [
-              const PopupMenuItem(
-                value: 'carpeta',
-                child: Row(
-                  children: [
-                    Icon(Icons.create_new_folder_outlined, size: 18),
-                    SizedBox(width: 10),
-                    Text('Nueva carpeta'),
-                  ],
-                ),
-              ),
               const PopupMenuItem(
                 value: 'archivo',
                 child: Row(
@@ -1665,42 +1454,6 @@ class _CpanelExploradorArchivosPanelState
     );
   }
 
-  Widget _construirBarraRuta(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-      child: Row(
-        children: [
-          const Icon(Icons.home_outlined, size: 16),
-          const SizedBox(width: 6),
-          for (var i = 0; i < _rutaActual.length; i++) ...[
-            if (i > 0)
-              const Icon(Icons.chevron_right_rounded, size: 16, color: Colors.grey),
-            InkWell(
-              onTap: () => _navegarARuta(i),
-              borderRadius: BorderRadius.circular(4),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                child: Text(
-                  _rutaActual[i],
-                  style: GoogleFonts.inter(
-                    fontSize: 12.5,
-                    fontWeight: i == _rutaActual.length - 1
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                    color: i == _rutaActual.length - 1
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
   Widget _construirContenidoPrincipal(ThemeData theme) {
     final carpetas = _carpetasVisibles;
     final archivos = _archivosVisibles;
@@ -1731,18 +1484,9 @@ class _CpanelExploradorArchivosPanelState
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.create_new_folder_outlined),
-              title: const Text('Nueva carpeta'),
-              subtitle: Text('Se crea en «$_rutaTexto»'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _crearCarpetaDialogo();
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.upload_file_outlined),
               title: const Text('Subir documento'),
-              subtitle: Text('Se guarda en «$_rutaTexto»'),
+              subtitle: const Text('Se guarda en la nube del centro'),
               onTap: () {
                 Navigator.pop(ctx);
                 conGuardia(
@@ -1788,14 +1532,16 @@ class _CpanelExploradorArchivosPanelState
                 color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
             const SizedBox(height: 12),
             Text(
-              'Esta carpeta está vacía',
+              'Todavía no hay archivos',
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 6),
             Text(
-              'Usa el botón «Nuevo» para crear carpetas o subir documentos a la nube del centro.',
+              'Sube un documento con el botón de arriba. Aquí verás todo lo del '
+              'centro: las guías que suban los docentes, las entregas de los '
+              'estudiantes y los documentos sueltos.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -1840,7 +1586,7 @@ class _CpanelExploradorArchivosPanelState
                     Text(
                       '• Documentos y Pensum (< 25 MB): Se almacenan directamente en la nube del centro con descargas de alta velocidad.\n'
                       '• Videos y Clases Grabadas (> 25 MB): Se enlazan vía Google Drive sin consumir la cuota de 10 GB del centro.\n'
-                      '• Asignación a Aulas: Puedes vincular cualquier archivo o carpeta a un aula o taller (ej. Soldadura Básica) para que sus docentes y aprendices lo tengan a mano.',
+                      '• Asignación a Aulas: Puedes vincular cualquier archivo a un aula o taller (ej. Soldadura Básica) para que sus docentes y aprendices lo tengan a mano.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                         height: 1.35,
@@ -1858,14 +1604,6 @@ class _CpanelExploradorArchivosPanelState
             ],
           ),
         ),
-        if (carpetas.isNotEmpty) ...[
-          Text('Carpetas', style: theme.textTheme.titleSmall),
-          const SizedBox(height: 10),
-          _vistaCuadricula
-              ? _rejillaCarpetas(carpetas, theme)
-              : _listaCarpetas(carpetas, theme),
-          const SizedBox(height: 24),
-        ],
         if (archivos.isNotEmpty) ...[
           Text('Archivos y Enlaces', style: theme.textTheme.titleSmall),
           const SizedBox(height: 10),
@@ -1877,120 +1615,7 @@ class _CpanelExploradorArchivosPanelState
     );
   }
 
-  Widget _rejillaCarpetas(List<ElementoArchivo> carpetas, ThemeData theme) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: carpetas.map((c) {
-        final seleccionada = _seleccionado == c;
-        final colorCarpeta = c.colorCarpeta ?? IncesTheme.azulPrimario;
 
-        return SizedBox(
-          width: 220,
-          child: Card(
-            elevation: seleccionada ? 2 : 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: seleccionada
-                    ? IncesTheme.azulPrimario
-                    : theme.colorScheme.outline.withValues(alpha: 0.6),
-                width: seleccionada ? 1.8 : 1,
-              ),
-            ),
-            child: InkWell(
-              onTap: () => setState(() => _seleccionado = c),
-              onDoubleTap: () => _abrirCarpeta(c),
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    Icon(Icons.folder_rounded, color: colorCarpeta, size: 28),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        c.nombre,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert, size: 18),
-                      padding: EdgeInsets.zero,
-                      onSelected: (val) {
-                        if (val == 'abrir') _abrirCarpeta(c);
-                        if (val == 'zip') _descargarZipCarpeta(c);
-                        if (val == 'renombrar') _renombrarElemento(c);
-                        if (val == 'eliminar') _eliminarElemento(c);
-                      },
-                      itemBuilder: (ctx) => [
-                        const PopupMenuItem(
-                          value: 'abrir',
-                          child: Text('Abrir'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'zip',
-                          child: Text('Descargar carpeta (.ZIP)'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'renombrar',
-                          child: Text('Cambiar nombre'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'eliminar',
-                          child: Text('Eliminar'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _listaCarpetas(List<ElementoArchivo> carpetas, ThemeData theme) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: carpetas.map((c) {
-          final seleccionada = _seleccionado == c;
-          return ListTile(
-            dense: true,
-            selected: seleccionada,
-            leading: Icon(Icons.folder_rounded,
-                color: c.colorCarpeta ?? IncesTheme.azulPrimario),
-            title: Text(c.nombre,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text(c.permiso),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.folder_open, size: 18),
-                  tooltip: 'Abrir',
-                  onPressed: () => _abrirCarpeta(c),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.archive_outlined, size: 18),
-                  tooltip: 'Descargar ZIP',
-                  onPressed: () => _descargarZipCarpeta(c),
-                ),
-              ],
-            ),
-            onTap: () => setState(() => _seleccionado = c),
-          );
-        }).toList(),
-      ),
-    );
-  }
 
   Widget _rejillaArchivos(List<ElementoArchivo> archivos, ThemeData theme) {
     return Wrap(
@@ -2401,12 +2026,6 @@ class _CpanelExploradorArchivosPanelState
             label: const Text('Asignar a Aula Virtual'),
           ),
         ] else ...[
-          FilledButton.tonalIcon(
-            onPressed: () => _descargarZipCarpeta(item),
-            icon: const Icon(Icons.archive_outlined, size: 18),
-            label: const Text('Descargar carpeta en ZIP'),
-          ),
-          const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: () => _vincularAulaVirtual(item),
             icon: const Icon(Icons.school_outlined, size: 17),
