@@ -192,6 +192,34 @@ test.describe.configure({ mode: 'serial' });
 
 test.beforeAll(() => {
   fs.mkdirSync(DIR, { recursive: true });
+  // **Se limpian las capturas de secciones que ya no existen.** Medido el
+  // 2026-10-23: al renombrar secciones (Fase E) quedaron las viejas
+  // —`cloud-cfs__*` junto a `archivos-del-centro__*`— y la galería contaba 252
+  // en vez de 186. Una captura huérfana no es sólo ruido: parece una pantalla
+  // que ya no existe.
+  //
+  // **Best-effort a propósito.** Si el entorno bloquea el borrado (el sandbox lo
+  // hace por encima de 50 archivos), la corrida **sigue**: una captura de más es
+  // ruido, no un fallo de la aplicación, y una matriz que se cae por limpiar es
+  // peor que una matriz con una foto vieja.
+  const vigentes = new Set(
+    [...SECCIONES_ADMIN, ...SECCIONES_DOCENTE, ...SECCIONES_ALUMNO, 'login', 'inscripcion']
+      .map((t) => slug(t)),
+  );
+  for (const rol of ['admin', 'docente', 'estudiante', 'publico']) {
+    const dir = path.join(DIR, rol);
+    if (!fs.existsSync(dir)) continue;
+    for (const archivo of fs.readdirSync(dir)) {
+      if (!archivo.endsWith('.png')) continue;
+      const seccion = archivo.split('__')[0];
+      if (vigentes.has(seccion)) continue;
+      try {
+        fs.rmSync(path.join(dir, archivo));
+      } catch {
+        // Bloqueado por el entorno: se deja. No es motivo para fallar.
+      }
+    }
+  }
 });
 
 /**
