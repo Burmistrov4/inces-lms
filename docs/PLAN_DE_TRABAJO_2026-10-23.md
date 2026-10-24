@@ -52,7 +52,7 @@ cachear, no repetir peticiones y **mejorar el rendimiento percibido**.
 
 ## 3. Plan por fases (en orden)
 
-### Fase A — Rendimiento percibido — **CERRADA**
+### Fase A — Rendimiento percibido — **CERRADA DEL TODO** (2026-10-24)
 
 **Objetivo:** que la app *se sienta* rápida aunque el backend tarde 850 ms.
 
@@ -65,6 +65,21 @@ cachear, no repetir peticiones y **mejorar el rendimiento percibido**.
 
 *Criterio de éxito:* volver a una sección ya vista debe pintar **sin espera**, y
 toda espera mayor de 1 s debe mostrar progreso.
+
+**Cierre definitivo (2026-10-24).** Faltaba extender el refresco en segundo
+plano a los paneles donde los datos cambian por acciones de **otros** usuarios,
+que es donde el dato viejo duele. Ahora está en **8 paneles** (los 4 de antes más
+Registro de Accesos, Módulos del Sistema, Secciones del Período e Historial de
+Configuración).
+
+**El contrato tiene una trampa que documentar:** sin `marcarCarga()` en la rama de
+éxito, el mixin **nunca dispara** —sale si no hay carga previa— y no falla nada:
+simplemente no refresca. Es el fallo silencioso típico de este patrón.
+
+Por eso se añadió `e2e/tests/refresco_al_volver.spec.ts`, que **mide peticiones
+reales** y comprueba las tres cosas: la primera visita pide, volver enseguida no
+pide (instantáneo), y tras 45 s sí pide. Compilar no demuestra que un refresco
+dispare; medirlo sí.
 
 ### Fase B — Patrón de buscador (G9) — **CERRADA**
 
