@@ -314,3 +314,53 @@ desborde latente que antes tapaba el esqueleto).
    está en 4 paneles; el patrón está documentado para enchufarlo a los demás.
 3. **Verificación funcional en navegador** de «Invitar docente» y de la promoción
    de administradores en producción (falta una cuenta de prueba autorizada).
+
+---
+
+# Actualización del 2026-10-24 — Fase D cerrada y verificación funcional completa
+
+## Fase D — **CERRADA**
+
+Lorenzo delegó las cuatro decisiones del documento de diseño. Quedan escritas con
+su justificación en `docs/DISENO_MULTINUBE_DRIVE_2026-10-23.md`:
+
+| Decisión | Elección | Por qué |
+|---|---|---|
+| ¿A, B o ambos? | **B** | A exige OAuth, pantalla de consentimiento verificada y custodiar tokens de refresco; B resuelve el mismo problema pegando un enlace |
+| ¿Qué cuenta de Drive? | La del usuario, **sin que el sistema la toque** | Sin OAuth no hay credencial que custodiar |
+| ¿Enlace muerto? | **Se avisa** | Se marca «enlace externo»; comprobar exigiría la API que B evita |
+| ¿Visores propios (F3)? | **No** | Se abre en pestaña nueva: cero código, cero riesgo |
+
+**Implementado (F2):** cuando una subida falla por `ARCHIVO_DEMASIADO_GRANDE`, el
+error deja de ser un callejón sin salida y ofrece **«Subirlo a Drive»**, que abre
+el diálogo de enlace que ya existía. La rama de fallo distinguía antes sólo el
+mensaje, así que no había forma de ofrecer una salida distinta según el motivo.
+
+## Verificación funcional módulo por módulo
+
+Suite funcional completa: **30 pruebas, 0 fallos**. Cubre el flujo público, el
+panel administrativo entero, el aula virtual y su ciclo, el stepper de inscripción,
+la exportación a HACER, el SEO público y el refresco al volver.
+
+**Tres bugs reales salieron de esa verificación:**
+
+1. **«Usuarios y Roles» abría con el formulario de invitación ocupando el pliegue**
+   y la lista de usuarios debajo — el campo de búsqueda ni llegaba a construirse.
+   La prueba se llama justamente «expone gestión real, no sólo invitaciones», y
+   tenía razón. La invitación es ahora una acción plegable.
+2. **`robots.txt` permitía rastrear todo el sitio** (`Allow: /`) y luego enumeraba
+   a mano las rutas privadas. Eso falla por omisión: cualquier ruta nueva que no
+   se añada queda expuesta. Ahora la política es la inversa (`Allow: /$` +
+   `Disallow: /`), más los assets que la portada necesita.
+3. **La prueba del CSV exigía «letra + 9 dígitos» a toda cédula**, y la base de
+   pruebas guarda una de 19 dígitos sin letra. El exportador **no está roto**: su
+   contrato es una derivación (letra de la cédula o de la nacionalidad + dígitos
+   con relleno, **nunca recortados**). La prueba se reescribió para verificar esa
+   derivación. El fixture pasó de 62 a 56 columnas porque la app quita los UUID
+   crudos a propósito.
+
+**Un fallo del arnés, no de la app:** `pulsarReal` pulsaba en el centro del nodo
+sin comprobar que estuviera visible. El último ítem del menú del administrador
+queda recortado por el pie (tema y cerrar sesión), así que el clic caía en el
+selector de tema y el módulo nunca se abría. Ahora desplaza con la rueda del
+ratón sobre la lista hasta que el punto caiga de verdad en el objetivo.
