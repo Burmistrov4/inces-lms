@@ -767,22 +767,22 @@ describe('cerrar una sesión', () => {
 });
 
 describe('la promoción del token por query', () => {
-  it('`?token=` autentica TAMBIÉN una ruta REST, y eso se deja medido', async () => {
-    // El `onRequest` de `app.ts` que hace posible el WebSocket del navegador
-    // promueve `?token=` a la cabecera **sin mirar la ruta ni el método**. Así que
-    // el token en la query no es una puerta del canal en vivo: es una puerta de
-    // toda la API.
+  it('`?token=` sólo autentica el WebSocket, nunca una ruta REST', async () => {
+    // El `onRequest` de `app.ts` existe para que el WebSocket del navegador
+    // pueda mandar el JWT: los WS de un navegador no permiten encabezados
+    // arbitrarios, así que `/api/v1/asistencia/rt` lo recibe como `?token=`.
     //
-    // Se fija aquí porque es una decisión con consecuencia y hasta hoy no estaba
-    // escrita en ninguna prueba. El riesgo es de filtración, no de autenticación:
-    // una URL con el JWT dentro acaba en los registros de acceso del servidor, en
-    // el `Referer` de un enlace saliente y en el historial del navegador, sitios
-    // donde una cabecera nunca llega. El cliente de Flutter **no** lo usa por esta
-    // vía —manda `Authorization` en todo lo que no sea el handshake del WS—, así
-    // que el riesgo es latente, no activo.
+    // **Acotado a esa ruta el 2026-10-25.** Medido antes del cambio: el hook
+    // estaba en la raíz y promovía `?token=` sin mirar la ruta ni el método, así
+    // que las ~60 rutas de la API aceptaban el token por query. Un token en la
+    // URL acaba en los registros de acceso —Fastify loguea `req.url` completo—,
+    // en el `Referer` de un enlace saliente y en el historial del navegador,
+    // sitios donde una cabecera nunca llega. El JWT de Supabase vive 1 h.
     //
-    // Acotarlo al WebSocket (o aceptarlo sólo en el `upgrade`) es un cambio de
-    // seguridad y no se hace sin decisión; lo que no se puede es no saberlo.
+    // El cliente de Flutter no lo usaba por esta vía —manda `Authorization` en
+    // todo lo que no sea el handshake del WS—, así que el riesgo era latente.
+    // Esta prueba lo deja medido en el sentido correcto: la query es una
+    // adaptación al canal en vivo, no una puerta de toda la API.
     const arnes = crearArnés();
     app = arnes.app;
 
@@ -790,13 +790,16 @@ describe('la promoción del token por query', () => {
       method: 'GET',
       url: `/api/v1/asistencia/sesiones/${ID_SESION_ASISTENCIA}/marcas?token=${TOKEN_DOCENTE}`,
     });
-    const sinNada = await app.inject({
+    const conCabecera = await app.inject({
       method: 'GET',
       url: `/api/v1/asistencia/sesiones/${ID_SESION_ASISTENCIA}/marcas`,
+      headers: { authorization: `Bearer ${TOKEN_DOCENTE}` },
     });
 
-    expect(conQuery.statusCode).toBe(200);
-    expect(sinNada.statusCode).toBe(401);
+    // Por query, en una ruta REST, ya no entra: 401 como si no llevara nada.
+    expect(conQuery.statusCode).toBe(401);
+    // Por cabecera sí: el camino normal sigue intacto.
+    expect(conCabecera.statusCode).toBe(200);
   });
 });
 

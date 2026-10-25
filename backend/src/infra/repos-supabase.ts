@@ -1185,8 +1185,15 @@ class PerfilesSupabase implements PuertaPerfiles {
   async porIdentificador(identificador: string): Promise<Perfil | null> {
     const limpio = identificador.trim().toLowerCase();
     const query = this.cliente.from(TABLA_PERFILES).select(COLUMNAS_PERFIL);
+    // **`ilike` con comodines escapados.** Medido el 2026-10-25: el valor entra
+    // parametrizado (no hay inyección SQL), pero `%` y `_` son comodines de
+    // `ILIKE` y el esquema sólo exige `min(3)`. Sin escapar, `admin%` acierta
+    // por prefijo y «0 filas» frente a «>1 filas» da un oráculo binario para
+    // reconstruir correos carácter a carácter. Escapándolos, la búsqueda es de
+    // igualdad real, que es lo que esta función siempre quiso hacer.
+    const escapado = limpio.replace(/[\\%_]/g, (c) => `\\${c}`);
     const respuesta = limpio.includes('@')
-      ? await query.ilike('email', limpio).maybeSingle()
+      ? await query.ilike('email', escapado).maybeSingle()
       : await query.eq('cedula', limpio).maybeSingle();
 
     if (respuesta.error) throw traducirError(respuesta.error, 'buscar perfil por identificador');

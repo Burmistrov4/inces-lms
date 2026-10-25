@@ -161,8 +161,17 @@ export function construirApp(env: Env, deps: DependenciasApp): FastifyInstance {
   // Este onRequest va ANTES del plugin de autenticación para que, al llegar
   // allí, `request.usuario` ya se haya podido resolver. Es la adaptación al
   // canal, no una puerta aparte.
+  //
+  // **Acotado a esa ruta a propósito.** Medido el 2026-10-25: el hook estaba en
+  // la raíz, así que las ~60 rutas de la API aceptaban `?token=`. Un token en
+  // la query viaja al log de acceso —Fastify loguea `req.url` completo, sin
+  // serializador que lo limpie—, al historial del navegador y a la cabecera
+  // `Referer`. El JWT de Supabase vive 1 h, ventana suficiente para usarlo. El
+  // mismo token por cabecera no se registra. No hay razón para aceptarlo por
+  // query en ninguna ruta que no sea el WebSocket.
   app.addHook('onRequest', async (request) => {
     if (request.headers.authorization) return;
+    if (!request.url.startsWith('/api/v1/asistencia/rt')) return;
     const { token } = (request.query ?? {}) as Record<string, string | undefined>;
     if (token) {
       request.headers.authorization = `Bearer ${token}`;

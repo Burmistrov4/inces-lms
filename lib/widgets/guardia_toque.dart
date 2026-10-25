@@ -63,12 +63,3 @@ void conGuardia(VoidCallback? accion, String clave, {Duration? ventana}) {
   if (!permitirPulsacion(clave, ventana: ventana)) return;
   accion();
 }
-
-/// Igual que [conGuardia] con una ventana propia, para flujos que necesitan
-/// permitir repeticiones rápidas deliberadas.
-void conGuardiaEn(
-  VoidCallback? accion,
-  String clave,
-  Duration ventana,
-) =>
-    conGuardia(accion, clave, ventana: ventana);

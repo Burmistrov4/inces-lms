@@ -267,7 +267,16 @@ export function rutasAuth(app: FastifyInstance, deps: DependenciasRutas): void {
             exito: true,
             correoEnviado,
             metodo: correoEnviado ? ('smtp' as const) : ('supabase' as const),
-            ...(perfil.email ? { email: perfil.email } : {}),
+            // **Sin `email`, a propósito.** Medido el 2026-10-25: la respuesta
+            // incluía el correo del perfil cuando el identificador existía, así
+            // que la forma del cuerpo distinguía «existe» de «no existe» y
+            // entregaba la dirección asociada a cada acierto. Eso convierte la
+            // ruta en un oráculo de enumeración y contradice el comentario de
+            // arriba, que afirma aplicar el principio anti-enumeración: el
+            // `mensaje` no diferenciaba, pero el JSON sí.
+            //
+            // No hace falta: el usuario escribió el identificador y sabe a qué
+            // correo llega. El cliente usa lo que escribió como destino.
             mensaje: correoEnviado
               ? 'Si los datos coinciden con un usuario registrado, hemos enviado las instrucciones y el código a tu correo electrónico.'
               : 'Hemos procesado tu solicitud. Si el correo coincide con una cuenta registrada, recibirás el enlace en tu bandeja.',

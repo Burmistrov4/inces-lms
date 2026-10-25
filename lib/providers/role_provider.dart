@@ -2,21 +2,6 @@ import 'package:flutter/foundation.dart';
 
 enum UserRole { admin, docente, estudiante, desconocido }
 
-extension UserRoleName on UserRole {
-  String get value {
-    switch (this) {
-      case UserRole.admin:
-        return 'admin';
-      case UserRole.docente:
-        return 'docente';
-      case UserRole.estudiante:
-        return 'estudiante';
-      case UserRole.desconocido:
-        return 'desconocido';
-    }
-  }
-}
-
 UserRole userRoleFromName(String? value) {
   switch (value) {
     case 'admin':

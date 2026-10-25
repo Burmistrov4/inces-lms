@@ -592,7 +592,3 @@ class MetricasModulos extends StatelessWidget {
     );
   }
 }
-
-/// Etiqueta legible de un módulo del núcleo, usada en las migas de pan.
-String categoriaLegible(String categoria) =>
-    ModuloRepository.etiquetaCategoria(categoria);

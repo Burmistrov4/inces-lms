@@ -46,7 +46,6 @@ dependencies:
   # CI resuelve la dependencia con `flutter pub get` antes de construir.
   flutter_localizations:
     sdk: flutter
-  uuid: ^4.0.0                  # GeneraciÃ³n de UUIDs
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
