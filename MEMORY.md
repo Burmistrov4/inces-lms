@@ -10,7 +10,7 @@
 > `docs/ESTRUCTURA_DOCUMENTAL.md`.
 
 1. MEMORY.md
-2. docs/AUDITORIA_RENDIMIENTO_2026-10-08.md
+2. docs/historial/auditorias/AUDITORIA_RENDIMIENTO_2026-10-08.md
 3. PLAN_MAESTRO.md
 4. PLAN_CIERRE_100_FUNCIONAL_2026.md
 5. git status --short
@@ -95,7 +95,7 @@ e2e/.env.e2e contiene credenciales E2E. Nunca copiar contraseñas, tokens, anon 
 
 ## 10. Handover
 
-Al terminar cada sesión actualizar MEMORY.md, docs/AUDITORIA_RENDIMIENTO_2026-10-08.md y PLAN_CIERRE_100_FUNCIONAL_2026.md. Cambiar PLAN_MAESTRO.md sólo si cambia arquitectura/alcance.
+Al terminar cada sesión actualizar MEMORY.md, docs/historial/auditorias/AUDITORIA_RENDIMIENTO_2026-10-08.md y PLAN_CIERRE_100_FUNCIONAL_2026.md. Cambiar PLAN_MAESTRO.md sólo si cambia arquitectura/alcance.
 
 Registrar siempre: fecha/hora, comando, resultado, archivos modificados, pruebas posteriores y siguiente discriminador.
 

@@ -1,6 +1,52 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — Fase 4 / v1.2.9 (Entrega de Tareas en Aula Virtual, Resiliencia Cold-Start, Sincronización Global de Versiones y Verificación End-to-End), 2026-10-16 18:35 -04:00
+## Fotografía operativa vigente — 2026-10-25 04:00 -04:00
+
+> **Sustituye a la foto del 2026-10-16**, que queda como historia más abajo. Se
+> actualiza porque la anterior arrastraba cifras de septiembre (46 migraciones /
+> 24 tablas / 52 políticas) y este documento es la fuente de verdad del proyecto.
+
+Cifras **medidas**, no deducidas:
+
+| Métrica | Valor | Cómo se mide |
+|---|---|---|
+| Migraciones | **50** (0 pendientes, 0 deriva) | `ls supabase/migrations/*.sql \| wc -l` + `apply-migrations.mjs --check` |
+| Ficheros Dart | **243** | `find lib test -name "*.dart" \| wc -l` |
+| Ficheros de test Dart | **80** | `find test -name "*_test.dart" \| wc -l` |
+| Analizador Dart | **0 errores, 0 avisos, 0 infos** | `node devops/analizar-dart.mjs` |
+| Backend Fastify | **34 suites · 712/712** | `npm --prefix backend run verify` |
+| Specs E2E | **24** (la matriz = 186 capturas) | `ls e2e/tests/*.spec.ts \| wc -l` |
+| Matriz responsiva | **186 capturas · 0 desbordes · 0 page errors · 0 no navegables · 0 fallos de login** | `E2E_MATRIZ=1 playwright test matriz_responsive` |
+| Suite funcional | **30 pruebas, 0 fallos** | público, admin, aula, stepper, exportación HACER, SEO, refresco |
+| Tablas | **28** | `grep -rhiE "create table" supabase/migrations/` |
+| Vistas | **9** sentencias sobre 7 nombres distintos | `grep -rhiE "create .*view" supabase/migrations/` |
+| Políticas RLS | **68** | `grep -rhiE "create policy" supabase/migrations/` |
+
+**Fases del plan (`docs/PLAN_DE_TRABAJO_2026-10-23.md`): A, B, C, D y E cerradas.**
+La Fase D (multi-nube con Drive) se cerró el 2026-10-24 con las cuatro decisiones
+de Lorenzo escritas en `docs/DISENO_MULTINUBE_DRIVE_2026-10-23.md`: opción B sin
+OAuth, cuenta del usuario sin que el sistema la toque, enlace muerto se avisa, sin
+visores propios.
+
+**Auditoría independiente del 2026-10-25** (`docs/AUDITORIA_INDEPENDIENTE_2026-10-25.md`):
+tres fallos de seguridad cerrados (JWT por query acotado al WebSocket, correo fuera
+de la respuesta de recuperación, comodines LIKE escapados) y cuatro de deuda. Siete
+hallazgos quedan **sin corregir a propósito**, con la razón escrita.
+
+**Pendiente que no es código** (necesita a Lorenzo o a producción):
+- SMTP real en Render (`SMTP_USER` + `SMTP_PASS`): sin eso no sale correo.
+- Verificación en navegador de «Invitar docente» y de la promoción de administradores.
+- Cámara del QR en dispositivo físico.
+- Medir `trustProxy` y las vistas sin `security_invoker` contra producción.
+
+**Versión:** `pubspec.yaml` está en **1.2.9+1** mientras el `CHANGELOG.md`
+documenta hasta 1.3.1. Discrepancia abierta: o se sube la versión o se explica por
+qué quedó atrás. No se resuelve aquí porque cambiar la versión es una decisión de
+release.
+
+---
+
+## Fotografía histórica — Fase 4 / v1.2.9, 2026-10-16 18:35 -04:00
 
 Sección actualizada tras la sesión de auditoría integral, resolución del ciclo de tareas en aula virtual y blindaje contra cold-start de Render. **Zona horaria: Venezuela (UTC−4).**
 - **Dart Analyzer:** 240 archivos analizados · **0 errores, 0 avisos, 0 infos** (`analizar-dart.mjs`, exit 0).

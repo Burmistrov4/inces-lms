@@ -213,6 +213,7 @@ class _ActivarCuentaScreenState extends State<ActivarCuentaScreen> {
                             prefixIcon:
                                 const Icon(Icons.lock_outline, size: 20),
                             suffixIcon: IconButton(
+              tooltip: 'Mostrar u ocultar la contraseña',
                               icon: Icon(
                                 _passwordVisible
                                     ? Icons.visibility_off

@@ -723,6 +723,7 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel>
                       icon: const Icon(Icons.chevron_left),
                     ),
                     IconButton(
+              tooltip: 'Página anterior',
                       onPressed:
                           _cargando || pages < 1 || _paginaActual + 1 >= pages
                           ? null

@@ -283,6 +283,7 @@ class _LandingPageState extends State<LandingPage> {
                         prefixIcon: const Icon(Icons.search, color: Colors.white70, size: 18),
                         suffixIcon: _busquedaCtrl.text.isNotEmpty
                             ? IconButton(
+                                tooltip: 'Limpiar la búsqueda',
                                 icon: const Icon(Icons.close, color: Colors.white70, size: 16),
                                 onPressed: () {
                                   _busquedaCtrl.clear();
@@ -372,6 +373,7 @@ class _LandingPageState extends State<LandingPage> {
                     prefixIcon: const Icon(Icons.search, color: Colors.white70, size: 18),
                     suffixIcon: _busquedaCtrl.text.isNotEmpty
                         ? IconButton(
+                            tooltip: 'Limpiar la búsqueda',
                             icon: const Icon(Icons.close, color: Colors.white70, size: 16),
                             onPressed: () {
                               _busquedaCtrl.clear();

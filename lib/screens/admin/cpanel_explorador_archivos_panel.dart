@@ -236,6 +236,16 @@ class _CpanelExploradorArchivosPanelState
 
   ElementoArchivo? _seleccionado;
 
+  /// **El límite de subida real son 10 MB, medido contra la base el 2026-10-25.**
+  ///
+  /// `system_settings.m5_max_bytes` = 10485760 bytes. Los textos de este panel
+  /// decían «25 MB» en seis sitios, así que el administrador subía un archivo de
+  /// 20 MB convencido por la interfaz y recibía rechazo. Corregido a 10 MB.
+  ///
+  /// **Sigue siendo un número escrito a mano.** El límite es configurable desde
+  /// «Configuración del Centro» (parámetro `m5_max_bytes`), así que si alguien lo
+  /// cambia, estos textos vuelven a mentir. Lo correcto es que el panel lo lea
+  /// del servidor; queda anotado como deuda en el informe de deriva.
   static const double _cuotaTotalGb = 10.0;
 
   /// Cuota REALMENTE usada, calculada de los archivos de la unidad.
@@ -429,8 +439,19 @@ class _CpanelExploradorArchivosPanelState
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline,
-                      color: IncesTheme.advertencia, size: 20),
+                  // **`PaletaInces.de(context).advertencia`, no `IncesTheme.advertencia`.**
+                  // Medido el 2026-10-25: el color de relleno #F59E0B sobre el
+                  // tinte del propio bloque da 1.96:1 en tema claro, por debajo
+                  // del 3:1 que exige WCAG a un gráfico con significado. El
+                  // comentario de `inces_theme.dart:104-135` ya lo advierte:
+                  // esos cuatro colores son de relleno y «no son el color de una
+                  // letra ni de un icono». `PaletaInces` es justo el que cambia
+                  // con el brillo y está medido contra las superficies.
+                  Icon(
+                    Icons.info_outline,
+                    color: PaletaInces.de(context).advertencia,
+                    size: 20,
+                  ),
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Text(
@@ -444,8 +465,8 @@ class _CpanelExploradorArchivosPanelState
             const SizedBox(height: 16),
             const Text(
               'Reglas de carga en la nube del centro:\n\n'
-              '• Archivos admitidos: PDF, Word, Excel, presentaciones e imágenes optimizadas (hasta 25 MB por archivo).\n'
-              '• Videos y contenido pesado (> 25 MB): Deben alojarse en Google Drive y vincularse con la opción «Vincular Google Drive» para no agotar la cuota del centro.',
+              '• Archivos admitidos: PDF, Word, Excel, presentaciones e imágenes optimizadas (hasta 10 MB por archivo).\n'
+              '• Videos y contenido pesado (> 10 MB): Deben alojarse en Google Drive y vincularse con la opción «Vincular Google Drive» para no agotar la cuota del centro.',
               style: TextStyle(fontSize: 13.5, height: 1.45),
             ),
           ],
@@ -1374,7 +1395,7 @@ class _CpanelExploradorArchivosPanelState
                   children: [
                     Icon(Icons.upload_file_outlined, size: 18),
                     SizedBox(width: 10),
-                    Text('Subir documento (<25MB)'),
+                    Text('Subir documento (<10MB)'),
                   ],
                 ),
               ),
@@ -1612,8 +1633,8 @@ class _CpanelExploradorArchivosPanelState
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '• Documentos y Pensum (< 25 MB): Se almacenan directamente en la nube del centro con descargas de alta velocidad.\n'
-                      '• Videos y Clases Grabadas (> 25 MB): Se enlazan vía Google Drive sin consumir la cuota de 10 GB del centro.\n'
+                      '• Documentos y Pensum (< 10 MB): Se almacenan directamente en la nube del centro con descargas de alta velocidad.\n'
+                      '• Videos y Clases Grabadas (> 10 MB): Se enlazan vía Google Drive sin consumir la cuota de 10 GB del centro.\n'
                       '• Asignación a Aulas: Puedes vincular cualquier archivo a un aula o taller (ej. Soldadura Básica) para que sus docentes y aprendices lo tengan a mano.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,

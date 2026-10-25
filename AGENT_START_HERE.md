@@ -76,7 +76,7 @@ Nunca declares PASS por: pantalla abierta · HTTP 200 aislado · mock · reinten
 - **Autenticación SIN Resend: CERRADA y VERIFICADA contra el motor real (2026-10-09).** Recuperación interna (código temporal de un solo uso emitido por un administrador, canjeado por el titular que fija su propia contraseña, con **cierre de las sesiones previas**) y ciclo de vida completo de la invitación docente (consumo atómico, revocar, renovar, listado con estado real y sin exponer el hash). Evidencia de aquella sesión: `supabase/humo-invitaciones.mjs` → **34 OK / 0 fallos**; `supabase/humo-recuperacion.mjs` → **27 OK / 0 fallos**; residuo `0/0/0` en ambos. Migraciones `202610090001`/`202610090002` aplicadas a la nube.
 - **Defecto real corregido en aquella sesión:** la emisión de códigos escribía `password_resets` con el cliente del llamante (sólo tiene `SELECT`) → 403 en la nube. Ahora va por `reposAdmin`, y el arnés de pruebas **bloquea** esa vía para que el defecto no vuelva a pasar inadvertido.
 - **P0 / E2E de aquella sesión:** el bundle local estaba compilado con `dart-define.example.json` (la plantilla) → la app apuntaba a una URL inválida y el login fallaba **antes de emitir ninguna petición**. Guardia añadida en `e2e/playwright.config.ts`, que sigue vigente.
-- **Rendimiento (G3, 2026-10-09):** el hook de autenticación hacía **dos viajes de red en serie en cada petición autenticada** (verificar token en GoTrue + leer perfil en PostgREST = **421 ms fijos**), y cada consulta adicional sumaba ~190 ms. Paralelizados esos dos viajes y tres pares de lecturas independientes: `admin/usuarios` **−64 %** (1.462 → 521 ms), `aula/trabajo` −47 %, `aula/mis-entregas` −43 %, `mi-horario` −32 %. Detalle y tablas en [docs/AUDITORIA_RENDIMIENTO_2026-10-08.md](docs/AUDITORIA_RENDIMIENTO_2026-10-08.md).
+- **Rendimiento (G3, 2026-10-09):** el hook de autenticación hacía **dos viajes de red en serie en cada petición autenticada** (verificar token en GoTrue + leer perfil en PostgREST = **421 ms fijos**), y cada consulta adicional sumaba ~190 ms. Paralelizados esos dos viajes y tres pares de lecturas independientes: `admin/usuarios` **−64 %** (1.462 → 521 ms), `aula/trabajo` −47 %, `aula/mis-entregas` −43 %, `mi-horario` −32 %. Detalle y tablas en [docs/historial/auditorias/AUDITORIA_RENDIMIENTO_2026-10-08.md](docs/historial/auditorias/AUDITORIA_RENDIMIENTO_2026-10-08.md).
 - Restricciones externas que siguen abiertas: clave de firma para Play, SMTP/Resend (401), `SUPABASE_JWT_SECRET`, los 6 secretos del barrido D9 y la lista de campos de HACER (D17).
 
 Estos datos son una fotografía, no una fuente superior al código o a una medición nueva.
@@ -89,10 +89,10 @@ Nunca dejes únicamente «continuar».
 
 ## Continuidad de agentes
 
-- [docs/AI_AGENT_TOKEN_EFFICIENT_AUTONOMY.md](docs/AI_AGENT_TOKEN_EFFICIENT_AUTONOMY.md) — continuidad económica de contexto.
+- [docs/historial/fusionados/AI_AGENT_TOKEN_EFFICIENT_AUTONOMY.md](docs/historial/fusionados/AI_AGENT_TOKEN_EFFICIENT_AUTONOMY.md) — continuidad económica de contexto.
 - [docs/PROJECT_PHASE_GATES.md](docs/PROJECT_PHASE_GATES.md) — puertas de aceptación.
 - [docs/AI_AGENT_PROTOCOLO.md](docs/AI_AGENT_PROTOCOLO.md) — protocolo de trabajo.
-- [docs/AI_AGENT_AUTONOMY_AND_ENVIRONMENT_RECOVERY.md](docs/AI_AGENT_AUTONOMY_AND_ENVIRONMENT_RECOVERY.md) — recuperación de entorno.
+- [docs/historial/fusionados/AI_AGENT_AUTONOMY_AND_ENVIRONMENT_RECOVERY.md](docs/historial/fusionados/AI_AGENT_AUTONOMY_AND_ENVIRONMENT_RECOVERY.md) — recuperación de entorno.
 
 **Prompts legados archivados** (`docs/historial/prompts/`): no se leen ni se ejecutan en bloque. Son mandatos de sesiones pasadas; comprueba que su objetivo sigue vigente contra [ESTADO_DEL_SISTEMA.md](ESTADO_DEL_SISTEMA.md) antes de usarlos. Para referencia histórica con otro agente (Antigravity, Gemini), [PROMPT_MAESTRO_CICLO_VIDA_COMPLETO_AGENTE_IA.md](docs/historial/prompts/PROMPT_MAESTRO_CICLO_VIDA_COMPLETO_AGENTE_IA.md) y [PROMPT_ANTIGRAVITY_AUTONOMOUS_CLOSURE.md](docs/historial/prompts/PROMPT_ANTIGRAVITY_AUTONOMOUS_CLOSURE.md) están organizados en [docs/historial/prompts/](docs/historial/prompts/README.md).
 

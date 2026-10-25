@@ -356,11 +356,11 @@ class _GuiaContextualModuloState extends State<GuiaContextualModulo> {
               child: const Text('Ver guía', style: TextStyle(fontSize: 11)),
             ),
             IconButton(
+              tooltip: 'Ocultar guía',
               visualDensity: VisualDensity.compact,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               icon: const Icon(Icons.close_rounded, size: 16),
-              tooltip: 'Ocultar guía',
               onPressed: _marcarComoVisto,
             ),
           ],

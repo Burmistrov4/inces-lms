@@ -987,6 +987,7 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
             icono: Icons.lock_outline,
           ).copyWith(
             suffixIcon: IconButton(
+              tooltip: 'Mostrar u ocultar la contraseña',
               icon: Icon(
                 _obscurePassword
                     ? Icons.visibility_outlined
@@ -1065,6 +1066,7 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
             icono: Icons.lock_reset_outlined,
           ).copyWith(
             suffixIcon: IconButton(
+              tooltip: 'Mostrar u ocultar la confirmación de la contraseña',
               icon: Icon(
                 _obscureConfirm
                     ? Icons.visibility_outlined

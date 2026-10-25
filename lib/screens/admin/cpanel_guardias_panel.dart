@@ -1102,7 +1102,16 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                     ),
                     Text(
                       'B${g.bloque} (${horaLegibleDeBloque(g.bloque)})',
-                      style: const TextStyle(fontSize: 9.5, color: Colors.black87),
+                      // **`onSurface`, no `Colors.black87`.** Medido el
+                      // 2026-10-25: el texto iba en negro hardcodeado sobre un
+                      // chip con el color de guardia al 15 %. En tema claro se
+                      // leía bien (13.34:1), pero en tema **oscuro** el chip
+                      // queda oscuro y el negro da 1.29:1 — invisible. El color
+                      // de primer plano del tema se adapta solo.
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
