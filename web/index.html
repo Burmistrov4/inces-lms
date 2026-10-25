@@ -52,7 +52,14 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+  <!-- `shortcut icon` sin type: es lo que leen navegadores viejos y algunos
+       lectores de marcadores que ignoran el `type`. Referencia al mismo PNG de
+       32 px, así que no hay un archivo más que mantener. -->
+  <link rel="shortcut icon" href="favicon-32.png">
   <link rel="icon" type="image/png" href="favicon.png">
+  <!-- El azul institucional del INCES (#003B73), el mismo del fondo del icono.
+       Así la barra del navegador en móvil continúa la marca en vez de cortarla. -->
+  <meta name="theme-color" content="#003B73">
 
   <link rel="manifest" href="manifest.json">
 

@@ -660,31 +660,40 @@ class _LandingPageState extends State<LandingPage> {
   Widget _construirMarca() {
     return Row(
       children: [
-        Container(
-          width: 44,
-          height: 44,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.24)),
-          ),
-          child: Text(
-            'I',
-            style: GoogleFonts.inter(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
+        // **El logo oficial del INCES, no un cuadrado con una letra.** Medido el
+        // 2026-10-25: aquí había un `Container` blanco translúcido con una «I»
+        // dentro, que no decía nada de la institución. El archivo viene del sitio
+        // oficial (`inces.gob.ve/media/images/inces_2.original.png`) y ya es
+        // blanco, que es exactamente lo que hace falta sobre el azul del hero.
+        //
+        // Sin caja alrededor a propósito: el logo trae su propio aire y una caja
+        // translúcida por encima lo apaga. `Semantics` con etiqueta, porque una
+        // imagen sin descripción es invisible para un lector de pantalla.
+        Semantics(
+          label: 'INCES — Instituto Nacional de Cooperación y Educación Socialista',
+          child: ExcludeSemantics(
+            child: Image.asset(
+              'assets/images/logo_inces_blanco.png',
+              height: 36,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
             ),
           ),
         ),
         const SizedBox(width: 14),
+        Container(
+          width: 1,
+          height: 22,
+          color: Colors.white.withValues(alpha: 0.28),
+        ),
+        const SizedBox(width: 14),
         Text(
-          'INCES LMS',
+          'LMS',
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w700,
             color: Colors.white,
+            letterSpacing: 0.5,
           ),
         ),
       ],

@@ -3,9 +3,9 @@
   "short_name": "INCES LMS",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0b5cab",
-  "description": "Plataforma de gestión académica del INCES La Isabelica para aspirantes, aprendices, docentes y administradores.",
+  "background_color": "#003B73",
+  "theme_color": "#003B73",
+  "description": "Plataforma de gestión académica del CFS Nacional de Soldadura Rafael Urdaneta (INCES La Isabelica) para aspirantes, aprendices, docentes y administradores.",
   "orientation": "portrait-primary",
   "prefer_related_applications": false,
   "icons": [
