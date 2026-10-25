@@ -1,16 +1,24 @@
 # robots.txt — INCES LMS (CFS Rafael Urdaneta - La Isabelica)
-# Permite rastreo e indexación completa de páginas públicas y recursos visuales.
+#
+# **Sólo la portada es indexable.** Medido el 2026-10-24: el archivo decía
+# `Allow: /`, que invita a rastrear TODO el sitio, y luego enumeraba a mano las
+# rutas privadas. Eso falla por omisión: cualquier ruta nueva que no se añada a
+# la lista queda expuesta. La política correcta es la inversa — permitir sólo lo
+# público y bloquear el resto por defecto.
+#
+# `Allow: /$` es la forma estándar de permitir **exactamente** la raíz: el `$`
+# ancla el patrón, así que `/` sí y `/cualquier-cosa` no.
+#
+# Los assets sí se dejan pasar: el rastreador necesita descargarlos para
+# renderizar la portada. Bloquearlos no protege nada y empeora cómo se ve el
+# sitio en los resultados de búsqueda.
 
 User-agent: *
-Allow: /
+Allow: /$
 Allow: /assets/
 Allow: /icons/
 Allow: /favicon.png
 Allow: /manifest.json
-Disallow: /api/
-Disallow: /admin/
-Disallow: /docente/
-Disallow: /aspirante/
-Disallow: /coordinador/
+Disallow: /
 
 Sitemap: https://inces-lms.pages.dev/sitemap.xml

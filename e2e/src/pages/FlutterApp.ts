@@ -337,9 +337,51 @@ export class FlutterApp {
       );
     }
 
+    // **Desplazar hasta que el objetivo esté de verdad bajo el puntero.**
+    //
+    // Medido el 2026-10-24: «Lapsos Académicos» es el último ítem del menú del
+    // administrador y el menú recorta en y≈568 porque debajo va el pie (tema y
+    // cerrar sesión). Su nodo **existe** en el árbol semántico y reporta una
+    // posición, pero está fuera de la zona visible: el clic aterrizaba en el
+    // selector de tema, se abría el menú de temas y el módulo nunca aparecía.
+    //
+    // `scrollIntoView` no sirve aquí: el menú es un `ListView` de Flutter, no un
+    // contenedor DOM con scroll. Lo que sí lo mueve es la rueda del ratón.
+    let punto = objetivo;
+    for (let intento = 0; intento < 12; intento++) {
+      const x = punto.x + punto.ancho / 2;
+      const y = punto.y + punto.alto / 2;
+      const cae = await this.page.evaluate(
+        ([px, py, aguja]) => {
+          const el = document.elementFromPoint(px, py);
+          const sem = el?.closest('flt-semantics');
+          return (sem?.textContent ?? '').includes(aguja);
+        },
+        [x, y, texto],
+      );
+      if (cae) break;
+
+      // **La rueda actúa sobre el widget que hay debajo del puntero.** Si el
+      // objetivo está recortado, su posición de layout cae sobre el pie del
+      // menú (el selector de tema), que no se desplaza: rodar ahí no hace nada.
+      // Por eso el puntero se coloca sobre la zona de la lista, en una banda
+      // segura entre la cabecera y el pie.
+      await this.page.mouse.move(120, 300);
+      await this.page.mouse.wheel(0, y > 500 ? 160 : -160);
+      await this.page.waitForTimeout(180);
+
+      const releidos = await this.nodos();
+      const otraVez = releidos.find(
+        (n) =>
+          coincide(n.etiqueta) &&
+          (opciones.rol !== undefined ? n.rol === opciones.rol : PULSABLES.includes(n.rol)),
+      );
+      if (otraVez) punto = otraVez;
+    }
+
     await this.page.mouse.click(
-      objetivo.x + objetivo.ancho / 2,
-      objetivo.y + objetivo.alto / 2,
+      punto.x + punto.ancho / 2,
+      punto.y + punto.alto / 2,
     );
   }
 

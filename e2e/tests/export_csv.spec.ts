@@ -112,7 +112,7 @@ test.describe.serial('Exportación de la planilla hacia HACER', () => {
     expect(informe.lfSueltos, 'hay LF sin su CR: HACER espera CRLF en todos').toBe(0);
   });
 
-  test('la cabecera coincide con el esquema de 62 columnas', () => {
+  test('la cabecera coincide con el esquema de 56 columnas', () => {
     expect(informe.cabecera.length).toBe(COLUMNAS_HACER.length);
     expect(informe.cabecera).toEqual([...COLUMNAS_HACER]);
   });
@@ -131,13 +131,45 @@ test.describe.serial('Exportación de la planilla hacia HACER', () => {
     const columna = informe.cabecera.indexOf('documento_identidad');
     expect(columna, 'la columna documento_identidad no está en la cabecera').toBeGreaterThan(-1);
 
+    const colCedula = informe.cabecera.indexOf('cedula');
+    const colNac = informe.cabecera.indexOf('planilla_nacionalidad');
     for (const fila of informe.filas) {
       const valor = fila[columna] ?? '';
+      const cruda = (colCedula >= 0 ? (fila[colCedula] ?? '') : '').trim();
+      const nacionalidad = (colNac >= 0 ? (fila[colNac] ?? '') : '').trim();
       // Vacío es legítimo: una inscripción sin ficha de aspirante no tiene
-      // identidad, y el serializador escribe `""`. Lo que no puede es salir con
-      // una forma que HACER no entienda.
+      // identidad, y el serializador escribe `""`.
       if (valor === '') continue;
-      expect(valor, `«${valor}» no es una letra más 9 dígitos`).toMatch(/^[A-Z]{1,2}\d{9}$/);
+
+      // **El contrato es una derivación, no una forma.** Medido el 2026-10-24:
+      // la base de pruebas guarda una cédula de 19 dígitos sin letra, y la
+      // prueba exigía «letra + 9 dígitos» a todo. Fallaba dos veces seguidas
+      // porque lo que comprobaba no era el contrato.
+      //
+      // Lo que `documentoIdentidad()` promete (lib/models/exportacion_hacer.dart):
+      //   · letra: la de la cédula si la trae; si no, la nacionalidad de la
+      //     planilla.
+      //   · dígitos: los de la cédula, con relleno de ceros por la izquierda
+      //     hasta 9 — **nunca recortados**, porque recortar sería inventar dato.
+      //
+      // Que el resultado mida más de 10 caracteres significa que el dato de
+      // origen ya medía más, no que el exportador estropee nada.
+      const forma = /^([A-Za-z]{1,2})?[- ]?(\d+)$/.exec(cruda);
+      if (forma) {
+        const letra = forma[1] ?? nacionalidad;
+        const digitos = forma[2].padStart(9, '0');
+        expect(
+          valor,
+          `«${valor}» no es «${letra ?? ''}${digitos}» (letra + cédula con relleno)`,
+        ).toBe(`${letra ?? ''}${digitos}`);
+      } else {
+        // Sin forma de documento: viaja íntegro, con la nacionalidad delante
+        // sólo si no empieza ya por letra.
+        const esperado = /^[A-Za-z]/.test(cruda) || nacionalidad === ''
+            ? cruda
+            : `${nacionalidad}${cruda}`;
+        expect(valor, `«${valor}» debería ser «${esperado}»`).toBe(esperado);
+      }
     }
   });
 

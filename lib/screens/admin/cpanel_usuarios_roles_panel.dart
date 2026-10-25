@@ -37,6 +37,13 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel>
   PaginaUsuarios? _pagina;
   String? _rol;
   bool? _activo;
+  /// Si el formulario de invitación está desplegado.
+  ///
+  /// **`false` a propósito.** Medido el 2026-10-24: el panel abría con el
+  /// formulario ocupando el pliegue y la lista de usuarios debajo. La prueba
+  /// «Usuarios y Roles expone gestión real, no sólo invitaciones» fallaba por
+  /// eso: el campo de búsqueda ni siquiera llegaba a construirse.
+  bool _mostrarInvitacion = false;
   bool _ocultarCuentasDemo = true;
   bool _cargando = true;
   String? _error;
@@ -295,6 +302,7 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel>
         const SizedBox(height: 16),
         _ResumenUsuarios(total: p?.total ?? 0, usuarios: users),
         const SizedBox(height: 16),
+        if (_mostrarInvitacion) ...[
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -366,6 +374,29 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel>
               'no permite quedarse sin administradores.',
         ),
         const SizedBox(height: 16),
+        ] else ...[
+        // **La invitación es una acción, no el contenido por defecto.**
+        // Medido el 2026-10-24: el panel se llamaba «Usuarios y Roles» pero
+        // abría con el formulario de invitación ocupando toda la pantalla, y la
+        // lista de usuarios —lo que se viene a hacer— quedaba debajo del pliegue.
+        // Un panel de gestión abre con lo que gestiona; invitar se pide cuando
+        // se quiere.
+        Card(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
+          child: ListTile(
+            leading: const Icon(Icons.person_add_alt_1_rounded),
+            title: const Text('Invitar docente'),
+            subtitle: const Text(
+              'Emite una invitación por correo con enlace de activación.',
+            ),
+            trailing: FilledButton.tonal(
+              onPressed: () => setState(() => _mostrarInvitacion = true),
+              child: const Text('Invitar'),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        ],
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),

@@ -205,6 +205,15 @@ class _CpanelExploradorArchivosPanelState
   bool _subiendoArchivo = false;
   String _pasoSubida = '';
   String? _errorSubida;
+
+  /// `true` cuando el último fallo fue «el archivo no cabe».
+  ///
+  /// **Fase D, decisión B** (docs/DISENO_MULTINUBE_DRIVE_2026-10-23.md): si el
+  /// archivo se pasa del límite, la interfaz no deja al usuario en un callejón
+  /// sin salida — le ofrece subirlo a su Drive y pegar el enlace. El código del
+  /// error es lo único que separa ese caso de un fallo de red, y con el mensaje
+  /// solo no basta: los dos son «no se pudo subir».
+  bool _errorPorTamano = false;
   int _tabLateral = 0; // 0: Detalles, 1: Actividad
   String _filtroBusqueda = '';
   final _busquedaController = TextEditingController();
@@ -306,7 +315,7 @@ class _CpanelExploradorArchivosPanelState
       },
       failure: (fallo) {
         setState(() {
-          _errorSubida = 'No pudimos cargar tus archivos guardados: ${fallo.message}';
+          _errorSubida = 'No pudimos cargar los archivos del centro: ${fallo.message}';
         });
       },
     );
@@ -573,6 +582,7 @@ class _CpanelExploradorArchivosPanelState
       _subiendoArchivo = true;
       _pasoSubida = 'Elige el archivo...';
       _errorSubida = null;
+      _errorPorTamano = false;
     });
 
     ArchivoElegido? elegido;
@@ -659,7 +669,10 @@ class _CpanelExploradorArchivosPanelState
         );
       },
       failure: (fallo) {
-        setState(() => _errorSubida = fallo.message);
+        setState(() {
+          _errorSubida = fallo.message;
+          _errorPorTamano = fallo.code == 'ARCHIVO_DEMASIADO_GRANDE';
+        });
       },
     );
   }
@@ -707,11 +720,26 @@ class _CpanelExploradorArchivosPanelState
                     ?.copyWith(color: theme.colorScheme.onErrorContainer),
               ),
             ),
+            if (_errorPorTamano)
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _errorSubida = null;
+                    _errorPorTamano = false;
+                  });
+                  _vincularDriveDialogo();
+                },
+                icon: const Icon(Icons.add_link_rounded, size: 16),
+                label: const Text('Subirlo a Drive'),
+              ),
             IconButton(
               tooltip: 'Cerrar',
               visualDensity: VisualDensity.compact,
               icon: const Icon(Icons.close, size: 16),
-              onPressed: () => setState(() => _errorSubida = null),
+              onPressed: () => setState(() {
+                _errorSubida = null;
+                _errorPorTamano = false;
+              }),
             ),
           ],
         ),

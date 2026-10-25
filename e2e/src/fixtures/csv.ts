@@ -37,24 +37,28 @@ export const BOM_UTF8: readonly number[] = [0xef, 0xbb, 0xbf];
  * (D17), así que el orden puede cambiar, y un cambio que no se refleje aquí
  * tiene que doler en CI y no en la importación del INCES.
  */
+/// Columnas del CSV que se entrega a HACER, **en orden**.
+///
+/// **Son 56, no 62.** Medido el 2026-10-24: este fixture seguía listando seis
+/// claves internas (`inscripcion_id`, `seccion_id`, `programa_id`,
+/// `materia_id`, `aspirante_id`, `datos_planilla`) que
+/// `lib/models/exportacion_hacer.dart` **quita a propósito**: son UUID de
+/// nuestra base y a HACER no le dicen nada. El CSV real tiene 56 columnas, así
+/// que la prueba fallaba por comparar contra un esquema viejo — no porque la
+/// exportación estuviera mal.
 export const COLUMNAS_HACER: readonly string[] = [
   // Contexto académico.
-  'inscripcion_id',
-  'seccion_id',
   'lapso',
   'seccion',
   'seccion_activa',
-  'programa_id',
   'programa_codigo',
   'programa_nombre',
-  'materia_id',
   'materia_codigo',
   'materia_nombre',
   'docente',
   'estado',
   'inscrito_en',
   // Identidad.
-  'aspirante_id',
   'cedula',
   'documento_identidad',
   'nombres',
@@ -103,7 +107,6 @@ export const COLUMNAS_HACER: readonly string[] = [
   'planilla_otras_formaciones',
   'planilla_experiencias',
   // La red de seguridad: el jsonb crudo, sin aplanar.
-  'datos_planilla',
 ];
 
 /**

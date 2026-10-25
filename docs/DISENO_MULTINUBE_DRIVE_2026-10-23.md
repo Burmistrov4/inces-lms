@@ -120,3 +120,61 @@ funciona).
 
 *Este documento no autoriza nada. Cuando Lorenzo decida, se implementa por fases
 con verificación (analizador + matriz) en cada una, como el resto del trabajo.*
+
+
+---
+
+# Decisiones tomadas — 2026-10-24
+
+Lorenzo delegó las cuatro decisiones. Éstas son, con el porqué:
+
+## 1. Opción **B** — Drive sólo cuando el archivo no cabe
+
+**Decidido: B.**
+
+**Por qué no A.** La opción A (vincular la cuenta de Google del usuario) pide:
+pantalla de consentimiento verificada por Google, guardar tokens de refresco en
+el backend, y tocar el login —que hoy funciona—. Todo eso para resolver un
+problema que se resuelve pegando un enlace. **Añadir OAuth para leer un archivo
+que el usuario ya tiene es pagar con la credencial más cara del sistema una
+necesidad que no la requiere.**
+
+**Por qué B sí.** El límite de 10 MB es real y hoy es un callejón sin salida: el
+administrador sube un video de 80 MB, recibe «archivo demasiado grande» y **no
+tiene ninguna acción siguiente**. B convierte ese error en una salida.
+
+## 2. Cuenta: **la del usuario**, pero sin que el sistema la toque
+
+Con B, el usuario sube el archivo **a su propio Drive** (fuera de la app) y pega
+el enlace. El sistema **no pide permiso, no guarda tokens, no custodia nada**. Por
+eso B es la opción segura: no hay credencial nueva que proteger.
+
+Consecuencia de diseño: el archivo **no está en nuestro almacenamiento**, así que
+la interfaz debe decirlo sin rodeos («enlace externo»), no fingir que lo tiene.
+
+## 3. El enlace muerto: **se avisa, no se asume**
+
+Si el dueño borra el archivo en su Drive, el enlace queda roto y el sistema no
+puede saberlo sin consultar la API de Google (que es justo lo que B evita).
+
+**Decidido:** el elemento se marca como **enlace externo** con su fecha de alta, y
+la interfaz no promete que el archivo esté disponible. No se comprueba
+automáticamente porque comprobarlo exige la API que B decidió no usar — y fingir
+una comprobación sería peor que no tenerla.
+
+## 4. F3 (visores dentro de la app): **no**
+
+**Decidido: no.** El enlace se abre en una pestaña nueva. Cero código, cero
+riesgo, y el visor de Google ya es mejor que cualquiera que hagamos aquí.
+
+---
+
+## Lo que se implementa entonces
+
+**Sólo F2**: cuando la subida falla por tamaño, el error deja de ser un callejón
+sin salida y ofrece **subir a Drive y pegar el enlace**.
+
+**Alcance de esta tanda:** el panel de administración («Archivos del Centro»), que
+es donde la función de enlace ya existe. El gestor de docente/estudiante queda
+para la siguiente tanda, porque ahí no hay acción de enlace que reutilizar y
+construirla a medias sería peor que no tenerla.
