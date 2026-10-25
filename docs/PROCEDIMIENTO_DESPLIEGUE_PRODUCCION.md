@@ -179,6 +179,40 @@ Usa una sesión autenticada de Wrangler o credenciales de despliegue aprobadas. 
 
 Si Wrangler no está autenticado, detente y completa el inicio de sesión autorizado. Confirma que el proyecto destino se llama exactamente inces-lms.
 
+#### 6.1.1 Token de API para despliegues no interactivos
+
+Wrangler lee dos variables de entorno, con **nombres exactos** (no inventar otros:
+si el nombre no coincide, Wrangler ignora la variable y vuelve a pedir login):
+
+| Variable | Valor |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | El token de API |
+| `CLOUDFLARE_ACCOUNT_ID` | El id de la cuenta (32 hex) |
+
+**Cómo crear el token** en <https://dash.cloudflare.com/profile/api-tokens>:
+
+- Plantilla **«Edit Cloudflare Workers»** → **no sirve**: no incluye Pages.
+- Usar **Create Custom Token** con:
+  - **Permissions**: `Account` → `Cloudflare Pages` → **Edit**
+  - **Account Resources**: `Include` → la cuenta del centro
+  - **Zone Resources**: `None` (Pages es de cuenta, no de zona)
+  - Opcional, para que `wrangler whoami` muestre el nombre de la cuenta:
+    `User` → `User Details` → `Read`
+- **TTL**: el que se prefiera. Un token sin caducidad en un equipo de desarrollo
+  es cómodo y es riesgo; con caducidad hay que rotarlo.
+
+**Dónde va.** En `backend/.env`, que está cubierto por `.gitignore` y **no** se
+versiona (verificado con `git check-ignore -v backend/.env`). Es una credencial
+de **despliegue**, no de ejecución: el backend nunca la lee. Por eso **no debe
+estar en Render** — allí no sirve para nada y amplía la superficie.
+
+**Comprobar que quedó bien antes de publicar:**
+
+    npx --yes wrangler whoami
+
+Debe responder con la cuenta y el nombre del token. Si dice que no está
+autenticado, el token está mal, le faltan permisos o la variable no se cargó.
+
 ### 6.2 Publicar producción
 
 Solo después de validar el artefacto de la sección 5:
