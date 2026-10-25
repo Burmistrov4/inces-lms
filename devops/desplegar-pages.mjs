@@ -86,20 +86,29 @@ console.log('  ✓ artefacto validado (5 archivos, API de producción, sin local
 // --- 3. Publicar -------------------------------------------------------------
 const entorno = { ...process.env, CLOUDFLARE_API_TOKEN: token, CLOUDFLARE_ACCOUNT_ID: cuenta };
 
+// `whoami` es **informativo, no bloqueante**. Un token con sólo
+// `Account → Cloudflare Pages → Edit` no puede leer los datos del usuario, así
+// que `whoami` puede fallar aunque el token sirva perfectamente para desplegar.
+// Medido el 2026-10-25: exigir `whoami` en verde obligaba a añadir el permiso
+// `User → User Details → Read`, que no hace falta para publicar. La credencial
+// se valida de verdad con el propio deploy, que es lo que importa.
 console.log('  · comprobando la credencial…');
 const quien = spawnSync('npx', ['--yes', 'wrangler', 'whoami'], {
   env: entorno,
   encoding: 'utf8',
   shell: true,
 });
-if (quien.status !== 0) {
-  fallar(
-    'Wrangler no acepta la credencial.\n' +
-      '    Revisa que el token tenga Account → Cloudflare Pages → Edit.\n' +
-      (quien.stdout ?? '').split('\n').filter((l) => l.trim()).slice(-4).join('\n'),
-  );
+if (quien.status === 0) {
+  const cuentaLeida = (quien.stdout ?? '')
+    .split('\n')
+    .map((l) => l.trim())
+    .find((l) => l.length > 0 && !l.includes('⛅') && !l.includes('─'));
+  console.log('  ✓ credencial aceptada' + (cuentaLeida ? ' (' + cuentaLeida + ')' : ''));
+} else {
+  // No se detiene: se avisa y se deja que el deploy decida.
+  console.log('  · whoami no pudo leer el perfil (normal si el token es sólo de Pages)');
+  console.log('    el deploy es la prueba real');
 }
-console.log('  ✓ credencial aceptada');
 
 console.log('  · publicando en Cloudflare Pages…');
 const deploy = spawnSync(
@@ -107,7 +116,14 @@ const deploy = spawnSync(
   ['--yes', 'wrangler', 'pages', 'deploy', BUNDLE, '--project-name=' + PROYECTO, '--branch=main'],
   { env: entorno, encoding: 'utf8', shell: true, stdio: 'inherit' },
 );
-if (deploy.status !== 0) fallar('El despliegue falló con código ' + deploy.status + '.');
+if (deploy.status !== 0) {
+  fallar(
+    'El despliegue falló con código ' + deploy.status + '.\n' +
+      '    Si el mensaje habla de autenticación o de permisos, el token no tiene\n' +
+      '    Account → Cloudflare Pages → Edit, o ha caducado.\n' +
+      '    Si habla de que el proyecto no existe, revisa el nombre: debe ser ' + PROYECTO + '.',
+  );
+}
 
 console.log('\n  ✓ publicado. Confirma que figura como Production en main:');
 console.log('    npx --yes wrangler pages deployment list --project-name=' + PROYECTO + '\n');

@@ -197,9 +197,22 @@ si el nombre no coincide, Wrangler ignora la variable y vuelve a pedir login):
   - **Account Resources**: `Include` → la cuenta del centro
   - **Zone Resources**: `None` (Pages es de cuenta, no de zona)
   - Opcional, para que `wrangler whoami` muestre el nombre de la cuenta:
-    `User` → `User Details` → `Read`
-- **TTL**: el que se prefiera. Un token sin caducidad en un equipo de desarrollo
-  es cómodo y es riesgo; con caducidad hay que rotarlo.
+    `User` → `User Details` → `Read`. **No es necesario para desplegar**: sin él
+    `whoami` falla pero el deploy funciona. `devops/desplegar-pages.mjs` lo trata
+    como informativo por eso mismo.
+- **Client IP address filtering**: dejar **vacío**. La conexión del centro es
+  residencial y la IP cambia; fijarla rompería el despliegue desde otro sitio.
+
+**La expiración: anotarla o ponerla sin caducidad.** Un token a 1 año funciona,
+pero **el día que caduca los despliegues fallan sin decir por qué** —el mensaje
+habla de autenticación, no de caducidad—. Si se elige con fecha, hay que anotarla
+aquí:
+
+> **Token `inces-lms pages deploy`: caduca el 2026-10-25 (1 año).** Si un
+> despliegue empieza a fallar por credencial después de esa fecha, es esto.
+
+Para un proyecto que se defiende ante un jurado y sigue vivo después, «No
+expiration» evita esa trampa; con fecha, el riesgo es menor si el token se filtra.
 
 **Dónde va.** En `backend/.env`, que está cubierto por `.gitignore` y **no** se
 versiona (verificado con `git check-ignore -v backend/.env`). Es una credencial
