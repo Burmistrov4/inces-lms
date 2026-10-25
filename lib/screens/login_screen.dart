@@ -261,7 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: controllerIdentificador,
                           autofocus: true,
                           decoration: InputDecoration(
-                            labelText: 'Correo o Cédula',
+                            labelText: 'Cédula o Correo',
                             hintText: 'ej. V-12345678 o usuario@gmail.com',
                             prefixIcon:
                                 const Icon(Icons.person_outline, size: 20),

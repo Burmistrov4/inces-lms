@@ -528,8 +528,12 @@ class _LandingPageState extends State<LandingPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _construirMarca(),
-        const SizedBox(height: 28),
+        // **Sin `_construirMarca()` aquí.** Medido el 2026-10-25 con captura de
+        // Lorenzo: la marca se pintaba dos veces seguidas en la portada, una en
+        // la navbar (línea 265, que la lleva siempre) y otra aquí, encima del
+        // título. La navbar está above del hero en el mismo `Column`, así que las
+        // dos se ven a la vez. El hero empieza por el titular, que es lo que
+        // tiene que decir.
         Text(
           'Formación Técnica y\nGestión Académica',
           style: GoogleFonts.inter(
