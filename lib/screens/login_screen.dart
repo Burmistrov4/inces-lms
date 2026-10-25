@@ -467,21 +467,21 @@ class _LoginScreenState extends State<LoginScreen> {
             borderRadius: BorderRadius.circular(IncesTheme.radioControl),
             child: Row(
               children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    gradient: IncesTheme.degradadoAzul,
-                    borderRadius: BorderRadius.circular(IncesTheme.radioControl),
-                  ),
-                  child: Text(
-                    'I',
-                    style: GoogleFonts.inter(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+                // **El icono de la app, no un cuadrado con una «I».** Este bloque
+                // vive sobre `surface` (claro en tema claro), así que el logo
+                // blanco sería invisible: se usa el icono, que trae su propio
+                // fondo azul y se lee en los dos temas. Es el mismo archivo que
+                // Android usa al añadir la página como acceso directo, así que
+                // la marca del login y la del móvil coinciden.
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(IncesTheme.radioControl),
+                  child: Image.asset(
+                    'assets/images/icono_app.png',
+                    width: 38,
+                    height: 38,
+                    fit: BoxFit.cover,
+                    filterQuality: FilterQuality.high,
+                    semanticLabel: 'INCES LMS',
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -715,24 +715,24 @@ class _PanelMarca extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                   child: Tooltip(
                     message: 'Volver a la portada',
-                    child: Container(
-                      width: 56,
-                      height: 56,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.24),
-                        ),
-                      ),
-                      child: Text(
-                        'I',
-                        style: GoogleFonts.inter(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
+                    // **El logo oficial del INCES, no un cuadrado con una «I».**
+                    // Medido el 2026-10-25 con la captura de Lorenzo: el login
+                    // mostraba un cuadro azul con la letra «I», que no dice nada
+                    // de la institución, mientras la landing ya lucía el logo
+                    // real. Los dos tienen que hablar el mismo idioma.
+                    //
+                    // Sin caja alrededor: el logo ya es blanco y el panel de
+                    // este lado es azul, así que un fondo translúcido encima lo
+                    // apaga. La altura manda y el ancho se ajusta solo, porque
+                    // el archivo es horizontal (203x77).
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Image.asset(
+                        'assets/images/logo_inces_blanco.png',
+                        height: 44,
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.high,
+                        semanticLabel: 'INCES',
                       ),
                     ),
                   ),

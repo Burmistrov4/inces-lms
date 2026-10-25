@@ -23,7 +23,6 @@
   <meta name="keywords" content="INCES, INCES LMS, inces lms, inces-lms isabelica, inces la isabelica, inces lms aula virtual, CFS Rafael Urdaneta, formacion tecnica, cursos inces valencia, inscripciones inces 2026, carnet inces, aula virtual carabobo, soldadura universal, refrigeracion, gastronomia, gestion administrativa, aprendizaje tecnico">
   <meta name="author" content="INCES La Isabelica — CFS Rafael Urdaneta">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-  <meta name="theme-color" content="#0052CC">
   <link rel="canonical" href="https://inces-lms.pages.dev/">
 
   <!-- Open Graph / Redes Sociales y Motores de Búsqueda -->
@@ -121,6 +120,31 @@
         }
       }
     ]
+  }
+  </script>
+
+  <!-- Segundo bloque: describe el SITIO, no la institución. Es lo que Google
+       usa para los enlaces de sitio (sitelinks) y para asociar el dominio con
+       la organización de arriba mediante "publisher". Se añade el 2026-10-25
+       porque el primer bloque ya describía la institución y su oferta, pero
+       nada decía «este dominio es el sitio web de esa institución». -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": "https://inces-lms.pages.dev/#website",
+    "url": "https://inces-lms.pages.dev/",
+    "name": "INCES LMS — La Isabelica",
+    "inLanguage": "es-VE",
+    "publisher": { "@id": "https://inces-lms.pages.dev/#organization" },
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://inces-lms.pages.dev/?q={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
   }
   </script>
 </head>

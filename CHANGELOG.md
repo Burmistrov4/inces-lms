@@ -2,6 +2,37 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.4.0] - 2026-10-25
+### Identidad institucional, rango PNA corregido, seguridad de la API y auditoría independiente
+
+**Identidad y marca**
+- Logo oficial del INCES en la landing (descargado del sitio del instituto) y en el login, que hasta hoy mostraba un cuadrado azul con una «I».
+- Icono de la app y favicon rediseñados: la «i» estilizada del INCES con el punto convertido en chispa de soldadura, sobre azul institucional. Un solo icono para la pestaña, el acceso directo de Android y el login.
+- `theme-color` unificado en `#003B73`: había dos declarados y el navegador se quedaba con el viejo.
+- El logo de la portada se pintaba dos veces (navbar y hero). Corregido.
+
+**Rango de edad del PNA: 14 a 18 años**
+- El dato estaba en cuatro sitios con tres valores distintos: la landing decía 14 a 17, el programa en la base «(15-16 años)» y el selector de fecha de nacimiento cortaba en 15, así que **un aspirante de 14 años no podía ni elegir su fecha**. Los cuatro corregidos a la vez (migración `202610250002`).
+
+**Seguridad**
+- El JWT se aceptaba por query string en las 60 rutas de la API; ahora sólo en el WebSocket de asistencia, que es el único canal que lo necesita.
+- `solicitar-recuperacion` devolvía el correo del perfil: era un oráculo de enumeración de cuentas. Eliminado.
+- Comodines de `ILIKE` escapados en la búsqueda por identificador.
+- Login con cédula habilitado para administradores y docentes (migración `202610250001`): el RPC sólo miraba `aspirantes`, así que la cédula de un docente no servía aunque la interfaz la ofreciera.
+
+**Deuda**
+- Fuera el fallback mudo a Supabase de `UsuariosAdminRepository`: convertía un fallo de red en «lista vacía» y su paginación era falsa.
+- Fuera `uuid`, `conGuardiaEn`, `UserRoleName` y `categoriaLegible`, todos sin un solo uso.
+- El límite de subida que anuncia la interfaz pasa de 25 a 10 MB, que es el real.
+
+**SEO**
+- `robots.txt` con política inversa (permitir la portada, bloquear el resto por defecto) en vez de una lista negra que fallaba por omisión.
+- Esquema `WebSite` con `SearchAction`, junto al `EducationalOrganization` que ya existía.
+
+**Despliegue**
+- `devops/desplegar-pages.mjs`: valida el artefacto y publica en Cloudflare Pages.
+- Primera publicación desde el 2026-10-13: producción deja de servir el bundle viejo.
+
 ## [1.3.1] - 2026-10-18
 ### Calibración Milimétrica de Planilla Oficial INCES, Catálogo Geográfico Nacional de 24 Estados y Autocompletado Dinámico
 - **Calibración Milimétrica de Impresión en Planilla Oficial INCES (612 × 792 pt Letter):**

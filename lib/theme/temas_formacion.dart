@@ -212,6 +212,14 @@ enum AreaFormativa {
     if (n.contains('introductorio') ||
         n.contains('juvenil') ||
         n.contains('adolescent') ||
+        // El rango del PNA cambió de 14-17 a 14-18 el 2026-10-25, y con él el
+        // nombre del programa semilla («Curso Introductorio (15-16 años)» →
+        // «(14-18 años)»). Se aceptan los tres rangos a propósito: si alguien
+        // renombra un programa a mano con un rango antiguo, debe seguir cayendo
+        // en juvenil y no en «técnica general», que es donde acabaría por
+        // omisión y donde no le corresponde.
+        n.contains('14-18') ||
+        n.contains('14-17') ||
         n.contains('15-16') ||
         n.contains('orientacion') ||
         n.contains('orientación') ||

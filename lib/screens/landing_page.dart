@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../core/config/app_config.dart';
 import '../models/inscripcion_campo.dart';
 import '../repositories/aspirante_repository.dart';
 import '../theme/inces_theme.dart';
@@ -10,17 +11,19 @@ import '../theme/temas_formacion.dart';
 
 /// Rango de edad del Programa Nacional de Aprendizaje (PNA), editable.
 ///
-/// **Fuente única para toda la landing.** Antes estaba escrito a mano en tres
-/// sitios («14-18», «14 a 18», «Jóvenes de 14 a 18»), que es justo como nacen
-/// las discrepancias: un cambio institucional habría que hacerlo tres veces y
-/// la página pública acabaría contando dos verdades. El 2026-10-20 Lorenzo fijó
-/// el rango en **14 a 17 años**.
+/// **Historial del rango:** el 2026-10-20 se fijó en 14 a 17; el 2026-10-25
+/// Lorenzo lo corrigió a **14 a 18**, que es el rango real del PNA. El cambio no
+/// era sólo aquí: el programa semilla se llamaba «Curso Introductorio (15-16
+/// años)» en la base y `temas_formacion.dart` lo clasificaba buscando «15-16».
+/// Los tres sitios se corrigieron a la vez —migración
+/// `202610250002_pna_rango_14_18.sql`— porque arreglar uno solo deja la app
+/// contando dos verdades, que es justo el fallo que este comentario describe.
 ///
 /// El siguiente paso —que esto lo edite el administrador desde el panel de
 /// parámetros y la landing lo lea de la base— está en el plan de rediseño;
 /// mientras tanto, editar aquí cambia los tres sitios a la vez.
 const String kEdadPnaMin = '14';
-const String kEdadPnaMax = '17';
+const String kEdadPnaMax = '18';
 const String kEdadPnaTexto = '$kEdadPnaMin a $kEdadPnaMax años';
 
 /// Página pública de aterrizaje: la raíz `/` cuando **no** hay sesión.
@@ -1564,7 +1567,7 @@ class _LandingPageState extends State<LandingPage> {
                     ),
                   ),
                   Text(
-                    'CFS Rafael Urdaneta · v1.3.2 (Prod 2026)',
+                    'CFS Rafael Urdaneta · v${AppConfig.version} (Prod 2026)',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: Colors.white54,
                       fontSize: 11,

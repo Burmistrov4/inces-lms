@@ -708,9 +708,15 @@ class _FechaState extends State<_Fecha> {
 
   /// El rango del selector.
   ///
-  /// Es el mismo que usaba el formulario escrito a mano: entre 15 y 80 años. El
-  /// mínimo de 15 no es arbitrario —el CFS tiene un «Curso Introductorio» para
-  /// 15 y 16 años—, y el máximo de 80 sólo evita que el selector abra en 1900.
+  /// Es el mismo que usaba el formulario escrito a mano: entre 14 y 80 años. El
+  /// mínimo **era 15** hasta el 2026-10-25 —el CFS tiene un «Curso Introductorio»
+  /// y por entonces se anunciaba para 15 y 16 años—, pero el rango real del PNA
+  /// es 14 a 18: con el mínimo en 15, un aspirante de 14 años **no podía ni
+  /// seleccionar su fecha de nacimiento**, así que el formulario le impedía
+  /// inscribirse en el único programa al que tiene derecho. Corregido a 14 en
+  /// línea con `kEdadPnaMin` de la landing y con el nombre del programa.
+  ///
+  /// El máximo de 80 sólo evita que el selector abra en 1900.
   ///
   /// **El selector sale en español sin pasar `locale`.** `MaterialApp` registra
   /// `GlobalMaterialLocalizations` y compañía (ver `main.dart`), y
@@ -724,7 +730,7 @@ class _FechaState extends State<_Fecha> {
       context: context,
       initialDate: _fecha ?? DateTime(hoy.year - 20),
       firstDate: DateTime(hoy.year - 80, hoy.month, hoy.day),
-      lastDate: DateTime(hoy.year - 15, hoy.month, hoy.day),
+      lastDate: DateTime(hoy.year - 14, hoy.month, hoy.day),
       helpText: widget.etiqueta,
     );
 

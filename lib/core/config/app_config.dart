@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
 
 class AppConfig {
-  static const String version = '1.3.2';
-  static const String versionLabel = 'INCES LMS v1.3.2 · CFS Rafael Urdaneta · Prod 2026';
+  static const String version = '1.4.0';
+  static const String versionLabel =
+      'INCES LMS v$version · CFS Rafael Urdaneta · Prod 2026';
 
   static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   static const String supabaseAnonKey =
