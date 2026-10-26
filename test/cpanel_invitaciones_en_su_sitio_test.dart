@@ -97,6 +97,9 @@ class _RepoUsuariosVacio extends UsuariosAdminRepository {
     String? rol,
     bool? activo,
     String? busqueda,
+    // El filtro de cuentas de siembra pasa por el repositorio desde el
+    // 2026-10-25; el doble tiene que declararlo para seguir siendo override.
+    bool incluirDemo = false,
     int limite = 25,
     int desplazamiento = 0,
   }) async => Success(

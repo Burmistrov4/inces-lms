@@ -1652,7 +1652,7 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
     async listar(opciones) {
       revisar('perfiles.listar');
 
-      const { rol, activo, busqueda, limite, desplazamiento } = opciones;
+      const { rol, activo, busqueda, incluirDemo, limite, desplazamiento } = opciones;
 
       // Se replica el comportamiento del repositorio real —filtrar, ordenar y
       // recortar— para que las pruebas ejerciten el contrato y no una versión
@@ -1661,6 +1661,12 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       const coincide = (p: Perfil): boolean => {
         if (rol && p.rol !== rol) return false;
         if (activo !== undefined && p.activo !== activo) return false;
+        // Mismo criterio que el repositorio real: las cuentas de siembra se
+        // excluyen salvo que se pidan. Sin esto, el doble devolvería un total
+        // distinto al del backend y la prueba de paginación mentiría.
+        if (!incluirDemo && p.email.trim().toLowerCase().endsWith('@semilla.invalid')) {
+          return false;
+        }
         if (!aguja) return true;
         return [p.nombres, p.apellidos, p.email, p.cedula ?? '']
           .join(' ')

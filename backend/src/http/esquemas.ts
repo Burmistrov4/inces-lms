@@ -100,6 +100,14 @@ export const esquemaListadoUsuarios = z.object({
     .transform((valor) => valor === 'true')
     .optional(),
   busqueda: z.string().trim().min(1).max(120).optional(),
+  // Las cuentas de siembra (`@semilla.invalid`) se excluyen salvo que se pidan
+  // explícitamente. El filtro vive en el servidor porque aplicarlo en el cliente
+  // después de paginar deja páginas vacías: medido el 2026-10-25, la página 2 de
+  // 3 salía sin un solo usuario real.
+  incluirDemo: z
+    .enum(['true', 'false'])
+    .transform((valor) => valor === 'true')
+    .optional(),
   limite: z.coerce.number().int().min(1).max(100).default(25),
   desplazamiento: z.coerce.number().int().min(0).default(0),
 });

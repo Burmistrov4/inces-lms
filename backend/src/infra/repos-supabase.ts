@@ -1273,6 +1273,20 @@ class PerfilesSupabase implements PuertaPerfiles {
     if (opciones.rol) consulta = consulta.eq('rol', opciones.rol);
     if (opciones.activo !== undefined) consulta = consulta.eq('active', opciones.activo);
     if (opciones.busqueda) consulta = consulta.or(filtroDeBusqueda(opciones.busqueda));
+    // **Las cuentas de siembra se excluyen aquí, no en el cliente.** Medido el
+    // 2026-10-25: 61 de los 72 perfiles de producción son `@semilla.invalid`, y
+    // el panel los ocultaba *después* de paginar. Resultado: la página 1
+    // mostraba 8 usuarios reales, la 2 **ninguno** y la 3 mostraba 3, mientras
+    // el contador decía «de 72». El usuario lo describió como «la lista de
+    // usuarios no funciona» y tenía razón.
+    //
+    // Filtrar en la consulta arregla las dos mitades de golpe, porque
+    // `contarUsuarios` reutiliza este mismo método con `contar = true`: el total
+    // pasa a contar sólo lo que se va a ver, y el número de páginas deja de
+    // mentir.
+    if (!opciones.incluirDemo) {
+      consulta = consulta.not('email', 'ilike', '%@semilla.invalid');
+    }
 
     return consulta;
   }

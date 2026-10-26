@@ -83,6 +83,9 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel>
       rol: _rol,
       activo: _activo,
       busqueda: _busqueda.text,
+      // El filtro de cuentas de siembra va al servidor: si se aplica aquí
+      // después de paginar, la página sale medio vacía y el total miente.
+      incluirDemo: !_ocultarCuentasDemo,
       limite: _limite,
       desplazamiento: _paginaActual * _limite,
     );
@@ -502,7 +505,21 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel>
                               FilterChip(
                                 label: const Text('Ocultar pruebas'),
                                 selected: _ocultarCuentasDemo,
-                                onSelected: (v) => setState(() => _ocultarCuentasDemo = v),
+                                // **Recarga, no sólo repinta.** Desde el
+                                // 2026-10-25 el filtro de cuentas de siembra lo
+                                // aplica el servidor, así que cambiar el chip
+                                // sin volver a pedir deja la lista anterior en
+                                // pantalla y el usuario cree que el chip no
+                                // hace nada. Y se vuelve a la primera página:
+                                // el total cambia, así que la página actual
+                                // puede quedar fuera de rango.
+                                onSelected: (v) {
+                                  setState(() {
+                                    _ocultarCuentasDemo = v;
+                                    _paginaActual = 0;
+                                  });
+                                  _cargar();
+                                },
                               ),
                             ],
                           ),

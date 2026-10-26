@@ -8,6 +8,7 @@ import {
   ID_ALUMNO,
   ID_DOCENTE,
   PERFIL_ADMIN,
+  PERFILES_POR_DEFECTO,
   PERFIL_ALUMNO,
   TOKEN_ADMIN,
   TOKEN_ALUMNO,
@@ -634,6 +635,59 @@ describe('listado de usuarios', () => {
     expect(cuerpo.total).toBe(1);
     expect(cuerpo.usuarios).toHaveLength(1);
     expect(cuerpo.usuarios[0]?.rol).toBe('docente');
+  });
+
+  it('excluye las cuentas de siembra por defecto y las incluye si se piden', async () => {
+    // **Regresión medida el 2026-10-25.** En producción, 61 de los 72 perfiles
+    // son `@semilla.invalid`. El panel los ocultaba en el cliente *después* de
+    // paginar, así que con `limite=25` la página 1 mostraba 8 usuarios reales,
+    // **la página 2 ninguno** y la 3 mostraba 3, mientras el contador decía «de
+    // 72». El usuario lo resumió como «la lista de usuarios no funciona».
+    //
+    // La prueba usa un arnés propio con una cuenta de siembra añadida: metida en
+    // `PERFILES_POR_DEFECTO` habría cambiado el total de las demás pruebas de
+    // paginación, que esperan 4.
+    const semilla = {
+      id: '99999999-9999-9999-9999-999999999999',
+      email: 'prueba.sembrada@semilla.invalid',
+      cedula: '99999999',
+      nombres: 'Prueba',
+      apellidos: 'Zambrano',
+      rol: 'estudiante' as const,
+      activo: true,
+    };
+    const arnés = crearArnés({
+      perfiles: [...PERFILES_POR_DEFECTO, semilla],
+    });
+    app = arnés.app;
+
+    const porDefecto = await app.inject({
+      method: 'GET',
+      url: '/api/v1/admin/usuarios',
+      headers: conToken(TOKEN_ADMIN),
+    });
+    const conDemo = await app.inject({
+      method: 'GET',
+      url: '/api/v1/admin/usuarios?incluirDemo=true',
+      headers: conToken(TOKEN_ADMIN),
+    });
+
+    const sin = porDefecto.json() as {
+      usuarios: { email: string }[];
+      total: number;
+    };
+    const con = conDemo.json() as {
+      usuarios: { email: string }[];
+      total: number;
+    };
+
+    // Lo importante: el TOTAL también excluye. Si sólo se filtrara la página,
+    // el contador seguiría diciendo 5 y volveríamos al problema original.
+    expect(sin.total).toBe(PERFILES_POR_DEFECTO.length);
+    expect(sin.usuarios.every((u) => !u.email.endsWith('@semilla.invalid'))).toBe(true);
+
+    expect(con.total).toBe(PERFILES_POR_DEFECTO.length + 1);
+    expect(con.usuarios.some((u) => u.email === semilla.email)).toBe(true);
   });
 
   it('filtra por estado de la cuenta', async () => {

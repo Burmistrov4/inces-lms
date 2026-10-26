@@ -231,13 +231,14 @@ export function rutasAdmin(app: FastifyInstance, deps: DependenciasRutas): void 
       // --- Usuarios ----------------------------------------------------------
 
       admin.get('/usuarios', async (request) => {
-        const { rol, activo, busqueda, limite, desplazamiento } =
+        const { rol, activo, busqueda, incluirDemo, limite, desplazamiento } =
           esquemaListadoUsuarios.parse(request.query);
 
         const { usuarios, total } = await reposDe(request).perfiles.listar({
           rol,
           activo,
           busqueda,
+          incluirDemo,
           limite,
           desplazamiento,
         });

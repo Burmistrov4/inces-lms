@@ -23,13 +23,20 @@ class UsuariosAdminRepository {
     String? rol,
     bool? activo,
     String? busqueda,
+    /// Incluir las cuentas de siembra (`@semilla.invalid`). Por defecto no.
+    ///
+    /// **El filtro vive en el servidor desde el 2026-10-25.** Antes se aplicaba
+    /// aquí, después de paginar, y con 61 de 72 perfiles sembrados la página 2
+    /// salía vacía mientras el contador decía «de 72». Ahora se pide al backend
+    /// y el total que llega ya es el de lo que se ve.
+    bool incluirDemo = false,
     int limite = 25,
     int desplazamiento = 0,
   }) {
     // **Cache compartida.** Medido el 2026-10-23: `/admin/usuarios?limite=25`
     // se pedia 31 veces en una corrida, todas con la misma URL.
     final clave =
-        'usuarios:${[rol, activo, busqueda, limite, desplazamiento].join('|')}';
+        'usuarios:${[rol, activo, busqueda, incluirDemo, limite, desplazamiento].join('|')}';
     return cacheDeLecturas.leer<Result<PaginaUsuarios>>(
       clave,
       ttl: const Duration(seconds: 45),
@@ -37,6 +44,7 @@ class UsuariosAdminRepository {
         rol: rol,
         activo: activo,
         busqueda: busqueda,
+        incluirDemo: incluirDemo,
         limite: limite,
         desplazamiento: desplazamiento,
       ),
@@ -47,6 +55,7 @@ class UsuariosAdminRepository {
     String? rol,
     bool? activo,
     String? busqueda,
+    bool incluirDemo = false,
     int limite = 25,
     int desplazamiento = 0,
   }) => Result.guard(() async {
@@ -79,6 +88,9 @@ class UsuariosAdminRepository {
         if (activo != null) 'activo': activo.toString(),
         if (busqueda != null && busqueda.trim().isNotEmpty)
           'busqueda': busqueda.trim(),
+        // Sólo se envía cuando hay que incluirlas: el backend excluye las
+        // cuentas de siembra por defecto, así que el caso normal no manda nada.
+        if (incluirDemo) 'incluirDemo': 'true',
         'limite': '$limite',
         'desplazamiento': '$desplazamiento',
       },

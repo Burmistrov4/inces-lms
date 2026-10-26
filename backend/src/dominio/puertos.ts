@@ -105,6 +105,18 @@ export interface OpcionesListadoUsuarios {
    * tabla crezca.
    */
   busqueda?: string;
+  /**
+   * Incluir las cuentas de siembra (`@semilla.invalid`).
+   *
+   * **Por defecto `false`, y el filtro se aplica en el servidor a propósito.**
+   * Medido el 2026-10-25: de 72 perfiles en producción, **61** son
+   * `@semilla.invalid`. El panel los ocultaba en el cliente *después* de
+   * paginar, así que la página 1 mostraba 8 usuarios reales, **la página 2
+   * ninguno** y la 3 mostraba 3, mientras el contador decía «de 72». Filtrar
+   * aquí hace que `contarUsuarios` —que reutiliza esta misma consulta— cuente
+   * sólo lo que se va a ver, y la paginación vuelve a tener sentido.
+   */
+  incluirDemo?: boolean;
   limite: number;
   desplazamiento: number;
 }
