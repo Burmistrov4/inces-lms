@@ -176,9 +176,11 @@ administrador puede cambiarlo en cualquier momento. Además, la **disponibilidad
 **Por qué.** «Cupo máximo […] tenemos veinticinco […] eso no sirve […] debería ser
 específico para cada curso, no puede ser para uno solo para todo».
 
-**Decisión que falta:** qué pasa con el parámetro global. Recomendación: queda
-como **valor por defecto** al crear una sección nueva, y deja de aplicarse por
-encima de lo que diga la sección.
+**Decisión (Parte IV):** el parámetro global `cupo_maximo_por_seccion` queda
+como **valor por defecto** al crear una sección nueva; a partir de ahí manda
+`sections.max_capacity`, editable por el admin, y el global deja de aplicarse por
+encima. Además el admin puede **activar/desactivar la disponibilidad de cupos por
+curso y por el PNA** desde la pantalla del curso.
 
 ## D6 · Rediseño del gestor de archivos
 
@@ -325,18 +327,31 @@ Cada bloque se da por terminado cuando **todo** esto se cumple.
 
 ---
 
-# Parte IV — Ambigüedades que hay que resolver antes de empezar
+# Parte IV — Ambigüedades, RESUELTAS por Lorenzo (2026-10-25, noche)
 
-**No adivinar ninguna de estas.** Cada una cambia el trabajo de días.
+Estas cinco se plantearon como dudas; Lorenzo las resolvió al cerrar el
+documento. El agente **no debe preguntarlas**: son decisión tomada.
 
-1. **«Elimina las secciones… Aula Virtual.»** ¿Se elimina el módulo Aula Virtual
-   entero, o sólo se renombra (D9)? Son cosas opuestas.
-2. **Nombre nuevo de «Aula Virtual»:** ¿Campus, Clase Virtual, otro?
-3. **Cupo global:** ¿se elimina el parámetro o queda como valor por defecto?
-4. **Archivar un período:** ¿cierra también las aulas virtuales, o sólo las
-   secciones?
-5. **El PNA:** ¿es un `program` más (hoy `CUR-INT-01` lo es) o una entidad aparte?
-   Hoy es un programa con `type = CURSO_LIBRE`.
+1. **«Aula Virtual»: se RENOMBRA, no se elimina.** Nombre elegido: **«Campus»**
+   (con «Campus INCES La Isabelica» en títulos y metadatos). Se conserva toda la
+   funcionalidad del módulo `m6_aula_virtual`; sólo cambia el nombre visible
+   (menú, breadcrumb, títulos, `web/index.html`). Razón: «Aula Virtual» compite
+   con millones de páginas en Google; el nombre nuevo no compite con ninguna y es
+   lo que el usuario pidió para aparecer en búsquedas.
+2. **Nombre nuevo: «Campus».** (Decidido en el punto 1.)
+3. **Cupo global:** `cupo_maximo_por_seccion` se mantiene SOLO como **valor por
+   defecto** al crear una sección. A partir de ahí manda `sections.max_capacity`
+   (editable por el admin). Además el admin puede **activar/desactivar la
+   disponibilidad de cupos por curso y por el PNA** desde la pantalla del curso.
+   El global deja de pisar el valor de la sección.
+4. **Archivar un período:** cierra sus **secciones** activas (marca `is_active`
+   en falso y registra quién y cuándo). Las **aulas virtuales** se archivan
+   **por separado** (acción propia de D8), no en cascata, para no ocultar
+   contenido docente sin querer.
+5. **PNA:** se mantiene como **`program`** (hoy `CUR-INT-01`, `type =
+   CURSO_LIBRE`). La separación es de **interfaz y horario**, no del modelo: PNA
+   tiene su propia pantalla de horario (TAREA 3/4) y su propio cuadrante, pero
+   sigue siendo un programa en `programs`. No se crea entidad nueva.
 
 ---
 
@@ -542,7 +557,8 @@ seleccionados y el aviso «Preparando la descarga / Comprimiendo 1 archivo».
 
 **Aceptación:** seleccionar 3 archivos y descargar produce **un ZIP con los 3**;
 se puede cambiar entre cuadrícula y lista; la matriz sigue en 0 desbordes a
-390 px.
+390 px. **Además:** capturas en 3 posiciones de scroll (inicial/medio/final) de la
+vista de cuadrícula y de la de lista, con juicio de intuitividad.
 
 **Contexto:** el panel mide ~2 300 líneas. **No lo reescribas entero**: extrae el
 gestor de selección y la barra de acciones a widgets propios.
@@ -569,6 +585,8 @@ de un apartado a otro y saber cómo gestionar todo».
 
 **Aceptación:** 7 entradas o menos en el menú del admin; «Secciones» se alcanza
 desde «Programas» en un clic; cada pantalla tiene su línea de propósito.
+**Además:** capturas en 3 posiciones de scroll del menú y de cada grupo, con
+juicio de intuitividad.
 
 ---
 
@@ -588,11 +606,11 @@ el filtro; archivar un período no deja secciones activas huérfanas.
 
 ### TAREA 9 — Renombrar «Aula Virtual»
 
-**Pendiente de confirmar el nombre.** Opciones: «Campus», «Clase Virtual», otro.
-
-**Recomendación:** **Campus**, con «Campus INCES La Isabelica» en títulos y
-metadatos. «Aula virtual» compite con millones de páginas en Google; «Campus
-INCES La Isabelica» no compite con ninguna.
+**Nombre DECIDIDO: «Campus»** (con «Campus INCES La Isabelica» en títulos y
+metadatos). Resuelto en la Parte IV: se renombra el módulo, no se elimina. «Aula
+virtual» compite con millones de páginas en Google; «Campus INCES La Isabelica»
+no compite con ninguna, que es lo que el usuario pidió para aparecer en
+búsquedas.
 
 **Aceptación:** el nombre nuevo aparece en el menú, el breadcrumb, los títulos y
 los metadatos de `web/index.html`; no queda «Aula Virtual» en texto visible.
@@ -651,8 +669,18 @@ funciona desde ahí.
 5. **Verifica los cuatro controles** antes de decir que terminaste.
 6. **Si una tarea toca el cuadrante o el horario, corre la matriz antes y
    después** y compara. Es la parte más frágil del sistema.
-7. **Si encuentras una ambigüedad, pregunta.** No adivines. Las cinco de la
-   Parte IV están sin resolver.
+7. **Las ambigüedades de la Parte IV ya están resueltas.** No las preguntes: son
+   decisión tomada por Lorenzo. Si aparece una SEXTA ambigüedad no cubierta,
+   preguntas; no adivines.
+
+## DECISIONES YA TOMADAS (no preguntar — resueltas en la Parte IV)
+
+1. **«Aula Virtual» se RENOMBRA a «Campus»** (no se elimina el módulo).
+2. **Nombre nuevo: «Campus»** / «Campus INCES La Isabelica» en títulos y metadatos.
+3. **Cupo global = valor por defecto** al crear sección; manda `max_capacity` por
+   curso; el admin activa/desactiva disponibilidad por curso y por el PNA.
+4. **Archivar período cierra sus secciones**; aulas virtuales se archivan aparte.
+5. **PNA sigue siendo un `program`**; la separación es de UI/horario, no de modelo.
 
 ## LO QUE NO DEBES HACER
 
@@ -667,7 +695,13 @@ funciona desde ahí.
 ## DEFINICIÓN DE TERMINADO
 
 Una tarea está terminada cuando:
-- [ ] Los cuatro controles pasan (analizador, backend, matriz, migraciones).
+- [ ] **Los cuatro controles pasan, sin excepción** (analizador, backend, matriz,
+      migraciones). Esta es la barra: si alguno falla, la tarea no está lista.
+- [ ] **Capturas de cada pantalla rediseñada en al menos 3 posiciones de scroll**
+      (inicial, medio, final) y juicio de intuitividad: ¿un humano la entiende
+      sin ayuda, se ve completa, es práctica y fácil de usar? Si no, la tarea no
+      está lista. Obligatorio para las TAREAS 6 y 7 y para cualquier pantalla que
+      cambie de UI.
 - [ ] Hay una prueba que cubre el comportamiento nuevo.
 - [ ] El comentario del cambio explica el porqué y cómo se midió.
 - [ ] Los documentos afectados están actualizados (`ESTADO_DEL_SISTEMA.md`,
