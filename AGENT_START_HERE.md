@@ -4,6 +4,20 @@
 > **PENDIENTES:** [`docs/BACKLOG_PENDIENTES.md`](docs/BACKLOG_PENDIENTES.md).
 > **CONTINUIDAD:** [`docs/handover/REPORTE_CONTINUIDAD_2026-10-22.md`](docs/handover/REPORTE_CONTINUIDAD_2026-10-22.md).
 
+> ## ⚡ TRABAJO VIGENTE — REDISEÑO 1.5 (2026-10-25)
+>
+> La fuente única es
+> [`docs/ESPECIFICACION_MAESTRA_REDISENO_1_5_2026-10-25.md`](docs/ESPECIFICACION_MAESTRA_REDISENO_1_5_2026-10-25.md).
+> Su **Parte V** es el mandato; las **11 tareas se hacen en orden**.
+> Reglas duras de esta tanda:
+> - **Trabaja directo en `main`.** No abras ramas `feat/*` / `fix/*` / `tarea/*`;
+>   haz commit y push a `origin main`.
+> - **Las 5 ambigüedades de la Parte IV ya están resueltas** — no las preguntes.
+> - **Los cuatro controles** (analizador, backend, matriz, migraciones) pasan sin
+>   excepción; es la barra. No se declara «listo» sin ellos.
+> - **Capturas de cada pantalla rediseñada en 3 posiciones de scroll** (inicial,
+>   medio, final) + juicio de intuitividad. Sin eso, la tarea no está terminada.
+
 ## Misión
 
 Tomar el estado real del repositorio y avanzar hasta cerrar lo que se pueda cerrar con evidencia. No depender del historial conversacional ni de un resumen de otra sesión: **el disco manda**.
