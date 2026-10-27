@@ -135,7 +135,7 @@ void main() {
       await montar(tester, CpanelCuadrantePanel(repositorio: repo));
 
       expect(
-        find.text('Todavía no hay lapsos registrados'),
+        find.text('Todavía no hay períodos registrados'),
         findsOneWidget,
       );
     });
@@ -163,7 +163,7 @@ void main() {
       await montar(tester, CpanelCuadrantePanel(repositorio: repo));
 
       expect(
-        find.textContaining('Ningún lapso está marcado como vigente'),
+        find.textContaining('Ningún período está marcado como vigente'),
         findsOneWidget,
       );
       expect(find.text('Soldadura por Arco'), findsOneWidget);
@@ -176,7 +176,7 @@ void main() {
       await montar(tester, CpanelCuadrantePanel(repositorio: repo));
 
       expect(
-        find.text('Este lapso aún no tiene clases ni guardias'),
+        find.text('Este período aún no tiene clases ni guardias'),
         findsOneWidget,
       );
       // Sin secciones disponibles no se puede crear: el botón queda deshabilitado.

@@ -1539,6 +1539,10 @@
           },
           "fechaFin": {
             "type": "string"
+          },
+          "heredarDeCodigo": {
+            "type": "string",
+            "description": "Código del período del que se heredará el horario (secciones, clases y guardias)."
           }
         },
         "required": [

@@ -85,14 +85,14 @@ test('1. Flujo Público y Responsive (Landing, Oferta, Móvil, Inscripción, Log
     await page.waitForTimeout(4000);
     await page.screenshot({ path: `${BRAIN_DIR}/audit_10_admin_inscripciones.png` });
 
-    // K. Lapsos Académicos
-    console.log('[AUDITORÍA ADMIN] Navegando a Lapsos Académicos...');
+    // K. Período
+    console.log('[AUDITORÍA ADMIN] Navegando a Período...');
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
     await page.mouse.move(100, 400);
     await page.mouse.wheel(0, 300);
     await page.waitForTimeout(500);
-    await login.app.pulsarReal('Lapsos Académicos', { tiempoLimiteMs: 15000 });
+    await login.app.pulsarReal('Período', { tiempoLimiteMs: 15000 });
     await page.waitForTimeout(4000);
     await page.screenshot({ path: `${BRAIN_DIR}/audit_11_admin_lapsos.png` });
 

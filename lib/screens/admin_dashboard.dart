@@ -176,7 +176,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     // inscripciones), y aulas y guardias son recursos del cuadrante.
     ItemNavegacion(
       icono: Icons.event_note_outlined,
-      titulo: 'Lapsos Académicos',
+      titulo: 'Período',
       categoria: 'Gestión académica',
       disponible: true,
       modulo: 'm3_cuadrante',
@@ -424,9 +424,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             migas: ['Inicio', 'Gestión académica', 'Secciones del Período'],
             child: CpanelSeccionesPanel(),
           );
-        case 'Lapsos Académicos':
+        case 'Período':
           return const ContenidoSeccion(
-            migas: ['Inicio', 'Gestión académica', 'Lapsos'],
+            migas: ['Inicio', 'Gestión académica', 'Período'],
             child: CpanelLapsosPanel(),
           );
         case 'Archivos del Centro':

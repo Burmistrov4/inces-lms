@@ -825,6 +825,9 @@ const CuerpoCrearPeriodo = z
       description: 'AAAA-MM-DD. Opcional: el centro carga las fechas cuando las tiene.',
     }),
     fechaFin: z.string().optional(),
+    heredarDeCodigo: z.string().optional().openapi({
+      description: 'Código del período del que se heredará el horario (secciones, clases y guardias).',
+    }),
   })
   .strict()
   .openapi('CuerpoCrearPeriodo');

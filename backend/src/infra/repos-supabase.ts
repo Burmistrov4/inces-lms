@@ -2392,6 +2392,16 @@ class CuadranteSupabase implements PuertaCuadrante {
 
     if (respuesta.error) throw this.traducirEscritura(respuesta.error, 'crear período');
 
+    if (entrada.heredarDeCodigo) {
+      const resHeredar = await this.cliente.rpc('heredar_horario_periodo', {
+        p_nuevo_codigo: entrada.codigo,
+        p_origen_codigo: entrada.heredarDeCodigo,
+      });
+      if (resHeredar.error) {
+        throw this.traducirEscritura(resHeredar.error, 'heredar horario');
+      }
+    }
+
     // Un lapso recién creado **nunca** es el vigente, y no hace falta
     // preguntarlo: el trigger `exigir_periodo_registrado()` garantiza que
     // `periodo_activo` nombra un lapso que ya existe, así que insertar su código

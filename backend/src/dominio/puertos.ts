@@ -606,6 +606,7 @@ export interface EntradaCrearPeriodo {
   nombre: string | null;
   fechaInicio: string | null;
   fechaFin: string | null;
+  heredarDeCodigo?: string | null;
 }
 
 /**

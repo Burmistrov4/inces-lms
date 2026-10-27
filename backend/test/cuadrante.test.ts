@@ -417,6 +417,31 @@ describe('POST /api/v1/admin/periodos', () => {
     expect(cuerpo.periodo.vigente).toBe(false);
   });
 
+  it('crea un período heredando el horario del anterior', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/periodos',
+      headers: conToken(TOKEN_ADMIN),
+      payload: {
+        codigo: '2027-2',
+        nombre: 'Período 2027-2',
+        heredarDeCodigo: '2026-1',
+      },
+    });
+
+    expect(respuesta.statusCode).toBe(201);
+    const cuerpo = respuesta.json() as { periodo: { codigo: string } };
+    expect(cuerpo.periodo.codigo).toBe('2027-2');
+
+    // Verificar que las secciones de 2026-1 se replicaron para 2027-2
+    const secciones = arnés.estado.secciones.filter((s) => s.periodo === '2027-2');
+    const origenSecciones = arnés.estado.secciones.filter((s) => s.periodo === '2026-1');
+    expect(secciones.length).toBe(origenSecciones.length);
+  });
+
   it('un código repetido da 409', async () => {
     const arnés = crearArnés();
     app = arnés.app;

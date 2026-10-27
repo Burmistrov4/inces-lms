@@ -144,7 +144,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
   }
 
   String? _razonParaNoAsignar() {
-    if (_lapso == null) return 'Elige un lapso antes de asignar una clase.';
+    if (_lapso == null) return 'Elige un período antes de asignar una clase.';
     if (_aulas.isEmpty) return 'Registra los espacios del centro primero.';
     if (_docentes.isEmpty) {
       return 'No hay docentes activos a los que asignar la clase.';
@@ -292,7 +292,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
       width: 200,
       child: InputDecorator(
         decoration: const InputDecoration(
-          labelText: 'Lapso',
+          labelText: 'Período',
           isDense: true,
         ),
         child: DropdownButtonHideUnderline(
@@ -325,8 +325,8 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: AvisoEnLinea(
-        texto: 'Ningún lapso está marcado como vigente. Se muestra '
-            '«$_lapso»; márcalo vigente en «Lapsos académicos» para fijar el '
+        texto: 'Ningún período está marcado como vigente. Se muestra '
+            '«$_lapso»; márcalo vigente en «Período» para fijar el '
             'cuadrante del centro.',
         icono: Icons.flag_outlined,
         tono: TonoAviso.advertencia,
@@ -337,12 +337,12 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
   Widget _cuerpo() {
     if (_periodos.isEmpty) {
       return const PanelVacio(
-        titulo: 'Todavía no hay lapsos registrados',
-        mensaje: 'El cuadrante se organiza por lapso. Registra uno en '
-            '«Lapsos académicos» y vuelve: la rejilla se armará con sus clases '
+        titulo: 'Todavía no hay períodos registrados',
+        mensaje: 'El cuadrante se organiza por período. Registra uno en '
+            '«Período» y vuelve: la rejilla se armará con sus clases '
             'y guardias.',
         icono: Icons.calendar_month_outlined,
-        nota: 'El sistema no trae lapsos de ejemplo a propósito.',
+        nota: 'El sistema no trae períodos de ejemplo a propósito.',
       );
     }
 
@@ -360,7 +360,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
 
     if (_clases.isEmpty && _guardias.isEmpty) {
       return PanelVacio(
-        titulo: 'Este lapso aún no tiene clases ni guardias',
+        titulo: 'Este período aún no tiene clases ni guardias',
         mensaje: 'La rejilla está lista. Asigna la primera clase y aparecerá en '
             'su día y bloque.',
         icono: Icons.grid_view_outlined,

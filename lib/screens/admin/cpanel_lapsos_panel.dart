@@ -85,7 +85,11 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
   Future<void> _abrirFormulario({Periodo? existente}) async {
     final guardado = await showDialog<bool>(
       context: context,
-      builder: (_) => _DialogoLapso(repo: _repo, existente: existente),
+      builder: (_) => _DialogoLapso(
+        repo: _repo,
+        existente: existente,
+        periodoOrigenPorDefecto: _periodos.where((p) => p.vigente).firstOrNull?.codigo ?? _periodos.firstOrNull?.codigo,
+      ),
     );
 
     if (guardado != true || !mounted) return;
@@ -106,7 +110,7 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
       success: (vigente) {
         mostrarAviso(
           context,
-          '«${vigente.codigo}» es el lapso vigente. El cuadrante y los horarios '
+          '«${vigente.codigo}» es el período vigente. El cuadrante y los horarios '
           'lo toman por defecto desde ahora.',
           exito: true,
         );
@@ -124,15 +128,15 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(estaCerrado ? 'Reabrir Lapso' : 'Cerrar Lapso'),
+        title: Text(estaCerrado ? 'Reabrir Período' : 'Cerrar Período'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               estaCerrado
-                  ? '¿Deseas reabrir el lapso «${periodo.etiqueta}»? Volverá a admitir planificaciones y modificaciones.'
-                  : '¿Deseas cerrar el lapso «${periodo.etiqueta}»? Quedará archivado en el historial de lapsos.',
+                  ? '¿Deseas reabrir el período «${periodo.etiqueta}»? Volverá a admitir planificaciones y modificaciones.'
+                  : '¿Deseas cerrar el período «${periodo.etiqueta}»? Quedará archivado en el historial de períodos.',
             ),
             const SizedBox(height: 16),
             TextField(
@@ -151,7 +155,7 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(estaCerrado ? 'Reabrir' : 'Cerrar lapso'),
+            child: Text(estaCerrado ? 'Reabrir' : 'Cerrar período'),
           ),
         ],
       ),
@@ -176,13 +180,13 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
         _cargar();
         mostrarAviso(
           context,
-          'Lapso ${estaCerrado ? 'reabierto' : 'cerrado'} correctamente.',
+          'Período ${estaCerrado ? 'reabierto' : 'cerrado'} correctamente.',
           exito: true,
         );
       },
       failure: (fallo) => mostrarAviso(
         context,
-        'Error al $accion el lapso: ${fallo.message}',
+        'Error al $accion el período: ${fallo.message}',
         error: true,
       ),
     );
@@ -194,40 +198,40 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TituloSeccion(
-          'Lapsos Académicos',
-          subtitulo: 'Períodos de formación técnica del centro. El lapso «Vigente» '
-              'es donde se dictan las clases actualmente; los lapsos en «Planificación» '
+          'Período',
+          subtitulo: 'Períodos de formación técnica del centro. El período «Vigente» '
+              'es donde se dictan las clases actualmente; los períodos en «Planificación» '
               'permiten organizar materias y horarios con antelación.',
           acciones: [
             FilledButton.icon(
               onPressed: () => _abrirFormulario(),
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Registrar lapso'),
+              label: const Text('Registrar período'),
             ),
           ],
         ),
         const SizedBox(height: 12),
         const GuiaContextualModulo(
-          claveStorage: 'lapsos_academicos_cpanel',
+          claveStorage: 'periodos_academicos_cpanel',
           icono: Icons.calendar_month_outlined,
-          titulo: '¿Cómo funcionan los Lapsos Académicos en el CFS?',
-          subtitulo: 'Un Lapso Académico es el período oficial de clases (trimestre, semestre o ciclo formativo). '
+          titulo: '¿Cómo funcionan los Períodos Académicos en el CFS?',
+          subtitulo: 'Un Período Académico es el ciclo oficial de clases (trimestre, semestre o ciclo formativo). '
               'Aquí defines cuál ciclo está activo para que docentes y estudiantes vean sus aulas y horarios.',
           pasos: [
             PasoGuiaContextual(
               numero: 1,
               titulo: 'Registrar nuevo ciclo',
-              descripcion: 'Pulsa «Registrar lapso», escribe el código (ej. SA26-1) y asigna las fechas de inicio y fin.',
+              descripcion: 'Pulsa «Registrar período», escribe el código (ej. SA26-1) y asigna las fechas de inicio y fin.',
             ),
             PasoGuiaContextual(
               numero: 2,
               titulo: 'Marcar como Vigente',
-              descripcion: 'El lapso marcado como «Vigente» es el que gobierna las aulas virtuales, asistencias y horarios de hoy.',
+              descripcion: 'El período marcado como «Vigente» es el que gobierna las aulas virtuales, asistencias y horarios de hoy.',
             ),
             PasoGuiaContextual(
               numero: 3,
               titulo: 'Cerrar y archivar',
-              descripcion: 'Al culminar las clases, cierra el lapso para que pase al historial archivado y proteja las notas finales.',
+              descripcion: 'Al culminar las clases, cierra el período para que pase al historial archivado y proteja las notas finales.',
             ),
           ],
         ),
@@ -252,12 +256,12 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
 
     if (_periodos.isEmpty) {
       return const PanelVacio(
-        titulo: 'Todavía no hay lapsos registrados',
+        titulo: 'Todavía no hay períodos registrados',
         mensaje: 'Aquí se organizan los períodos de formación técnica (trimestres o semestres) '
-            'del CFS Rafael Urdaneta. Cada horario y sección pertenece siempre a un lapso académico. '
-            'Puedes registrar un nuevo lapso para comenzar a planificar clases.',
+            'del CFS Rafael Urdaneta. Cada horario y sección pertenece siempre a un período académico. '
+            'Puedes registrar un nuevo período para comenzar a planificar clases.',
         icono: Icons.event_note_outlined,
-        nota: 'El Lapso Académico en curso es el ciclo oficial donde aprendices y facilitadores '
+        nota: 'El Período Académico en curso es el ciclo oficial donde aprendices y facilitadores '
             'asisten a clases y registran actividades formativas.',
       );
     }
@@ -280,7 +284,7 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
               },
             ),
             ChoiceChip(
-              label: Text('Historial de Lapsos Archivados (${archivados.length})'),
+              label: Text('Historial de Períodos Archivados (${archivados.length})'),
               selected: _tabSeleccionado == 1,
               onSelected: (sel) {
                 if (sel) setState(() => _tabSeleccionado = 1);
@@ -293,11 +297,11 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
           Expanded(
             child: PanelVacio(
               titulo: _tabSeleccionado == 0
-                  ? 'No hay lapsos activos o en preparación'
+                  ? 'No hay períodos activos o en preparación'
                   : 'No hay períodos archivados en el historial',
               mensaje: _tabSeleccionado == 0
-                  ? 'Todos los lapsos registrados se encuentran archivados en el historial.'
-                  : 'Cuando culmine un ciclo formativo y cierres un lapso, quedará conservado aquí como referencia histórica.',
+                  ? 'Todos los períodos registrados se encuentran archivados en el historial.'
+                  : 'Cuando culmine un ciclo formativo y cierres un período, quedará conservado aquí como referencia histórica.',
               icono: _tabSeleccionado == 0 ? Icons.event_busy_outlined : Icons.archive_outlined,
             ),
           )
@@ -435,7 +439,7 @@ class _FilaLapso extends StatelessWidget {
                       )
                     else if (periodo.estado != EstadoPeriodo.borrador)
                       IconButton(
-                        tooltip: 'Cerrar lapso',
+                        tooltip: 'Cerrar período',
                         onPressed: onCambiarCierre,
                         icon: const Icon(Icons.lock_outline, size: 18),
                         visualDensity: VisualDensity.compact,
@@ -506,10 +510,15 @@ class _FilaLapso extends StatelessWidget {
 
 /// Formulario de alta y edición de un lapso.
 class _DialogoLapso extends StatefulWidget {
-  const _DialogoLapso({required this.repo, this.existente});
+  const _DialogoLapso({
+    required this.repo,
+    this.existente,
+    this.periodoOrigenPorDefecto,
+  });
 
   final CuadranteRepository repo;
   final Periodo? existente;
+  final String? periodoOrigenPorDefecto;
 
   @override
   State<_DialogoLapso> createState() => _DialogoLapsoState();
@@ -526,6 +535,8 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
   late String? _fin = widget.existente?.fechaFin;
 
   late bool _activo = widget.existente?.activo ?? true;
+  late bool _heredarHorario = widget.periodoOrigenPorDefecto != null;
+  late final String? _periodoOrigen = widget.periodoOrigenPorDefecto;
 
   bool _guardando = false;
   String? _error;
@@ -602,6 +613,9 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
               nombre: _nombreCtrl.text,
               fechaInicio: _inicio,
               fechaFin: _fin,
+              heredarDeCodigo: (_heredarHorario && _periodoOrigen != null)
+                  ? _periodoOrigen
+                  : null,
             ),
           );
 
@@ -620,7 +634,7 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
   /// mensaje genérico no dice cuál está repetido.
   static String _mensajeDe(AppException fallo) {
     if (fallo.code == codigoRegistroDuplicado) {
-      return 'Ya existe un lapso con ese código. Es la identidad del lapso: '
+      return 'Ya existe un período con ese código. Es la identidad del período: '
           'cambiar el de uno rompería cualquier documento que lo cite.';
     }
     return fallo.message;
@@ -629,7 +643,7 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(_esEdicion ? 'Editar lapso' : 'Registrar lapso'),
+      title: Text(_esEdicion ? 'Editar período' : 'Registrar período'),
       content: SizedBox(
         width: anchoDialogoSeguro(context, 440),
         child: SingleChildScrollView(
@@ -655,10 +669,22 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
                 textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(
                   labelText: 'Nombre',
-                  hintText: 'Lapso SA26-2',
+                  hintText: 'Período SA26-2',
                   helperText: 'Opcional. Si falta, se muestra el código.',
                 ),
               ),
+              if (!_esEdicion && widget.periodoOrigenPorDefecto != null) ...[
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _heredarHorario,
+                  onChanged: (val) => setState(() => _heredarHorario = val),
+                  title: const Text('Heredar horario del período anterior'),
+                  subtitle: Text(
+                    'Copia automáticamente las secciones, clases y guardias docentes de «$_periodoOrigen».',
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               _campoDeFecha(
                 etiqueta: 'Fecha de inicio',
@@ -771,7 +797,7 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
                   title: const Text('Habilitado para planificación'),
                   subtitle: const Text(
                     'Permite programar materias, horarios y cupos para este período. '
-                    'Para que sea el lapso activo en curso del centro, usa el botón '
+                    'Para que sea el período activo en curso del centro, usa el botón '
                     '«Hacer vigente» en la lista principal.',
                   ),
                 ),

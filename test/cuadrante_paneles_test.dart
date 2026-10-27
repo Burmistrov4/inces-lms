@@ -368,9 +368,9 @@ void main() {
 
       await montar(tester, CpanelLapsosPanel(repositorio: repo));
 
-      expect(find.text('Todavía no hay lapsos registrados'), findsOneWidget);
+      expect(find.text('Todavía no hay períodos registrados'), findsOneWidget);
       expect(
-        find.textContaining('pertenece siempre a un lapso'),
+        find.textContaining('pertenece siempre a un período'),
         findsOneWidget,
       );
     });
@@ -397,7 +397,7 @@ void main() {
         (tester) async {
       await montar(tester, CpanelLapsosPanel(repositorio: repo));
 
-      await tester.tap(find.text('Registrar lapso'));
+      await tester.tap(find.text('Registrar período'));
       await tester.pumpAndSettle();
 
       await tester.enterText(
@@ -423,7 +423,7 @@ void main() {
 
       // Se deja escrito a propósito: `TituloSeccion` aplica `toUpperCase()`, y
       // buscar el título en su forma legible no lo encuentra nunca.
-      expect(find.text(rotulo('Lapsos académicos')), findsOneWidget);
+      expect(find.text(rotulo('Período')), findsOneWidget);
     });
   });
 }

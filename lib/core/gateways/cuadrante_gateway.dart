@@ -147,6 +147,7 @@ class EntradaCrearPeriodo {
     this.nombre,
     this.fechaInicio,
     this.fechaFin,
+    this.heredarDeCodigo,
   });
 
   final String codigo;
@@ -156,12 +157,14 @@ class EntradaCrearPeriodo {
   /// zona horaria.
   final String? fechaInicio;
   final String? fechaFin;
+  final String? heredarDeCodigo;
 
   Map<String, dynamic> toJson() => {
         'codigo': codigo,
         if (nombre != null) 'nombre': nombre,
         if (fechaInicio != null) 'fechaInicio': fechaInicio,
         if (fechaFin != null) 'fechaFin': fechaFin,
+        if (heredarDeCodigo != null) 'heredarDeCodigo': heredarDeCodigo,
       };
 }
 

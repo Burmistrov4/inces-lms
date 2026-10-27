@@ -276,6 +276,15 @@ class BackendCuadranteGateway implements CuadranteGateway {
           .select()
           .single();
 
+      if (entrada.heredarDeCodigo != null) {
+        try {
+          await client.rpc('heredar_horario_periodo', params: {
+            'p_nuevo_codigo': entrada.codigo.trim(),
+            'p_origen_codigo': entrada.heredarDeCodigo!.trim(),
+          });
+        } catch (_) {}
+      }
+
       final resVigente = await client
           .from('system_settings')
           .select('valor')

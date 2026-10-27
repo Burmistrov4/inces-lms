@@ -2481,6 +2481,39 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       };
 
       estado.periodos = [...estado.periodos, periodo];
+
+      if (entrada.heredarDeCodigo) {
+        const seccionesOrigen = estado.secciones.filter(
+          (s) => s.periodo === entrada.heredarDeCodigo && s.activa !== false,
+        );
+        for (const s of seccionesOrigen) {
+          const nuevaSeccionId = nuevoId('99999997', ++secuenciaCuadrante);
+          estado.secciones.push({
+            ...s,
+            id: nuevaSeccionId,
+            periodo: entrada.codigo,
+          });
+          const slots = estado.clases.filter((c) => c.seccionId === s.id && c.activa);
+          for (const slot of slots) {
+            estado.clases.push({
+              ...slot,
+              id: nuevoId('99999996', ++secuenciaCuadrante),
+              seccionId: nuevaSeccionId,
+            });
+          }
+        }
+        const guardias = estado.guardias.filter(
+          (g) => g.periodo === entrada.heredarDeCodigo && g.activa,
+        );
+        for (const g of guardias) {
+          estado.guardias.push({
+            ...g,
+            id: nuevoId('99999995', ++secuenciaCuadrante),
+            periodo: entrada.codigo,
+          });
+        }
+      }
+
       return periodo;
     },
 

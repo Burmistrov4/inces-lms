@@ -131,6 +131,7 @@ class CuadranteRepository {
           nombre: (nombre == null || nombre.isEmpty) ? null : nombre,
           fechaInicio: entrada.fechaInicio,
           fechaFin: entrada.fechaFin,
+          heredarDeCodigo: entrada.heredarDeCodigo,
         ),
       );
     });
@@ -141,7 +142,7 @@ class CuadranteRepository {
     CambiosPeriodo cambios,
   ) {
     return Result.guard(() async {
-      _validarId(id, 'el lapso');
+      _validarId(id, 'el período');
 
       if (cambios.vacio) {
         throw const AppException.validacion('No hay ningún cambio que guardar.');
@@ -169,7 +170,7 @@ class CuadranteRepository {
 
   Future<Result<Periodo>> marcarVigente(String id) {
     return Result.guard(() {
-      _validarId(id, 'el lapso');
+      _validarId(id, 'el período');
       return _gateway.marcarVigente(id.trim());
     });
   }
@@ -409,7 +410,7 @@ class CuadranteRepository {
 
   void _validarCodigoDeLapso(String codigo) {
     if (codigo.isEmpty) {
-      throw const AppException.validacion('Ingresa el código del lapso.');
+      throw const AppException.validacion('Ingresa el código del período.');
     }
     if (codigo.length > largoMaximoCodigoLapso) {
       throw const AppException.validacion(
@@ -456,11 +457,11 @@ class CuadranteRepository {
   void _validarPeriodo(String periodo) {
     final limpio = periodo.trim();
     if (limpio.isEmpty) {
-      throw const AppException.validacion('Elige el lapso.');
+      throw const AppException.validacion('Elige el período.');
     }
     if (limpio.length > largoMaximoCodigoLapso) {
       throw const AppException.validacion(
-        'El código del lapso no puede pasar de $largoMaximoCodigoLapso '
+        'El código del período no puede pasar de $largoMaximoCodigoLapso '
         'caracteres.',
       );
     }

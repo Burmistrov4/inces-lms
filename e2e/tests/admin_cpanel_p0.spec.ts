@@ -10,7 +10,7 @@ const MODULOS = [
   'Espacios y Aulas',
   'Guardias Docentes',
   'Inscripciones y Cupos',
-  'Lapsos Académicos',
+  'Período',
   'Programas Académicos',
   'Secciones del Período',
 ] as const;

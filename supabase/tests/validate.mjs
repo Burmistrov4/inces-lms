@@ -4522,6 +4522,57 @@ async function main() {
     JSON.stringify(revocada),
   );
 
+  seccion('2026-10-27 · D2: Período sin lapsos y herencia de horario');
+  const filaSa26 = (
+    await db.query("select name from public.academic_periods where code = 'SA26-2'")
+  ).rows[0];
+  check(
+    'el período SA26-2 se renombró a Período SA26-2',
+    filaSa26?.name === 'Período SA26-2',
+    JSON.stringify(filaSa26),
+  );
+
+  // Probar herencia de horario
+  await db.exec(`update public.profiles set active = true where id = '${ADMIN_ID}';`);
+  // Crear un nuevo período destino
+  await como('authenticated', ADMIN_ID, async () => {
+    await db.exec(
+      "insert into public.academic_periods (code, name, is_active) values ('SA27-1', 'Período SA27-1', true)",
+    );
+  });
+
+  // Alumno no puede llamar a heredar_horario_periodo
+  await esperaError('un alumno no puede ejecutar heredar_horario_periodo', () =>
+    como('authenticated', ALUMNO_ID, () =>
+      db.query("select public.heredar_horario_periodo('SA27-1', 'SA26-2')"),
+    ),
+  );
+
+  // Admin sí puede llamar a heredar_horario_periodo
+  const resHeredar = (
+    await como('authenticated', ADMIN_ID, () =>
+      db.query("select public.heredar_horario_periodo('SA27-1', 'SA26-2') as res"),
+    )
+  ).rows[0].res;
+  check(
+    'heredar_horario_periodo devuelve estadísticas de copia en jsonb',
+    resHeredar && typeof resHeredar === 'object',
+    JSON.stringify(resHeredar),
+  );
+
+  const secCopiadas = (
+    await db.query("select count(*)::int as n from public.sections where period_code = 'SA27-1'")
+  ).rows[0].n;
+  const secOrigen = (
+    await db.query("select count(*)::int as n from public.sections where period_code = 'SA26-2' and is_active = true")
+  ).rows[0].n;
+  check(
+    'las secciones activas se replicaron en el nuevo período',
+    secCopiadas === secOrigen,
+    `esperadas ${secOrigen}, encontradas ${secCopiadas}`,
+  );
+
+
   // ---------------------------------------------------------------- resumen
   console.log(
     `\n\x1b[1m${fallos.length === 0 ? '\x1b[32mTODO VERDE\x1b[0m' : '\x1b[31mHAY FALLOS\x1b[0m'}\x1b[0m ` +

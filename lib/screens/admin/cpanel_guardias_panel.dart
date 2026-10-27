@@ -530,19 +530,19 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
   Widget _matrizSemanal() {
     if (_periodos.isEmpty) {
       return const PanelVacio(
-        titulo: 'Todavía no hay lapsos registrados',
-        mensaje: 'Una guardia pertenece siempre a un lapso: es lo que acota el '
-            'chequeo de choques a una agenda concreta. Registra el lapso en '
-            'curso en «Lapsos académicos» y vuelve a esta pantalla.',
+        titulo: 'Todavía no hay períodos registrados',
+        mensaje: 'Una guardia pertenece siempre a un período: es lo que acota el '
+            'chequeo de choques a una agenda concreta. Registra el período en '
+            'curso en «Período» y vuelve a esta pantalla.',
         icono: Icons.event_note_outlined,
       );
     }
 
     if (_lapso == null) {
       return const PanelVacio(
-        titulo: 'No hay ningún lapso vigente',
-        mensaje: 'Elige un lapso en el filtro de arriba, o marca uno como '
-            'vigente en «Lapsos académicos». Cuál está en curso es una '
+        titulo: 'No hay ningún período vigente',
+        mensaje: 'Elige un período en el filtro de arriba, o marca uno como '
+            'vigente en «Período». Cuál está en curso es una '
             'decisión del centro, y el sistema no la toma por ti.',
         icono: Icons.play_circle_outline,
       );
@@ -1127,10 +1127,10 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
   /// Por qué no se puede asignar todavía, o `null` si sí se puede.
   String? _razonParaNoAsignar() {
     if (_periodos.isEmpty) {
-      return 'Registra un lapso antes: una guardia pertenece siempre a un lapso.';
+      return 'Registra un período antes: una guardia pertenece siempre a un período.';
     }
     if (_lapso == null) {
-      return 'Elige un lapso, o marca uno como vigente en «Lapsos académicos».';
+      return 'Elige un período, o marca uno como vigente en «Período».';
     }
     if (_docentes.isEmpty) {
       return 'No hay docentes activos a los que asignar la guardia.';
@@ -1151,7 +1151,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         _Desplegable<String>(
-          etiqueta: 'Lapso',
+          etiqueta: 'Período',
           ancho: 190,
           // Si el lapso elegido ya no está en el catálogo —lo borraron desde
           // otra pantalla— el desplegable se queda sin ítem que mostrar y
@@ -1273,19 +1273,19 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
   Widget _lista() {
     if (_periodos.isEmpty) {
       return const PanelVacio(
-        titulo: 'Todavía no hay lapsos registrados',
-        mensaje: 'Una guardia pertenece siempre a un lapso: es lo que acota el '
-            'chequeo de choques a una agenda concreta. Registra el lapso en '
-            'curso en «Lapsos académicos» y vuelve a esta pantalla.',
+        titulo: 'Todavía no hay períodos registrados',
+        mensaje: 'Una guardia pertenece siempre a un período: es lo que acota el '
+            'chequeo de choques a una agenda concreta. Registra el período en '
+            'curso en «Período» y vuelve a esta pantalla.',
         icono: Icons.event_note_outlined,
       );
     }
 
     if (_lapso == null) {
       return const PanelVacio(
-        titulo: 'No hay ningún lapso vigente',
-        mensaje: 'Elige un lapso en el filtro de arriba, o marca uno como '
-            'vigente en «Lapsos académicos». Cuál está en curso es una '
+        titulo: 'No hay ningún período vigente',
+        mensaje: 'Elige un período en el filtro de arriba, o marca uno como '
+            'vigente en «Período». Cuál está en curso es una '
             'decisión del centro, y el sistema no la toma por ti.',
         icono: Icons.play_circle_outline,
       );
@@ -1324,7 +1324,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
       }
 
       return PanelVacio(
-        titulo: 'Todavía no hay guardias en este lapso',
+        titulo: 'Todavía no hay guardias en este período',
         mensaje: 'Asigna la primera con «Asignar guardia». Las guardias se '
             'repiten por día y bloque, así que cada una es una presencia '
             'semanal.',
@@ -1988,7 +1988,7 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Lapso ${widget.periodo}',
+                'Período ${widget.periodo}',
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.primary,
                 ),

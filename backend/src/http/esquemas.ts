@@ -583,11 +583,12 @@ export const esquemaCrearPeriodo = z
     nombre: z
       .string()
       .trim()
-      .min(1, 'El nombre del lapso no puede estar vacío.')
+      .min(1, 'El nombre del período no puede estar vacío.')
       .max(120)
       .optional(),
     fechaInicio: fechaIso.optional(),
     fechaFin: fechaIso.optional(),
+    heredarDeCodigo: codigoPeriodo.optional(),
   })
   .strict()
   .refine((valor) => rangoDeFechasValido(valor.fechaInicio, valor.fechaFin), {

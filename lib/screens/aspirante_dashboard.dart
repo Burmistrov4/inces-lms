@@ -1035,7 +1035,7 @@ class _PanelOfertasState extends State<PanelOfertas> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'En el lapso académico actual no hay secciones abiertas para tu formación técnica específica. '
+                        'En el período académico actual no hay secciones abiertas para tu formación técnica específica. '
                         'Tu postulación se encuentra en lista de espera prioritaria para futuras aperturas. '
                         'Las opciones que aparecen a continuación corresponden a otras formaciones técnicas con cupo en el centro.',
                         style: GoogleFonts.inter(

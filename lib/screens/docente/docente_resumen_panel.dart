@@ -187,7 +187,7 @@ class DocenteResumenPanel extends StatelessWidget {
                           ),
                         ),
                         child: Text(
-                          'Lapso SA26-2',
+                          'Período SA26-2',
                           style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,

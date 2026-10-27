@@ -31,15 +31,15 @@ test('Verificar INCES LMS v1.2.4 en producción con sesión administrativa', asy
     path: 'C:/Users/Loro/.gemini/antigravity/brain/fc938256-e2cd-45cb-99ec-a6d5c97a5f0e/live_02_usuarios.png',
   });
 
-  // 2. Lapsos Académicos
-  console.log('[PROD] Navegando a Lapsos Académicos...');
+  // 2. Período
+  console.log('[PROD] Navegando a Período...');
   await page.keyboard.press('Escape');
   await page.waitForTimeout(500);
   // Scroll sidebar to reveal lower items
   await page.mouse.move(100, 400);
   await page.mouse.wheel(0, 300);
   await page.waitForTimeout(500);
-  await login.app.pulsarReal('Lapsos Académicos', { tiempoLimiteMs: 15000 });
+  await login.app.pulsarReal('Período', { tiempoLimiteMs: 15000 });
   await page.waitForTimeout(4000);
   await page.screenshot({
     path: 'C:/Users/Loro/.gemini/antigravity/brain/fc938256-e2cd-45cb-99ec-a6d5c97a5f0e/live_03_lapsos.png',

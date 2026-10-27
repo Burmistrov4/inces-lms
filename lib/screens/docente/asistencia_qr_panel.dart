@@ -278,7 +278,7 @@ class _AsistenciaQrPanelState extends State<AsistenciaQrPanel> {
     if (mis.vacio) {
       return const _Centro(
         icono: Icons.info_outline,
-        mensaje: 'No tienes secciones asignadas en este lapso. La guardia del RLS es la misma: no puedes abrir asistencia en la sección de otro.',
+        mensaje: 'No tienes secciones asignadas en este período. La guardia del RLS es la misma: no puedes abrir asistencia en la sección de otro.',
         onReintentar: null,
       );
     }

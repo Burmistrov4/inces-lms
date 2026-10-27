@@ -29,7 +29,7 @@ void main() {
       expect(find.text('+ Asignar Clase'), findsOneWidget);
       expect(find.text('Ver Aulas'), findsOneWidget);
       expect(find.text('Generar Reporte'), findsOneWidget);
-      expect(find.text('Lapso: SA26-2'), findsOneWidget);
+      expect(find.text('Período: SA26-2'), findsOneWidget);
       expect(find.text('Sistema: 100% En Línea'), findsOneWidget);
 
       await tester.tap(find.text('+ Inscribir Aspirante'));

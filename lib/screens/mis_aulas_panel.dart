@@ -157,7 +157,7 @@ class _PanelMisAulasState extends State<PanelMisAulas> {
                 'de anuncios y el trabajo de clase, y podrás subir tus '
                 'entregas sin salir del aula.',
         icono: Icons.class_outlined,
-        nota: mis?.periodo != null ? 'Lapso: ${mis!.periodo}' : null,
+        nota: mis?.periodo != null ? 'Período: ${mis!.periodo}' : null,
       );
     }
 
@@ -167,7 +167,7 @@ class _PanelMisAulasState extends State<PanelMisAulas> {
         TituloSeccion(
           'Mis aulas',
           subtitulo:
-              '${plural(mis.aulas.length, 'sección', 'secciones')} en este lapso.',
+              '${plural(mis.aulas.length, 'sección', 'secciones')} en este período.',
           acciones: [
             if (!mis.esDocente && widget.onNavegarA != null)
               TextButton.icon(

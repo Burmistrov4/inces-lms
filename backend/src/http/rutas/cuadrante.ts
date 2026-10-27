@@ -166,6 +166,7 @@ export function rutasCuadrante(app: FastifyInstance, deps: DependenciasRutas): v
           nombre: entrada.nombre ?? null,
           fechaInicio: entrada.fechaInicio ?? null,
           fechaFin: entrada.fechaFin ?? null,
+          heredarDeCodigo: entrada.heredarDeCodigo ?? null,
         });
 
         return reply.status(201).send({ periodo });

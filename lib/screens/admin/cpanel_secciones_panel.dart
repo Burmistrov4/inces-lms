@@ -165,7 +165,7 @@ class _CpanelSeccionesPanelState extends State<CpanelSeccionesPanel>
       children: [
         TituloSeccion(
           'Secciones del Período',
-          subtitulo: 'Catálogo de grupos del lapso. Archivar retira la '
+          subtitulo: 'Catálogo de grupos del período. Archivar retira la '
               'sección del catálogo sin perder su historial.',
           acciones: [
             FilledButton.icon(
@@ -191,7 +191,7 @@ class _CpanelSeccionesPanelState extends State<CpanelSeccionesPanel>
     if (_pagina.secciones.isEmpty) {
       return const PanelVacio(
         titulo: 'No hay secciones registradas',
-        mensaje: 'Cuando el centro registre las secciones del lapso, las '
+        mensaje: 'Cuando el centro registre las secciones del período, las '
             'verás aquí con su capacidad y su estado de archivado.',
         icono: Icons.explore_outlined,
       );
@@ -265,7 +265,7 @@ class _CpanelSeccionesPanelState extends State<CpanelSeccionesPanel>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Lapso ${s.periodo} · ${_nombrePrograma(s.programaId)} '
+                    'Período ${s.periodo} · ${_nombrePrograma(s.programaId)} '
                     '· ${_nombreMateria(s.materiaId)}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
@@ -400,7 +400,7 @@ class _DialogoCrearSeccionState extends State<_DialogoCrearSeccion> {
                 const SizedBox(height: 10),
                 _campo(
                   _periodo,
-                  'Código de lapso (p. ej. SA26-2)',
+                  'Código de período (p. ej. SA26-2)',
                   validadorNoVacio: true,
                   validadorLargoMax: 10,
                 ),
@@ -594,7 +594,7 @@ class _DialogoEditarSeccionState extends State<_DialogoEditarSeccion> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Lapso: ${widget.seccion.periodo}',
+                        'Período: ${widget.seccion.periodo}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

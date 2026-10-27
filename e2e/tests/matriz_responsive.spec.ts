@@ -50,7 +50,7 @@ const SECCIONES_ADMIN = [
   'Inscripciones y Cupos',
   'Campos de Inscripción',
   'Secciones del Período',
-  'Lapsos Académicos',
+  'Período',
   'Archivos del Centro',
   'Cuadrante de Horarios',
   'Espacios y Aulas',

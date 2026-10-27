@@ -245,7 +245,7 @@ void main() {
       gateway.limpiarLlamadas();
       final resultado = await repo.marcarVigente('  ');
 
-      expect(falloDe(resultado), 'Falta el identificador de el lapso.');
+      expect(falloDe(resultado), 'Falta el identificador de el período.');
       expect(gateway.llamadas, isEmpty);
     });
 
@@ -285,7 +285,7 @@ void main() {
       );
       // R-15: sin período, una guardia del lunes a primera hora chocaría con las
       // clases de cualquier lapso.
-      expect(falloDe(sinLapso), 'Elige el lapso.');
+      expect(falloDe(sinLapso), 'Elige el período.');
 
       expect(gateway.llamadas, isEmpty);
     });

@@ -112,7 +112,7 @@ void main() {
       await montar(tester, MiHorarioPanel(repositorio: repo));
 
       expect(
-        find.text('No tienes clases asignadas en este lapso'),
+        find.text('No tienes clases asignadas en este período'),
         findsOneWidget,
       );
     });

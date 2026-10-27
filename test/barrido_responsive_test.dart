@@ -355,9 +355,9 @@ void main() {
       // En una ventana estrecha el botón puede quedar fuera del viewport: sin
       // `ensureVisible` el toque no acierta y la prueba pasaría sin abrir nada,
       // que es la peor forma de aprobar.
-      await tester.ensureVisible(find.text('Registrar lapso'));
+      await tester.ensureVisible(find.text('Registrar período'));
       await tester.pump();
-      await tester.tap(find.text('Registrar lapso'));
+      await tester.tap(find.text('Registrar período'));
       await tester.pump();
       // Sin `pumpAndSettle`: basta con dejar terminar la transición del diálogo.
       await tester.pump(const Duration(seconds: 1));
@@ -365,7 +365,7 @@ void main() {
       // Hay que demostrar que el diálogo se abrió: si el toque hubiera fallado,
       // la prueba mediría el panel de siempre y pasaría sin haber medido el
       // diálogo. Su título repite el rótulo del botón, así que salen dos.
-      expect(find.text('Registrar lapso'), findsNWidgets(2));
+      expect(find.text('Registrar período'), findsNWidgets(2));
 
       final error = tester.takeException();
       await tester.pumpWidget(const SizedBox());

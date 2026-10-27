@@ -283,7 +283,7 @@ void main() {
       await montar(tester, CpanelGuardiasPanel(repositorio: repo));
 
       expect(
-        find.text('Todavía no hay lapsos registrados'),
+        find.text('Todavía no hay períodos registrados'),
         findsOneWidget,
       );
       // El botón no se esconde: se muestra deshabilitado con un tooltip que
@@ -303,7 +303,7 @@ void main() {
 
       await montar(tester, CpanelGuardiasPanel(repositorio: repo));
 
-      expect(find.text('No hay ningún lapso vigente'), findsOneWidget);
+      expect(find.text('No hay ningún período vigente'), findsOneWidget);
       expect(
         find.textContaining('no la toma por ti'),
         findsOneWidget,

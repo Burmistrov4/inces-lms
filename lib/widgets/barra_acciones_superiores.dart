@@ -290,7 +290,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        'Lapso: $periodo',
+                        'Período: $periodo',
                         style: GoogleFonts.inter(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,

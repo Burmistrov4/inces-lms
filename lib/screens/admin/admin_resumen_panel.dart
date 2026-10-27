@@ -93,7 +93,7 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
                   widget.onNavegarA?.call('Registro de Inicios de Sesión / Accesos'),
             ),
             onVerLapsos: () =>
-                widget.onNavegarA?.call('Lapsos Académicos'),
+                widget.onNavegarA?.call('Período'),
             onVerModulos: () =>
                 widget.onNavegarA?.call('Módulos del Sistema'),
           ),
@@ -347,7 +347,7 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
         valor: 'SA26-2',
         icono: Icons.calendar_today_rounded,
         tono: TonoEstado.info,
-        onTap: () => widget.onNavegarA?.call('Lapsos Académicos'),
+        onTap: () => widget.onNavegarA?.call('Período'),
       ),
       const TarjetaMetrica(
         etiqueta: 'Seguridad RLS',

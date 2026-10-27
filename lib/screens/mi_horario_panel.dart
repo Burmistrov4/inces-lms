@@ -73,8 +73,8 @@ class _MiHorarioPanelState extends State<MiHorarioPanel> {
         TituloSeccion(
           'Mi horario',
           subtitulo: esEstudiante
-              ? 'Tus clases de este lapso, organizadas por día y bloque.'
-              : 'Tus clases y guardias de este lapso, organizadas por día y '
+              ? 'Tus clases de este período, organizadas por día y bloque.'
+              : 'Tus clases y guardias de este período, organizadas por día y '
                   'bloque.',
         ),
         const SizedBox(height: 8),
@@ -136,14 +136,14 @@ class _MiHorarioPanelState extends State<MiHorarioPanel> {
     final horario = _horario;
     if (horario == null || horario.vacio) {
       return PanelVacio(
-        titulo: 'No tienes clases asignadas en este lapso',
+        titulo: 'No tienes clases asignadas en este período',
         mensaje: horario?.sinPeriodo ?? false
-            ? 'Marca un lapso como vigente en coordinación y tu horario se '
+            ? 'Marca un período como vigente en coordinación y tu horario se '
                 'llenará solo.'
             : 'Cuando te asignen secciones o guardias, aparecerán en su día y '
                 'bloque.',
         icono: Icons.calendar_month_outlined,
-        nota: horario?.periodo != null ? 'Lapso: ${horario!.periodo}' : null,
+        nota: horario?.periodo != null ? 'Período: ${horario!.periodo}' : null,
       );
     }
 

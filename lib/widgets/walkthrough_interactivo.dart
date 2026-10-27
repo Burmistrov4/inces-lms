@@ -106,12 +106,12 @@ class _WalkthroughInteractivoCardState
   static const List<PasoWalkthrough> _pasosAdmin = [
     PasoWalkthrough(
       etiquetaCategoria: 'Paso 1 de 5 · Planificación Académica',
-      titulo: 'Configurar Lapsos y Aulas de Clases',
+      titulo: 'Configurar Períodos y Aulas de Clases',
       descripcion:
-          'Comienza definiendo el lapso académico en curso (ej. SA26-2) y registra las aulas y talleres técnicos donde se impartirán las actividades formativas del centro.',
+          'Comienza definiendo el período académico en curso (ej. SA26-2) y registra las aulas y talleres técnicos donde se impartirán las actividades formativas del centro.',
       icono: Icons.calendar_month_outlined,
-      seccionDestino: 'Lapsos Académicos',
-      textoBoton: 'Ir a Lapsos Académicos',
+      seccionDestino: 'Período',
+      textoBoton: 'Ir a Período',
     ),
     PasoWalkthrough(
       etiquetaCategoria: 'Paso 2 de 5 · Estructura Curricular',
