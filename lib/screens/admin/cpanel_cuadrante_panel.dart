@@ -5,6 +5,8 @@ import '../../core/gateways/cuadrante_gateway.dart';
 import '../../core/reglas_cuadrante.dart';
 import '../../models/cuadrante.dart';
 import '../../repositories/cuadrante_repository.dart';
+import '../../repositories/curriculo_repository.dart';
+import '../../repositories/secciones_repository.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/cuadrante_grid.dart';
 import '../../widgets/guia_contextual_modulo.dart';
@@ -49,6 +51,8 @@ class CpanelCuadrantePanel extends StatefulWidget {
 class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
   late final CuadranteRepository _repo =
       widget.repositorio ?? CuadranteRepository();
+  late final SeccionesRepository _seccionesRepo = SeccionesRepository();
+  late final CurriculoRepository _curriculoRepo = CurriculoRepository();
 
   List<Periodo> _periodos = const [];
   String? _lapso;
@@ -61,6 +65,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
   List<Guardia> _guardias = const [];
   List<Aula> _aulas = const [];
   List<DocenteResumen> _docentes = const [];
+  Map<String, String> _seccionesCatalogo = const {};
 
   bool _cargando = true;
   String? _error;
@@ -112,6 +117,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
     });
 
     final resultado = await _repo.rejilla(periodo: _lapso);
+    await _cargarSeccionesCatalogo();
     if (!mounted) return;
 
     resultado.when(
@@ -129,10 +135,46 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
     );
   }
 
-  /// Las secciones disponibles para crear, sacadas de las clases ya existentes en
-  /// este lapso. Ver el comentario de la clase sobre por qué no hay catálogo.
+  /// Carga todas las secciones activas y resuelve los nombres de sus cursos y materias.
+  Future<void> _cargarSeccionesCatalogo() async {
+    try {
+      final resProg = await _curriculoRepo.listarProgramas(limite: 100);
+      final progMap = <String, String>{};
+      if (resProg.isSuccess) {
+        for (final p in resProg.valueOrNull!.programas) {
+          progMap[p.id] = p.nombre;
+        }
+      }
+
+      final resMat = await _curriculoRepo.listarMaterias(limite: 200);
+      final matMap = <String, String>{};
+      if (resMat.isSuccess) {
+        for (final m in resMat.valueOrNull!.materias) {
+          matMap[m.id] = m.nombre;
+        }
+      }
+
+      final resSec = await _seccionesRepo.listarSecciones(soloActivas: true, limite: 150);
+      if (resSec.isSuccess) {
+        final mapa = <String, String>{};
+        for (final s in resSec.valueOrNull!.secciones) {
+          if (_lapso != null && s.periodo != _lapso) continue;
+          final progNombre = progMap[s.programaId] ?? s.programaId;
+          final matNombre = matMap[s.materiaId];
+          final etiqueta = matNombre != null && matNombre.isNotEmpty
+              ? '$progNombre · Secc. ${s.nombre} ($matNombre)'
+              : '$progNombre · Secc. ${s.nombre}';
+          mapa[s.id] = etiqueta;
+        }
+        _seccionesCatalogo = mapa;
+      }
+    } catch (_) {}
+  }
+
+  /// Secciones disponibles para asignar: combina el catálogo general de secciones
+  /// activas de la base de datos con las que ya tienen clases en el período.
   Map<String, String> get _seccionesDisponibles {
-    final mapa = <String, String>{};
+    final mapa = <String, String>{..._seccionesCatalogo};
     for (final clase in _clases) {
       if (clase.seccionId.isNotEmpty && !mapa.containsKey(clase.seccionId)) {
         mapa[clase.seccionId] = clase.seccion.isNotEmpty
@@ -150,8 +192,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
       return 'No hay docentes activos a los que asignar la clase.';
     }
     if (_seccionesDisponibles.isEmpty) {
-      return 'Crea primero una clase desde el currículo: la sección se necesita '
-          'para ubicar ésta.';
+      return 'Crea primero una sección en «Secciones del Período» para asignarle un horario.';
     }
     return null;
   }
@@ -436,6 +477,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
           child: CuadranteGrid(
             celdas: celdas,
             diaFiltro: _diaFiltro,
+            mostrarSelectorDias: false,
             onCeldaTap: _razonParaNoAsignar() == null
                 ? (dia, bloque) =>
                     _abrirCreacion(diaInicial: dia, bloqueInicial: bloque)
@@ -1002,6 +1044,7 @@ class _DialogoEditarHorasBloquesState extends State<_DialogoEditarHorasBloques> 
     for (var b = 1; b <= 12; b++)
       b: TextEditingController(text: horaLegibleDeBloque(b)),
   };
+  bool _cascadaAutomatica = true;
 
   @override
   void dispose() {
@@ -1009,6 +1052,59 @@ class _DialogoEditarHorasBloquesState extends State<_DialogoEditarHorasBloques> 
       c.dispose();
     }
     super.dispose();
+  }
+
+  void _ajustarEnCascada(int bloqueModificado) {
+    if (!_cascadaAutomatica) return;
+    final texto = _controllers[bloqueModificado]?.text.trim() ?? '';
+    final match = RegExp(r'^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$').firstMatch(texto);
+    if (match == null) return;
+
+    final h1 = int.parse(match.group(1)!);
+    final m1 = int.parse(match.group(2)!);
+    var h2 = int.parse(match.group(3)!);
+    final m2 = int.parse(match.group(4)!);
+
+    final esTarde = bloqueModificado >= 7;
+    final es12h = (h1 < 12 && esTarde) || (h1 <= 12 && h2 < h1);
+
+    var startMin = h1 * 60 + m1;
+    var endMin = h2 * 60 + m2;
+    if (endMin <= startMin && es12h) {
+      endMin += 12 * 60;
+    }
+    final duracion = endMin - startMin;
+    if (duracion <= 0 || duracion > 240) return;
+
+    final maxBloqueTurno = bloqueModificado <= 6 ? 6 : 12;
+    var prevEnd = endMin;
+
+    for (var b = bloqueModificado + 1; b <= maxBloqueTurno; b++) {
+      final nextStart = prevEnd;
+      final nextEnd = nextStart + duracion;
+
+      final startStr = _minutosAString(nextStart, es12h: es12h);
+      final endStr = _minutosAString(nextEnd, es12h: es12h);
+
+      _controllers[b]?.text = '$startStr - $endStr';
+      prevEnd = nextEnd;
+    }
+  }
+
+  String _minutosAString(int minutosTotales, {required bool es12h}) {
+    var minNorm = minutosTotales % (24 * 60);
+    var horas = minNorm ~/ 60;
+    final mins = minNorm % 60;
+    if (es12h) {
+      if (horas > 12) {
+        horas -= 12;
+      } else if (horas == 0) {
+        horas = 12;
+      }
+    }
+    final hStr = horas.toString().padLeft(2, '0');
+    final mStr = mins.toString().padLeft(2, '0');
+    return '$hStr:$mStr';
   }
 
   void _guardar() {
@@ -1028,14 +1124,29 @@ class _DialogoEditarHorasBloquesState extends State<_DialogoEditarHorasBloques> 
       title: const Text('Configurar Horarios de Bloques'),
       content: SizedBox(
         width: anchoDialogoSeguro(context, 480),
-        height: 480,
+        height: 520,
         child: ListView(
           children: [
             const Text(
               'Personaliza las franjas horarias de inicio y fin para los 12 bloques académicos (CFS Rafael Urdaneta).',
               style: TextStyle(fontSize: 13),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            SwitchListTile(
+              value: _cascadaAutomatica,
+              onChanged: (v) => setState(() => _cascadaAutomatica = v),
+              title: const Text(
+                'Ajuste inteligente en cascada',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              subtitle: const Text(
+                'Al editar un bloque, ajusta los bloques siguientes sin solapamiento.',
+                style: TextStyle(fontSize: 11.5),
+              ),
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+            ),
+            const SizedBox(height: 12),
             const Text(
               'Turno Mañana (Bloques 1 al 6)',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
@@ -1046,6 +1157,7 @@ class _DialogoEditarHorasBloquesState extends State<_DialogoEditarHorasBloques> 
                 padding: const EdgeInsets.only(bottom: 8),
                 child: TextField(
                   controller: _controllers[b],
+                  onChanged: (_) => _ajustarEnCascada(b),
                   decoration: InputDecoration(
                     labelText: 'Bloque $b (Mañana)',
                     isDense: true,
@@ -1064,6 +1176,7 @@ class _DialogoEditarHorasBloquesState extends State<_DialogoEditarHorasBloques> 
                 padding: const EdgeInsets.only(bottom: 8),
                 child: TextField(
                   controller: _controllers[b],
+                  onChanged: (_) => _ajustarEnCascada(b),
                   decoration: InputDecoration(
                     labelText: 'Bloque $b (Tarde)',
                     isDense: true,

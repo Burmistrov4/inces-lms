@@ -20,6 +20,7 @@ class CuadranteGrid extends StatelessWidget {
     required this.celdas,
     this.onCeldaTap,
     this.diaFiltro,
+    this.mostrarSelectorDias = true,
   });
 
   /// Contenido de cada celda, por clave `'$dia-$bloque'`.
@@ -31,6 +32,10 @@ class CuadranteGrid extends StatelessWidget {
   /// **Filtro de día.** `null` = toda la semana. Con un día concreto la rejilla
   /// muestra solo ese día (en lista, que se lee mejor que una columna suelta).
   final int? diaFiltro;
+
+  /// Si es `false`, omite el selector interno de chips cuando ya existe un [SelectorDeDias]
+  /// externo en el panel, evitando chips de días repetidos.
+  final bool mostrarSelectorDias;
 
   static String clave(int dia, int bloque) => '$dia-$bloque';
 
@@ -96,6 +101,7 @@ class CuadranteGrid extends StatelessWidget {
             celdas: celdas,
             dias: dias,
             onCeldaTap: onCeldaTap,
+            mostrarSelectorDias: mostrarSelectorDias && diaFiltro == null,
           );
         }
         final anchoDia = ((restricciones.maxWidth - 116) / dias.length)
@@ -490,6 +496,7 @@ class _CuadrantePorDia extends StatefulWidget {
     required this.celdas,
     required this.dias,
     this.onCeldaTap,
+    this.mostrarSelectorDias = true,
   });
 
   /// Contenido de cada celda, por clave '$dia-$bloque'.
@@ -499,6 +506,8 @@ class _CuadrantePorDia extends StatefulWidget {
   final List<int> dias;
 
   final void Function(int dia, int bloque)? onCeldaTap;
+
+  final bool mostrarSelectorDias;
 
   @override
   State<_CuadrantePorDia> createState() => _CuadrantePorDiaState();
@@ -538,15 +547,14 @@ class _CuadrantePorDiaState extends State<_CuadrantePorDia> {
     final theme = Theme.of(context);
     final borde = theme.colorScheme.outline.withValues(alpha: 0.25);
 
+    // Cuando no se muestra el selector interno y hay varios días (modo 'Todo' sin duplicar filtros),
+    // desplegamos todos los días secuencialmente con un separador claro.
+    final mostrarTodosSecuenciales = !widget.mostrarSelectorDias && widget.dias.length > 1;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Selector de dia. El punto marca los dias que tienen algo.
-        // **Wrap y no ListView horizontal:** con 6 dias los chips se cortaban en
-        // el borde (medido el 2026-10-22: el ultimo chip quedaba en x=459, fuera
-        // de la pantalla de 390). Envolverlos muestra todos los dias de un
-        // vistazo y no esconde nada.
-        if (widget.dias.length > 1) ...[
+        if (widget.mostrarSelectorDias && widget.dias.length > 1) ...[
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -571,51 +579,83 @@ class _CuadrantePorDiaState extends State<_CuadrantePorDia> {
           ),
           const SizedBox(height: 10),
         ],
-        // Bloques del dia elegido, en lista vertical.
+        // Bloques en lista vertical.
         Expanded(
           child: ListView(
             children: [
-              for (var bloque = 1; bloque <= bloqueMaximo; bloque++)
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: borde)),
-                    color: bloque > bloquesDeManana
-                        ? theme.colorScheme.tertiaryContainer
-                            .withValues(alpha: bloque % 2 == 0 ? 0.22 : 0.14)
-                        : (bloque % 2 == 0
-                            ? theme.colorScheme.primary.withValues(alpha: 0.04)
-                            : null),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 96,
-                        child: _CeldaGutter(bloque: bloque),
-                      ),
-                      Expanded(
-                        child: InkWell(
-                          onTap: widget.onCeldaTap != null
-                              ? () => widget.onCeldaTap!(_dia, bloque)
-                              : null,
-                          child: Container(
-                            constraints: const BoxConstraints(minHeight: 60),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: _contenido(_dia, bloque),
-                            ),
+              if (mostrarTodosSecuenciales)
+                for (final dia in widget.dias) ...[
+                  Container(
+                    margin: const EdgeInsets.only(top: 10, bottom: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: borde),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_today_outlined, size: 14, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          diasDeLaSemana[dia],
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: theme.colorScheme.primary,
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                  for (var bloque = 1; bloque <= bloqueMaximo; bloque++)
+                    _filaBloque(theme, borde, dia, bloque),
+                ]
+              else
+                for (var bloque = 1; bloque <= bloqueMaximo; bloque++)
+                  _filaBloque(theme, borde, widget.dias.length == 1 ? widget.dias.first : _dia, bloque),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _filaBloque(ThemeData theme, Color borde, int dia, int bloque) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: borde)),
+        color: bloque > bloquesDeManana
+            ? theme.colorScheme.tertiaryContainer
+                .withValues(alpha: bloque % 2 == 0 ? 0.22 : 0.14)
+            : (bloque % 2 == 0
+                ? theme.colorScheme.primary.withValues(alpha: 0.04)
+                : null),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 96,
+            child: _CeldaGutter(bloque: bloque),
+          ),
+          Expanded(
+            child: InkWell(
+              onTap: widget.onCeldaTap != null
+                  ? () => widget.onCeldaTap!(dia, bloque)
+                  : null,
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 60),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _contenido(dia, bloque),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

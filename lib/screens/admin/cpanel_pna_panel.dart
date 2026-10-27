@@ -5,6 +5,8 @@ import '../../core/gateways/cuadrante_gateway.dart';
 import '../../core/reglas_cuadrante.dart';
 import '../../models/cuadrante.dart';
 import '../../repositories/cuadrante_repository.dart';
+import '../../repositories/curriculo_repository.dart';
+import '../../repositories/secciones_repository.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/cuadrante_grid.dart';
 import '../../widgets/guia_contextual_modulo.dart';
@@ -34,6 +36,8 @@ class CpanelPnaPanel extends StatefulWidget {
 class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
   late final CuadranteRepository _repo =
       widget.repositorio ?? CuadranteRepository();
+  late final SeccionesRepository _seccionesRepo = SeccionesRepository();
+  late final CurriculoRepository _curriculoRepo = CurriculoRepository();
 
   List<Periodo> _periodos = const [];
   String? _lapso;
@@ -43,6 +47,7 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
   List<ClaseCuadrante> _clases = const [];
   List<Aula> _aulas = const [];
   List<DocenteResumen> _docentes = const [];
+  Map<String, String> _seccionesPnaCatalogo = const {};
 
   bool _cargando = true;
   String? _error;
@@ -92,6 +97,7 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
     });
 
     final resultado = await _repo.rejilla(periodo: _lapso);
+    await _cargarSeccionesPnaCatalogo();
     if (!mounted) return;
 
     resultado.when(
@@ -108,6 +114,46 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
     );
   }
 
+  Future<void> _cargarSeccionesPnaCatalogo() async {
+    try {
+      final resProg = await _curriculoRepo.listarProgramas(limite: 100);
+      final progMap = <String, String>{};
+      if (resProg.isSuccess) {
+        for (final p in resProg.valueOrNull!.programas) {
+          progMap[p.id] = p.nombre;
+        }
+      }
+
+      final resMat = await _curriculoRepo.listarMaterias(limite: 200);
+      final matMap = <String, String>{};
+      if (resMat.isSuccess) {
+        for (final m in resMat.valueOrNull!.materias) {
+          matMap[m.id] = m.nombre;
+        }
+      }
+
+      final resSec = await _seccionesRepo.listarSecciones(soloActivas: true, limite: 150);
+      if (resSec.isSuccess) {
+        final mapa = <String, String>{};
+        for (final s in resSec.valueOrNull!.secciones) {
+          if (_lapso != null && s.periodo != _lapso) continue;
+          final progNombre = progMap[s.programaId] ?? s.programaId;
+          final esPna = esProgramaPNA(progNombre) ||
+              s.programaId.toLowerCase().contains('cur-int-01') ||
+              s.programaId.toLowerCase().contains('pna');
+          if (esPna) {
+            final matNombre = matMap[s.materiaId];
+            final etiqueta = matNombre != null && matNombre.isNotEmpty
+                ? '$progNombre · Secc. ${s.nombre} ($matNombre)'
+                : '$progNombre · Secc. ${s.nombre}';
+            mapa[s.id] = etiqueta;
+          }
+        }
+        _seccionesPnaCatalogo = mapa;
+      }
+    } catch (_) {}
+  }
+
   List<ClaseCuadrante> get _clasesPna => _clases
       .where((c) =>
           esProgramaPNA(c.programa) ||
@@ -116,7 +162,7 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
       .toList();
 
   Map<String, String> get _seccionesPnaDisponibles {
-    final mapa = <String, String>{};
+    final mapa = <String, String>{..._seccionesPnaCatalogo};
     for (final clase in _clases) {
       if (clase.seccionId.isNotEmpty &&
           !mapa.containsKey(clase.seccionId) &&
@@ -127,7 +173,7 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
             : clase.seccionId;
       }
     }
-    // Si todavía no hay clases PNA asignadas, permitir usar la primera sección existente
+    // Si todavía no hay secciones con clases PNA, permitir usar cualquier sección existente
     if (mapa.isEmpty) {
       for (final clase in _clases) {
         if (clase.seccionId.isNotEmpty && !mapa.containsKey(clase.seccionId)) {
@@ -391,6 +437,7 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
           child: CuadranteGrid(
             celdas: celdas,
             diaFiltro: _diaFiltro,
+            mostrarSelectorDias: false,
             onCeldaTap: _razonParaNoAsignar() == null
                 ? (dia, bloque) =>
                     _abrirCreacion(diaInicial: dia, bloqueInicial: bloque)
