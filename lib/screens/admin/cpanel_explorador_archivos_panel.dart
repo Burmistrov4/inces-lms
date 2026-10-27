@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/gateways/selector_archivos.dart';
@@ -235,6 +236,9 @@ class _CpanelExploradorArchivosPanelState
   /// Pila de navegación para las migas de pan (Breadcrumbs).
 
   ElementoArchivo? _seleccionado;
+  final Set<String> _seleccionadosIds = {};
+  String? _ultimoSeleccionadoId;
+  bool _descargandoZip = false;
 
   /// **El límite de subida real son 10 MB, medido contra la base el 2026-10-25.**
   ///
@@ -1234,35 +1238,46 @@ class _CpanelExploradorArchivosPanelState
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Stack(
         children: [
-          _construirBarraSuperior(theme),
-          const Divider(height: 1),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _construirBarraSuperior(theme),
+              const Divider(height: 1),
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
 
-                      const Divider(height: 1),
-                      _bannerEstadoSubida(theme),
-                      Expanded(child: _construirContenidoPrincipal(theme)),
+                          const Divider(height: 1),
+                          _bannerEstadoSubida(theme),
+                          Expanded(child: _construirContenidoPrincipal(theme)),
+                        ],
+                      ),
+                    ),
+                    if (_mostrarPanelLateral && cabenDosPaneles(context)) ...[
+                      const VerticalDivider(width: 1),
+                      SizedBox(
+                        width: 320,
+                        child: _construirPanelLateral(theme),
+                      ),
                     ],
-                  ),
+                  ],
                 ),
-                if (_mostrarPanelLateral && cabenDosPaneles(context)) ...[
-                  const VerticalDivider(width: 1),
-                  SizedBox(
-                    width: 320,
-                    child: _construirPanelLateral(theme),
-                  ),
-                ],
-              ],
-            ),
+              ),
+              _construirBarraCuota(theme),
+            ],
           ),
-          _construirBarraCuota(theme),
+          if (_seleccionadosIds.isNotEmpty)
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: 24,
+              child: _construirBarraFlotanteSeleccion(theme),
+            ),
         ],
       ),
     );
@@ -1671,7 +1686,7 @@ class _CpanelExploradorArchivosPanelState
       spacing: 12,
       runSpacing: 12,
       children: archivos.map((f) {
-        final seleccionada = _seleccionado == f;
+        final seleccionada = _seleccionado == f || _seleccionadosIds.contains(f.id);
 
         return SizedBox(
           width: 220,
@@ -1687,7 +1702,7 @@ class _CpanelExploradorArchivosPanelState
               ),
             ),
             child: InkWell(
-              onTap: () => setState(() => _seleccionado = f),
+              onTap: () => _seleccionarElemento(f, archivos),
               onDoubleTap: () => _abrirODescargarElemento(f),
               borderRadius: BorderRadius.circular(12),
               child: Padding(
@@ -1697,6 +1712,13 @@ class _CpanelExploradorArchivosPanelState
                   children: [
                     Row(
                       children: [
+                        Checkbox(
+                          value: _seleccionadosIds.contains(f.id),
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          onChanged: (_) => _seleccionarElemento(f, archivos),
+                        ),
+                        const SizedBox(width: 4),
                         _iconoPorTipo(f),
                         const Spacer(),
                         if (f.esDrive)
@@ -1843,13 +1865,25 @@ class _CpanelExploradorArchivosPanelState
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: archivos.map((f) {
-          final seleccionada = _seleccionado == f;
+          final seleccionada = _seleccionado == f || _seleccionadosIds.contains(f.id);
           return GestureDetector(
             onDoubleTap: () => _abrirODescargarElemento(f),
             child: ListTile(
               dense: true,
               selected: seleccionada,
-              leading: _iconoPorTipo(f),
+              leading: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Checkbox(
+                    value: _seleccionadosIds.contains(f.id),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onChanged: (_) => _seleccionarElemento(f, archivos),
+                  ),
+                  const SizedBox(width: 4),
+                  _iconoPorTipo(f),
+                ],
+              ),
               title: Text(f.nombre,
                   style: const TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(
@@ -1884,7 +1918,7 @@ class _CpanelExploradorArchivosPanelState
                   ),
                 ],
               ),
-              onTap: () => setState(() => _seleccionado = f),
+              onTap: () => _seleccionarElemento(f, archivos),
             ),
           );
         }).toList(),
@@ -2293,6 +2327,192 @@ class _CpanelExploradorArchivosPanelState
                 politica,
               ],
             ),
+    );
+  }
+
+  void _seleccionarElemento(ElementoArchivo f, List<ElementoArchivo> lista) {
+    final isShift = HardwareKeyboard.instance.isShiftPressed;
+    setState(() {
+      if (isShift && _ultimoSeleccionadoId != null) {
+        final idxAnterior = lista.indexWhere((e) => e.id == _ultimoSeleccionadoId);
+        final idxActual = lista.indexWhere((e) => e.id == f.id);
+        if (idxAnterior != -1 && idxActual != -1) {
+          final start = idxAnterior < idxActual ? idxAnterior : idxActual;
+          final end = idxAnterior > idxActual ? idxAnterior : idxActual;
+          for (var i = start; i <= end; i++) {
+            _seleccionadosIds.add(lista[i].id);
+          }
+        }
+      } else {
+        if (_seleccionadosIds.contains(f.id)) {
+          _seleccionadosIds.remove(f.id);
+        } else {
+          _seleccionadosIds.add(f.id);
+        }
+      }
+      _ultimoSeleccionadoId = f.id;
+      _seleccionado = f;
+    });
+  }
+
+  Future<void> _descargarSeleccionadosComoZip() async {
+    final archivosR2 = _elementos
+        .where((e) => _seleccionadosIds.contains(e.id) && !e.esDrive && !e.esCarpeta)
+        .toList();
+    if (archivosR2.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Los enlaces de Google Drive y carpetas se gestionan individualmente. Selecciona al menos un archivo del centro.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _descargandoZip = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Preparando la descarga / Comprimiendo ${archivosR2.length} ${archivosR2.length == 1 ? 'archivo' : 'archivos'}...',
+        ),
+        duration: const Duration(seconds: 4),
+      ),
+    );
+
+    try {
+      final ids = archivosR2.map((e) => e.id).toList();
+      final res = await _repoArchivos.descargarZip(ids);
+      if (!mounted) return;
+
+      res.when(
+        success: (bytes) async {
+          await _selectorArchivos.descargarBytes(
+            nombre: 'archivos_inces_${DateTime.now().millisecondsSinceEpoch}.zip',
+            contenido: bytes,
+            tipoMime: 'application/zip',
+          );
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Descarga completada con éxito.'),
+              backgroundColor: IncesTheme.verdeGoogleDrive,
+            ),
+          );
+        },
+        failure: (err) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al descargar ZIP: ${err.message}'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Fallo de red al preparar el ZIP: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _descargandoZip = false);
+      }
+    }
+  }
+
+  void _eliminarSeleccionados() {
+    final cant = _seleccionadosIds.length;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar elementos'),
+        content: Text('¿Estás seguro de eliminar los $cant elementos seleccionados?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: IncesTheme.rojoInces),
+            onPressed: () {
+              setState(() {
+                _elementos.removeWhere((e) => _seleccionadosIds.contains(e.id));
+                _seleccionadosIds.clear();
+                _seleccionado = null;
+              });
+              Navigator.of(ctx).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('$cant elementos eliminados.')),
+              );
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _construirBarraFlotanteSeleccion(ThemeData theme) {
+    final cant = _seleccionadosIds.length;
+    final r2Count = _elementos
+        .where((e) => _seleccionadosIds.contains(e.id) && !e.esDrive && !e.esCarpeta)
+        .length;
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 620),
+        child: Material(
+          elevation: 6,
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: 'Limpiar selección',
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () => setState(() {
+                    _seleccionadosIds.clear();
+                  }),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '$cant ${cant == 1 ? 'seleccionado' : 'seleccionados'}',
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                if (_descargandoZip)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    ),
+                  )
+                else
+                  FilledButton.icon(
+                    onPressed: r2Count > 0 ? _descargarSeleccionadosComoZip : null,
+                    icon: const Icon(Icons.archive_outlined, size: 18),
+                    label: Text(r2Count > 1 ? 'Descargar ZIP ($r2Count)' : 'Descargar ZIP'),
+                  ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Eliminar seleccionados',
+                  icon: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.error),
+                  onPressed: _eliminarSeleccionados,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

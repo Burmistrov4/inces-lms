@@ -231,4 +231,13 @@ class BackendArchivosGateway implements ArchivosGateway {
 
     return confirmar(firmada.archivo.id);
   }
+
+  @override
+  Future<List<int>> descargarZip(List<String> archivoIds) async {
+    return _api.postBytes(
+      '$_base/descargar-zip',
+      token: _tokenSesion(),
+      cuerpo: {'ids': archivoIds},
+    );
+  }
 }

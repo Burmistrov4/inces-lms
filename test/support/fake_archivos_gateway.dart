@@ -60,6 +60,8 @@ class FakeArchivosGateway implements ArchivosGateway {
   /// prueba no debe poder confundirlas.
   List<Archivo> archivosMios = const [];
 
+  List<int> zipDevuelto = const [80, 75, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
   // --- Fallos forzados ------------------------------------------------------
 
   Object? errorAlFirmar;
@@ -71,6 +73,7 @@ class FakeArchivosGateway implements ArchivosGateway {
   Object? errorAlSubir;
   Object? errorAlListar;
   Object? errorAlListarMios;
+  Object? errorAlDescargarZip;
 
   // --- Registro de llamadas -------------------------------------------------
 
@@ -80,6 +83,7 @@ class FakeArchivosGateway implements ArchivosGateway {
   TipoEntidadArchivo? ultimoEntityType;
   String? ultimaEntidadId;
   String? ultimoArchivoId;
+  List<String>? ultimosArchivoIdsParaZip;
 
   /// El `Content-Type` que recibió el `PUT`. Es la aserción que importa: tiene
   /// que ser el del servidor, no uno deducido aquí.
@@ -195,6 +199,14 @@ class FakeArchivosGateway implements ArchivosGateway {
     ultimoContenido = contenido;
     _lanzarSi(errorAlSubir);
     return archivoConfirmadoDevuelto;
+  }
+
+  @override
+  Future<List<int>> descargarZip(List<String> archivoIds) async {
+    llamadas.add('descargarZip:${archivoIds.join(',')}');
+    ultimosArchivoIdsParaZip = List.unmodifiable(archivoIds);
+    _lanzarSi(errorAlDescargarZip);
+    return zipDevuelto;
   }
 
   void _lanzarSi(Object? error) {

@@ -208,4 +208,33 @@ void main() {
       expect(r.errorOrNull?.code, 'ARCHIVO_AJENO');
     });
   });
+
+  group('descargarZip', () {
+    test('devuelve bytes del ZIP en Success delegando lista de IDs', () async {
+      final g = FakeArchivosGateway()..zipDevuelto = [80, 75, 3, 4, 10, 20];
+      final repo = ArchivosRepository(gateway: g);
+
+      final r = await repo.descargarZip(['arch-1', 'arch-2']);
+
+      expect(r.isSuccess, isTrue);
+      expect(r.valueOrNull, [80, 75, 3, 4, 10, 20]);
+      expect(g.ultimosArchivoIdsParaZip, ['arch-1', 'arch-2']);
+      expect(g.llamadas, contains('descargarZip:arch-1,arch-2'));
+    });
+
+    test('falla con Failure si el backend rechaza o falla la compresión', () async {
+      final g = FakeArchivosGateway()
+        ..errorAlDescargarZip = const AppException.servidor(
+          code: 'ERROR_COMPRESION',
+          technical: 'Error al generar el archivo ZIP',
+        );
+      final repo = ArchivosRepository(gateway: g);
+
+      final r = await repo.descargarZip(['arch-invalido']);
+
+      expect(r.isFailure, isTrue);
+      expect(r.errorOrNull?.type, AppErrorType.servidor);
+      expect(r.errorOrNull?.code, 'ERROR_COMPRESION');
+    });
+  });
 }

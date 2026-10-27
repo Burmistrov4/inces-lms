@@ -110,4 +110,7 @@ abstract interface class ArchivosGateway {
     required List<int> contenido,
     String? entidadId,
   });
+
+  /// Descarga múltiples archivos en un único archivo ZIP generado en streaming por el servidor (D6).
+  Future<List<int>> descargarZip(List<String> archivoIds);
 }

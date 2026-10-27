@@ -1469,3 +1469,83 @@ describe('listado de archivos por entidad', () => {
     expect(cuerpo.archivos[0].id).toBe(ID_GUIA);
   });
 });
+
+describe('descarga múltiple en ZIP — POST /api/v1/archivos/descargar-zip (D6)', () => {
+  it('exige sesión: sin token responde 401', async () => {
+    const arnes = crearArnés();
+    app = arnes.app;
+
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: '/api/v1/archivos/descargar-zip',
+      payload: { ids: [ID_ARCHIVO_CONFIRMADO] },
+    });
+
+    expect(respuesta.statusCode).toBe(401);
+  });
+
+  it('rechaza una lista vacía de identificadores con 400', async () => {
+    const arnes = crearArnés();
+    app = arnes.app;
+
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: '/api/v1/archivos/descargar-zip',
+      headers: conToken(TOKEN_ALUMNO),
+      payload: { ids: [] },
+    });
+
+    expect(respuesta.statusCode).toBe(400);
+    expect(respuesta.json().error.codigo).toBe('PETICION_INVALIDA');
+  });
+
+  it('responde 404 si ninguno de los archivos está disponible o confirmado', async () => {
+    const arnes = crearArnés({ archivos: [] });
+    app = arnes.app;
+
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: '/api/v1/archivos/descargar-zip',
+      headers: conToken(TOKEN_ALUMNO),
+      payload: { ids: [ID_ARCHIVO_CONFIRMADO] },
+    });
+
+    expect(respuesta.statusCode).toBe(404);
+    expect(respuesta.json().error.codigo).toBe('ARCHIVOS_INEXISTENTES');
+  });
+
+  it('comprime los archivos confirmados y devuelve un ZIP con Content-Type application/zip', async () => {
+    const arnes = crearArnés({
+      archivos: [
+        {
+          id: ID_ARCHIVO_CONFIRMADO,
+          propietarioId: ID_ALUMNO,
+          r2Key: CLAVE_ARCHIVO_CONFIRMADO,
+          nombreOriginal: 'mi_archivo.pdf',
+          tamanoBytes: TAMANO_ARCHIVO_CONFIRMADO,
+          estado: 'CONFIRMED',
+          entityType: 'DRIVE_FILE',
+          entidadId: null,
+          creadoEn: '2026-09-18T10:00:00.000Z',
+        },
+      ],
+    });
+    app = arnes.app;
+
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: '/api/v1/archivos/descargar-zip',
+      headers: conToken(TOKEN_ALUMNO),
+      payload: { ids: [ID_ARCHIVO_CONFIRMADO] },
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    expect(respuesta.headers['content-type']).toBe('application/zip');
+    expect(respuesta.headers['content-disposition']).toContain('attachment; filename="archivos-inces.zip"');
+    // Magic number de un ZIP: PK\x03\x04
+    const buffer = respuesta.rawPayload;
+    expect(buffer[0]).toBe(0x50); // P
+    expect(buffer[1]).toBe(0x4b); // K
+  });
+});
+

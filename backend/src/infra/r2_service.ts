@@ -213,6 +213,22 @@ export function crearAlmacenamientoR2(config: ConfigR2): PuertaAlmacenamiento {
         traducirFallo(error, 'eliminar objeto');
       }
     },
+
+    async descargar(clave: string): Promise<Buffer | null> {
+      const limpia = validarClave(clave);
+
+      try {
+        const salida = await cliente.send(
+          new GetObjectCommand({ Bucket: config.bucket, Key: limpia }),
+        );
+        if (!salida.Body) return null;
+        const bytes = await salida.Body.transformToByteArray();
+        return Buffer.from(bytes);
+      } catch (error) {
+        if (esNoEncontrado(error)) return null;
+        traducirFallo(error, 'descargar objeto');
+      }
+    },
   };
 }
 

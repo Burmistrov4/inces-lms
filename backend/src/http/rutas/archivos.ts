@@ -13,8 +13,10 @@ import { ErrorApi } from '../../dominio/errores.js';
 import type { PuertaAlmacenamiento } from '../../dominio/puertos.js';
 import type { ParametroSistema } from '../../dominio/tipos.js';
 import type { DependenciasRutas } from '../dependencias.js';
+import { ZipArchive } from 'archiver';
 import {
   esquemaBarrido,
+  esquemaDescargarZip,
   esquemaFirmarSubida,
   esquemaIdArchivo,
   esquemaListarMios,
@@ -608,6 +610,71 @@ export function rutasArchivos(
         expiraEnSegundos: firmada.expiraEnSegundos,
         nombreOriginal: archivo.nombreOriginal,
       };
+    },
+  );
+
+  /**
+   * Descarga múltiples archivos en un único archivo ZIP generado en streaming.
+   *
+   * **Se comprime en el backend y nunca en el cliente (D6).** Un centro con
+   * equipos modestos no puede comprimir 8 PDFs en el navegador sin bloquear el
+   * hilo de la interfaz. La compresión se delega en streaming a través de
+   * `archiver`, escribiendo directamente en la respuesta HTTP.
+   *
+   * **RLS:** `reposDe(request).archivos.porId(id)` garantiza que sólo se incluyen
+   * los archivos que el usuario tiene permiso de ver y que están confirmados.
+   */
+  app.post(
+    '/api/v1/archivos/descargar-zip',
+    { preHandler: [exigirSesion(), exigirArchivos] },
+    async (request, reply) => {
+      const almacen = almacenamiento();
+      const { ids } = esquemaDescargarZip.parse(request.body);
+
+      const archivos = await Promise.all(
+        ids.map((id) => reposDe(request).archivos.porId(id)),
+      );
+
+      const confirmados = archivos.filter(
+        (a): a is NonNullable<typeof a> => a !== null && a.estado === 'CONFIRMED',
+      );
+
+      if (confirmados.length === 0) {
+        throw ErrorApi.noEncontrado(
+          'ARCHIVOS_INEXISTENTES',
+          'Ninguno de los archivos seleccionados está disponible para descarga.',
+        );
+      }
+
+      reply.header('Content-Type', 'application/zip');
+      reply.header(
+        'Content-Disposition',
+        'attachment; filename="archivos-inces.zip"',
+      );
+
+      const archive = new ZipArchive({ zlib: { level: 6 } });
+      reply.send(archive);
+
+      const nombresUsados = new Map<string, number>();
+      for (const arch of confirmados) {
+        const buf = await almacen.descargar(arch.r2Key);
+        if (buf) {
+          let nombre = arch.nombreOriginal;
+          const cuenta = nombresUsados.get(nombre) ?? 0;
+          nombresUsados.set(nombre, cuenta + 1);
+          if (cuenta > 0) {
+            const punto = nombre.lastIndexOf('.');
+            if (punto !== -1) {
+              nombre = `${nombre.slice(0, punto)} (${cuenta})${nombre.slice(punto)}`;
+            } else {
+              nombre = `${nombre} (${cuenta})`;
+            }
+          }
+          archive.append(buf, { name: nombre });
+        }
+      }
+
+      await archive.finalize();
     },
   );
 

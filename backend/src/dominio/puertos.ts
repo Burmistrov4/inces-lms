@@ -703,6 +703,8 @@ export interface PuertaAlmacenamiento {
   estadisticas(clave: string): Promise<{ tamanoBytes: number } | null>;
   /** Borra un objeto. El backend decide *cuándo*; R2 sólo ejecuta. */
   eliminar(clave: string): Promise<void>;
+  /** Lee el contenido binario de un objeto para empaquetado o compresión en el backend. */
+  descargar(clave: string): Promise<Buffer | null>;
 }
 
 /**

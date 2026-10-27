@@ -2934,6 +2934,24 @@
           "nombreOriginal"
         ]
       },
+      "CuerpoDescargarZip": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 1,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false
+      },
       "RespuestaBarrido": {
         "type": "object",
         "properties": {
@@ -9953,6 +9971,102 @@
           },
           "409": {
             "description": "El archivo ya estaba borrado (ESTADO_DE_ARCHIVO).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El servicio o la base de datos no están disponibles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/archivos/descargar-zip": {
+      "post": {
+        "tags": [
+          "Archivos"
+        ],
+        "summary": "Descarga múltiple en ZIP generada en streaming",
+        "description": "Comprime y empaqueta en el servidor hasta 50 archivos confirmados usando `archiver` en streaming. Devuelve el archivo ZIP sin bloquear la memoria del cliente.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuerpoDescargarZip"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Archivo ZIP con los archivos comprimidos.",
+            "headers": {
+              "content-disposition": {
+                "description": "attachment; filename=\"archivos-inces.zip\"",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "description": "Archivo ZIP comprimido con los archivos seleccionados."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lista de archivos vacía o excede el límite permitido (50).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta la sesión o el token no es válido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El módulo de archivos está deshabilitado por el administrador (MODULO_DESHABILITADO).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ninguno de los archivos está disponible o no se tienen permisos.",
             "content": {
               "application/json": {
                 "schema": {

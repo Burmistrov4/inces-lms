@@ -265,6 +265,66 @@ class ApiClient {
     );
   }
 
+  /// Petición binaria (POST) que envía JSON y devuelve los bytes en crudo (p.ej. ZIP).
+  Future<Uint8List> postBytes(
+    String ruta, {
+    Map<String, dynamic>? cuerpo,
+    String? token,
+    Map<String, String>? encabezadosExtra,
+    Duration tiempoEspera = const Duration(seconds: 45),
+  }) async {
+    http.Response respuesta;
+    try {
+      respuesta = await _http
+          .post(
+            _resolver(ruta),
+            headers: {
+              if (cuerpo != null) 'Content-Type': 'application/json',
+              if (token != null) 'Authorization': 'Bearer $token',
+              ...?encabezadosExtra,
+            },
+            body: cuerpo == null ? null : jsonEncode(cuerpo),
+          )
+          .timeout(tiempoEspera);
+    } on TimeoutException {
+      throw const AppException(
+        type: AppErrorType.red,
+        message:
+            'La descarga está tardando más de lo habitual. Por favor reintenta en unos instantes.',
+      );
+    }
+
+    if (respuesta.statusCode >= 200 && respuesta.statusCode < 300) {
+      return respuesta.bodyBytes;
+    }
+
+    String mensaje = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
+    String? codigo;
+    final texto = respuesta.body.trim();
+    if (texto.isNotEmpty && texto.startsWith('{')) {
+      try {
+        final cuerpoJson = jsonDecode(texto);
+        if (cuerpoJson is Map<String, dynamic>) {
+          final error = cuerpoJson['error'];
+          if (error is Map<String, dynamic>) {
+            mensaje = (error['mensaje'] as String?) ?? mensaje;
+            codigo = error['codigo'] as String?;
+          }
+        }
+      } catch (_) {}
+    } else if (respuesta.statusCode >= 500) {
+      mensaje =
+          'El servidor del INCES se encuentra iniciando o temporalmente ocupado (HTTP ${respuesta.statusCode}).';
+    }
+
+    throw AppException(
+      type: _clasificar(respuesta.statusCode, codigo),
+      message: mensaje,
+      code: codigo,
+      technical: 'HTTP ${respuesta.statusCode} en $ruta',
+    );
+  }
+
   /// Borrado (DELETE) de un recurso.
   Future<Map<String, dynamic>> delete(
     String ruta, {

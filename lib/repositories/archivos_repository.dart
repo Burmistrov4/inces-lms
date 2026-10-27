@@ -120,4 +120,8 @@ class ArchivosRepository {
   /// Borra cualquier archivo como administrador.
   Future<Result<Archivo>> borrarComoAdmin(String archivoId) =>
       Result.guard(() => _gateway.borrarComoAdmin(archivoId));
+
+  /// Descarga un archivo ZIP generado en backend por streaming conteniendo los archivos indicados.
+  Future<Result<List<int>>> descargarZip(List<String> archivoIds) =>
+      Result.guard(() => _gateway.descargarZip(archivoIds));
 }

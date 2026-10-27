@@ -4665,6 +4665,15 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       borrados.push(limpia);
       objetos.delete(limpia);
     },
+
+    async descargar(clave) {
+      revisar('almacenamiento.descargar');
+
+      const limpia = validarClave(clave);
+      if (!objetos.has(limpia)) return null;
+
+      return Buffer.from(`contenido de prueba para ${limpia}`);
+    },
   };
 
   const identidades: Record<string, string> = {

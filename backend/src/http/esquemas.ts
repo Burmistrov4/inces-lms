@@ -1057,6 +1057,15 @@ export const esquemaListarMios = z
   })
   .strict();
 
+export const esquemaDescargarZip = z
+  .object({
+    ids: z
+      .array(esquemaIdArchivo)
+      .min(1, 'Debes seleccionar al menos un archivo para descargar.')
+      .max(50, 'No puedes descargar más de 50 archivos simultáneamente en un ZIP.'),
+  })
+  .strict();
+
 // --- Módulo 6: aula virtual -------------------------------------------------
 
 export const esquemaIdTarea = idDeRecurso('tarea');

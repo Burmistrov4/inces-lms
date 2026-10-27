@@ -39,6 +39,7 @@ import {
   esquemaCalificar,
   esquemaCrearAnuncio,
   esquemaCrearTarea,
+  esquemaDescargarZip,
   esquemaFirmarSubida,
   esquemaMotivoObservacion,
   esquemaPlanilla,
@@ -1563,6 +1564,13 @@ const RespuestaArchivo = z.object({ archivo: Archivo }).openapi('RespuestaArchiv
  * tamaño no se puede validar antes de subir.
  */
 const CuerpoFirmarSubida = esquemaFirmarSubida.openapi('CuerpoFirmarSubida');
+
+const CuerpoDescargarZip = esquemaDescargarZip.openapi('CuerpoDescargarZip');
+
+const CuerpoZipBinario = z.string().openapi({
+  format: 'binary',
+  description: 'Archivo ZIP comprimido con los archivos seleccionados.',
+});
 
 const RespuestaFirmaSubida = z
   .object({
@@ -3856,6 +3864,39 @@ export function construirRegistro(): OpenAPIRegistry {
       ),
       404: error('El archivo no existe (ARCHIVO_INEXISTENTE).'),
       409: error('El archivo ya estaba borrado (ESTADO_DE_ARCHIVO).'),
+      503: RESPUESTAS_ERROR[503],
+    },
+  });
+
+  registro.registerPath({
+    ...archivosTag,
+    method: 'post',
+    path: '/api/v1/archivos/descargar-zip',
+    summary: 'Descarga múltiple en ZIP generada en streaming',
+    description:
+      'Comprime y empaqueta en el servidor hasta 50 archivos confirmados usando `archiver` en streaming. Devuelve el archivo ZIP sin bloquear la memoria del cliente.',
+    security: [{ bearerAuth: [] }],
+    request: {
+      body: {
+        required: true,
+        content: { 'application/json': { schema: CuerpoDescargarZip } },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Archivo ZIP con los archivos comprimidos.',
+        content: { 'application/zip': { schema: CuerpoZipBinario } },
+        headers: {
+          'content-disposition': {
+            description: 'attachment; filename="archivos-inces.zip"',
+            schema: { type: 'string' },
+          },
+        },
+      },
+      400: error('Lista de archivos vacía o excede el límite permitido (50).'),
+      401: RESPUESTAS_ERROR[401],
+      403: moduloApagado,
+      404: error('Ninguno de los archivos está disponible o no se tienen permisos.'),
       503: RESPUESTAS_ERROR[503],
     },
   });
