@@ -437,6 +437,8 @@ export interface EntradaCrearPrograma {
   pensum: EntradaPensum[];
   duracionValor?: number | null;
   duracionUnidad?: UnidadDuracion | null;
+  cupo?: number;
+  mostrarDisponibilidad?: boolean;
 }
 
 /**
@@ -452,6 +454,8 @@ export interface CambiosPrograma {
   activo?: boolean;
   duracionValor?: number | null;
   duracionUnidad?: UnidadDuracion | null;
+  cupo?: number;
+  mostrarDisponibilidad?: boolean;
 }
 
 export interface EntradaCrearMateria {

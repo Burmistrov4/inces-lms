@@ -4605,6 +4605,37 @@ async function main() {
     await db.query(`delete from public.schedule_slots where id = '${slotCreado}'`);
   }
 
+  // --- D5: Cupo por curso, no global ---------------------------------------
+  const colsPrograms = (
+    await db.query(
+      "select column_name, data_type, column_default from information_schema.columns where table_schema = 'public' and table_name = 'programs'",
+    )
+  ).rows;
+  const colCupo = colsPrograms.find((c) => c.column_name === 'cupo');
+  const colDisponibilidad = colsPrograms.find((c) => c.column_name === 'mostrar_disponibilidad');
+  check('programs tiene columna cupo (D5)', !!colCupo);
+  check('programs.cupo es integer con default 25', colCupo?.data_type === 'integer' && colCupo?.column_default?.includes('25'));
+  check('programs tiene columna mostrar_disponibilidad (D5)', !!colDisponibilidad);
+  check('programs.mostrar_disponibilidad es boolean con default true', colDisponibilidad?.data_type === 'boolean' && colDisponibilidad?.column_default?.includes('true'));
+
+  // Comprobar cupo_efectivo con prioridad sobre el global
+  const seccionConCupo = (
+    await db.query("select id, max_capacity from public.sections where is_active = true limit 1")
+  ).rows[0];
+  if (seccionConCupo) {
+    const cupoResuelto = (
+      await db.query(`select public.cupo_efectivo('${seccionConCupo.id}') as v`)
+    ).rows[0]?.v;
+    check('cupo_efectivo respeta la capacidad de la sección', cupoResuelto === seccionConCupo.max_capacity);
+  }
+
+  const programaExistente = (await db.query("select id from public.programs limit 1")).rows[0];
+  if (programaExistente) {
+    const ocupados = (
+      await db.query(`select public.cupos_ocupados_programa('${programaExistente.id}') as v`)
+    ).rows[0]?.v;
+    check('cupos_ocupados_programa devuelve un entero válido', typeof ocupados === 'number' && ocupados >= 0);
+  }
 
   // ---------------------------------------------------------------- resumen
   console.log(

@@ -2100,6 +2100,8 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
         requierePasantia: entrada.requierePasantia,
         duracionValor: entrada.duracionValor ?? null,
         duracionUnidad: entrada.duracionUnidad ?? null,
+        cupo: entrada.cupo ?? 25,
+        mostrarDisponibilidad: entrada.mostrarDisponibilidad ?? true,
         activo: entrada.publicar,
         creadoEn: ahora,
         actualizadoEn: ahora,
@@ -2135,6 +2137,10 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
         ...(cambios.duracionUnidad === undefined
           ? {}
           : { duracionUnidad: cambios.duracionUnidad }),
+        ...(cambios.cupo === undefined ? {} : { cupo: cambios.cupo }),
+        ...(cambios.mostrarDisponibilidad === undefined
+          ? {}
+          : { mostrarDisponibilidad: cambios.mostrarDisponibilidad }),
         actualizadoEn: new Date().toISOString(),
       };
 

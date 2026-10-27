@@ -358,6 +358,8 @@ function aPrograma(fila: Fila): Programa {
     requierePasantia: booleano(fila.requires_internship, false),
     duracionValor: fila.duration_value != null ? entero(fila.duration_value, 0) : null,
     duracionUnidad: esUnidadDuracion(fila.duration_unit) ? fila.duration_unit : null,
+    cupo: entero(fila.cupo, 25),
+    mostrarDisponibilidad: booleano(fila.mostrar_disponibilidad, true),
     activo: booleano(fila.is_active, false),
     creadoEn: textoObligatorio(fila.created_at),
     actualizadoEn: textoObligatorio(fila.updated_at),
@@ -1098,7 +1100,7 @@ const ROLES_DOCENTES: readonly Rol[] = ['docente', 'admin'];
  * silencio a cadena vacía.
  */
 const COLUMNAS_PROGRAMA =
-  'id,code,name,type,requires_internship,duration_value,duration_unit,is_active,created_at,updated_at';
+  'id,code,name,type,requires_internship,duration_value,duration_unit,cupo,mostrar_disponibilidad,is_active,created_at,updated_at';
 
 const COLUMNAS_MATERIA = 'id,code,name,academic_hours,created_at,updated_at';
 
@@ -1973,6 +1975,12 @@ class CurriculoSupabase implements PuertaCurriculo {
     }
     if (cambios.duracionUnidad !== undefined) {
       parche.duration_unit = cambios.duracionUnidad;
+    }
+    if (cambios.cupo !== undefined) {
+      parche.cupo = cambios.cupo;
+    }
+    if (cambios.mostrarDisponibilidad !== undefined) {
+      parche.mostrar_disponibilidad = cambios.mostrarDisponibilidad;
     }
 
     if (Object.keys(parche).length === 0) {

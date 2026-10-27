@@ -332,19 +332,26 @@ class SupabaseService implements AuthGateway, AspiranteGateway, ModulesGateway {
     // sea el mismo para `anon` y para `authenticated`, que sí ve los borradores.
     final respuesta = await client
         .from(_tablaPrograms)
-        .select('id, name')
+        .select('id, name, cupo, mostrar_disponibilidad')
         .eq('type', 'CURSO_LIBRE')
         .eq('is_active', true)
         .order('name');
 
     return respuesta
         .map(
-          (fila) => OpcionCampo(
-            // D14: el VALOR es el uuid y la ETIQUETA el nombre. Es el cambio que
-            // hace que renombrar un programa no toque ninguna ficha.
-            valor: (fila['id'] ?? '').toString(),
-            etiqueta: (fila['name'] ?? '').toString(),
-          ),
+          (fila) {
+            final cupo = (fila['cupo'] as num?)?.toInt() ?? 25;
+            final mostrar = (fila['mostrar_disponibilidad'] as bool?) ?? true;
+            return OpcionCampo(
+              // D14: el VALOR es el uuid y la ETIQUETA el nombre. Es el cambio que
+              // hace que renombrar un programa no toque ninguna ficha.
+              valor: (fila['id'] ?? '').toString(),
+              etiqueta: (fila['name'] ?? '').toString(),
+              cupo: cupo,
+              cuposDisponibles: cupo,
+              mostrarDisponibilidad: mostrar,
+            );
+          },
         )
         // Una fila sin id o sin nombre no es una opción: pintarla daría una
         // casilla que el aspirante no puede identificar y que enviaría un uuid

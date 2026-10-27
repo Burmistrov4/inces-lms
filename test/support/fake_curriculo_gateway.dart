@@ -84,9 +84,23 @@ class FakeCurriculoGateway implements CurriculoGateway {
     llamadas.add('actualizarPrograma:$id');
     ultimosCambios = cambios;
     _lanzarSi(errorAlActualizar);
-    final p = programaActualizado;
-    if (p == null) throw StateError('El doble no tiene programaActualizado.');
-    return p;
+    if (programaActualizado != null) return programaActualizado!;
+    final base = programas.cast<ProgramaConTotales?>().firstWhere(
+          (p) => p?.id == id,
+          orElse: () => null,
+        );
+    return Programa(
+      id: id,
+      codigo: base?.codigo ?? 'TMP-01',
+      nombre: cambios.nombre ?? base?.nombre ?? 'Programa',
+      tipo: base?.tipo ?? TipoPrograma.cursoLibre,
+      requierePasantia: cambios.requierePasantia ?? base?.requierePasantia ?? false,
+      duracionValor: cambios.duracionValor ?? base?.duracionValor,
+      duracionUnidad: cambios.duracionUnidad ?? base?.duracionUnidad,
+      cupo: cambios.cupo ?? base?.cupo ?? 25,
+      mostrarDisponibilidad: cambios.mostrarDisponibilidad ?? base?.mostrarDisponibilidad ?? true,
+      activo: cambios.activo ?? base?.activo ?? false,
+    );
   }
 
   @override

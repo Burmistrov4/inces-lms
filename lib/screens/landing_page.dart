@@ -1210,6 +1210,8 @@ class _LandingPageState extends State<LandingPage> {
               width: double.infinity,
               fit: BoxFit.contain,
               filterQuality: FilterQuality.high,
+              semanticLabel:
+                  'Logotipo Oficial INCES CFS Nacional de Soldadura Rafael Urdaneta',
             ),
           ),
         ),
@@ -1810,6 +1812,50 @@ class _TarjetaCurso extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
+                if (curso.mostrarDisponibilidad) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: (curso.cuposDisponibles ?? curso.cupo ?? 25) > 0
+                          ? const Color(0xFF16A34A).withValues(alpha: 0.12)
+                          : theme.colorScheme.errorContainer.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: (curso.cuposDisponibles ?? curso.cupo ?? 25) > 0
+                            ? const Color(0xFF16A34A).withValues(alpha: 0.4)
+                            : theme.colorScheme.error.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          (curso.cuposDisponibles ?? curso.cupo ?? 25) > 0
+                              ? Icons.event_seat_rounded
+                              : Icons.hourglass_top_rounded,
+                          size: 13,
+                          color: (curso.cuposDisponibles ?? curso.cupo ?? 25) > 0
+                              ? const Color(0xFF16A34A)
+                              : theme.colorScheme.error,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          (curso.cuposDisponibles ?? curso.cupo ?? 25) > 0
+                              ? 'Quedan ${curso.cuposDisponibles ?? curso.cupo ?? 25} de ${curso.cupo ?? 25} cupos'
+                              : 'Cupos agotados (lista de espera)',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: (curso.cuposDisponibles ?? curso.cupo ?? 25) > 0
+                                ? const Color(0xFF16A34A)
+                                : theme.colorScheme.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                ],
                 Text(
                   'Formación técnica continua y capacitación productiva certificada por el INCES.',
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -2049,44 +2095,50 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
                     right: 14,
                     child: Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 11,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: IncesTheme.advertencia,
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                slide.icono,
-                                size: 13,
-                                color: IncesTheme.azulPrimario,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                slide.badge,
-                                style: GoogleFonts.inter(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: IncesTheme.azulPrimario,
-                                  letterSpacing: 0.6,
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 11,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: IncesTheme.advertencia,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  slide.icono,
+                                  size: 13,
+                                  color: IncesTheme.azulPrimario,
+                                ),
+                                const SizedBox(width: 5),
+                                Flexible(
+                                  child: Text(
+                                    slide.badge,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: IncesTheme.azulPrimario,
+                                      letterSpacing: 0.6,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -2294,11 +2346,14 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
                         children: [
                           const Icon(Icons.assignment_turned_in_outlined, size: 18),
                           const SizedBox(width: 8),
-                          Text(
-                            'Inscribirme en esta especialidad',
-                            style: GoogleFonts.inter(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
+                          Flexible(
+                            child: Text(
+                              'Inscribirme en esta especialidad',
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 6),

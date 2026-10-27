@@ -178,6 +178,21 @@ void main() {
       expect(gateway.ultimosCambios!.toJson(), {'activo': false});
     });
 
+    test('envía cupo y mostrarDisponibilidad correctamente al gateway (D5)', () async {
+      gateway.programaActualizado = programaSistemas();
+
+      final r = await repo.actualizarPrograma(
+        idSistemas,
+        const CambiosPrograma(cupo: 40, mostrarDisponibilidad: false),
+      );
+
+      expect(r.isSuccess, isTrue);
+      expect(gateway.ultimosCambios!.toJson(), {
+        'cupo': 40,
+        'mostrarDisponibilidad': false,
+      });
+    });
+
     test('propaga el fallo del gateway como Failure tipado', () async {
       gateway.errorAlActualizar = const AppException.validacion(
         'Una carrera activa no puede quedarse sin materias.',

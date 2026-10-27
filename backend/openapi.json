@@ -989,6 +989,14 @@
             "type": "boolean",
             "description": "false = borrador. Publicar es ponerlo en true, y eso dispara la Regla 1."
           },
+          "cupo": {
+            "type": "integer",
+            "description": "Cupo máximo del curso. Editable por el administrador."
+          },
+          "mostrarDisponibilidad": {
+            "type": "boolean",
+            "description": "Si es true, la disponibilidad de cupos se muestra en la landing."
+          },
           "creadoEn": {
             "type": "string"
           },
@@ -1022,6 +1030,14 @@
               "totalPeriodos": {
                 "type": "integer",
                 "description": "Cuántos períodos distintos cubre el pensum. Un pensum [1, 2, 5] son tres, no cinco."
+              },
+              "cuposOcupados": {
+                "type": "integer",
+                "description": "Cupos ocupados actualmente por inscripciones confirmadas."
+              },
+              "cuposDisponibles": {
+                "type": "integer",
+                "description": "Cupos disponibles restantes."
               }
             },
             "required": [
@@ -1171,6 +1187,13 @@
             "type": "boolean",
             "description": "Decide el `isActive` inicial. Por defecto false: el programa nace en borrador."
           },
+          "cupo": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "mostrarDisponibilidad": {
+            "type": "boolean"
+          },
           "pensum": {
             "type": "array",
             "items": {
@@ -1209,6 +1232,13 @@
             "type": "boolean"
           },
           "activo": {
+            "type": "boolean"
+          },
+          "cupo": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "mostrarDisponibilidad": {
             "type": "boolean"
           }
         },

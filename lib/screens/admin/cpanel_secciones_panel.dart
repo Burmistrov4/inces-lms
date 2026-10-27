@@ -330,7 +330,7 @@ class _DialogoCrearSeccionState extends State<_DialogoCrearSeccion> {
   final _materia = TextEditingController();
   final _periodo = TextEditingController(text: 'SA26-2');
   final _nombre = TextEditingController();
-  final _cupo = TextEditingController();
+  final _cupo = TextEditingController(text: '25');
   bool _guardando = false;
   String? _error;
 
@@ -353,9 +353,11 @@ class _DialogoCrearSeccionState extends State<_DialogoCrearSeccion> {
     if (cupoTexto.isNotEmpty) {
       cupoMaximo = int.tryParse(cupoTexto);
       if (cupoMaximo == null || cupoMaximo < 0) {
-        setState(() => _error = 'El cupo debe ser un entero ≥ 0, o vacío.');
+        setState(() => _error = 'El cupo debe ser un entero ≥ 0.');
         return;
       }
+    } else {
+      cupoMaximo = 25;
     }
 
     setState(() {

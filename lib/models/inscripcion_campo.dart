@@ -51,19 +51,40 @@ enum TipoCampoInscripcion {
 
 /// Una opción de un `seleccion` o `multiseleccion`.
 class OpcionCampo {
-  const OpcionCampo({required this.valor, required this.etiqueta});
+  const OpcionCampo({
+    required this.valor,
+    required this.etiqueta,
+    this.cupo,
+    this.cuposOcupados,
+    this.cuposDisponibles,
+    this.mostrarDisponibilidad = true,
+  });
 
   final String valor;
   final String etiqueta;
+  final int? cupo;
+  final int? cuposOcupados;
+  final int? cuposDisponibles;
+  final bool mostrarDisponibilidad;
 
   factory OpcionCampo.fromJson(Map<String, dynamic> json) {
     final valor = (json['valor'] ?? '').toString();
     final etiqueta = (json['etiqueta'] ?? '').toString();
+    final cupo = (json['cupo'] as num?)?.toInt();
+    final cuposOcupados = (json['cuposOcupados'] as num?)?.toInt();
+    final cuposDisponibles = (json['cuposDisponibles'] as num?)?.toInt();
+    final mostrarDisponibilidad = (json['mostrarDisponibilidad'] as bool?) ??
+        (json['mostrar_disponibilidad'] as bool?) ??
+        true;
     return OpcionCampo(
       valor: valor,
       // La etiqueta cae al valor: una opción sin texto que se pintara vacía
       // dejaría una casilla que el aspirante no puede identificar.
       etiqueta: etiqueta.isEmpty ? valor : etiqueta,
+      cupo: cupo,
+      cuposOcupados: cuposOcupados,
+      cuposDisponibles: cuposDisponibles,
+      mostrarDisponibilidad: mostrarDisponibilidad,
     );
   }
 }

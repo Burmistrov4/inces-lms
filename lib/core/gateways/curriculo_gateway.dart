@@ -60,6 +60,8 @@ class EntradaCrearPrograma {
     this.publicar = false,
     this.duracionValor,
     this.duracionUnidad,
+    this.cupo = 25,
+    this.mostrarDisponibilidad = true,
   });
 
   final String codigo;
@@ -75,6 +77,9 @@ class EntradaCrearPrograma {
   final int? duracionValor;
   final String? duracionUnidad;
 
+  final int cupo;
+  final bool mostrarDisponibilidad;
+
   /// Al menos una materia: el esquema del backend lo exige.
   final List<EntradaPensum> pensum;
 
@@ -84,6 +89,8 @@ class EntradaCrearPrograma {
         'tipo': tipo.valorApi,
         'requierePasantia': requierePasantia,
         'publicar': publicar,
+        'cupo': cupo,
+        'mostrarDisponibilidad': mostrarDisponibilidad,
         if (duracionValor != null) 'duracionValor': duracionValor,
         if (duracionUnidad != null) 'duracionUnidad': duracionUnidad,
         'pensum': [for (final entrada in pensum) entrada.toJson()],
@@ -102,6 +109,8 @@ class CambiosPrograma {
     this.activo,
     this.duracionValor,
     this.duracionUnidad,
+    this.cupo,
+    this.mostrarDisponibilidad,
   });
 
   final String? nombre;
@@ -109,13 +118,17 @@ class CambiosPrograma {
   final bool? activo;
   final int? duracionValor;
   final String? duracionUnidad;
+  final int? cupo;
+  final bool? mostrarDisponibilidad;
 
   bool get vacio =>
       nombre == null &&
       requierePasantia == null &&
       activo == null &&
       duracionValor == null &&
-      duracionUnidad == null;
+      duracionUnidad == null &&
+      cupo == null &&
+      mostrarDisponibilidad == null;
 
   Map<String, dynamic> toJson() => {
         if (nombre != null) 'nombre': nombre,
@@ -123,6 +136,9 @@ class CambiosPrograma {
         if (activo != null) 'activo': activo,
         if (duracionValor != null) 'duracionValor': duracionValor,
         if (duracionUnidad != null) 'duracionUnidad': duracionUnidad,
+        if (cupo != null) 'cupo': cupo,
+        if (mostrarDisponibilidad != null)
+          'mostrarDisponibilidad': mostrarDisponibilidad,
       };
 }
 

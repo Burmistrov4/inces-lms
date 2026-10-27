@@ -454,6 +454,12 @@ const Programa = z
     activo: z.boolean().openapi({
       description: 'false = borrador. Publicar es ponerlo en true, y eso dispara la Regla 1.',
     }),
+    cupo: z.number().int().optional().openapi({
+      description: 'Cupo máximo del curso. Editable por el administrador.',
+    }),
+    mostrarDisponibilidad: z.boolean().optional().openapi({
+      description: 'Si es true, la disponibilidad de cupos se muestra en la landing.',
+    }),
     creadoEn: z.string(),
     actualizadoEn: z.string(),
   })
@@ -467,6 +473,12 @@ const ProgramaConTotales = Programa.extend({
   totalPeriodos: z.number().int().openapi({
     description:
       'Cuántos períodos distintos cubre el pensum. Un pensum [1, 2, 5] son tres, no cinco.',
+  }),
+  cuposOcupados: z.number().int().optional().openapi({
+    description: 'Cupos ocupados actualmente por inscripciones confirmadas.',
+  }),
+  cuposDisponibles: z.number().int().optional().openapi({
+    description: 'Cupos disponibles restantes.',
   }),
 }).openapi('ProgramaConTotales');
 
@@ -558,6 +570,8 @@ const CuerpoCrearPrograma = z
     publicar: z.boolean().optional().openapi({
       description: 'Decide el `isActive` inicial. Por defecto false: el programa nace en borrador.',
     }),
+    cupo: z.number().int().min(0).optional(),
+    mostrarDisponibilidad: z.boolean().optional(),
     pensum: z.array(EntradaPensum).min(1).openapi({
       description: 'Al menos una materia, y ninguna repetida.',
     }),
@@ -570,6 +584,8 @@ const CuerpoActualizarPrograma = z
     nombre: z.string().optional(),
     requierePasantia: z.boolean().optional(),
     activo: z.boolean().optional(),
+    cupo: z.number().int().min(0).optional(),
+    mostrarDisponibilidad: z.boolean().optional(),
   })
   .strict()
   .openapi('CuerpoActualizarPrograma');

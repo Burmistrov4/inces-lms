@@ -363,6 +363,8 @@ export const esquemaCrearPrograma = z
     pensum: esquemaPensum,
     duracionValor: z.number().int().positive().nullable().optional(),
     duracionUnidad: duracionUnidadSchema.nullable().optional(),
+    cupo: z.number().int().min(0).default(25),
+    mostrarDisponibilidad: z.boolean().default(true),
   })
   .strict()
   .refine(
@@ -390,10 +392,12 @@ export const esquemaActualizarPrograma = z
     activo: z.boolean().optional(),
     duracionValor: z.number().int().positive().nullable().optional(),
     duracionUnidad: duracionUnidadSchema.nullable().optional(),
+    cupo: z.number().int().min(0).optional(),
+    mostrarDisponibilidad: z.boolean().optional(),
   })
   .strict()
   .refine((valor) => Object.keys(valor).length > 0, {
-    message: 'Indica al menos un cambio (nombre, requierePasantia, activo o duración).',
+    message: 'Indica al menos un cambio (nombre, requierePasantia, activo, duración o cupo).',
   })
   .refine(
     (valor) => {

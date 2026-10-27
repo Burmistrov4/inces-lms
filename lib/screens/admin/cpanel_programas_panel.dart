@@ -596,6 +596,15 @@ class _TarjetaPrograma extends StatelessWidget {
                           texto: programa.duracionLegible!,
                           tono: TonoEstado.info,
                         ),
+                      _Etiqueta(
+                        texto: '${programa.cuposOcupados} de ${programa.cupo ?? 25} cupos',
+                        tono: TonoEstado.info,
+                      ),
+                      if (!programa.mostrarDisponibilidad)
+                        const _Etiqueta(
+                          texto: 'Cupos ocultos',
+                          tono: TonoEstado.neutro,
+                        ),
                       Text(
                         '${programa.totalMaterias} '
                         '${programa.totalMaterias == 1 ? 'materia' : 'materias'}'
@@ -916,6 +925,9 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
   late final TextEditingController _duracionValorCtrl =
       TextEditingController(text: widget.programa.duracionValor?.toString() ?? '');
   late String _duracionUnidad = widget.programa.duracionUnidad ?? 'MESES';
+  late final TextEditingController _cupoCtrl =
+      TextEditingController(text: (widget.programa.cupo ?? 25).toString());
+  late bool _mostrarDisponibilidad = widget.programa.mostrarDisponibilidad;
 
   bool _guardando = false;
   String? _error;
@@ -924,6 +936,7 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
   void dispose() {
     _nombreCtrl.dispose();
     _duracionValorCtrl.dispose();
+    _cupoCtrl.dispose();
     super.dispose();
   }
 
@@ -936,6 +949,9 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
     if (duracionTexto.isNotEmpty) {
       duracionVal = int.tryParse(duracionTexto);
     }
+
+    final cupoTexto = _cupoCtrl.text.trim();
+    final cupoVal = int.tryParse(cupoTexto);
 
     setState(() {
       _guardando = true;
@@ -951,6 +967,11 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
           : null,
       duracionValor: duracionVal,
       duracionUnidad: duracionVal != null ? _duracionUnidad : null,
+      cupo: cupoVal != widget.programa.cupo ? cupoVal : null,
+      mostrarDisponibilidad:
+          _mostrarDisponibilidad != widget.programa.mostrarDisponibilidad
+              ? _mostrarDisponibilidad
+              : null,
     );
 
     if (cambios.vacio) {
@@ -1071,6 +1092,31 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                   subtitle: const Text('Fase práctica laboral en taller o empresa'),
                   value: _requierePasantia,
                   onChanged: (v) => setState(() => _requierePasantia = v),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  key: const Key('campo-cupo-programa'),
+                  controller: _cupoCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Cupo máximo del curso',
+                    hintText: 'ej. 25',
+                    isDense: true,
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Indica el cupo';
+                    final n = int.tryParse(v.trim());
+                    if (n == null || n < 0) return 'El cupo debe ser un entero ≥ 0';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Disponibilidad de cupos visible'),
+                  subtitle: const Text('Muestra los cupos restantes en landing y portal'),
+                  value: _mostrarDisponibilidad,
+                  onChanged: (v) => setState(() => _mostrarDisponibilidad = v),
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 8),

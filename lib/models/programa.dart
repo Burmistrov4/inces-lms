@@ -47,6 +47,8 @@ class Programa {
     required this.activo,
     this.duracionValor,
     this.duracionUnidad,
+    this.cupo = 25,
+    this.mostrarDisponibilidad = true,
     this.creadoEn,
     this.actualizadoEn,
   });
@@ -62,6 +64,8 @@ class Programa {
   final bool requierePasantia;
   final int? duracionValor;
   final String? duracionUnidad;
+  final int? cupo;
+  final bool mostrarDisponibilidad;
   final bool activo;
   final DateTime? creadoEn;
   final DateTime? actualizadoEn;
@@ -91,6 +95,10 @@ class Programa {
       requierePasantia: json['requierePasantia'] as bool? ?? false,
       duracionValor: json['duracionValor'] as int?,
       duracionUnidad: json['duracionUnidad'] as String?,
+      cupo: (json['cupo'] as num?)?.toInt() ?? 25,
+      mostrarDisponibilidad: json['mostrarDisponibilidad'] as bool? ??
+          json['mostrar_disponibilidad'] as bool? ??
+          true,
       activo: json['activo'] as bool? ?? false,
       creadoEn: DateTime.tryParse(json['creadoEn']?.toString() ?? ''),
       actualizadoEn: DateTime.tryParse(json['actualizadoEn']?.toString() ?? ''),
@@ -117,20 +125,33 @@ class ProgramaConTotales extends Programa {
     required super.activo,
     required this.totalMaterias,
     required this.totalPeriodos,
+    this.cuposOcupados = 0,
+    this.cuposDisponibles,
     super.duracionValor,
     super.duracionUnidad,
+    super.cupo = 25,
+    super.mostrarDisponibilidad = true,
     super.creadoEn,
     super.actualizadoEn,
   });
 
   final int totalMaterias;
   final int totalPeriodos;
+  final int cuposOcupados;
+  final int? cuposDisponibles;
+
+  /// Cuántos cupos quedan disponibles
+  int get cuposRestantes =>
+      cuposDisponibles ?? ((cupo ?? 25) - cuposOcupados).clamp(0, 9999);
 
   /// Un programa sin materias no se puede activar.
   bool get estaVacio => totalMaterias == 0;
 
   factory ProgramaConTotales.fromJson(Map<String, dynamic> json) {
     final base = Programa.fromJson(json);
+    final ocupados = (json['cuposOcupados'] as num?)?.toInt() ?? 0;
+    final disponibles = (json['cuposDisponibles'] as num?)?.toInt() ??
+        ((base.cupo ?? 25) - ocupados).clamp(0, 9999);
     return ProgramaConTotales(
       id: base.id,
       codigo: base.codigo,
@@ -139,9 +160,13 @@ class ProgramaConTotales extends Programa {
       requierePasantia: base.requierePasantia,
       duracionValor: base.duracionValor,
       duracionUnidad: base.duracionUnidad,
+      cupo: base.cupo,
+      mostrarDisponibilidad: base.mostrarDisponibilidad,
       activo: base.activo,
       totalMaterias: json['totalMaterias'] as int? ?? 0,
       totalPeriodos: json['totalPeriodos'] as int? ?? 0,
+      cuposOcupados: ocupados,
+      cuposDisponibles: disponibles,
       creadoEn: base.creadoEn,
       actualizadoEn: base.actualizadoEn,
     );

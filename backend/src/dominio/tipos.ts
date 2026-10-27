@@ -220,6 +220,8 @@ export interface Programa {
   requierePasantia: boolean;
   duracionValor?: number | null;
   duracionUnidad?: UnidadDuracion | null;
+  cupo?: number;
+  mostrarDisponibilidad?: boolean;
   activo: boolean;
   creadoEn: string;
   actualizadoEn: string;
@@ -231,6 +233,8 @@ export interface ProgramaConTotales extends Programa {
   totalMaterias: number;
   /** Cuántos períodos distintos cubre el pensum. */
   totalPeriodos: number;
+  cuposOcupados?: number;
+  cuposDisponibles?: number;
 }
 
 /** Una materia del banco global. Se comparte entre programas. */

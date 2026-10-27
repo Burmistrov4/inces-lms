@@ -130,6 +130,10 @@ class CurriculoRepository {
           nombre: nombre,
           requierePasantia: cambios.requierePasantia,
           activo: cambios.activo,
+          duracionValor: cambios.duracionValor,
+          duracionUnidad: cambios.duracionUnidad,
+          cupo: cambios.cupo,
+          mostrarDisponibilidad: cambios.mostrarDisponibilidad,
         ),
       );
     });
