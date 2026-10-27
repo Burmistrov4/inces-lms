@@ -1136,7 +1136,7 @@ const parametroMiHorario = z.object({
 // no el contador, o prometerá un asiento que la base va a negar.
 
 const EstadoInscripcion = z
-  .enum(['ENROLLED', 'WAITLISTED', 'PENDING_BID', 'DROPPED'])
+  .enum(['ENROLLED', 'WAITLISTED', 'DROPPED'])
   .openapi('EstadoInscripcion');
 
 const Seccion = z
@@ -1180,15 +1180,15 @@ const OcupacionSeccion = z
     }),
     cuposOcupados: z.number().int().openapi({
       description:
-        'Asientos tomados. Cuenta SÓLO `ENROLLED`: una solicitud `PENDING_BID` no reserva cupo.',
+        'Asientos tomados. Cuenta los estudiantes en estado `ENROLLED`.',
     }),
     cuposDisponibles: z.number().int().openapi({
       description:
-        'Cupo efectivo menos ocupados, nunca negativo. OJO: puede ser > 0 con una oferta en el aire. Para decidir si se puede ofrecer, usa `ofertaVigente`.',
+        'Cupo efectivo menos ocupados, nunca negativo.',
     }),
     ofertaVigente: z.boolean().openapi({
       description:
-        '¿Hay una oferta de cupo viva (no vencida) en esta sección? NO es informativo: es la barrera contra la doble venta. Con `ofertaVigente: true` el asiento está comprometido aunque `cuposDisponibles` diga otra cosa, y una solicitud nueva entrará a la lista de espera.',
+        'Mantenido por retrocompatibilidad: siempre false tras D1.',
     }),
   })
   .openapi('OcupacionSeccion');
@@ -1199,10 +1199,6 @@ const Inscripcion = z
     estudianteId: z.string().uuid(),
     seccionId: z.string().uuid(),
     estado: EstadoInscripcion,
-    ofertaVenceEn: z.string().nullable().openapi({
-      description:
-        'Vencimiento de la oferta. Sólo tiene valor en `PENDING_BID`. Pasada la fecha, la oferta se puede vencer con `POST /api/v1/admin/inscripciones/expirar`.',
-    }),
     creadoEn: z.string(),
     actualizadoEn: z.string(),
   })
@@ -3243,7 +3239,7 @@ export function construirRegistro(): OpenAPIRegistry {
     path: '/api/v1/admin/secciones/{id}/cola',
     summary: 'La cola FIFO de una sección',
     description:
-      'Orden de llegada: el primero que llegó es el primero. `PENDING_BID` no aparece —ya salió de la cola, se le ofreció un asiento— y `ENROLLED` tampoco. `posicionEnCola` viene ya resuelto.',
+      'Orden de llegada: el primero que llegó es el primero en la lista de espera. `ENROLLED` ya está matriculado y no aparece. `posicionEnCola` viene ya resuelto.',
     security: [{ bearerAuth: [] }],
     request: { params: z.object({ id: z.string().uuid() }) },
     responses: {

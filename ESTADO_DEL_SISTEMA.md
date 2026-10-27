@@ -1,20 +1,20 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — 2026-10-25 04:00 -04:00
+## Fotografía operativa vigente — 2026-10-26 23:25 -04:00
 
-> **Sustituye a la foto del 2026-10-16**, que queda como historia más abajo. Se
-> actualiza porque la anterior arrastraba cifras de septiembre (46 migraciones /
-> 24 tablas / 52 políticas) y este documento es la fuente de verdad del proyecto.
+> **Sustituye a la foto del 2026-10-25**. Se actualiza tras la culminación de la
+> Tarea 1 del rediseño 1.5 (eliminación del sistema de bids con migración 202610260001)
+> y la incorporación del nuevo favicon con fondo blanco removido e iconos oficiales del CFS.
 
 Cifras **medidas**, no deducidas:
 
 | Métrica | Valor | Cómo se mide |
 |---|---|---|
-| Migraciones | **50** (0 pendientes, 0 deriva) | `ls supabase/migrations/*.sql \| wc -l` + `apply-migrations.mjs --check` |
+| Migraciones | **54** (0 pendientes, 0 deriva) | `ls supabase/migrations/*.sql \| wc -l` + `validate.mjs` (537 aserciones) |
 | Ficheros Dart | **243** | `find lib test -name "*.dart" \| wc -l` |
 | Ficheros de test Dart | **80** | `find test -name "*_test.dart" \| wc -l` |
-| Analizador Dart | **0 errores, 0 avisos, 0 infos** | `node devops/analizar-dart.mjs` |
-| Backend Fastify | **34 suites · 712/712** | `npm --prefix backend run verify` |
+| Analizador Dart | **0 errores, 0 avisos, 0 infos** | `node devops/analizar-dart.mjs` (243 archivos limpios) |
+| Backend Fastify | **34 suites · 706/706** | `npm --prefix backend run verify` (typecheck + lint + vitest) |
 | Specs E2E | **24** (la matriz = 186 capturas) | `ls e2e/tests/*.spec.ts \| wc -l` |
 | Matriz responsiva | **186 capturas · 0 desbordes · 0 page errors · 0 no navegables · 0 fallos de login** | `E2E_MATRIZ=1 playwright test matriz_responsive` |
 | Suite funcional | **30 pruebas, 0 fallos** | público, admin, aula, stepper, exportación HACER, SEO, refresco |
@@ -22,7 +22,7 @@ Cifras **medidas**, no deducidas:
 | Vistas | **9** sentencias sobre 7 nombres distintos | `grep -rhiE "create .*view" supabase/migrations/` |
 | Políticas RLS | **68** | `grep -rhiE "create policy" supabase/migrations/` |
 
-**Fases del plan (`docs/PLAN_DE_TRABAJO_2026-10-23.md`): A, B, C, D y E cerradas.**
+**Rediseño 1.5 en marcha:** Tarea 1 (Eliminación del sistema de bids) completada y verificada. Nuevos recursos de imagen (favicon sin fondo blanco y logo oficial CFS Rafael Urdaneta) procesados e integrados.
 La Fase D (multi-nube con Drive) se cerró el 2026-10-24 con las cuatro decisiones
 de Lorenzo escritas en `docs/DISENO_MULTINUBE_DRIVE_2026-10-23.md`: opción B sin
 OAuth, cuenta del usuario sin que el sistema la toque, enlace muerto se avisa, sin

@@ -1080,9 +1080,8 @@ class _PanelOfertasState extends State<PanelOfertas> {
 
   Widget _tarjetaOferta(OcupacionSeccion o) {
     final theme = Theme.of(context);
-    final enAsignacion = o.ofertaVigente;
     final conCupo = o.cuposDisponibles > 0;
-    final puedeInscribirse = !enAsignacion && conCupo;
+    final puedeInscribirse = conCupo;
     final ocupado = _inscribiendo.contains(o.seccionId);
 
     final titulo = _limpiarSemilla(o.materiaNombre ?? o.nombre);
@@ -1130,24 +1129,13 @@ class _PanelOfertasState extends State<PanelOfertas> {
                             ? '${o.cuposDisponibles} disponible(s)'
                             : 'Sin cupos',
                       ),
-                      if (enAsignacion)
-                        const Etiqueta(
-                          texto: 'Asiento en asignación',
-                          destacada: true,
-                        ),
                     ],
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 12),
-            if (enAsignacion)
-              FilledButton.icon(
-                onPressed: null,
-                icon: const Icon(Icons.hourglass_empty_outlined, size: 16),
-                label: const Text('Asiento en\nasignación'),
-              )
-            else if (puedeInscribirse)
+            if (puedeInscribirse)
               FilledButton.icon(
                 onPressed: ocupado ? null : () => _inscribirse(o),
                 icon: ocupado
@@ -1176,7 +1164,6 @@ class _PanelOfertasState extends State<PanelOfertas> {
 String _etiquetaEstado(EstadoInscripcion estado) => switch (estado) {
   EstadoInscripcion.enrolled => 'Matriculado',
   EstadoInscripcion.waitlisted => 'En lista de espera',
-  EstadoInscripcion.pendingBid => 'Oferta en el aire',
   EstadoInscripcion.dropped => 'Renunciado',
 };
 

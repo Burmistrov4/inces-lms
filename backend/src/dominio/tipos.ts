@@ -495,22 +495,20 @@ export interface MiHorario {
 // --- Módulo 4: secciones, inscripciones y cupos -----------------------------
 
 /**
- * Los cuatro estados de una inscripción.
+ * Los tres estados de una inscripción (D1: sistema de bids eliminado).
  *
- * El ciclo es: `WAITLISTED` (en la cola) → `PENDING_BID` (se le ofreció un
- * asiento, con vencimiento) → `ENROLLED` (dentro) → `DROPPED` (fuera, pero la
- * fila se conserva como historial).
+ * El ciclo es: `WAITLISTED` (en la cola) → `ENROLLED` (dentro) → `DROPPED`
+ * (fuera, pero la fila se conserva como historial).
  *
  * **`DROPPED` no es un borrado.** La fila se queda: es el historial de que ese
  * estudiante estuvo en esa sección, y volver a entrar es una excepción de
  * administración (`reincorporar_inscripcion`), no una reinscripción libre.
  */
-export type EstadoInscripcion = 'ENROLLED' | 'WAITLISTED' | 'PENDING_BID' | 'DROPPED';
+export type EstadoInscripcion = 'ENROLLED' | 'WAITLISTED' | 'DROPPED';
 
 export const ESTADOS_INSCRIPCION: readonly EstadoInscripcion[] = [
   'ENROLLED',
   'WAITLISTED',
-  'PENDING_BID',
   'DROPPED',
 ];
 
@@ -565,21 +563,11 @@ export interface OcupacionSeccion {
   cupoEfectivo: number;
   /**
    * Cuántos asientos están tomados.
-   *
-   * **Cuenta sólo `ENROLLED`**: una solicitud `PENDING_BID` no reserva cupo. Por
-   * eso `cuposDisponibles` puede ser > 0 con una oferta en el aire, y por eso
-   * existe `ofertaVigente`.
+   * Cuenta los estudiantes en estado `ENROLLED`.
    */
   cuposOcupados: number;
   cuposDisponibles: number;
-  /**
-   * ¿Hay una oferta de cupo viva (no vencida) en esta sección?
-   *
-   * **No es informativo: es la barrera contra la doble venta.** Sin esta señal,
-   * el contador diría que hay hueco mientras una oferta está en el aire, y dos
-   * personas acabarían en un asiento de uno. La interfaz **debe** usarla para no
-   * ofrecer un asiento que no se puede dar.
-   */
+  /** Mantenido por retrocompatibilidad con la vista v_ocupacion_secciones. */
   ofertaVigente: boolean;
 }
 
@@ -589,8 +577,6 @@ export interface Inscripcion {
   estudianteId: string;
   seccionId: string;
   estado: EstadoInscripcion;
-  /** Vencimiento de la oferta. Sólo tiene valor en `PENDING_BID`. */
-  ofertaVenceEn: string | null;
   creadoEn: string;
   actualizadoEn: string;
 }

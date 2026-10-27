@@ -1,12 +1,10 @@
 /// Estados de una inscripción en el Módulo 4 (Inscripciones y Cupos).
 ///
-/// El ciclo es: `WAITLISTED` (en cola) → `PENDING_BID` (se le ofreció un asiento,
-/// con vencimiento) → `ENROLLED` (dentro) → `DROPPED` (fuera, pero la fila se
-/// conserva como historial). `DROPPED` no es un borrado.
+/// Los estados posibles son: `ENROLLED` (asiento confirmado), `WAITLISTED`
+/// (en cola de espera) y `DROPPED` (baja / historial).
 enum EstadoInscripcion {
   enrolled('ENROLLED'),
   waitlisted('WAITLISTED'),
-  pendingBid('PENDING_BID'),
   dropped('DROPPED');
 
   const EstadoInscripcion(this.valorRemoto);
@@ -15,19 +13,12 @@ enum EstadoInscripcion {
   final String valorRemoto;
 
   /// Convierte el valor del backend al enum, fallando si es desconocido.
-  ///
-  /// Igual que el backend, un estado que no reconocemos es un contrato roto:
-  /// probablemente una migración añadió uno nuevo y el cliente no se enteró.
   static EstadoInscripcion desde(String? valor) => switch (valor) {
         'ENROLLED' => enrolled,
         'WAITLISTED' => waitlisted,
-        'PENDING_BID' => pendingBid,
         'DROPPED' => dropped,
         _ => throw FormatException('Estado de inscripción desconocido: $valor'),
       };
-
-  /// ¿Hay una oferta de cupo en el aire esperando aceptación?
-  bool get esOfertaViva => this == pendingBid;
 
   /// ¿Sigue en la cola de espera (sin asiento aún)?
   bool get enCola => this == waitlisted;
@@ -100,7 +91,6 @@ class InscripcionDetallada {
   final String estudianteId;
   final String seccionId;
   final EstadoInscripcion estado;
-  final String? ofertaVenceEn;
   final String periodo;
   final String seccionNombre;
   final String materiaId;
@@ -116,7 +106,6 @@ class InscripcionDetallada {
     required this.estudianteId,
     required this.seccionId,
     required this.estado,
-    this.ofertaVenceEn,
     required this.periodo,
     required this.seccionNombre,
     required this.materiaId,
@@ -134,7 +123,6 @@ class InscripcionDetallada {
         estudianteId: json['estudianteId'] as String,
         seccionId: json['seccionId'] as String,
         estado: EstadoInscripcion.desde(json['estado'] as String?),
-        ofertaVenceEn: json['ofertaVenceEn'] as String?,
         periodo: json['periodo'] as String,
         seccionNombre: json['seccionNombre'] as String,
         materiaId: json['materiaId'] as String,

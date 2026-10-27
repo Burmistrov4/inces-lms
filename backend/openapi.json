@@ -2189,15 +2189,15 @@
           },
           "cuposOcupados": {
             "type": "integer",
-            "description": "Asientos tomados. Cuenta SÓLO `ENROLLED`: una solicitud `PENDING_BID` no reserva cupo."
+            "description": "Asientos tomados. Cuenta los estudiantes en estado `ENROLLED`."
           },
           "cuposDisponibles": {
             "type": "integer",
-            "description": "Cupo efectivo menos ocupados, nunca negativo. OJO: puede ser > 0 con una oferta en el aire. Para decidir si se puede ofrecer, usa `ofertaVigente`."
+            "description": "Cupo efectivo menos ocupados, nunca negativo."
           },
           "ofertaVigente": {
             "type": "boolean",
-            "description": "¿Hay una oferta de cupo viva (no vencida) en esta sección? NO es informativo: es la barrera contra la doble venta. Con `ofertaVigente: true` el asiento está comprometido aunque `cuposDisponibles` diga otra cosa, y una solicitud nueva entrará a la lista de espera."
+            "description": "Mantenido por retrocompatibilidad: siempre false tras D1."
           }
         },
         "required": [
@@ -2246,7 +2246,6 @@
         "enum": [
           "ENROLLED",
           "WAITLISTED",
-          "PENDING_BID",
           "DROPPED"
         ]
       },
@@ -2268,13 +2267,6 @@
           "estado": {
             "$ref": "#/components/schemas/EstadoInscripcion"
           },
-          "ofertaVenceEn": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Vencimiento de la oferta. Sólo tiene valor en `PENDING_BID`. Pasada la fecha, la oferta se puede vencer con `POST /api/v1/admin/inscripciones/expirar`."
-          },
           "creadoEn": {
             "type": "string"
           },
@@ -2287,7 +2279,6 @@
           "estudianteId",
           "seccionId",
           "estado",
-          "ofertaVenceEn",
           "creadoEn",
           "actualizadoEn"
         ]
@@ -8231,7 +8222,7 @@
           "Inscripciones"
         ],
         "summary": "La cola FIFO de una sección",
-        "description": "Orden de llegada: el primero que llegó es el primero. `PENDING_BID` no aparece —ya salió de la cola, se le ofreció un asiento— y `ENROLLED` tampoco. `posicionEnCola` viene ya resuelto.",
+        "description": "Orden de llegada: el primero que llegó es el primero en la lista de espera. `ENROLLED` ya está matriculado y no aparece. `posicionEnCola` viene ya resuelto.",
         "security": [
           {
             "bearerAuth": []

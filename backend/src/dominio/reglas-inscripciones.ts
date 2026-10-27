@@ -35,8 +35,6 @@ export function descripcionDeEstado(estado: EstadoInscripcion): string {
       return 'Inscrito';
     case 'WAITLISTED':
       return 'En lista de espera';
-    case 'PENDING_BID':
-      return 'Con una oferta de cupo pendiente';
     case 'DROPPED':
       return 'Dado de baja';
   }
@@ -47,9 +45,8 @@ export function descripcionDeEstado(estado: EstadoInscripcion): string {
  *
  * `null` significa «no tiene fila en esta sección» y es el caso normal: puede
  * pedir. Un `DROPPED` **no** puede pedir por la vía normal —volver a entrar es
- * una excepción de administración (`reincorporar_inscripcion`)— y un `ENROLLED`,
- * `WAITLISTED` o `PENDING_BID` tampoco, porque ya está dentro, en la cola o con
- * una oferta viva.
+ * una excepción de administración (`reincorporar_inscripcion`)— y un `ENROLLED`
+ * o `WAITLISTED` tampoco, porque ya está dentro o en la cola.
  *
  * La base lo rechaza igual con un `23514`; esto existe para que el mensaje diga
  * **por qué**, y para que la interfaz deshabilite el botón antes de que el
@@ -60,72 +57,25 @@ export function puedeSolicitar(estado: EstadoInscripcion | null): boolean {
 }
 
 /**
- * ¿Está vencida una oferta?
- *
- * Es el espejo exacto del predicado SQL `bid_expires_at is null or
- * bid_expires_at > now()` de `existe_oferta_vigente()`, negado.
- *
- * **`null` significa «no vence»**, no «vencida»: una oferta sin fecha de
- * vencimiento está viva. Confundir las dos cosas entregaría el asiento a la vía
- * directa mientras la oferta sigue en el aire.
- *
- * Si la fecha no se puede interpretar se devuelve `false` —tratarla como viva—
- * porque el error seguro es no ofrecer el asiento de más, nunca de menos.
- */
-export function ofertaVencida(venceEn: string | null, ahora: Date): boolean {
-  if (venceEn === null) return false;
-
-  const vencimiento = new Date(venceEn).getTime();
-  if (Number.isNaN(vencimiento)) return false;
-
-  return vencimiento <= ahora.getTime();
-}
-
-/**
  * ¿Hay un asiento disponible de verdad?
- *
- * **Esta es la regla que evita la doble venta**, y no es la resta del contador.
- * Como `cupos_ocupados` cuenta **sólo `ENROLLED`**, el contador puede decir «hay
- * hueco» mientras una oferta está en el aire. La condición completa, que es la
- * que aplica `solicitar_inscripcion` dentro de su cerrojo, es:
- *
- *   hay hueco  **Y**  no hay oferta vigente
- *
- * Sin la segunda mitad, la traza es:
- *
- *   ```
- *   cupo = 1 · A renuncia          → 0/1, hueco libre
- *   B promovido (PENDING_BID)      → ocupados = 0   ← B ya no cuenta
- *   C entra directo                → ENROLLED       ← 1/1
- *   B acepta su oferta             → ENROLLED       ← 2/1  💥 dos en un asiento
- *   ```
- *
- * Está probado en `supabase/tests/validate.mjs` §17.5. **No simplifiques esta
- * función a la resta**: es la única copia de esa conjunción fuera de la base.
+ * En el modelo sin bids (D1), hay asiento disponible si los asientos ocupados
+ * no alcanzan el cupo efectivo.
  */
 export function hayAsientoDisponible(
   cupoEfectivo: number,
   cuposOcupados: number,
-  ofertaVigente: boolean,
+  ofertaVigente = false,
 ): boolean {
   return cuposOcupados < cupoEfectivo && !ofertaVigente;
 }
 
 /**
- * Cuántos asientos puede ofrecer la interfaz **sin mentir**.
- *
- * No es `cupos_disponibles` de la vista. Con una oferta en el aire la vista
- * informa `> 0` (porque `PENDING_BID` no cuenta) pero el asiento ya está
- * comprometido: ofrecerlo sería prometer algo que la base va a negar. Devuelve 0
- * en ese caso.
- *
- * `cupos_disponibles` se sigue exponiendo para que la pantalla pueda explicar
- * «hay 1 libre, pero comprometido»; lo que no puede es usarlo como semáforo.
+ * Cuántos asientos puede ofrecer la interfaz.
  */
 export function cuposOfrecibles(
   cupoEfectivo: number,
   cuposOcupados: number,
-  ofertaVigente: boolean,
+  ofertaVigente = false,
 ): number {
   if (ofertaVigente) return 0;
   return Math.max(cupoEfectivo - cuposOcupados, 0);

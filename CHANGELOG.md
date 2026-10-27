@@ -2,6 +2,20 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.5.0] - 2026-10-26
+### Rediseño 1.5 — Tarea 1: Eliminación del sistema de bids y nuevos recursos de identidad visual
+
+**Eliminación del sistema de bids (Decisión D1)**
+- Flujo de inscripciones simplificado: `WAITLISTED` (cola) → `ENROLLED` (matriculado) → `DROPPED` (historial/baja).
+- Al liberarse un cupo en una sección, el primer aspirante en cola entra directamente a `ENROLLED` sin requerir oferta intermedia ni vencimiento de tiempo (`PENDING_BID` eliminado de `EstadoInscripcion`).
+- Migración `202610260001_eliminar_sistema_bids.sql`: eliminada columna `bid_expires_at`, limpiados parámetros obsoletos en `system_settings` (`habilitar_sistema_bids`, `bid_ttl_horas`), y reescritas funciones PL/pgSQL (`cupos_ocupados`, `solicitar_inscripcion`, `promover_siguiente_de_cola`, `renunciar_cupo`, `reincorporar_inscripcion`).
+- Purga completa de lógica y pruebas de bids en backend y frontend Dart (`mis_inscripciones_panel.dart`, `cpanel_inscripciones_panel.dart`, arneses y fakes).
+
+**Recursos de identidad visual oficial (CFS Rafael Urdaneta La Isabelica)**
+- Procesamiento del nuevo favicon institucional (`inces-lms-favicon.png`): remoción del fondo blanco exterior en esquinas mediante máscara de contorno y suavizado anti-aliasing (alfa transparente 0 fuera del squircle).
+- Generación de todos los tamaños del nuevo favicon y PWA icons: `favicon-16.png`, `favicon-32.png`, `favicon-48.png`, `favicon.png`, `apple-touch-icon.png`, `Icon-192.png`, `Icon-512.png`, `Icon-maskable-192.png`, `Icon-maskable-512.png` y `assets/images/icono_app.png`.
+- Incorporación del logo oficial de alta resolución del centro (`assets/images/inces_lms_logo.png` y `web/icons/inces-lms-logo.png`).
+
 ## [1.4.0] - 2026-10-25
 ### Identidad institucional, rango PNA corregido, seguridad de la API y auditoría independiente
 

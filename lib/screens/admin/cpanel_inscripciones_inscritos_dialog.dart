@@ -401,7 +401,6 @@ String _iniciales(String nombre) {
 String _descripcionEstado(EstadoInscripcion estado) => switch (estado) {
       EstadoInscripcion.enrolled => 'Matriculado',
       EstadoInscripcion.waitlisted => 'En cola',
-      EstadoInscripcion.pendingBid => 'Oferta de cupo en el aire',
       EstadoInscripcion.dropped => 'Dado de baja',
     };
 

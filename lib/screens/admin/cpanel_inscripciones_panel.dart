@@ -108,10 +108,7 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel>
 
   final Set<String> _promoviendo = {};
   final Set<String> _exportando = {};
-  bool _expirando = false;
 
-  int get _conOfertaVigente =>
-      _secciones.where((o) => o.ofertaVigente).length;
   int get _cuposDisponibles =>
       _secciones.fold(0, (s, o) => s + o.cuposDisponibles);
   int get _cuposOcupados =>
@@ -169,27 +166,6 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel>
           // cadena cae al correo, no a la clave interna.
           'Promovido ${promovida.etiquetaEstudiante}: ya tiene su asiento.',
           exito: true,
-        );
-        _cargar();
-      },
-      failure: (fallo) => mostrarAviso(context, fallo.message, error: true),
-    );
-  }
-
-  Future<void> _expirar() async {
-    setState(() => _expirando = true);
-    final resultado = await _repo.expirarOfertas();
-    if (!mounted) return;
-    setState(() => _expirando = false);
-
-    resultado.when(
-      success: (vencidas) {
-        mostrarAviso(
-          context,
-          vencidas == 0
-              ? 'No había ofertas caducadas pendientes.'
-              : 'Se vencieron ${plural(vencidas, 'oferta de cupo', 'ofertas de cupo')}.',
-          exito: vencidas > 0,
         );
         _cargar();
       },
@@ -314,22 +290,6 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel>
             icon: const Icon(Icons.tune_outlined, size: 17),
             label: const Text('Campos del Formulario'),
           ),
-        OutlinedButton.icon(
-          onPressed: _expirando ? null : _expirar,
-          icon: _expirando
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.hourglass_disabled_outlined, size: 17),
-          label: Text(_expirando ? 'Venciendo…' : 'Expirar ofertas'),
-        ),
-        // «Reincorporar» ya NO vive aquí. Era el único botón global y por eso
-        // tenía que preguntar en un diálogo cuál era la sección —y, al no tener
-        // el contexto, acabó pidiendo el uuid a mano—. Ahora va en la tarjeta de
-        // la sección, junto a «Ver cola» y «Promover siguiente», que es la regla
-        // que este mismo archivo declara para la exportación.
       ],
     );
   }
@@ -346,17 +306,11 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel>
 
     return LayoutBuilder(
       builder: (context, restricciones) {
-        // Dos tarjetas por fila en móvil, cuatro en escritorio. Con los 220 px
-        // fijos, a 375 px se apilaban las cuatro y esa columna se comía la
-        // pantalla antes de llegar a la lista de secciones.
+        // Dos tarjetas por fila en móvil, tres en escritorio.
         final anchoTarjeta = restricciones.maxWidth >= 480
             ? 220.0
             : (restricciones.maxWidth - 12) / 2;
 
-        // Todo el cuerpo en un solo scroll. Antes sólo la lista era
-        // desplazable y las métricas quedaban fuera: con el móvil apilado, la
-        // suma de cabecera + métricas + aviso superaba la pantalla y la
-        // `Column` desbordaba por abajo.
         return SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -371,19 +325,6 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel>
                       etiqueta: 'Secciones',
                       valor: '${_secciones.length}',
                       icono: Icons.explore_outlined,
-                    ),
-                  ),
-                  SizedBox(
-                    width: anchoTarjeta,
-                    child: TarjetaMetrica(
-                      etiqueta: 'Con oferta en el aire',
-                      valor: '$_conOfertaVigente',
-                      icono: Icons.local_offer_outlined,
-                      // Ámbar y no azul: es `PENDING_BID`, el estado con fecha
-                      // límite, y el proyecto ya documentó que el ámbar se
-                      // reserva para él. Estaba en el azul primario, que además
-                      // no se lee sobre su propio tinte en modo oscuro.
-                      tono: TonoEstado.advertencia,
                     ),
                   ),
                   SizedBox(
@@ -485,11 +426,6 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel>
                       const Etiqueta(
                         texto: 'Cupos Agotados / En Espera',
                         destacada: false,
-                      ),
-                    if (o.ofertaVigente)
-                      const Etiqueta(
-                        texto: 'Oferta en el aire',
-                        destacada: true,
                       ),
                   ],
                 ),

@@ -26,17 +26,10 @@ import {
  * Lo que se comprueba aquí es el **contrato HTTP** y, sobre todo, las dos reglas
  * que no se ven a simple vista:
  *
- * 1. **La guarda contra la doble venta.** Como `PENDING_BID` no cuenta como
- *    ocupación, el contador puede decir «hay hueco» mientras una oferta está en el
- *    aire. Si la solicitud entrara directo, dos personas acabarían en un asiento
- *    de uno. Hay una prueba que reproduce la traza completa.
+ * 1. **Inscripción y cupos.** Al llenarse la sección los aspirantes pasan a
+ *    lista de espera (`WAITLISTED`). Al liberarse un cupo, se promueve al siguiente.
  * 2. **La reincorporación puede exceder la capacidad.** «Si el admin autoriza, el
  *    sistema obedece»: es una decisión de administración, no un agujero.
- *
- * El arnés usa **las funciones puras reales** (`ofertaVencida`) y replica la
- * condición completa de las RPC, incluidas las dos mitades de la conjunción. Un
- * doble que sólo restara el contador pasaría todas las pruebas de cupo simple y
- * ninguna de las de doble venta.
  *
  * Lo que ocurre *dentro* —que el `23514` de las RPC se traduzca bien contra la
  * base real— no se puede ver desde aquí: le corresponde al humo contra Supabase.
@@ -349,43 +342,28 @@ describe('solicitar un asiento', () => {
   });
 });
 
-describe('la guarda contra la doble venta', () => {
-  /**
-   * El escenario completo, con cupo 1:
-   *
-   *   A renuncia          → 0/1, hueco libre
-   *   B promovido         → PENDING_BID, ocupados = 0  ← B ya no cuenta
-   *   C pide inscripción  → si entrara directo, 1/1
-   *   B acepta            → ENROLLED, 2/1  💥 dos personas en un asiento
-   *
-   * La prueba comprueba el paso de C: **tiene que quedar en WAITLISTED**.
-   */
-  it('con una oferta viva, el contador dice que hay hueco y aun así NO se entra', async () => {
-    const manana = new Date(Date.now() + 3_600_000).toISOString();
-
+describe('inscripción y cupos disponibles', () => {
+  it('con la sección llena, el aspirante queda en WAITLISTED', async () => {
     const arnes = arnesConDosAlumnos(SECCION_CAPACIDAD_1, [
       {
         estudianteId: ID_ALUMNO,
         seccionId: ID_SECCION_SA,
-        estado: 'PENDING_BID',
-        ofertaVenceEn: manana,
+        estado: 'ENROLLED',
         llegada: 1,
       },
     ]);
     app = arnes.app;
 
-    // Primero: el contador miente, y hay que dejar constancia de que miente.
     const ofertas = await app.inject({
       method: 'GET',
       url: '/api/v1/ofertas',
       headers: conToken(TOKEN_ALUMNO_2),
     });
     const sa = ofertas.json().secciones[0];
-    expect(sa.cuposOcupados).toBe(0);
-    expect(sa.cuposDisponibles).toBe(1);
-    expect(sa.ofertaVigente).toBe(true);
+    expect(sa.cuposOcupados).toBe(1);
+    expect(sa.cuposDisponibles).toBe(0);
+    expect(sa.ofertaVigente).toBe(false);
 
-    // Y ahora: el segundo estudiante NO entra, aunque el contador diga que cabe.
     const solicitud = await app.inject({
       method: 'POST',
       url: '/api/v1/inscripciones',
@@ -397,15 +375,12 @@ describe('la guarda contra la doble venta', () => {
     expect(solicitud.json().estado).toBe('WAITLISTED');
   });
 
-  it('soloConCupo no ofrece un asiento con oferta en el aire', async () => {
-    const manana = new Date(Date.now() + 3_600_000).toISOString();
-
+  it('soloConCupo no ofrece una sección sin cupos disponibles', async () => {
     const arnes = arnesConDosAlumnos(SECCION_CAPACIDAD_1, [
       {
         estudianteId: ID_ALUMNO,
         seccionId: ID_SECCION_SA,
-        estado: 'PENDING_BID',
-        ofertaVenceEn: manana,
+        estado: 'ENROLLED',
         llegada: 1,
       },
     ]);
@@ -417,50 +392,55 @@ describe('la guarda contra la doble venta', () => {
       headers: conToken(TOKEN_ALUMNO_2),
     });
 
-    // `cuposDisponibles` es 1, así que un filtro basado en el contador ofrecería
-    // la sección. El filtro tiene que mirar la oferta viva, no la resta.
     expect(respuesta.json().total).toBe(0);
   });
 
-  it('una oferta VENCIDA sí libera el asiento', async () => {
-    const ayer = new Date(Date.now() - 3_600_000).toISOString();
-
+  it('renunciar al cupo libera el asiento y promueve automáticamente al primero en espera', async () => {
     const arnes = arnesConDosAlumnos(SECCION_CAPACIDAD_1, [
       {
         estudianteId: ID_ALUMNO,
         seccionId: ID_SECCION_SA,
-        estado: 'PENDING_BID',
-        ofertaVenceEn: ayer,
+        estado: 'ENROLLED',
         llegada: 1,
+      },
+      {
+        estudianteId: ID_ALUMNO_2,
+        seccionId: ID_SECCION_SA,
+        estado: 'WAITLISTED',
+        llegada: 2,
       },
     ]);
     app = arnes.app;
 
-    // El asiento está genuinamente libre aunque el barrido no haya pasado: si una
-    // oferta vencida siguiera bloqueando, el asiento quedaría muerto hasta que
-    // alguien llamara a `expirar`, y eso contradice que la expiración sea
-    // idempotente y opcional.
-    const solicitud = await app.inject({
+    const renuncia = await app.inject({
       method: 'POST',
-      url: '/api/v1/inscripciones',
-      headers: conToken(TOKEN_ALUMNO_2),
-      payload: { seccionId: ID_SECCION_SA },
+      url: `/api/v1/inscripciones/${ID_SECCION_SA}/renunciar`,
+      headers: conToken(TOKEN_ALUMNO),
     });
 
-    expect(solicitud.json().estado).toBe('ENROLLED');
+    expect(renuncia.statusCode).toBe(200);
+    expect(renuncia.json().estado).toBe('DROPPED');
+
+    const inscritos = await app.inject({
+      method: 'GET',
+      url: `/api/v1/admin/secciones/${ID_SECCION_SA}/inscripciones`,
+      headers: conToken(TOKEN_ADMIN),
+    });
+
+    const alumno2 = inscritos.json().inscripciones.find(
+      (i: { estudianteId: string }) => i.estudianteId === ID_ALUMNO_2,
+    );
+    expect(alumno2.estado).toBe('ENROLLED');
   });
 });
 
 describe('aceptar y renunciar', () => {
-  it('acepta una oferta y pasa a ENROLLED', async () => {
-    const manana = new Date(Date.now() + 3_600_000).toISOString();
-
+  it('aceptar confirma la inscripción existente como ENROLLED', async () => {
     const arnes = arnesConDosAlumnos(SECCION_CAPACIDAD_1, [
       {
         estudianteId: ID_ALUMNO_2,
         seccionId: ID_SECCION_SA,
-        estado: 'PENDING_BID',
-        ofertaVenceEn: manana,
+        estado: 'ENROLLED',
         llegada: 1,
       },
     ]);
@@ -474,41 +454,6 @@ describe('aceptar y renunciar', () => {
 
     expect(respuesta.statusCode).toBe(200);
     expect(respuesta.json().estado).toBe('ENROLLED');
-
-    // Y ahora el asiento cuenta.
-    const ofertas = await app.inject({
-      method: 'GET',
-      url: '/api/v1/ofertas',
-      headers: conToken(TOKEN_ALUMNO_2),
-    });
-    expect(ofertas.json().secciones[0].cuposOcupados).toBe(1);
-    expect(ofertas.json().secciones[0].ofertaVigente).toBe(false);
-  });
-
-  it('devuelve 410 al aceptar una oferta vencida', async () => {
-    const ayer = new Date(Date.now() - 3_600_000).toISOString();
-
-    const arnes = arnesConDosAlumnos(SECCION_CAPACIDAD_1, [
-      {
-        estudianteId: ID_ALUMNO_2,
-        seccionId: ID_SECCION_SA,
-        estado: 'PENDING_BID',
-        ofertaVenceEn: ayer,
-        llegada: 1,
-      },
-    ]);
-    app = arnes.app;
-
-    const respuesta = await app.inject({
-      method: 'POST',
-      url: `/api/v1/inscripciones/${ID_SECCION_SA}/aceptar`,
-      headers: conToken(TOKEN_ALUMNO_2),
-    });
-
-    // 410 y no 400: la petición era válida cuando se hizo y dejó de serlo por el
-    // paso del tiempo. La interfaz debe recargar, no pedir que se corrija nada.
-    expect(respuesta.statusCode).toBe(410);
-    expect(respuesta.json().error.codigo).toBe('OFERTA_VENCIDA');
   });
 
   it('renunciar deja DROPPED y no borra la fila', async () => {
@@ -702,15 +647,12 @@ describe('promover al siguiente', () => {
     expect(respuesta.json().mensaje).toContain('cola está vacía');
   });
 
-  it('NO promueve si ya hay una oferta viva: una oferta por asiento', async () => {
-    const manana = new Date(Date.now() + 3_600_000).toISOString();
-
-    const arnes = arnesConDosAlumnos(SECCION_CAPACIDAD_2, [
+  it('NO promueve si la sección ya está llena', async () => {
+    const arnes = arnesConDosAlumnos(SECCION_CAPACIDAD_1, [
       {
         estudianteId: ID_ALUMNO,
         seccionId: ID_SECCION_SA,
-        estado: 'PENDING_BID',
-        ofertaVenceEn: manana,
+        estado: 'ENROLLED',
         llegada: 1,
       },
       { estudianteId: ID_ALUMNO_2, seccionId: ID_SECCION_SA, estado: 'WAITLISTED', llegada: 2 },
@@ -723,11 +665,9 @@ describe('promover al siguiente', () => {
       headers: conToken(TOKEN_ADMIN),
     });
 
-    // Hay hueco de sobra (cupo 2, ocupados 0) y aun así no se promueve: ya hay
-    // una oferta en el aire y promover a otro comprometería el mismo asiento.
     expect(respuesta.statusCode).toBe(200);
     expect(respuesta.json().promovida).toBeNull();
-    expect(respuesta.json().mensaje).toContain('oferta de cupo en el aire');
+    expect(respuesta.json().mensaje).toContain('sección está llena');
   });
 });
 
@@ -820,18 +760,8 @@ describe('reincorporar (la regla institucional)', () => {
 });
 
 describe('expirar ofertas', () => {
-  it('vence las caducadas y es idempotente', async () => {
-    const ayer = new Date(Date.now() - 3_600_000).toISOString();
-
-    const arnes = arnesConDosAlumnos(SECCION_CAPACIDAD_2, [
-      {
-        estudianteId: ID_ALUMNO,
-        seccionId: ID_SECCION_SA,
-        estado: 'PENDING_BID',
-        ofertaVenceEn: ayer,
-        llegada: 1,
-      },
-    ]);
+  it('es no-op idempotente tras eliminar el sistema de bids', async () => {
+    const arnes = arnesConDosAlumnos(SECCION_CAPACIDAD_2);
     app = arnes.app;
 
     const primera = await app.inject({
@@ -841,9 +771,8 @@ describe('expirar ofertas', () => {
     });
 
     expect(primera.statusCode).toBe(200);
-    expect(primera.json().vencidas).toBe(1);
+    expect(primera.json().vencidas).toBe(0);
 
-    // Idempotente: la segunda vez no queda nada por vencer.
     const segunda = await app.inject({
       method: 'POST',
       url: '/api/v1/admin/inscripciones/expirar',
@@ -852,38 +781,6 @@ describe('expirar ofertas', () => {
 
     expect(segunda.json().vencidas).toBe(0);
     expect(segunda.json().mensaje).toContain('No había ofertas vencidas');
-  });
-
-  it('no toca una oferta viva', async () => {
-    const manana = new Date(Date.now() + 3_600_000).toISOString();
-
-    const arnes = arnesConDosAlumnos(SECCION_CAPACIDAD_2, [
-      {
-        estudianteId: ID_ALUMNO,
-        seccionId: ID_SECCION_SA,
-        estado: 'PENDING_BID',
-        ofertaVenceEn: manana,
-        llegada: 1,
-      },
-    ]);
-    app = arnes.app;
-
-    const respuesta = await app.inject({
-      method: 'POST',
-      url: '/api/v1/admin/inscripciones/expirar',
-      headers: conToken(TOKEN_ADMIN),
-    });
-
-    expect(respuesta.json().vencidas).toBe(0);
-
-    // Y la oferta sigue en pie: el barrido no puede llevarse por delante una
-    // oferta que aún no venció.
-    const mias = await app.inject({
-      method: 'GET',
-      url: '/api/v1/mis-inscripciones',
-      headers: conToken(TOKEN_ALUMNO),
-    });
-    expect(mias.json().inscripciones[0].estado).toBe('PENDING_BID');
   });
 });
 

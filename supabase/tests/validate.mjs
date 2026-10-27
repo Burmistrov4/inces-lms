@@ -200,12 +200,9 @@ async function main() {
   // 202609190001) + `m5_max_bytes` y `m5_max_archivos_por_entidad` (M5,
   // 202609210001). El conteo es fijo a propósito: obliga a actualizarlo —y a
   // pensarlo— cuando alguien añade un parámetro.
-  // **Siete, no once.** La migración 202610240001 borró cuatro que no leía
-  // nadie (inscripciones_abiertas, max_faltas_consecutivas, enrollment_lock_days,
-  // r2_presign_ttl_minutos): se pintaban como interruptores y cambiarlos no
-  // cambiaba nada. El conteo sigue siendo fijo a propósito: obliga a pensarlo
-  // cuando alguien añade o quita un parámetro.
-  check('hay 7 parámetros sembrados', settings.length === 7, `hay ${settings.length}`);
+  // **Cinco, no siete.** La migración 202610260001 borró habilitar_sistema_bids y
+  // bid_ttl_horas tras eliminar el sistema de bids (D1).
+  check('hay 5 parámetros sembrados', settings.length === 5, `hay ${settings.length}`);
   check(
     'modo_mantenimiento es público (la UI necesita leerlo)',
     settings.find((s) => s.clave === 'modo_mantenimiento')?.es_publico === true,
@@ -213,10 +210,6 @@ async function main() {
   check(
     'cupo_maximo_por_seccion es privado',
     settings.find((s) => s.clave === 'cupo_maximo_por_seccion')?.es_publico === false,
-  );
-  check(
-    'el tipo declarado es coherente con el valor',
-    settings.find((s) => s.clave === 'habilitar_sistema_bids')?.tipo === 'boolean',
   );
 
   // ------------------------------------------------------ 4. cortacircuitos
@@ -261,28 +254,28 @@ async function main() {
     JSON.stringify({ antes: ultimo.valor_anterior?.habilitado, despues: ultimo.valor_nuevo?.habilitado }),
   );
 
-  // **Sobre `bid_ttl_horas`, no sobre `max_faltas_consecutivas`.** La migración
-  // 202610240001 borró esa clave por no tener lector; usar un parámetro que sí
-  // existe mantiene la prueba midiendo lo que importa (que el trigger de
-  // auditoría guarde el antes y el después), sin depender de datos muertos.
-  const antesBid = (
+  // **Sobre `cupo_maximo_por_seccion`, no sobre claves borradas.** La migración
+  // 202610260001 borró `bid_ttl_horas` tras retirar el sistema de bids (D1);
+  // usar un parámetro vigente mantiene la prueba midiendo lo que importa (que el
+  // trigger de auditoría guarde el antes y el después).
+  const antesCupo = (
     await db.query(
-      "select (valor #>> '{}')::int as v from public.system_settings where clave = 'bid_ttl_horas'",
+      "select (valor #>> '{}')::int as v from public.system_settings where clave = 'cupo_maximo_por_seccion'",
     )
   ).rows[0]?.v;
-  const despuesBid = (antesBid ?? 24) + 1;
+  const despuesCupo = (antesCupo ?? 25) + 1;
   await db.exec(
-    `update public.system_settings set valor = '${despuesBid}'::jsonb where clave = 'bid_ttl_horas'`,
+    `update public.system_settings set valor = '${despuesCupo}'::jsonb where clave = 'cupo_maximo_por_seccion'`,
   );
   const auditSetting = (
     await db.query(
-      "select valor_anterior, valor_nuevo from public.config_audit_log where tabla = 'system_settings' and clave = 'bid_ttl_horas' order by created_at desc limit 1",
+      "select valor_anterior, valor_nuevo from public.config_audit_log where tabla = 'system_settings' and clave = 'cupo_maximo_por_seccion' order by created_at desc limit 1",
     )
   ).rows[0];
   check(
     'un cambio de parámetro también se audita',
-    auditSetting.valor_anterior?.valor === antesBid &&
-      auditSetting.valor_nuevo?.valor === despuesBid,
+    auditSetting.valor_anterior?.valor === antesCupo &&
+      auditSetting.valor_nuevo?.valor === despuesCupo,
     JSON.stringify({ antes: auditSetting.valor_anterior?.valor, despues: auditSetting.valor_nuevo?.valor }),
   );
 
@@ -405,7 +398,7 @@ async function main() {
   const settingsAdmin = await como('authenticated', ADMIN_ID, () =>
     db.query('select count(*)::int as n from public.system_settings'),
   );
-  check('SÍ puede leer todos los parámetros', settingsAdmin.rows[0].n === 11, `ve ${settingsAdmin.rows[0].n}`);
+  check('SÍ puede leer todos los parámetros', settingsAdmin.rows[0].n === 10, `ve ${settingsAdmin.rows[0].n}`);
 
   const adminPuedeAjustar = await como('authenticated', ADMIN_ID, () =>
     db.query("select public.is_admin() as es"),
@@ -1589,12 +1582,7 @@ async function main() {
       "select valor, tipo, es_publico from public.system_settings where clave = 'habilitar_sistema_bids'",
     )
   ).rows[0];
-  check('habilitar_sistema_bids está sembrado', Boolean(bidsSetting));
-  check(
-    'habilitar_sistema_bids es boolean, privado y arranca apagado',
-    bidsSetting?.tipo === 'boolean' && bidsSetting?.es_publico === false && bidsSetting?.valor === false,
-    JSON.stringify(bidsSetting),
-  );
+  check('habilitar_sistema_bids fue eliminado en D1 (sin bids)', bidsSetting === undefined);
 
   // Las RPC de M4 son `security definer` a propósito (se saltan la RLS y hacen
   // su propia autorización). Si alguna volviera a `invoker`, la escritura
@@ -1827,22 +1815,14 @@ async function main() {
   );
   check('la reincorporación sin ser admin se rechaza por permisos (42501)', noAdmin?.code === '42501', `código ${noAdmin?.code}`);
 
-  // ------------------------------------------------- 17.3 el motor, bids ENCENDIDO
-  await db.exec("update public.system_settings set valor = 'true'::jsonb where clave = 'habilitar_sistema_bids'");
-  check(
-    'el interruptor de bids quedó encendido',
-    (await db.query("select valor from public.system_settings where clave='habilitar_sistema_bids'")).rows[0]
-      .valor === true,
-  );
-
+  // ------------------------------------------------- 17.3 el motor, sin bids (D1)
   const b1 = await inscribe(ALU6, SEC_M4B);
-  check('con bids encendido, un cupo libre sigue admitiendo ENROLLED', b1.rows[0].s === 'ENROLLED', String(b1.rows[0].s));
+  check('un cupo libre admite ENROLLED directo', b1.rows[0].s === 'ENROLLED', String(b1.rows[0].s));
   const b2 = await inscribe(ALU7, SEC_M4B);
   check('con la sección llena, el siguiente va a WAITLISTED', b2.rows[0].s === 'WAITLISTED', String(b2.rows[0].s));
 
   // La prueba de que el recuento no lo filtra la RLS: ALU7 consulta la vista y
-  // debe ver el asiento de ALU6, que NO es suyo. Si la vista fuera `invoker` sin
-  // funciones definer, vería 0 y el cupo parecería siempre vacío.
+  // debe ver el asiento de ALU6, que NO es suyo.
   const vistaAjena = await como('authenticated', ALU7, () =>
     db.query(`select cupos_ocupados from public.v_ocupacion_secciones where id = '${SEC_M4B}'`),
   );
@@ -1852,66 +1832,36 @@ async function main() {
     JSON.stringify(vistaAjena.rows[0] ?? {}),
   );
 
+  // Renuncia: al liberarse el cupo, ALU7 (WAITLISTED) entra AUTOMÁTICAMENTE a ENROLLED (D1)
   await como('authenticated', ALU6, () => db.query(`select public.renunciar_cupo('${SEC_M4B}')`));
-  const oferta = (
+  const alu7Tras = (
     await db.query(
-      `select status, bid_expires_at from public.enrollments where student_id='${ALU7}' and section_id='${SEC_M4B}'`,
+      `select status from public.enrollments where student_id='${ALU7}' and section_id='${SEC_M4B}'`,
     )
   ).rows[0];
-  check('con bids encendido, el primero de la cola recibe una OFERTA (PENDING_BID)', oferta?.status === 'PENDING_BID', String(oferta?.status));
-  check(
-    'la oferta nace con vencimiento futuro (bid_expires_at)',
-    oferta?.bid_expires_at != null && new Date(oferta.bid_expires_at).getTime() > Date.now(),
-    String(oferta?.bid_expires_at),
-  );
+  check('al liberarse un cupo, el primero de la cola entra automáticamente a ENROLLED (D1)', alu7Tras?.status === 'ENROLLED', String(alu7Tras?.status));
 
   const acepta = await como('authenticated', ALU7, () =>
     db.query(`select public.aceptar_cupo('${SEC_M4B}') as s`),
   );
-  check('aceptar la oferta confirma ENROLLED', acepta.rows[0].s === 'ENROLLED', String(acepta.rows[0].s));
-  const trasAceptar = (
-    await db.query(
-      `select status, bid_expires_at from public.enrollments where student_id='${ALU7}' and section_id='${SEC_M4B}'`,
-    )
-  ).rows[0];
-  check('al aceptar se limpia el vencimiento', trasAceptar.status === 'ENROLLED' && trasAceptar.bid_expires_at === null);
+  check('aceptar_cupo devuelve ENROLLED por compatibilidad', acepta.rows[0].s === 'ENROLLED', String(acepta.rows[0].s));
 
-  // ---------------------------------------------- 17.4 expiración idempotente
+  // ---------------------------------------------- 17.4 expiración idempotente (sin bids)
   const b8 = await inscribe(ALU8, SEC_M4B);
   check('otro estudiante con la sección llena va a WAITLISTED', b8.rows[0].s === 'WAITLISTED', String(b8.rows[0].s));
   await como('authenticated', ALU7, () => db.query(`select public.renunciar_cupo('${SEC_M4B}')`));
-  const oferta8 = (
-    await db.query(`select status from public.enrollments where student_id='${ALU8}' and section_id='${SEC_M4B}'`)
-  ).rows[0]?.status;
-  check('el primero de la cola recibe la nueva oferta', oferta8 === 'PENDING_BID', String(oferta8));
-
-  // Un segundo en cola, detrás de la oferta viva.
-  const b9 = await inscribe(ALU9, SEC_M4B);
-  check('detrás de una oferta viva, el siguiente queda en WAITLISTED', b9.rows[0].s === 'WAITLISTED', String(b9.rows[0].s));
-
-  // Se fuerza el vencimiento de la oferta y se barre.
-  await db.exec(
-    `update public.enrollments set bid_expires_at = now() - interval '1 hour'
-     where student_id='${ALU8}' and section_id='${SEC_M4B}'`,
-  );
-  const expiradas = (await db.query('select public.expirar_ofertas_cupo() as n')).rows[0].n;
-  check('expirar_ofertas_cupo devuelve 1 oferta expirada', expiradas === 1, `devolvió ${expiradas}`);
   const alu8Tras = (
     await db.query(`select status from public.enrollments where student_id='${ALU8}' and section_id='${SEC_M4B}'`)
   ).rows[0]?.status;
-  check('la oferta vencida queda DROPPED', alu8Tras === 'DROPPED', String(alu8Tras));
-  const alu9Tras = (
-    await db.query(`select status from public.enrollments where student_id='${ALU9}' and section_id='${SEC_M4B}'`)
-  ).rows[0]?.status;
-  check('tras expirar, se promueve al siguiente de la cola (PENDING_BID)', alu9Tras === 'PENDING_BID', String(alu9Tras));
+  check('al renunciar el ocupante, el siguiente de la cola pasa a ENROLLED', alu8Tras === 'ENROLLED', String(alu8Tras));
 
-  const expiradas2 = (await db.query('select public.expirar_ofertas_cupo() as n')).rows[0].n;
-  check('expirar_ofertas_cupo es idempotente (la segunda vez devuelve 0)', expiradas2 === 0, `devolvió ${expiradas2}`);
+  const b9 = await inscribe(ALU9, SEC_M4B);
+  check('con la sección llena tras la promoción, el nuevo aspirante queda en WAITLISTED', b9.rows[0].s === 'WAITLISTED', String(b9.rows[0].s));
 
-  // ---------------------- 17.5 reglas institucionales (ajuste del 2026-09-18)
-  //  Dos reglas cambiaron respecto a la primera versión del motor, y la segunda
-  //  trae una consecuencia que hay que vigilar: si una oferta viva no cuenta como
-  //  ocupación, el contador dice que hay hueco mientras la oferta está en el aire.
+  const expiradas = (await db.query('select public.expirar_ofertas_cupo() as n')).rows[0].n;
+  check('expirar_ofertas_cupo devuelve 0 (sin ofertas en el sistema)', expiradas === 0, `devolvió ${expiradas}`);
+
+  // ---------------------- 17.5 ocupación y capacidad (D1)
   const ocupacion = await como('authenticated', ALU5, () =>
     db.query(
       `select cupo_efectivo, cupos_ocupados, cupos_disponibles, oferta_vigente
@@ -1921,43 +1871,26 @@ async function main() {
   const oc = ocupacion.rows[0] ?? {};
 
   check(
-    'una oferta viva NO suma a cupos_ocupados: sólo cuenta ENROLLED',
-    oc.cupos_ocupados === 0,
-    `cupos_ocupados = ${oc.cupos_ocupados}`,
+    'la sección llena refleja cupos_ocupados = cupo_efectivo',
+    oc.cupos_ocupados === 1 && oc.cupo_efectivo === 1,
+    `ocupados: ${oc.cupos_ocupados}, efectivo: ${oc.cupo_efectivo}`,
   );
   check(
-    'pero la vista DECLARA la oferta en el aire, para que la interfaz no mienta',
-    oc.oferta_vigente === true,
+    'la vista declara oferta_vigente = false (sin bids)',
+    oc.oferta_vigente === false,
     `oferta_vigente = ${oc.oferta_vigente}`,
   );
   check(
-    'el contador por sí solo diría que hay hueco — por eso la guarda es imprescindible',
-    oc.cupos_disponibles > 0,
+    'cupos_disponibles es 0 con la sección llena',
+    oc.cupos_disponibles === 0,
     `cupos_disponibles = ${oc.cupos_disponibles}`,
   );
 
-  // LA GUARDA ANTI-DOBLE-VENTA. Sin ella este recién llegado entraría directo a
-  // ENROLLED (el contador dice que hay hueco) y después ALU9 aceptaría su oferta:
-  // dos personas en un asiento de uno.
   const b10 = await inscribe(ALU10, SEC_M4B);
   check(
-    'con una oferta viva, un recién llegado NO entra directo a ENROLLED',
+    'con la sección llena, un recién llegado va a WAITLISTED',
     b10.rows[0].s === 'WAITLISTED',
     String(b10.rows[0].s),
-  );
-
-  // Al resolverse la oferta, el asiento pasa a contar y la guarda se levanta.
-  await como('authenticated', ALU9, () => db.query(`select public.aceptar_cupo('${SEC_M4B}')`));
-  const trasAceptar9 = (
-    await db.query(
-      `select cupo_efectivo, cupos_ocupados, oferta_vigente
-         from public.v_ocupacion_secciones where id = '${SEC_M4B}'`,
-    )
-  ).rows[0];
-  check(
-    'al aceptar ALU9, el asiento cuenta y la oferta deja de estar vigente',
-    trasAceptar9.cupos_ocupados === 1 && trasAceptar9.oferta_vigente === false,
-    JSON.stringify(trasAceptar9),
   );
 
   const alu10Estado = (

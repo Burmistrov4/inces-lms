@@ -222,9 +222,8 @@ export function rutasInscripciones(app: FastifyInstance, deps: DependenciasRutas
       admin.get<{ Params: { id: string } }>('/secciones/:id/cola', async (request) => {
         const { id } = esquemaRutaIdSeccion.parse(request.params);
 
-        // Orden FIFO: el primero que llegó es el primero. `PENDING_BID` no
-        // aparece aquí —ya salió de la cola, se le ofreció un asiento— y
-        // `ENROLLED` tampoco.
+        // Orden FIFO: el primero que llegó es el primero en la lista de espera.
+        // `ENROLLED` ya está dentro, así que no aparece en la cola.
         const cola = await reposDe(request).inscripciones.colaDeSeccion(id);
 
         return { cola };
@@ -254,8 +253,7 @@ export function rutasInscripciones(app: FastifyInstance, deps: DependenciasRutas
           return {
             promovida: null,
             mensaje:
-              'No se promovió a nadie: la cola está vacía, la sección está llena, ' +
-              'o ya hay una oferta de cupo en el aire para esa sección.',
+              'No se promovió a nadie: la cola está vacía o la sección está llena.',
           };
         }
 

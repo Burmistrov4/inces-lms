@@ -572,7 +572,6 @@ function aInscripcion(fila: Fila): Inscripcion {
     estudianteId: textoObligatorio(fila.student_id),
     seccionId: textoObligatorio(fila.section_id),
     estado: estadoSeguro(fila.status),
-    ofertaVenceEn: texto(fila.bid_expires_at),
     creadoEn: textoObligatorio(fila.created_at),
     actualizadoEn: textoObligatorio(fila.updated_at),
   };
@@ -1073,7 +1072,7 @@ const COLUMNAS_SECCION =
   'id,program_id,subject_id,period_code,name,max_capacity,is_active,created_at,updated_at';
 
 const COLUMNAS_INSCRIPCION =
-  'id,student_id,section_id,status,bid_expires_at,created_at,updated_at';
+  'id,student_id,section_id,status,created_at,updated_at';
 
 /**
  * Las columnas de `v_ocupacion_secciones`, en el orden en que las declara la vista.
@@ -3235,9 +3234,8 @@ class InscripcionesSupabase implements PuertaInscripciones {
       .from(TABLA_INSCRIPCIONES)
       .select(COLUMNAS_INSCRIPCION)
       .eq('section_id', seccionId)
-      // La cola son los que esperan. `PENDING_BID` ya salió de ella (se le ofreció
-      // un asiento) y `ENROLLED` está dentro, así que ninguno de los dos ocupa un
-      // turno. Orden ascendente: FIFO, el primero que llegó es el primero.
+      // La cola son los que esperan (WAITLISTED). Orden ascendente: FIFO, el
+      // primero que llegó es el primero en recibir cupo cuando se libere.
       .eq('status', 'WAITLISTED')
       .order('created_at', { ascending: true })
       .order('id', { ascending: true });

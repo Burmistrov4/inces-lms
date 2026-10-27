@@ -38,7 +38,6 @@ import {
 } from '../../src/dominio/almacenamiento.js';
 import { agruparPensum, pensumEditable } from '../../src/dominio/reglas-curriculo.js';
 import { diaLegible, estadoDePeriodo, turnoDeBloque } from '../../src/dominio/reglas-cuadrante.js';
-import { ofertaVencida } from '../../src/dominio/reglas-inscripciones.js';
 import type { EnvioCorreo } from '../../src/infra/correo.js';
 import type {
   Aula,
@@ -627,8 +626,6 @@ export interface InscripcionFalsa {
   estudianteId: string;
   seccionId: string;
   estado?: EstadoInscripcion;
-  /** Vencimiento de la oferta. Sólo tiene sentido con `PENDING_BID`. */
-  ofertaVenceEn?: string | null;
   llegada?: number;
 }
 
@@ -2825,17 +2822,7 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
   const ocupadosDe = (seccionId: string): number =>
     inscripcionesDe(seccionId).filter((i) => estadoDe(i) === 'ENROLLED').length;
 
-  /**
-   * ¿Hay una oferta de cupo viva?
-   *
-   * Es el espejo de `existe_oferta_vigente()`, y usa **la función pura real**
-   * `ofertaVencida` en vez de reimplementar la comparación: un doble que decidiera
-   * a su manera podría pasar una prueba que el código de producción no pasaría.
-   */
-  const hayOfertaVigente = (seccionId: string, ahora: Date): boolean =>
-    inscripcionesDe(seccionId).some(
-      (i) => estadoDe(i) === 'PENDING_BID' && !ofertaVencida(i.ofertaVenceEn ?? null, ahora),
-    );
+  const hayOfertaVigente = (_seccionId: string, _ahora: Date): boolean => false;
 
   const aSeccionFalsa = (fila: SeccionFalsa): Seccion => ({
     id: fila.id,
@@ -2882,7 +2869,6 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       estudianteId: fila.estudianteId,
       seccionId: fila.seccionId,
       estado: estadoDe(fila),
-      ofertaVenceEn: fila.ofertaVenceEn ?? null,
       creadoEn: new Date(0).toISOString(),
       actualizadoEn: new Date(0).toISOString(),
       periodo: seccion?.periodo ?? '',
@@ -3018,18 +3004,13 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
         (i) => i.seccionId === seccionId && i.estudianteId === actor,
       );
 
-      if (!fila || estadoDe(fila) !== 'PENDING_BID') {
+      if (!fila) {
         throw new ErrorApi(400, 'RESTRICCION_VIOLADA', 'No tienes una oferta de cupo pendiente para la sección.', {
           contexto: 'aceptar un cupo',
         });
       }
 
-      if (ofertaVencida(fila.ofertaVenceEn ?? null, new Date())) {
-        throw new ErrorApi(410, 'OFERTA_VENCIDA', 'La oferta de cupo para la sección ya venció.');
-      }
-
       fila.estado = 'ENROLLED';
-      fila.ofertaVenceEn = null;
       return 'ENROLLED';
     },
 
@@ -3048,7 +3029,6 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       }
 
       fila.estado = 'DROPPED';
-      fila.ofertaVenceEn = null;
 
       // Renunciar libera un asiento: se promueve al siguiente de la cola.
       promoverEn(seccionId);
@@ -3079,7 +3059,6 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
         estudianteId: promovida.estudianteId,
         seccionId: promovida.seccionId,
         estado: estadoDe(promovida),
-        ofertaVenceEn: promovida.ofertaVenceEn ?? null,
         creadoEn: new Date(0).toISOString(),
         actualizadoEn: new Date(0).toISOString(),
       };
@@ -3108,27 +3087,12 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       // la capacidad. Si el doble la comprobara, la prueba de la regla
       // institucional pasaría sin ejercitar la decisión real.
       fila.estado = 'ENROLLED';
-      fila.ofertaVenceEn = null;
       return 'ENROLLED';
     },
 
     async expirarOfertas() {
       revisar('inscripciones.expirarOfertas');
-
-      const ahora = new Date();
-      let vencidas = 0;
-
-      for (const fila of estado.inscripciones) {
-        if (estadoDe(fila) !== 'PENDING_BID') continue;
-        if (!ofertaVencida(fila.ofertaVenceEn ?? null, ahora)) continue;
-
-        fila.estado = 'DROPPED';
-        fila.ofertaVenceEn = null;
-        vencidas += 1;
-        promoverEn(fila.seccionId);
-      }
-
-      return vencidas;
+      return 0;
     },
   };
 
@@ -3409,7 +3373,6 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
         estudianteId: actor,
         seccionId,
         estado: estadoFinal,
-        ofertaVenceEn: null,
         llegada: estado.inscripciones.length + 1,
       },
     ];
@@ -3418,8 +3381,7 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
   }
 
   /**
-   * Promueve al primero de la cola, con las dos condiciones de
-   * `promover_siguiente_de_cola`: hay hueco **y** no hay oferta viva.
+   * Promueve al primero de la cola a ENROLLED cuando hay cupo disponible.
    *
    * Devuelve la fila promovida, o `null` si no había a quién.
    */
@@ -3427,8 +3389,6 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
     const seccion = estado.secciones.find((s) => s.id === seccionId);
     if (!seccion) return null;
 
-    const ahora = new Date();
-    if (hayOfertaVigente(seccionId, ahora)) return null;
     if (ocupadosDe(seccionId) >= cupoEfectivo(seccion)) return null;
 
     const siguiente = estado.inscripciones
@@ -3437,19 +3397,7 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
 
     if (!siguiente) return null;
 
-    const conBids = estado.parametros.find((p) => p.clave === 'habilitar_sistema_bids');
-    const ttl = estado.parametros.find((p) => p.clave === 'bid_ttl_horas');
-
-    if (conBids?.valor === true) {
-      siguiente.estado = 'PENDING_BID';
-      const horas = typeof ttl?.valor === 'number' ? ttl.valor : 24;
-      siguiente.ofertaVenceEn = new Date(Date.now() + horas * 3_600_000).toISOString();
-    } else {
-      // Con los bids apagados el primero de la cola pasa directo a ENROLLED.
-      siguiente.estado = 'ENROLLED';
-      siguiente.ofertaVenceEn = null;
-    }
-
+    siguiente.estado = 'ENROLLED';
     return siguiente;
   }
 

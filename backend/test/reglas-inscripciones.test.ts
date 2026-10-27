@@ -11,7 +11,6 @@ import {
   esSeccionInexistente,
   esSolicitudYaExistente,
   hayAsientoDisponible,
-  ofertaVencida,
   puedeSolicitar,
 } from '../src/dominio/reglas-inscripciones.js';
 
@@ -23,18 +22,15 @@ import {
  * casos que por HTTP casi no se alcanzan —una fecha de vencimiento ilegible, un
  * estado desconocido— sin levantar un servidor ni una base de datos.
  */
-
-const AHORA = new Date('2026-09-17T12:00:00Z');
-
 describe('estados de inscripción', () => {
-  it('reconoce los cuatro estados válidos', () => {
-    for (const estado of ['ENROLLED', 'WAITLISTED', 'PENDING_BID', 'DROPPED'] as const) {
+  it('reconoce los tres estados válidos', () => {
+    for (const estado of ['ENROLLED', 'WAITLISTED', 'DROPPED'] as const) {
       expect(esEstadoInscripcion(estado)).toBe(true);
     }
   });
 
   it('rechaza cualquier otra cosa, incluido un valor de otro tipo', () => {
-    for (const valor of ['INSCRITO', 'enrolled', '', null, undefined, 3, {}, []]) {
+    for (const valor of ['INSCRITO', 'enrolled', 'PENDING_BID', '', null, undefined, 3, {}, []]) {
       expect(esEstadoInscripcion(valor)).toBe(false);
     }
   });
@@ -42,7 +38,6 @@ describe('estados de inscripción', () => {
   it('da un texto legible para cada estado', () => {
     expect(descripcionDeEstado('ENROLLED')).toBe('Inscrito');
     expect(descripcionDeEstado('WAITLISTED')).toBe('En lista de espera');
-    expect(descripcionDeEstado('PENDING_BID')).toBe('Con una oferta de cupo pendiente');
     expect(descripcionDeEstado('DROPPED')).toBe('Dado de baja');
   });
 });
@@ -52,37 +47,12 @@ describe('¿puede pedir un asiento?', () => {
     expect(puedeSolicitar(null)).toBe(true);
   });
 
-  it('no en ninguno de los cuatro estados', () => {
+  it('no en ninguno de los tres estados', () => {
     // Ni siquiera `DROPPED`: volver a entrar es una excepción de administración,
     // no una reinscripción libre. La fila se conserva como historial a propósito.
-    for (const estado of ['ENROLLED', 'WAITLISTED', 'PENDING_BID', 'DROPPED'] as const) {
+    for (const estado of ['ENROLLED', 'WAITLISTED', 'DROPPED'] as const) {
       expect(puedeSolicitar(estado)).toBe(false);
     }
-  });
-});
-
-describe('vencimiento de una oferta', () => {
-  it('una oferta sin fecha NO está vencida', () => {
-    // `null` significa «no vence», no «vencida». Confundirlos entregaría el
-    // asiento por la vía directa mientras la oferta sigue en el aire.
-    expect(ofertaVencida(null, AHORA)).toBe(false);
-  });
-
-  it('una fecha futura no está vencida', () => {
-    expect(ofertaVencida('2026-09-17T13:00:00Z', AHORA)).toBe(false);
-  });
-
-  it('una fecha pasada sí lo está', () => {
-    expect(ofertaVencida('2026-09-17T11:00:00Z', AHORA)).toBe(true);
-  });
-
-  it('el instante exacto cuenta como vencido', () => {
-    expect(ofertaVencida('2026-09-17T12:00:00Z', AHORA)).toBe(true);
-  });
-
-  it('una fecha ilegible se trata como NO vencida', () => {
-    // El error seguro es no ofrecer el asiento de más, nunca de menos.
-    expect(ofertaVencida('no-es-una-fecha', AHORA)).toBe(false);
   });
 });
 
