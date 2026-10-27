@@ -1099,6 +1099,9 @@ const ROLES_DOCENTES: readonly Rol[] = ['docente', 'admin'];
  * columna que falte en una de ellas no da error de tipos, se degrada en
  * silencio a cadena vacía.
  */
+const COLUMNAS_PROGRAMA_BASE =
+  'id,code,name,type,requires_internship,duration_value,duration_unit,is_active,created_at,updated_at';
+
 const COLUMNAS_PROGRAMA =
   'id,code,name,type,requires_internship,duration_value,duration_unit,cupo,mostrar_disponibilidad,is_active,created_at,updated_at';
 
@@ -1119,6 +1122,10 @@ const COLUMNAS_MATERIA = 'id,code,name,academic_hours,created_at,updated_at';
  * PostgREST **no admite** `count(distinct)`: `program_subjects.period_order
  * .count()` responde `PGRST100`— y por eso se pide la columna suelta y no `*`.
  */
+const SELECT_LISTADO_PROGRAMA_BASE =
+  `${COLUMNAS_PROGRAMA_BASE},` +
+  'total:program_subjects(count),periodos:program_subjects(period_order)';
+
 const SELECT_LISTADO_PROGRAMA =
   `${COLUMNAS_PROGRAMA},` +
   'total:program_subjects(count),periodos:program_subjects(period_order)';
@@ -1867,6 +1874,16 @@ class CurriculoSupabase implements PuertaCurriculo {
     if (opciones.desplazamiento >= total) return { programas: [], total };
 
     if (respuesta.error) {
+      if ((respuesta.error as { code?: string }).code === '42703') {
+        const respuestaBase = await this.consultaDeProgramas(opciones, false, true)
+          .order('name', { ascending: true })
+          .order('id', { ascending: true })
+          .range(opciones.desplazamiento, opciones.desplazamiento + opciones.limite - 1);
+        if (!respuestaBase.error) {
+          const filasBase = (respuestaBase.data ?? []) as Fila[];
+          return { programas: filasBase.map(aProgramaConTotales), total };
+        }
+      }
       if (esRangoNoSatisfacible(respuesta.error)) {
         return { programas: [], total: await this.contarProgramas(opciones) };
       }
@@ -1884,10 +1901,10 @@ class CurriculoSupabase implements PuertaCurriculo {
    * `select` u otro, no encadenando un segundo `select`: el *builder* de
    * PostgREST sólo admite uno.
    */
-  private consultaDeProgramas(opciones: OpcionesListadoProgramas, contar = false) {
+  private consultaDeProgramas(opciones: OpcionesListadoProgramas, contar = false, base = false) {
     let consulta = contar
       ? this.cliente.from(TABLA_PROGRAMAS).select('id', { count: 'exact', head: true })
-      : this.cliente.from(TABLA_PROGRAMAS).select(SELECT_LISTADO_PROGRAMA);
+      : this.cliente.from(TABLA_PROGRAMAS).select(base ? SELECT_LISTADO_PROGRAMA_BASE : SELECT_LISTADO_PROGRAMA);
 
     if (opciones.tipo) consulta = consulta.eq('type', opciones.tipo);
     if (opciones.activo !== undefined) consulta = consulta.eq('is_active', opciones.activo);
@@ -1916,11 +1933,19 @@ class CurriculoSupabase implements PuertaCurriculo {
   }
 
   async detallePrograma(id: string): Promise<DetallePrograma | null> {
-    const respuesta = await this.cliente
+    let respuesta = await this.cliente
       .from(TABLA_PROGRAMAS)
       .select(COLUMNAS_PROGRAMA)
       .eq('id', id)
       .maybeSingle();
+
+    if (respuesta.error && (respuesta.error as { code?: string }).code === '42703') {
+      respuesta = await this.cliente
+        .from(TABLA_PROGRAMAS)
+        .select(COLUMNAS_PROGRAMA_BASE)
+        .eq('id', id)
+        .maybeSingle();
+    }
 
     if (respuesta.error) throw traducirError(respuesta.error, 'leer programa');
     if (!respuesta.data) return null;
@@ -1987,12 +2012,26 @@ class CurriculoSupabase implements PuertaCurriculo {
       throw ErrorApi.peticionInvalida('No se indicó ningún cambio para el programa.');
     }
 
-    const respuesta = await this.cliente
+    let respuesta = await this.cliente
       .from(TABLA_PROGRAMAS)
       .update(parche)
       .eq('id', id)
       .select(COLUMNAS_PROGRAMA)
       .single();
+
+    if (respuesta.error && (respuesta.error as { code?: string }).code === '42703') {
+      const parcheBase = { ...parche };
+      delete parcheBase.cupo;
+      delete parcheBase.mostrar_disponibilidad;
+      if (Object.keys(parcheBase).length > 0) {
+        respuesta = await this.cliente
+          .from(TABLA_PROGRAMAS)
+          .update(parcheBase)
+          .eq('id', id)
+          .select(COLUMNAS_PROGRAMA_BASE)
+          .single();
+      }
+    }
 
     if (respuesta.error) throw this.traducirEscritura(respuesta.error, 'actualizar programa');
     return aPrograma(respuesta.data as Fila);

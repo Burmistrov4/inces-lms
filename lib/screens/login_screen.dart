@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:inces_lms_app/core/errors/app_exception.dart';
@@ -86,7 +87,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     resultado.when(
       // El AuthGate escucha los cambios de sesión y enruta al panel del rol.
-      success: (_) => _cerrarSiFueEmpujada(),
+      success: (_) {
+        TextInput.finishAutofillContext();
+        _cerrarSiFueEmpujada();
+      },
       failure: (AppException error) => _showError(error.message),
     );
   }
@@ -516,24 +520,28 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 28),
 
-        Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _identifierController,
-                // NOTA: los campos NO se deshabilitan durante la carga.
-                //
-                // Aquí había `enabled: !_isLoading`, y era un error: al pulsar
-                // Enter en este campo se disparaba el inicio de sesión, que ponía
-                // `_isLoading = true` y **deshabilitaba el campo de contraseña
-                // mientras el usuario aún escribía**. Un campo que deja de
-                // aceptar texto sin explicación es indistinguible de una
-                // aplicación colgada. Se bloquea el BOTÓN, no el campo.
-                style: theme.textTheme.bodyMedium,
-                autofillHints: const [AutofillHints.username],
-                textInputAction: TextInputAction.next,
+        AutofillGroup(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextFormField(
+                  controller: _identifierController,
+                  // NOTA: los campos NO se deshabilitan durante la carga.
+                  //
+                  // Aquí había `enabled: !_isLoading`, y era un error: al pulsar
+                  // Enter en este campo se disparaba el inicio de sesión, que ponía
+                  // `_isLoading = true` y **deshabilitaba el campo de contraseña
+                  // mientras el usuario aún escribía**. Un campo que deja de
+                  // aceptar texto sin explicación es indistinguible de una
+                  // aplicación colgada. Se bloquea el BOTÓN, no el campo.
+                  style: theme.textTheme.bodyMedium,
+                  autofillHints: const [
+                    AutofillHints.username,
+                    AutofillHints.email,
+                  ],
+                  textInputAction: TextInputAction.next,
                 keyboardType: TextInputType.emailAddress,
                 // Mueve el foco al campo de contraseña.
                 //
@@ -628,6 +636,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           ),
         ),
+      ),
 
         const SizedBox(height: 20),
         Row(

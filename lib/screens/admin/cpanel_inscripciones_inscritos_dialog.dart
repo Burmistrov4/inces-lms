@@ -4,6 +4,7 @@ import '../../core/result.dart';
 import '../../models/inscripcion.dart';
 import '../../repositories/inscripcion_repository.dart';
 import '../../services/planilla_admin_pdf_service.dart';
+import '../../services/supabase_service.dart';
 import '../../widgets/comunes.dart';
 
 /// Diálogo con los inscritos vivos de una sección y la descarga de su planilla
@@ -356,6 +357,14 @@ class _ListaInscritos extends StatelessWidget {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              IconButton.filledTonal(
+                key: Key('revisar-${inscrito.estudianteId}'),
+                tooltip: 'Revisar / Validar Planilla',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.rule_folder_outlined, size: 20),
+                onPressed: () => _abrirRevisionPlanilla(context, inscrito),
+              ),
+              const SizedBox(width: 4),
               _botonDeDescarga(
                 inscrito,
                 FormatoPlanilla.pdf,
@@ -425,4 +434,420 @@ Future<void> mostrarInscritosDeSeccion({
       seccionNombre: seccionNombre,
     ),
   );
+}
+
+
+void _abrirRevisionPlanilla(BuildContext context, InscripcionDetallada inscrito) {
+  showDialog<void>(
+    context: context,
+    builder: (_) => _DialogoRevisionPlanilla(inscrito: inscrito),
+  );
+}
+
+class _DialogoRevisionPlanilla extends StatefulWidget {
+  const _DialogoRevisionPlanilla({required this.inscrito});
+
+  final InscripcionDetallada inscrito;
+
+  @override
+  State<_DialogoRevisionPlanilla> createState() => _DialogoRevisionPlanillaState();
+}
+
+class _DialogoRevisionPlanillaState extends State<_DialogoRevisionPlanilla> {
+  bool _cargando = true;
+  bool _procesando = false;
+  Map<String, dynamic>? _aspirante;
+  List<dynamic> _versiones = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _cargar();
+  }
+
+  Future<void> _cargar() async {
+    setState(() => _cargando = true);
+    try {
+      final client = SupabaseService.instance.client;
+      var asp = await client
+          .from('aspirantes')
+          .select()
+          .eq('user_id', widget.inscrito.estudianteId)
+          .maybeSingle();
+
+      asp ??= await client
+          .from('aspirantes')
+          .select()
+          .eq('id', widget.inscrito.estudianteId)
+          .maybeSingle();
+
+      List<dynamic> vers = const [];
+      if (asp != null && asp['id'] != null) {
+        vers = await client
+            .from('planilla_versiones')
+            .select('id, numero, estado, enviada_at, aprobada_at, approved_by, planilla_observaciones(motivo, created_at)')
+            .eq('aspirante_id', asp['id'] as String)
+            .order('numero', ascending: false);
+      }
+
+      if (mounted) {
+        setState(() {
+          _aspirante = asp;
+          _versiones = vers;
+          _cargando = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _cargando = false);
+    }
+  }
+
+  Future<void> _aprobar() async {
+    final asp = _aspirante;
+    if (asp == null) return;
+    final aspiranteId = asp['id'] as String;
+    final ultimaVersion = _versiones.isNotEmpty ? _versiones.first as Map<String, dynamic> : null;
+    final versionId = ultimaVersion?['id'] as String?;
+
+    setState(() => _procesando = true);
+    try {
+      final client = SupabaseService.instance.client;
+      final adminId = SupabaseService.instance.userId;
+
+      if (versionId != null) {
+        await client.from('planilla_versiones').update({
+          'estado': 'APROBADA',
+          'aprobada_at': DateTime.now().toUtc().toIso8601String(),
+          'approved_by': adminId,
+        }).eq('id', versionId);
+      } else {
+        await client.from('planilla_versiones').insert({
+          'aspirante_id': aspiranteId,
+          'numero': 1,
+          'estado': 'APROBADA',
+          'datos_snapshot': {},
+          'aprobada_at': DateTime.now().toUtc().toIso8601String(),
+          'approved_by': adminId,
+        });
+      }
+
+      if (mounted) {
+        mostrarAviso(context, 'Planilla aprobada exitosamente.', exito: true);
+        await _cargar();
+      }
+    } catch (e) {
+      if (mounted) mostrarAviso(context, 'Error al aprobar: $e', error: true);
+    } finally {
+      if (mounted) setState(() => _procesando = false);
+    }
+  }
+
+  Future<void> _pedirMotivoObservacion() async {
+    final ctrl = TextEditingController();
+    final motivo = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Observar Planilla'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Indica el motivo por el cual se rechaza o devuelve la planilla para que el estudiante la corrija:',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'ej. Cédula adjunta ilegible o dirección incompleta',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+            child: const Text('Confirmar Observación'),
+          ),
+        ],
+      ),
+    );
+
+    if (motivo == null || motivo.trim().isEmpty) return;
+    await _observar(motivo.trim());
+  }
+
+  Future<void> _observar(String motivo) async {
+    final asp = _aspirante;
+    if (asp == null) return;
+    final aspiranteId = asp['id'] as String;
+    final ultimaVersion = _versiones.isNotEmpty ? _versiones.first as Map<String, dynamic> : null;
+    String versionId = ultimaVersion?['id'] as String? ?? '';
+
+    setState(() => _procesando = true);
+    try {
+      final client = SupabaseService.instance.client;
+      final adminId = SupabaseService.instance.userId;
+
+      if (versionId.isEmpty) {
+        final ins = await client.from('planilla_versiones').insert({
+          'aspirante_id': aspiranteId,
+          'numero': 1,
+          'estado': 'ENVIADA',
+          'datos_snapshot': {},
+        }).select('id').single();
+        versionId = ins['id'] as String;
+      }
+
+      await client.from('planilla_versiones').update({
+        'estado': 'OBSERVADA',
+        'aprobada_at': null,
+        'approved_by': null,
+      }).eq('id', versionId);
+
+      await client.from('planilla_observaciones').insert({
+        'version_id': versionId,
+        'observada_por': adminId ?? aspiranteId,
+        'motivo': motivo,
+      });
+
+      if (mounted) {
+        mostrarAviso(
+          context,
+          'Planilla observada. El estudiante ya puede corregir sus datos.',
+          exito: true,
+        );
+        await _cargar();
+      }
+    } catch (e) {
+      if (mounted) mostrarAviso(context, 'Error al observar planilla: $e', error: true);
+    } finally {
+      if (mounted) setState(() => _procesando = false);
+    }
+  }
+
+  Future<void> _editarDatosContacto() async {
+    final asp = _aspirante;
+    if (asp == null) return;
+
+    final telCtrl = TextEditingController(text: asp['telefono']?.toString() ?? '');
+    final dirCtrl = TextEditingController(text: asp['direccion']?.toString() ?? '');
+    final nivCtrl = TextEditingController(text: asp['nivel_educativo']?.toString() ?? '');
+
+    final guardado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Editar Datos de la Planilla'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: telCtrl,
+                decoration: const InputDecoration(labelText: 'Teléfono de contacto'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: dirCtrl,
+                maxLines: 2,
+                decoration: const InputDecoration(labelText: 'Dirección de habitación'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: nivCtrl,
+                decoration: const InputDecoration(labelText: 'Nivel educativo'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Guardar Cambios'),
+          ),
+        ],
+      ),
+    );
+
+    if (guardado != true) return;
+
+    setState(() => _procesando = true);
+    try {
+      final client = SupabaseService.instance.client;
+      await client.from('aspirantes').update({
+        'telefono': telCtrl.text.trim(),
+        'direccion': dirCtrl.text.trim(),
+        'nivel_educativo': nivCtrl.text.trim(),
+      }).eq('id', asp['id'] as String);
+
+      if (mounted) {
+        mostrarAviso(context, 'Datos actualizados correctamente.', exito: true);
+        await _cargar();
+      }
+    } catch (e) {
+      if (mounted) mostrarAviso(context, 'Error al actualizar: $e', error: true);
+    } finally {
+      if (mounted) setState(() => _procesando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ultimaVersion = _versiones.isNotEmpty ? _versiones.first as Map<String, dynamic> : null;
+    final estado = (ultimaVersion?['estado'] as String?) ?? 'EN REVISIÓN';
+    final observaciones = (ultimaVersion?['planilla_observaciones'] as List<dynamic>?) ?? const [];
+
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Icon(Icons.assignment_ind_outlined),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Planilla · ${widget.inscrito.etiquetaEstudiante}',
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520, maxHeight: 520),
+        child: _cargando
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: estado == 'APROBADA'
+                            ? Colors.green.withValues(alpha: 0.12)
+                            : estado == 'OBSERVADA'
+                                ? Colors.orange.withValues(alpha: 0.12)
+                                : theme.colorScheme.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            estado == 'APROBADA'
+                                ? Icons.verified_outlined
+                                : estado == 'OBSERVADA'
+                                    ? Icons.warning_amber_rounded
+                                    : Icons.schedule_outlined,
+                            color: estado == 'APROBADA'
+                                ? Colors.green.shade700
+                                : estado == 'OBSERVADA'
+                                    ? Colors.orange.shade800
+                                    : theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Estado: $estado',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: estado == 'APROBADA'
+                                        ? Colors.green.shade800
+                                        : estado == 'OBSERVADA'
+                                            ? Colors.orange.shade900
+                                            : theme.colorScheme.primary,
+                                  ),
+                                ),
+                                if (estado == 'OBSERVADA' && observaciones.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Motivo: ${observaciones.last['motivo']}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.orange.shade900,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Datos del Aspirante', style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 8),
+                    _fila('Cédula', _aspirante?['cedula']?.toString() ?? '—'),
+                    _fila('Correo', widget.inscrito.estudianteEmail ?? _aspirante?['email']?.toString() ?? '—'),
+                    _fila('Teléfono', _aspirante?['telefono']?.toString() ?? '—'),
+                    _fila('Dirección', _aspirante?['direccion']?.toString() ?? '—'),
+                    _fila('Nivel Educativo', _aspirante?['nivel_educativo']?.toString() ?? '—'),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilledButton.icon(
+                          onPressed: _procesando ? null : _aprobar,
+                          icon: const Icon(Icons.check_circle_outline, size: 18),
+                          label: const Text('Aprobar Planilla'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _procesando ? null : _pedirMotivoObservacion,
+                          icon: const Icon(Icons.edit_note_outlined, size: 18),
+                          label: const Text('Observar / Rechazar'),
+                        ),
+                        TextButton.icon(
+                          onPressed: _procesando ? null : _editarDatosContacto,
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          label: const Text('Editar Datos'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cerrar'),
+        ),
+      ],
+    );
+  }
+
+  Widget _fila(String k, String v) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              '$k:',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+          ),
+          Expanded(
+            child: Text(v, style: const TextStyle(fontSize: 13)),
+          ),
+        ],
+      ),
+    );
+  }
 }

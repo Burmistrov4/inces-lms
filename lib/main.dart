@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 // Localización en español de los widgets de Material (selector de fecha,
@@ -401,6 +402,15 @@ class _AuthGateState extends State<AuthGate> {
 /// «desplazamiento suave» del navegador, que es mejor que cualquier imitación.
 class _ScrollSuaveInces extends MaterialScrollBehavior {
   const _ScrollSuaveInces();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.invertedStylus,
+        PointerDeviceKind.trackpad,
+      };
 
   @override
   ScrollPhysics getScrollPhysics(BuildContext context) {

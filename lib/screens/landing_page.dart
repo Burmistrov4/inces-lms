@@ -23,7 +23,7 @@ import '../theme/temas_formacion.dart';
 /// parámetros y la landing lo lea de la base— está en el plan de rediseño;
 /// mientras tanto, editar aquí cambia los tres sitios a la vez.
 const String kEdadPnaMin = '14';
-const String kEdadPnaMax = '18';
+const String kEdadPnaMax = '17';
 const String kEdadPnaTexto = '$kEdadPnaMin a $kEdadPnaMax años';
 
 /// Página pública de aterrizaje: la raíz `/` cuando **no** hay sesión.
@@ -67,6 +67,7 @@ class _LandingPageState extends State<LandingPage> {
 
   final TextEditingController _busquedaCtrl = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final ScrollController _chipsScrollCtrl = ScrollController();
   final GlobalKey _claveOferta = GlobalKey();
   String _areaSeleccionada = 'TODOS';
 
@@ -81,6 +82,7 @@ class _LandingPageState extends State<LandingPage> {
   void dispose() {
     _busquedaCtrl.dispose();
     _scrollController.dispose();
+    _chipsScrollCtrl.dispose();
     super.dispose();
   }
 
@@ -676,11 +678,12 @@ class _LandingPageState extends State<LandingPage> {
         // translúcida por encima lo apaga. `Semantics` con etiqueta, porque una
         // imagen sin descripción es invisible para un lector de pantalla.
         Semantics(
-          label: 'INCES — Instituto Nacional de Cooperación y Educación Socialista',
+          label:
+              'INCES — Instituto Nacional de Capacitación y Educación Socialista',
           child: ExcludeSemantics(
             child: Image.asset(
               'assets/images/logo_inces_blanco.png',
-              height: 36,
+              height: 48,
               fit: BoxFit.contain,
               filterQuality: FilterQuality.high,
             ),
@@ -1204,20 +1207,6 @@ class _LandingPageState extends State<LandingPage> {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
-            child: Image.asset(
-              'assets/images/inces_lms_logo.png',
-              width: double.infinity,
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
-              semanticLabel:
-                  'Logotipo Oficial INCES CFS Nacional de Soldadura Rafael Urdaneta',
-            ),
-          ),
-        ),
         for (final d in datos) ...[
           Container(
             padding: const EdgeInsets.all(16),
@@ -1312,6 +1301,7 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   Widget _construirFiltrosArea() {
+    final theme = Theme.of(context);
     final categorias = [
       (id: 'TODOS', etiqueta: 'Todos', icono: Icons.apps_rounded),
       (id: 'SOLDADURA', etiqueta: 'Soldadura Especializada', icono: Icons.precision_manufacturing_outlined),
@@ -1322,28 +1312,42 @@ class _LandingPageState extends State<LandingPage> {
       (id: 'GESTION', etiqueta: 'Gestión y Servicios', icono: Icons.business_center_outlined),
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (final cat in categorias) ...[
-            FilterChip(
-              avatar: Icon(
-                cat.icono,
-                size: 16,
-                color: _areaSeleccionada == cat.id
-                    ? Theme.of(context).colorScheme.onPrimary
-                    : Theme.of(context).colorScheme.primary,
+    return Scrollbar(
+      controller: _chipsScrollCtrl,
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+        controller: _chipsScrollCtrl,
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(bottom: 10, top: 4),
+        child: Row(
+          children: [
+            for (final cat in categorias) ...[
+              FilterChip(
+                avatar: Icon(
+                  cat.icono,
+                  size: 16,
+                  color: _areaSeleccionada == cat.id
+                      ? theme.colorScheme.onPrimary
+                      : (cat.id == 'PNA' ? IncesTheme.azulPrimario : theme.colorScheme.primary),
+                ),
+                tooltip: cat.id == 'PNA'
+                    ? 'Programa Nacional de Aprendizaje exclusivo para jóvenes de $kEdadPnaTexto'
+                    : null,
+                label: Text(
+                  cat.etiqueta,
+                  style: TextStyle(
+                    fontWeight: cat.id == 'PNA' ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+                selected: _areaSeleccionada == cat.id,
+                onSelected: (_) {
+                  setState(() => _areaSeleccionada = cat.id);
+                },
               ),
-              label: Text(cat.etiqueta),
-              selected: _areaSeleccionada == cat.id,
-              onSelected: (_) {
-                setState(() => _areaSeleccionada = cat.id);
-              },
-            ),
-            const SizedBox(width: 8),
+              const SizedBox(width: 8),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -1836,26 +1840,53 @@ class _LandingPageState extends State<LandingPage> {
               const SizedBox(height: 36),
               const Divider(color: Colors.white24),
               const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      '© 2026 Instituto Nacional de Capacitación y Educación Socialista (INCES). República Bolivariana de Venezuela.',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.white60,
-                        fontSize: 12,
+              LayoutBuilder(
+                builder: (context, c) {
+                  final esMovil = c.maxWidth < 640;
+                  if (esMovil) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '© 2026 Instituto Nacional de Capacitación y Educación Socialista (INCES). República Bolivariana de Venezuela.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.white60,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'CFS Rafael Urdaneta · v${AppConfig.version} (Prod 2026)',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.white54,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '© 2026 Instituto Nacional de Capacitación y Educación Socialista (INCES). República Bolivariana de Venezuela.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.white60,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  Text(
-                    'CFS Rafael Urdaneta · v${AppConfig.version} (Prod 2026)',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.white54,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
+                      Text(
+                        'CFS Rafael Urdaneta · v${AppConfig.version} (Prod 2026)',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.white54,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),

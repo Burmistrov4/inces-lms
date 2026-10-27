@@ -14,6 +14,7 @@ import '../repositories/modulo_repository.dart';
 import '../services/auth_service.dart';
 import '../services/aula_service.dart';
 import '../services/planilla_pdf_service.dart';
+import '../services/supabase_service.dart';
 import '../theme/inces_theme.dart';
 import '../widgets/andamiaje.dart';
 import '../widgets/comunes.dart';
@@ -129,6 +130,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
   bool _descargandoPlanilla = false;
   bool _descargandoExcel = false;
   AspiranteModel? _aspirante;
+  Map<String, dynamic>? _versionPlanilla;
   String? _error;
 
   int _seleccionada = 0;
@@ -252,6 +254,22 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
         case Success(value: final ficha):
           _aspirante = ficha;
           _panelesCargados.remove('Inscribirme en un curso');
+          if (ficha != null && ficha.id != null) {
+            try {
+              SupabaseService.instance.client
+                  .from('planilla_versiones')
+                  .select('id, numero, estado, enviada_at, aprobada_at, planilla_observaciones(motivo, created_at)')
+                  .eq('aspirante_id', ficha.id!)
+                  .order('numero', ascending: false)
+                  .limit(1)
+                  .maybeSingle()
+                  .then((v) {
+                if (mounted && v != null) {
+                  setState(() => _versionPlanilla = v);
+                }
+              });
+            } catch (_) {}
+          }
         case Failure(error: final fallo):
           _error = fallo.message;
       }
@@ -639,6 +657,87 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
     );
   }
 
+
+  Future<void> _abrirEdicionAspirante(AspiranteModel asp) async {
+    final telCtrl = TextEditingController(text: asp.telefono);
+    final dirCtrl = TextEditingController(text: asp.direccion);
+    final nivCtrl = TextEditingController(text: asp.nivelEducativo);
+
+    final guardado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Actualizar Datos de Inscripción'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Edita los datos que requieran corrección antes de guardar:',
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: telCtrl,
+                decoration: const InputDecoration(labelText: 'Teléfono de contacto'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: dirCtrl,
+                maxLines: 2,
+                decoration: const InputDecoration(labelText: 'Dirección de habitación'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: nivCtrl,
+                decoration: const InputDecoration(labelText: 'Nivel educativo'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Guardar y Reenviar'),
+          ),
+        ],
+      ),
+    );
+
+    if (guardado != true || asp.id == null) return;
+
+    try {
+      await _repo.actualizar(asp.id!, {
+        'telefono': telCtrl.text.trim(),
+        'direccion': dirCtrl.text.trim(),
+        'nivel_educativo': nivCtrl.text.trim(),
+      });
+
+      // Si estaba observada, crear versión REENVIADA
+      if ((_versionPlanilla?['estado'] as String?) == 'OBSERVADA') {
+        try {
+          final numActual = (_versionPlanilla?['numero'] as num?)?.toInt() ?? 1;
+          await SupabaseService.instance.client.from('planilla_versiones').insert({
+            'aspirante_id': asp.id!,
+            'numero': numActual + 1,
+            'estado': 'REENVIADA',
+            'datos_snapshot': {},
+          });
+        } catch (_) {}
+      }
+
+      if (mounted) {
+        mostrarAviso(context, 'Datos actualizados correctamente.', exito: true);
+        await _cargar();
+      }
+    } catch (e) {
+      if (mounted) mostrarAviso(context, 'Error al actualizar datos: $e', error: true);
+    }
+  }
   Widget _panelFicha(AspiranteModel aspirante) {
     final theme = Theme.of(context);
     // El chip de «En revisión» cae sobre un tinte de su propio color, así que el
@@ -710,22 +809,45 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
                             style: theme.textTheme.titleMedium,
                           ),
                           const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: par.fondo,
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Text(
-                              'En revisión',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: par.texto,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                          Builder(
+                            builder: (context) {
+                              final estado = (_versionPlanilla?['estado'] as String?) ?? 'EN REVISIÓN';
+                              final esAprobada = estado == 'APROBADA';
+                              final esObservada = estado == 'OBSERVADA';
+                              final colorFondo = esAprobada
+                                  ? Colors.green.withValues(alpha: 0.15)
+                                  : esObservada
+                                      ? Colors.orange.withValues(alpha: 0.18)
+                                      : par.fondo;
+                              final colorTexto = esAprobada
+                                  ? Colors.green.shade800
+                                  : esObservada
+                                      ? Colors.orange.shade900
+                                      : par.texto;
+                              final etiqueta = esAprobada
+                                  ? 'Planilla Aprobada Oficialmente'
+                                  : esObservada
+                                      ? 'Planilla Observada (Requiere corrección)'
+                                      : 'En revisión';
+
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colorFondo,
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: Text(
+                                  etiqueta,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: colorTexto,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -750,7 +872,74 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
                 _FilaDato(
                   etiqueta: 'Curso solicitado',
                   valor: curso,
+                  esUltima: false,
+                ),
+                _FilaDato(etiqueta: 'Teléfono', valor: aspirante.telefono),
+                _FilaDato(etiqueta: 'Dirección', valor: aspirante.direccion),
+                _FilaDato(
+                  etiqueta: 'Nivel educativo',
+                  valor: aspirante.nivelEducativo,
                   esUltima: true,
+                ),
+                const SizedBox(height: 14),
+                if ((_versionPlanilla?['estado'] as String?) == 'OBSERVADA') ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.warning_amber_rounded, size: 20, color: Colors.orange.shade900),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Corrección requerida por coordinación',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange.shade900,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Builder(
+                          builder: (_) {
+                            final obs = (_versionPlanilla?['planilla_observaciones'] as List<dynamic>?) ?? const [];
+                            final motivo = obs.isNotEmpty ? obs.last['motivo']?.toString() ?? '' : '';
+                            return Text(
+                              motivo.isNotEmpty ? 'Motivo: $motivo' : 'Por favor revisa y actualiza tus datos de contacto.',
+                              style: TextStyle(fontSize: 13, color: Colors.orange.shade900),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                Row(
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () => _abrirEdicionAspirante(aspirante),
+                      icon: const Icon(Icons.edit_outlined, size: 16),
+                      label: Text((_versionPlanilla?['estado'] as String?) == 'OBSERVADA'
+                          ? 'Corregir y reenviar planilla'
+                          : 'Editar datos de planilla'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Nota: Se aconseja editar sólo si la administración te rechaza o solicita corregir algún dato.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),

@@ -197,6 +197,13 @@ class _FilaParametroState extends State<_FilaParametro> {
   static String _valorComoTexto(SystemSetting parametro) {
     final valor = parametro.valor;
     if (valor == null) return '';
+    if (parametro.clave == 'm5_max_bytes') {
+      final b = int.tryParse(valor.toString());
+      if (b != null) {
+        final mb = b / (1024 * 1024);
+        return '${mb.toStringAsFixed(b % (1024 * 1024) == 0 ? 0 : 1)} MB';
+      }
+    }
     if (valor is String) return valor;
     if (valor is Map || valor is List) {
       return const JsonEncoder.withIndent('  ').convert(valor);
@@ -216,12 +223,28 @@ class _FilaParametroState extends State<_FilaParametro> {
       case 'number':
         // En Venezuela el separador decimal es la coma. Rechazarla obligaría a
         // escribir «2.5» a alguien que teclea «2,5» de forma natural.
-        final normalizado = limpio.replaceAll(',', '.');
+        final sinBytes = limpio.contains('(')
+            ? limpio.substring(0, limpio.indexOf('(')).trim()
+            : limpio;
+        final normalizado = sinBytes
+            .replaceAll(',', '.')
+            .replaceAll(RegExp(r'\s*mb', caseSensitive: false), '')
+            .trim();
         final comoEntero = int.tryParse(normalizado);
-        if (comoEntero != null) return comoEntero;
+        if (comoEntero != null) {
+          if (widget.parametro.clave == 'm5_max_bytes' && comoEntero < 1024) {
+            return comoEntero * 1024 * 1024;
+          }
+          return comoEntero;
+        }
         final comoDecimal = double.tryParse(normalizado);
-        if (comoDecimal != null) return comoDecimal;
-        _errorLocal = 'Escribe un número (por ejemplo 3 o 2,5).';
+        if (comoDecimal != null) {
+          if (widget.parametro.clave == 'm5_max_bytes' && comoDecimal < 1024) {
+            return (comoDecimal * 1024 * 1024).round();
+          }
+          return comoDecimal;
+        }
+        _errorLocal = 'Escribe un número (por ejemplo 10 o 10 MB).';
         return null;
 
       case 'boolean':
@@ -299,7 +322,23 @@ class _FilaParametroState extends State<_FilaParametro> {
                         _chip(context, parametro),
                       ],
                     ),
-                    if (parametro.descripcion != null) ...[
+                    if (parametro.clave == 'm5_max_bytes') ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tamaño máximo por archivo individual admitido en subidas al centro (expresado en MB).',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ] else if (parametro.clave == 'm5_max_archivos_por_entidad') ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Cantidad máxima de archivos permitidos por cada entidad (tarea, entrega o guía formativa).',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ] else if (parametro.descripcion != null) ...[
                       const SizedBox(height: 4),
                       Text(
                         parametro.descripcion!,

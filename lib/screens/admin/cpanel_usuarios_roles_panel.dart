@@ -52,7 +52,7 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel>
   String? _error;
   Timer? _debounce;
   int _paginaActual = 0;
-  static const _limite = 25;
+  int _limite = 25;
 
   /// Una operación administrativa a la vez.
   ///
@@ -725,37 +725,82 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel>
                       );
                     },
                   ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Página ${_paginaActual + 1} de ${pages < 1 ? 1 : pages}',
-                    ),
-                    IconButton(
-                      onPressed: _paginaActual == 0 || _cargando
-                          ? null
-                          : () {
-                              setState(() {
-                                _paginaActual--;
-                              });
-                              _cargar();
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Por página: ',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(width: 4),
+                          DropdownButton<int>(
+                            value: _limite,
+                            isDense: true,
+                            underline: const SizedBox.shrink(),
+                            items: const [
+                              DropdownMenuItem(value: 10, child: Text('10')),
+                              DropdownMenuItem(value: 25, child: Text('25')),
+                              DropdownMenuItem(value: 50, child: Text('50')),
+                              DropdownMenuItem(value: 100, child: Text('100')),
+                            ],
+                            onChanged: (val) {
+                              if (val != null && val != _limite) {
+                                setState(() {
+                                  _limite = val;
+                                  _paginaActual = 0;
+                                });
+                                _cargar();
+                              }
                             },
-                      icon: const Icon(Icons.chevron_left),
-                    ),
-                    IconButton(
-              tooltip: 'Página anterior',
-                      onPressed:
-                          _cargando || pages < 1 || _paginaActual + 1 >= pages
-                          ? null
-                          : () {
-                              setState(() {
-                                _paginaActual++;
-                              });
-                              _cargar();
-                            },
-                      icon: const Icon(Icons.chevron_right),
-                    ),
-                  ],
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Página ${_paginaActual + 1} de ${pages < 1 ? 1 : pages}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            tooltip: 'Página anterior',
+                            onPressed: _paginaActual == 0 || _cargando
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _paginaActual--;
+                                    });
+                                    _cargar();
+                                  },
+                            icon: const Icon(Icons.chevron_left),
+                          ),
+                          IconButton(
+                            tooltip: 'Página siguiente',
+                            onPressed: _cargando ||
+                                    pages < 1 ||
+                                    _paginaActual + 1 >= pages
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _paginaActual++;
+                                    });
+                                    _cargar();
+                                  },
+                            icon: const Icon(Icons.chevron_right),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

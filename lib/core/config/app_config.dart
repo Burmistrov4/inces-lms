@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 class AppConfig {
-  static const String version = '1.4.0';
+  static const String version = '1.5.0';
   static const String versionLabel =
       'INCES LMS v$version · CFS Rafael Urdaneta · Prod 2026';
 
