@@ -4637,6 +4637,30 @@ async function main() {
     check('cupos_ocupados_programa devuelve un entero válido', typeof ocupados === 'number' && ocupados >= 0);
   }
 
+  // 2026-10-27 · D8: Archivar funciona (secciones y períodos)
+  console.log('\n2026-10-27 · D8: Archivar funciona (secciones y períodos)');
+  const secParaArchivar = (await db.query("select id, is_active from public.sections where is_active = true limit 1")).rows[0];
+  if (secParaArchivar) {
+    await db.exec(`update public.sections set is_active = false where id = '${secParaArchivar.id}'`);
+    const secArchivada = (await db.query(`select is_active, archived_at from public.sections where id = '${secParaArchivar.id}'`)).rows[0];
+    check('archivar una sección fija archived_at', secArchivada.is_active === false && secArchivada.archived_at !== null);
+    await db.exec(`update public.sections set is_active = true where id = '${secParaArchivar.id}'`);
+    const secReactivada = (await db.query(`select is_active, archived_at from public.sections where id = '${secParaArchivar.id}'`)).rows[0];
+    check('reactivar una sección limpia archived_at', secReactivada.is_active === true && secReactivada.archived_at === null);
+  }
+
+  const periodoTest = (await db.query("select code, is_active from public.academic_periods where is_active = true limit 1")).rows[0];
+  if (periodoTest) {
+    await db.exec(`update public.academic_periods set is_active = false where code = '${periodoTest.code}'`);
+    const secDespues = (await db.query(`select count(*)::int as c from public.sections where period_code = '${periodoTest.code}' and is_active = true`)).rows[0]?.c;
+    check('archivar período cierra sus secciones activas', secDespues === 0);
+    await db.exec(`update public.academic_periods set is_active = true where code = '${periodoTest.code}'`);
+  }
+
+  // 2026-10-27 · D10: Autenticación con Cédula
+  const idxCedula = (await db.query("select indexname from pg_indexes where tablename = 'profiles' and indexname = 'idx_profiles_cedula_digits'")).rows[0];
+  check('existe índice único de cédula en perfiles (D10)', idxCedula !== undefined);
+
   // ---------------------------------------------------------------- resumen
   console.log(
     `\n\x1b[1m${fallos.length === 0 ? '\x1b[32mTODO VERDE\x1b[0m' : '\x1b[31mHAY FALLOS\x1b[0m'}\x1b[0m ` +

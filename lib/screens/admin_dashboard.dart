@@ -85,153 +85,144 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   /// a lo que se entra—, y después lo planificado. Al revés, tres de cada cuatro
   /// clics caerían en una sección que no existe.
   static const List<ItemNavegacion> _items = [
+    // 1. Preparar el período
     ItemNavegacion(
       icono: Icons.dashboard_customize_outlined,
       titulo: 'Centro de Mando',
       etiquetaCorta: 'Inicio',
-      categoria: 'Administración del sistema',
+      categoria: 'Preparar el período',
+      modulo: 'm0_cpanel',
+    ),
+    ItemNavegacion(
+      icono: Icons.event_note_outlined,
+      titulo: 'Período',
+      etiquetaCorta: 'Período',
+      categoria: 'Preparar el período',
+      disponible: true,
+      modulo: 'm3_cuadrante',
+    ),
+    ItemNavegacion(
+      icono: Icons.menu_book_outlined,
+      titulo: 'Programas Académicos',
+      etiquetaCorta: 'Programas',
+      categoria: 'Preparar el período',
+      modulo: 'm2_curriculo',
+    ),
+    ItemNavegacion(
+      icono: Icons.class_outlined,
+      titulo: 'Secciones del Período',
+      etiquetaCorta: 'Secciones',
+      categoria: 'Preparar el período',
+      disponible: true,
+      modulo: 'm3_cuadrante',
+    ),
+    ItemNavegacion(
+      icono: Icons.settings_outlined,
+      titulo: 'Configuración del Centro',
+      etiquetaCorta: 'Ajustes',
+      categoria: 'Preparar el período',
       modulo: 'm0_cpanel',
     ),
     ItemNavegacion(
       icono: Icons.tune_outlined,
       titulo: 'Módulos del Sistema',
       etiquetaCorta: 'Módulos',
-      categoria: 'Administración del sistema',
+      categoria: 'Preparar el período',
       modulo: 'm0_cpanel',
     ),
-    ItemNavegacion(
-      icono: Icons.settings_outlined,
-      titulo: 'Configuración del Centro',
-      etiquetaCorta: 'Ajustes',
-      categoria: 'Administración del sistema',
-      modulo: 'm0_cpanel',
-    ),
-    ItemNavegacion(
-      icono: Icons.history_outlined,
-      titulo: 'Historial de Configuración',
-      etiquetaCorta: 'Historial',
-      categoria: 'Administración del sistema',
-      modulo: 'm0_cpanel',
-    ),
-    ItemNavegacion(
-      icono: Icons.fingerprint_outlined,
-      titulo: 'Registro de Inicios de Sesión / Accesos',
-      categoria: 'Administración del sistema',
-      modulo: 'm0_cpanel',
-    ),
-    ItemNavegacion(
-      icono: Icons.people_outline,
-      titulo: 'Usuarios y Roles',
-      categoria: 'Administración del sistema',
-      modulo: 'm1_onboarding',
-    ),
-    ItemNavegacion(
-      icono: Icons.menu_book_outlined,
-      titulo: 'Programas Académicos',
-      categoria: 'Gestión académica',
-      modulo: 'm2_curriculo',
-    ),
+
+    // 2. Inscribir
     ItemNavegacion(
       icono: Icons.confirmation_number_outlined,
       titulo: 'Inscripciones y Cupos',
-      categoria: 'Gestión académica',
+      etiquetaCorta: 'Inscripciones',
+      categoria: 'Inscribir',
       disponible: true,
       modulo: 'm4_inscripciones',
     ),
-    // Va justo después de Inscripciones y no en «Administración del sistema»
-    // aunque sea configuración: quien administra el CFS llega aquí pensando en
-    // el formulario de inscripción, no en los parámetros del sistema.
     ItemNavegacion(
       icono: Icons.edit_note_outlined,
       titulo: 'Campos de Inscripción',
-      categoria: 'Gestión académica',
+      etiquetaCorta: 'Planilla',
+      categoria: 'Inscribir',
       disponible: true,
       modulo: 'm4_inscripciones',
     ),
-    ItemNavegacion(
-      icono: Icons.class_outlined,
-      titulo: 'Secciones del Período',
-      categoria: 'Gestión académica',
-      disponible: true,
-      modulo: 'm3_cuadrante',
-    ),
-    // --- Los tres que faltaban (2026-09-27) --------------------------------
-    //
-    // Estos tres paneles estaban construidos, probados —`cuadrante_paneles_test`
-    // y `cuadrante_guardias_panel_test` los montan— y **sin cablear**: no los
-    // importaba ningún archivo de `lib/`. El cuadrante, que sí estaba en el
-    // menú, dice en su estado vacío «Registra los espacios del centro primero»
-    // (`cpanel_cuadrante_panel.dart`), y `cpanel_aulas_panel` lo confirma en su
-    // cabecera: «hasta que el administrador lo cargue la lista sale vacía, y el
-    // cuadrante **no se puede usar**». No había forma de llegar a la pantalla
-    // que los registra. M3 quedaba construido e **inutilizable desde la
-    // interfaz**.
-    //
-    // Es R-22 otra vez, y por eso no lo vio la guardia: `menu_alcanzable_test`
-    // comprobaba «ítem disponible → rama del switch», y a estos tres les
-    // faltaban **las dos**. La dirección que faltaba —«panel existente →
-    // alcanzable desde algún sitio»— se añadió el mismo día al mismo archivo.
-    //
-    // Van en la categoría que les toca por lo que el usuario está intentando
-    // hacer: los lapsos son el calendario académico (de él cuelgan secciones e
-    // inscripciones), y aulas y guardias son recursos del cuadrante.
-    ItemNavegacion(
-      icono: Icons.event_note_outlined,
-      titulo: 'Período',
-      categoria: 'Gestión académica',
-      disponible: true,
-      modulo: 'm3_cuadrante',
-    ),
-    ItemNavegacion(
-      icono: Icons.folder_shared_outlined,
-      titulo: 'Archivos del Centro',
-      categoria: 'Gestión académica',
-      disponible: true,
-      modulo: 'm0_cpanel',
-    ),
+
+    // 3. Dar clase
     ItemNavegacion(
       icono: Icons.calendar_month_outlined,
       titulo: 'Cuadrante de Horarios',
-      categoria: 'Control de aulas',
+      etiquetaCorta: 'Horarios',
+      categoria: 'Dar clase',
       disponible: true,
       modulo: 'm3_cuadrante',
     ),
     ItemNavegacion(
       icono: Icons.school_outlined,
       titulo: 'Horario PNA',
-      categoria: 'Control de aulas',
-      disponible: true,
-      modulo: 'm3_cuadrante',
-    ),
-    ItemNavegacion(
-      icono: Icons.meeting_room_outlined,
-      titulo: 'Espacios y Aulas',
-      categoria: 'Control de aulas',
+      etiquetaCorta: 'PNA',
+      categoria: 'Dar clase',
       disponible: true,
       modulo: 'm3_cuadrante',
     ),
     ItemNavegacion(
       icono: Icons.shield_outlined,
       titulo: 'Guardias Docentes',
-      categoria: 'Control de aulas',
+      etiquetaCorta: 'MTP',
+      categoria: 'Dar clase',
       disponible: true,
       modulo: 'm3_cuadrante',
     ),
-    // «Mi cuenta» es la única categoría que no es del centro sino **de quien
-    // está dentro**, y por eso va la última: el administrador entra a
-    // administrar, no a mirarse. El mismo ítem existe en el dashboard del
-    // aprendiz, con la misma categoría, porque el panel es el mismo.
-    //
-    // La categoría es nueva aquí y no hay que registrar en ninguna lista: el
-    // menú de `AndamiajeApp` agrupa por el texto de `categoria` en orden de
-    // aparición y lo pinta tal cual. (El vocabulario que sí está centralizado es
-    // el del **catálogo de módulos** —`ordenCategorias` en `ModuloRepository`—,
-    // que es otra cosa: eso es lo que se agrupa en el cPanel de módulos.)
-    //
-    // Sin `modulo:`: el perfil propio no es un módulo que se apague.
+    ItemNavegacion(
+      icono: Icons.meeting_room_outlined,
+      titulo: 'Espacios y Aulas',
+      etiquetaCorta: 'Espacios',
+      categoria: 'Dar clase',
+      disponible: true,
+      modulo: 'm3_cuadrante',
+    ),
+
+    // 4. Archivos
+    ItemNavegacion(
+      icono: Icons.folder_shared_outlined,
+      titulo: 'Archivos del Centro',
+      etiquetaCorta: 'Archivos',
+      categoria: 'Archivos',
+      disponible: true,
+      modulo: 'm0_cpanel',
+    ),
+
+    // 5. Personas
+    ItemNavegacion(
+      icono: Icons.people_outline,
+      titulo: 'Usuarios y Roles',
+      etiquetaCorta: 'Usuarios',
+      categoria: 'Personas',
+      modulo: 'm1_onboarding',
+    ),
+
+    // 6. Registro de accesos
+    ItemNavegacion(
+      icono: Icons.history_outlined,
+      titulo: 'Historial de Configuración',
+      etiquetaCorta: 'Historial',
+      categoria: 'Registro de accesos',
+      modulo: 'm0_cpanel',
+    ),
+    ItemNavegacion(
+      icono: Icons.fingerprint_outlined,
+      titulo: 'Registro de Inicios de Sesión / Accesos',
+      etiquetaCorta: 'Accesos',
+      categoria: 'Registro de accesos',
+      modulo: 'm0_cpanel',
+    ),
+
+    // 7. Mi cuenta
     ItemNavegacion(
       icono: Icons.account_circle_outlined,
       titulo: 'Mi Perfil',
+      etiquetaCorta: 'Perfil',
       categoria: 'Mi cuenta',
       disponible: true,
     ),

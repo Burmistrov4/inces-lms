@@ -1,20 +1,21 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — 2026-10-26 23:25 -04:00
+## Fotografía operativa vigente — 2026-10-27 03:50 -04:00
 
-> **Sustituye a la foto del 2026-10-25**. Se actualiza tras la culminación de la
-> Tarea 1 del rediseño 1.5 (eliminación del sistema de bids con migración 202610260001)
-> y la incorporación del nuevo favicon con fondo blanco removido e iconos oficiales del CFS.
+> **Sustituye a la foto del 2026-10-26**. Se actualiza tras la culminación completa
+> del **Rediseño 1.5** (Tareas 1 a 11 de `docs/ESPECIFICACION_MAESTRA_REDISENO_1_5_2026-10-25.md`)
+> cubriendo las decisiones D1 a D10, conservando «Aula Virtual» por mandato institucional,
+> e incorporando el nuevo favicon transparente y logo oficial del CFS Rafael Urdaneta.
 
 Cifras **medidas**, no deducidas:
 
 | Métrica | Valor | Cómo se mide |
 |---|---|---|
-| Migraciones | **54** (0 pendientes, 0 deriva) | `ls supabase/migrations/*.sql \| wc -l` + `validate.mjs` (537 aserciones) |
-| Ficheros Dart | **243** | `find lib test -name "*.dart" \| wc -l` |
-| Ficheros de test Dart | **80** | `find test -name "*_test.dart" \| wc -l` |
-| Analizador Dart | **0 errores, 0 avisos, 0 infos** | `node devops/analizar-dart.mjs` (243 archivos limpios) |
-| Backend Fastify | **34 suites · 706/706** | `npm --prefix backend run verify` (typecheck + lint + vitest) |
+| Migraciones | **58** (0 pendientes, 0 deriva) | `ls supabase/migrations/*.sql` + `validate.mjs` (**555 aserciones**) |
+| Ficheros Dart | **246** | `find lib test -name "*.dart" \| wc -l` |
+| Ficheros de test Dart | **81** | `find test -name "*_test.dart" \| wc -l` |
+| Analizador Dart | **0 errores, 0 avisos, 0 infos** | `node devops/analizar-dart.mjs` (246 archivos analizados) |
+| Backend Fastify | **34 suites · 721/721** | `npm --prefix backend run verify` (typecheck + lint + vitest) |
 | Specs E2E | **24** (la matriz = 186 capturas) | `ls e2e/tests/*.spec.ts \| wc -l` |
 | Matriz responsiva | **186 capturas · 0 desbordes · 0 page errors · 0 no navegables · 0 fallos de login** | `E2E_MATRIZ=1 playwright test matriz_responsive` |
 | Suite funcional | **30 pruebas, 0 fallos** | público, admin, aula, stepper, exportación HACER, SEO, refresco |
@@ -22,7 +23,17 @@ Cifras **medidas**, no deducidas:
 | Vistas | **9** sentencias sobre 7 nombres distintos | `grep -rhiE "create .*view" supabase/migrations/` |
 | Políticas RLS | **68** | `grep -rhiE "create policy" supabase/migrations/` |
 
-**Rediseño 1.5 en marcha:** Tarea 1 (Eliminación del sistema de bids) completada y verificada. Nuevos recursos de imagen (favicon sin fondo blanco y logo oficial CFS Rafael Urdaneta) procesados e integrados.
+**Rediseño 1.5 completado al 100%:**
+- **D1 (Tarea 1):** Sistema de bids eliminado; inscripciones pasan directamente a `ENROLLED` sin ofertas intermedias.
+- **D2 (Tarea 2):** Lapsos académicos unificados en «Período» con herencia automática de horarios.
+- **D3 y D4 (Tareas 3 y 4):** Separación estricta de MTP y PNA en dos pantallas independientes y tres esquemas de horarios (Ordinario, MTP, PNA).
+- **D5 (Tarea 5):** Cupo por curso/sección en vez de global, disponibilidad visible («X de Y cupos») en la landing y cPanel.
+- **D6 (Tarea 6):** Gestor de archivos rediseñado con selección múltiple (`Shift`/checkboxes), descarga en ZIP generada en backend mediante streaming con `archiver` y barra de acciones flotante.
+- **D7 (Tarea 7):** Navegación del cPanel reorganizada de 12 apartados a 7 grupos funcionales basados en tareas, con optimización móvil.
+- **D8 (Tarea 8):** Archivar funciona: secciones y períodos registran `archived_at` y el cierre de un período archiva automáticamente sus secciones sin afectar aulas virtuales.
+- **D9 (Branding):** Nombre y marca oficial **«Aula Virtual»** conservados en todo el sistema (anulado «Campus» por instrucción directa) junto a los nuevos activos oficiales con transparencia.
+- **D10 (Tarea 10):** Autenticación con cédula de identidad para administradores y docentes con índice de unicidad en base de datos.
+- **Tarea 11:** Documentación, estado y changelog consolidados y sincronizados.
 La Fase D (multi-nube con Drive) se cerró el 2026-10-24 con las cuatro decisiones
 de Lorenzo escritas en `docs/DISENO_MULTINUBE_DRIVE_2026-10-23.md`: opción B sin
 OAuth, cuenta del usuario sin que el sistema la toque, enlace muerto se avisa, sin

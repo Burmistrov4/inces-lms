@@ -2,8 +2,52 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
-## [1.5.0] - 2026-10-26
-### Rediseño 1.5 — Tarea 1: Eliminación del sistema de bids y nuevos recursos de identidad visual
+## [1.5.0] - 2026-10-27
+### Rediseño 1.5 — Culminación integral de las 11 tareas (D1 a D10)
+
+**D1 (Tarea 1) — Eliminación del sistema de bids**
+- Flujo de inscripciones directo: WAITLISTED (cola) → ENROLLED (matriculado) sin ofertas intermedias con expiración (PENDING_BID eliminado).
+- Migración 202610260001_eliminar_sistema_bids.sql y actualización de pruebas y servicios.
+
+**D2 (Tarea 2) — Eliminación de lapsos; unificación en «Período» con herencia**
+- Unificación conceptual en «Período» (migración 202610270001_periodo_sin_lapsos.sql).
+- Implementada función RPC heredar_horario_periodo para clonar automáticamente las secciones activas y slots del período saliente al nuevo.
+
+**D3 y D4 (Tareas 3 y 4) — Separación de MTP y PNA y tres horarios diferenciados**
+- Pantallas y cuadrantes independientes para MTP (guardias técnicas de docentes) y PNA (Programa Nacional de Aprendizaje).
+- Tres esquemas de horarios validados: Ordinario (curso obligatorio, materia/espacio opcional), MTP (docente y espacio obligatorio, sin materia) y PNA (materia y docente obligatorios).
+- Migración 202610270002_tres_horarios_mtp_pna.sql.
+
+**D5 (Tarea 5) — Cupo por curso no global y disponibilidad visible**
+- Cupo configurable por programa/sección en lugar de forzar el parámetro global.
+- Indicador visual «Quedan X de Y cupos» en landing page y en tarjetas del cPanel.
+- Migración 202610270003_cupo_por_curso.sql con funciones cupo_efectivo y cupos_ocupados_programa.
+
+**D6 (Tarea 6) — Rediseño del gestor de archivos con descarga múltiple en ZIP**
+- Selección múltiple de archivos con casillas y atajo Shift para rango.
+- Generación de ZIP mediante streaming en backend con archiver en la ruta /api/v1/archivos/descargar-zip.
+- Barra de acciones flotante contextual (descarga ZIP, eliminación) y soporte de vistas cuadrícula y lista.
+
+**D7 (Tarea 7) — Reorganización de navegación a 7 apartados funcionales**
+- Menú del cPanel reestructurado en 7 grupos por tarea: Preparar el período, Inscribir, Dar clase, Archivos, Personas, Registro de accesos y Mi cuenta.
+- Optimización ergonómica y táctil para dispositivos móviles y Drawer.
+
+**D8 (Tarea 8) — Archivar funciona (secciones y períodos)**
+- Registro automático de archived_at al desactivar/archivar secciones y períodos (migración 202610270004_archivar_secciones_y_periodos.sql).
+- Trigger en academic_periods que archiva automáticamente sus secciones activas al cerrarse el período, sin afectar aulas virtuales.
+
+**D9 (Branding institucional) — Mantenimiento oficial de «Aula Virtual»**
+- Mantenimiento inequívoco del nombre y branding «Aula Virtual» en títulos, rutas y menús.
+- Favicon oficial del CFS con fondo blanco removido (transparencia alfa) y logo oficial institucional de alta resolución.
+
+**D10 (Tarea 10) — Autenticación con cédula de identidad**
+- Inicio de sesión admitiendo cédula tanto para aprendices como para administradores y docentes.
+- Índice único en base de datos idx_profiles_cedula_digits sobre perfiles administrativos.
+
+**Tarea 11 — Documentación y suite de pruebas**
+- 555 aserciones de migraciones en verde (validate.mjs).
+- 721 pruebas de backend en verde (vitest).
+- 246 archivos Dart analizados con 0 errores y 0 avisos.
 
 **Eliminación del sistema de bids (Decisión D1)**
 - Flujo de inscripciones simplificado: `WAITLISTED` (cola) → `ENROLLED` (matriculado) → `DROPPED` (historial/baja).
