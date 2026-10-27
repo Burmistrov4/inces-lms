@@ -54,6 +54,10 @@ class OpcionCampo {
   const OpcionCampo({
     required this.valor,
     required this.etiqueta,
+    this.codigo,
+    this.tipo,
+    this.duracion,
+    this.requierePasantia = false,
     this.cupo,
     this.cuposOcupados,
     this.cuposDisponibles,
@@ -62,6 +66,10 @@ class OpcionCampo {
 
   final String valor;
   final String etiqueta;
+  final String? codigo;
+  final String? tipo;
+  final String? duracion;
+  final bool requierePasantia;
   final int? cupo;
   final int? cuposOcupados;
   final int? cuposDisponibles;
@@ -70,6 +78,12 @@ class OpcionCampo {
   factory OpcionCampo.fromJson(Map<String, dynamic> json) {
     final valor = (json['valor'] ?? '').toString();
     final etiqueta = (json['etiqueta'] ?? '').toString();
+    final codigo = json['codigo']?.toString() ?? json['code']?.toString();
+    final tipo = json['tipo']?.toString() ?? json['type']?.toString();
+    final duracion = json['duracion']?.toString();
+    final requierePasantia = (json['requierePasantia'] as bool?) ??
+        (json['requires_internship'] as bool?) ??
+        false;
     final cupo = (json['cupo'] as num?)?.toInt();
     final cuposOcupados = (json['cuposOcupados'] as num?)?.toInt();
     final cuposDisponibles = (json['cuposDisponibles'] as num?)?.toInt();
@@ -81,6 +95,10 @@ class OpcionCampo {
       // La etiqueta cae al valor: una opción sin texto que se pintara vacía
       // dejaría una casilla que el aspirante no puede identificar.
       etiqueta: etiqueta.isEmpty ? valor : etiqueta,
+      codigo: codigo,
+      tipo: tipo,
+      duracion: duracion,
+      requierePasantia: requierePasantia,
       cupo: cupo,
       cuposOcupados: cuposOcupados,
       cuposDisponibles: cuposDisponibles,

@@ -289,6 +289,19 @@ class FakeGateway implements AuthGateway, AspiranteGateway, ModulesGateway {
   }
 
   @override
+  Future<Map<String, dynamic>?> periodoVigente() async {
+    llamadas.add('periodoVigente');
+    return {
+      'id': 'periodo-test-1',
+      'code': '2026-I',
+      'name': 'Período Formativo 2026-I',
+      'start_date': '2026-09-15',
+      'end_date': '2027-01-30',
+      'is_active': true,
+    };
+  }
+
+  @override
   Future<bool> existeEmail(String email) async {
     llamadas.add('existeEmail');
     return existeEmailResultado;

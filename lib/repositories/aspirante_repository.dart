@@ -45,6 +45,11 @@ class AspiranteRepository {
     return Result.guard(() => _gateway.programasDisponibles());
   }
 
+  /// Período académico vigente con fechas de inicio y culminación.
+  Future<Result<Map<String, dynamic>?>> obtenerPeriodoVigente() {
+    return Result.guard(() => _gateway.periodoVigente());
+  }
+
   Future<Result<AspiranteModel?>> obtenerPorCedula(String cedula) {
     return Result.guard(() => _gateway.porCedula(cedula.trim()));
   }

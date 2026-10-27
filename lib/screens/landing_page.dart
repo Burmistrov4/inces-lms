@@ -63,6 +63,7 @@ class _LandingPageState extends State<LandingPage> {
 
   /// Por qué no hay cursos que mostrar, si no los hay. `null` cuando sí hay.
   String? _aviso;
+  Map<String, dynamic>? _periodoVigente;
 
   final TextEditingController _busquedaCtrl = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -148,9 +149,11 @@ class _LandingPageState extends State<LandingPage> {
     });
 
     final resultado = await _aspiranteRepo.obtenerProgramasDisponibles();
+    final resPeriodo = await _aspiranteRepo.obtenerPeriodoVigente();
     if (!mounted) return;
 
     setState(() {
+      _periodoVigente = resPeriodo.valueOrNull;
       final cursos = resultado.valueOrNull;
       if (cursos != null && cursos.isNotEmpty) {
         _cursos = cursos;
@@ -1293,6 +1296,10 @@ class _LandingPageState extends State<LandingPage> {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              if (_periodoVigente != null) ...[
+                const SizedBox(height: 16),
+                _construirBannerPeriodo(theme),
+              ],
               const SizedBox(height: 18),
               _construirFiltrosArea(),
               const SizedBox(height: 20),
@@ -1439,10 +1446,269 @@ class _LandingPageState extends State<LandingPage> {
                 width: ancho,
                 child: _TarjetaCurso(
                   curso: curso,
+                  periodo: _periodoVigente,
                   onInscribir: _irAInscripcion,
+                  onVerDetalle: () => _mostrarDetalleCurso(curso),
                 ),
               ),
           ],
+        );
+      },
+    );
+  }
+
+  Widget _construirBannerPeriodo(ThemeData theme) {
+    final periodo = _periodoVigente!;
+    final nombre = (periodo['name'] ?? periodo['code'] ?? 'Período Activo').toString();
+    final fInicio = periodo['start_date']?.toString();
+    final fFin = periodo['end_date']?.toString();
+    final fechasTexto = (fInicio != null && fFin != null)
+        ? 'Clases desde ${_formatearFechaCorta(fInicio)} hasta ${_formatearFechaCorta(fFin)}'
+        : 'Período formativo oficial en curso';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.event_available_rounded,
+              color: theme.colorScheme.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Período Académico: $nombre',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: IncesTheme.exito.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: IncesTheme.exito.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        'Inscripciones abiertas',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: IncesTheme.exito,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  fechasTexto,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatearFechaCorta(String iso) {
+    try {
+      final dt = DateTime.parse(iso);
+      const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+      return '${dt.day} ${meses[dt.month - 1]} ${dt.year}';
+    } catch (_) {
+      return iso;
+    }
+  }
+
+  void _mostrarDetalleCurso(OpcionCampo curso) {
+    final theme = Theme.of(context);
+    final area = AreaFormativa.resolver(curso.etiqueta);
+    final esPna = curso.etiqueta.toLowerCase().contains('pna') ||
+        curso.etiqueta.toLowerCase().contains('aprendiz') ||
+        (curso.codigo != null && curso.codigo!.contains('INT'));
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(area.icono, color: theme.colorScheme.primary, size: 28),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (curso.codigo != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              margin: const EdgeInsets.only(bottom: 4),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                curso.codigo!,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          Text(
+                            curso.etiqueta,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            esPna
+                                ? 'Programa Nacional de Aprendizaje (PNA) · $kEdadPnaTexto'
+                                : 'Curso de Capacitación Técnica Profesional',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 12),
+                if (_periodoVigente != null) ...[
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_month_rounded, size: 16, color: theme.colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Período formativo: ${_periodoVigente!['name'] ?? _periodoVigente!['code']}',
+                          style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                Row(
+                  children: [
+                    Icon(Icons.event_seat_rounded, size: 16, color: IncesTheme.exito),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Disponibilidad: ${curso.cuposDisponibles ?? curso.cupo ?? 25} cupos disponibles',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: IncesTheme.exito,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (curso.duracion != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.schedule_rounded, size: 16, color: theme.colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Duración académica: ${curso.duracion}',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    esPna
+                        ? 'Formación dual orientada a jóvenes de $kEdadPnaTexto. Combina la fase teórica-tecnológica en los talleres del centro CFS con la fase práctica remunerada en entidades de trabajo.'
+                        : 'Formación continua certificada por el INCES, orientada a desarrollar competencias técnicas operativas y productivas en talleres equipados.',
+                    style: theme.textTheme.bodySmall?.copyWith(height: 1.4),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    _irAInscripcion();
+                  },
+                  icon: const Icon(Icons.how_to_reg_rounded, size: 18),
+                  label: const Text('Iniciar inscripción'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -1726,25 +1992,74 @@ class _LandingPageState extends State<LandingPage> {
 /// Muestra sólo el **nombre** del programa: es lo único que expone
 /// `programasDisponibles()` (`id` + `name`). Enriquecerla con código o duración
 /// exigiría otra lectura del Módulo 2, que es trabajo aparte.
-class _TarjetaCurso extends StatelessWidget {
-  const _TarjetaCurso({required this.curso, required this.onInscribir});
+class _TarjetaCurso extends StatefulWidget {
+  const _TarjetaCurso({
+    required this.curso,
+    required this.onInscribir,
+    this.periodo,
+    this.onVerDetalle,
+  });
 
   final OpcionCampo curso;
+  final Map<String, dynamic>? periodo;
   final VoidCallback onInscribir;
+  final VoidCallback? onVerDetalle;
+
+  @override
+  State<_TarjetaCurso> createState() => _TarjetaCursoState();
+}
+
+class _TarjetaCursoState extends State<_TarjetaCurso> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
+    final curso = widget.curso;
+    final onInscribir = widget.onInscribir;
+    final onVerDetalle = widget.onVerDetalle;
     final theme = Theme.of(context);
     final area = AreaFormativa.resolver(curso.etiqueta);
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
-        side: BorderSide(color: theme.colorScheme.outline),
-      ),
-      child: Column(
+    final esPna = curso.etiqueta.toLowerCase().contains('pna') ||
+        curso.etiqueta.toLowerCase().contains('aprendiz') ||
+        (curso.codigo != null && curso.codigo!.contains('INT'));
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        transform: Matrix4.translationValues(0, _hovered ? -4 : 0, 0),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+          boxShadow: _hovered
+              ? [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.16),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : const [],
+        ),
+        child: Card(
+          clipBehavior: Clip.antiAlias,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+            side: BorderSide(
+              color: _hovered
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outlineVariant,
+              width: _hovered ? 1.5 : 1.0,
+            ),
+          ),
+          child: InkWell(
+            onTap: onVerDetalle,
+            borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+            child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
@@ -1805,6 +2120,47 @@ class _TarjetaCurso extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (curso.codigo != null || esPna) ...[
+                  Row(
+                    children: [
+                      if (curso.codigo != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            curso.codigo!,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      if (esPna) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.secondary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'PNA ($kEdadPnaTexto)',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.secondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                ],
                 Text(
                   curso.etiqueta,
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -1863,22 +2219,40 @@ class _TarjetaCurso extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: FilledButton.tonalIcon(
-                    onPressed: onInscribir,
-                    icon: const Icon(Icons.how_to_reg_rounded, size: 16),
-                    label: const Text('Inscribirme'),
-                    style: FilledButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
+                Row(
+                  children: [
+                    if (onVerDetalle != null) ...[
+                      OutlinedButton.icon(
+                        onPressed: onVerDetalle,
+                        icon: const Icon(Icons.info_outline_rounded, size: 15),
+                        label: const Text('Detalles'),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed: onInscribir,
+                        icon: const Icon(Icons.how_to_reg_rounded, size: 16),
+                        label: const Text('Inscribirme'),
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
           ),
         ],
       ),
+    ),
+    ),
+    ),
     );
   }
 }

@@ -322,31 +322,43 @@ class SupabaseService implements AuthGateway, AspiranteGateway, ModulesGateway {
 
   @override
   Future<List<OpcionCampo>> programasDisponibles() async {
-    // Los dos filtros son la Decisión 1, y viven también aquí y no sólo en la
-    // base: `type = CURSO_LIBRE` porque la inscripción pública es de formación
-    // continua —las carreras tienen otro ciclo de admisión—, y `is_active` porque
-    // un borrador no debe asomar en el formulario.
-    //
-    // La RLS ya limita `programs` a `anon` con `using (is_active)`, pero eso sólo
-    // cubre a quien consulta sin sesión. El filtro explícito hace que el resultado
-    // sea el mismo para `anon` y para `authenticated`, que sí ve los borradores.
-    final respuesta = await client
-        .from(_tablaPrograms)
-        .select('id, name, cupo, mostrar_disponibilidad')
-        .eq('type', 'CURSO_LIBRE')
-        .eq('is_active', true)
-        .order('name');
+    // Consulta todos los programas activos ofrecidos por la institución,
+    // incluyendo PNA (CUR-INT-01) y carreras técnicas continuas.
+    List<Map<String, dynamic>> filas = const [];
+    try {
+      final respuesta = await client
+          .from(_tablaPrograms)
+          .select('id, code, name, type, duration_value, duration_unit, requires_internship, cupo, mostrar_disponibilidad')
+          .eq('is_active', true)
+          .order('name');
+      filas = (respuesta as List<dynamic>).whereType<Map<String, dynamic>>().toList();
+    } catch (_) {
+      // Respaldo resiliente si columnas de migración reciente aún no existen en el entorno remoto
+      final respuesta = await client
+          .from(_tablaPrograms)
+          .select('id, code, name, type, duration_value, duration_unit, requires_internship')
+          .eq('is_active', true)
+          .order('name');
+      filas = (respuesta as List<dynamic>).whereType<Map<String, dynamic>>().toList();
+    }
 
-    return respuesta
+    return filas
         .map(
           (fila) {
             final cupo = (fila['cupo'] as num?)?.toInt() ?? 25;
             final mostrar = (fila['mostrar_disponibilidad'] as bool?) ?? true;
+            final dValor = fila['duration_value'] as num?;
+            final dUnidad = fila['duration_unit']?.toString().toLowerCase();
+            final duracion = dValor != null && dUnidad != null ? '$dValor $dUnidad' : null;
             return OpcionCampo(
               // D14: el VALOR es el uuid y la ETIQUETA el nombre. Es el cambio que
               // hace que renombrar un programa no toque ninguna ficha.
               valor: (fila['id'] ?? '').toString(),
               etiqueta: (fila['name'] ?? '').toString(),
+              codigo: fila['code']?.toString(),
+              tipo: fila['type']?.toString(),
+              duracion: duracion,
+              requierePasantia: (fila['requires_internship'] as bool?) ?? false,
               cupo: cupo,
               cuposDisponibles: cupo,
               mostrarDisponibilidad: mostrar,
@@ -358,6 +370,22 @@ class SupabaseService implements AuthGateway, AspiranteGateway, ModulesGateway {
         // vacío. Se descarta en vez de propagar el problema al envío.
         .where((opcion) => opcion.valor.isNotEmpty && opcion.etiqueta.isNotEmpty)
         .toList(growable: false);
+  }
+
+  @override
+  Future<Map<String, dynamic>?> periodoVigente() async {
+    try {
+      final respuesta = await client
+          .from('academic_periods')
+          .select('id, code, name, start_date, end_date, is_active')
+          .eq('is_active', true)
+          .order('code', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      return respuesta;
+    } catch (_) {
+      return null;
+    }
   }
 
   @override

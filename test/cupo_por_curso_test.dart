@@ -19,6 +19,9 @@ class _FakeAspiranteGateway implements AspiranteGateway {
   Future<List<OpcionCampo>> programasDisponibles() async => programas;
 
   @override
+  Future<Map<String, dynamic>?> periodoVigente() async => null;
+
+  @override
   Future<AspiranteModel?> porCedula(String cedula) async => null;
 
   @override

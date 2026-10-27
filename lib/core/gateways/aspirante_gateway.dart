@@ -35,5 +35,8 @@ abstract interface class AspiranteGateway {
   /// `202609250002`, al comprobarse que esta capa era su último consumidor.
   Future<List<OpcionCampo>> programasDisponibles();
 
+  /// El período académico vigente con sus fechas de inicio y culminación.
+  Future<Map<String, dynamic>?> periodoVigente();
+
   Future<bool> existeEmail(String email);
 }
