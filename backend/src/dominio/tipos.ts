@@ -428,8 +428,8 @@ export interface Guardia {
 export interface ClaseCuadrante {
   id: string;
   seccionId: string;
-  docenteId: string;
-  aulaId: string;
+  docenteId?: string | null;
+  aulaId?: string | null;
   dia: number;
   bloque: number;
   turno: Turno;

@@ -215,3 +215,64 @@ export function sumarDuracion(
 
   throw new Error(`Unidad no soportada: ${unidad}`);
 }
+
+
+/**
+ * Entrada para validar un bloque de horario ordinario (D4).
+ * Regla dura: el bloque del horario ordinario exige curso (sección/curso);
+ * materia y espacio son opcionales.
+ */
+export interface BloqueHorarioOrdinarioEntrada {
+  seccionId?: string | null;
+  cursoId?: string | null;
+  materiaId?: string | null;
+  espacioId?: string | null;
+}
+
+export function validarHorarioOrdinario(bloque: BloqueHorarioOrdinarioEntrada): void {
+  const tieneCurso = Boolean(bloque.seccionId?.trim() || bloque.cursoId?.trim());
+  if (!tieneCurso) {
+    throw new Error('El horario ordinario exige indicar el curso o sección.');
+  }
+}
+
+/**
+ * Entrada para validar una guardia MTP (D4).
+ * Regla dura: el bloque de MTP exige docente y espacio/taller; NO lleva materia.
+ */
+export interface BloqueHorarioMtpEntrada {
+  docenteId?: string | null;
+  espacioId?: string | null;
+  materiaId?: string | null;
+}
+
+export function validarHorarioMTP(bloque: BloqueHorarioMtpEntrada): void {
+  if (!bloque.docenteId?.trim()) {
+    throw new Error('El horario MTP exige asignar un docente.');
+  }
+  if (!bloque.espacioId?.trim()) {
+    throw new Error('El horario MTP exige asignar un taller o espacio.');
+  }
+  if (bloque.materiaId && bloque.materiaId.trim().length > 0) {
+    throw new Error('El horario MTP es de custodia de talleres y no lleva materia.');
+  }
+}
+
+/**
+ * Entrada para validar un bloque de horario PNA (D4).
+ * Regla dura: el bloque de PNA exige materia y docente; espacio es opcional.
+ */
+export interface BloqueHorarioPnaEntrada {
+  materiaId?: string | null;
+  docenteId?: string | null;
+  espacioId?: string | null;
+}
+
+export function validarHorarioPNA(bloque: BloqueHorarioPnaEntrada): void {
+  if (!bloque.materiaId?.trim()) {
+    throw new Error('El horario PNA exige asignar una materia.');
+  }
+  if (!bloque.docenteId?.trim()) {
+    throw new Error('El horario PNA exige asignar un docente.');
+  }
+}

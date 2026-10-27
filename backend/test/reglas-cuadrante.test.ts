@@ -12,6 +12,9 @@ import {
   rangoDeFechasValido,
   sumarDuracion,
   turnoDeBloque,
+  validarHorarioMTP,
+  validarHorarioOrdinario,
+  validarHorarioPNA,
 } from '../src/dominio/reglas-cuadrante.js';
 
 /**
@@ -515,5 +518,73 @@ describe('estadoDePeriodo (los 5 estados institucionales del Bloque E)', () => {
         HOY,
       ),
     ).toBe('VENCIDO');
+  });
+});
+
+describe('validación de los tres horarios distintos (D4)', () => {
+  describe('Horario Ordinario', () => {
+    it('acepta cuando se proporciona sección o curso, con materia y espacio opcionales', () => {
+      expect(() =>
+        validarHorarioOrdinario({ seccionId: 'sec-1', materiaId: null, espacioId: null }),
+      ).not.toThrow();
+      expect(() =>
+        validarHorarioOrdinario({ cursoId: 'cur-1', materiaId: 'mat-1', espacioId: 'esp-1' }),
+      ).not.toThrow();
+    });
+
+    it('falla si falta curso y sección', () => {
+      expect(() =>
+        validarHorarioOrdinario({ seccionId: '', cursoId: '', materiaId: 'mat-1' }),
+      ).toThrow('El horario ordinario exige indicar el curso o sección.');
+    });
+  });
+
+  describe('Horario MTP', () => {
+    it('acepta con docente y espacio asignados sin materia', () => {
+      expect(() =>
+        validarHorarioMTP({ docenteId: 'doc-1', espacioId: 'esp-1' }),
+      ).not.toThrow();
+    });
+
+    it('falla si falta docente', () => {
+      expect(() =>
+        validarHorarioMTP({ docenteId: '', espacioId: 'esp-1' }),
+      ).toThrow('El horario MTP exige asignar un docente.');
+    });
+
+    it('falla si falta espacio', () => {
+      expect(() =>
+        validarHorarioMTP({ docenteId: 'doc-1', espacioId: '' }),
+      ).toThrow('El horario MTP exige asignar un taller o espacio.');
+    });
+
+    it('falla si intenta asignar materia a una guardia MTP', () => {
+      expect(() =>
+        validarHorarioMTP({ docenteId: 'doc-1', espacioId: 'esp-1', materiaId: 'mat-1' }),
+      ).toThrow('El horario MTP es de custodia de talleres y no lleva materia.');
+    });
+  });
+
+  describe('Horario PNA', () => {
+    it('acepta con materia y docente, con espacio opcional', () => {
+      expect(() =>
+        validarHorarioPNA({ materiaId: 'mat-pna', docenteId: 'doc-1', espacioId: null }),
+      ).not.toThrow();
+      expect(() =>
+        validarHorarioPNA({ materiaId: 'mat-pna', docenteId: 'doc-1', espacioId: 'taller-1' }),
+      ).not.toThrow();
+    });
+
+    it('falla si falta materia', () => {
+      expect(() =>
+        validarHorarioPNA({ materiaId: '', docenteId: 'doc-1' }),
+      ).toThrow('El horario PNA exige asignar una materia.');
+    });
+
+    it('falla si falta docente', () => {
+      expect(() =>
+        validarHorarioPNA({ materiaId: 'mat-pna', docenteId: '' }),
+      ).toThrow('El horario PNA exige asignar un docente.');
+    });
   });
 });

@@ -1762,11 +1762,17 @@
             "format": "uuid"
           },
           "docenteId": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "uuid"
           },
           "aulaId": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "uuid"
           },
           "dia": {
@@ -1914,11 +1920,17 @@
             "format": "uuid"
           },
           "docenteId": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "uuid"
           },
           "aulaId": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "uuid"
           },
           "dia": {
@@ -1930,8 +1942,6 @@
         },
         "required": [
           "seccionId",
-          "docenteId",
-          "aulaId",
           "dia",
           "bloque"
         ],
@@ -1945,11 +1955,17 @@
             "format": "uuid"
           },
           "docenteId": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "uuid"
           },
           "aulaId": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "uuid"
           },
           "dia": {

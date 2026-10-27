@@ -313,22 +313,22 @@ class CambiosGuardia {
 class EntradaCrearClase {
   const EntradaCrearClase({
     required this.seccionId,
-    required this.docenteId,
-    required this.aulaId,
+    this.docenteId,
+    this.aulaId,
     required this.dia,
     required this.bloque,
   });
 
   final String seccionId;
-  final String docenteId;
-  final String aulaId;
+  final String? docenteId;
+  final String? aulaId;
   final int dia;
   final int bloque;
 
   Map<String, dynamic> toJson() => {
         'seccionId': seccionId,
-        'docenteId': docenteId,
-        'aulaId': aulaId,
+        if (docenteId != null) 'docenteId': docenteId,
+        if (aulaId != null) 'aulaId': aulaId,
         'dia': dia,
         'bloque': bloque,
       };

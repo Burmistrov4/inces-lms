@@ -253,8 +253,8 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
     );
 
     return TituloSeccion(
-      'Cuadrante de Horarios',
-      subtitulo: 'Planificación y distribución semanal de clases por día y bloque. '
+      'Horario Ordinario',
+      subtitulo: 'Planificación semanal de cursos regulares (sección obligatoria; materia y espacio opcionales). '
           'Toca una clase para editarla o pulsa en cualquier bloque libre para asignar una nueva.',
       acciones: [
         if (_periodos.isNotEmpty) _selectorDeLapso(),
@@ -374,8 +374,11 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
   Widget _rejilla() {
     final theme = Theme.of(context);
 
+    final clasesOrdinarias = _clases
+        .where((c) => !esProgramaPNA(c.programa) && !esProgramaPNA(c.materia))
+        .toList();
     final celdas = <String, List<Widget>>{};
-    for (final entrada in agruparClases(_clases, chip: _chipClase).entries) {
+    for (final entrada in agruparClases(clasesOrdinarias, chip: _chipClase).entries) {
       celdas[entrada.key] = entrada.value;
     }
     for (final entrada in agruparGuardias(_guardias, chip: _chipGuardia).entries) {
@@ -446,11 +449,18 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
   Widget _chipClase(ClaseCuadrante clase) {
     final docente = nombreDeDocente(clase.docente);
     final colorAula = PaletaAulasCuadrante.colorParaAula(clase.aulaId);
+    final nombreCurso = clase.programa.isNotEmpty
+        ? clase.programa
+        : (clase.seccion.isNotEmpty ? clase.seccion : 'Curso');
+    final titulo = clase.materia.isNotEmpty ? clase.materia : nombreCurso;
+    final subtitulo = clase.aula.isNotEmpty
+        ? (clase.materia.isNotEmpty ? '${clase.aula} · $docente' : '$docente · ${clase.aula}')
+        : docente;
     return ChipCuadrante(
-      titulo: clase.materia.isNotEmpty ? clase.materia : 'Clase',
-      subtitulo: '${clase.aula} · $docente',
+      titulo: titulo,
+      subtitulo: subtitulo,
       color: colorAula,
-      etiquetaAula: clase.aula,
+      etiquetaAula: clase.aula.isNotEmpty ? clase.aula : null,
       destacado: true,
       onTap: () => _abrirEdicion(clase),
     );
@@ -562,14 +572,6 @@ class _DialogoClaseState extends State<_DialogoClase> {
       setState(() => _error = 'Elige la sección a la que pertenece la clase.');
       return;
     }
-    if (_aulaId == null) {
-      setState(() => _error = 'Elige el espacio donde se dicta.');
-      return;
-    }
-    if (_docenteId == null) {
-      setState(() => _error = 'Elige el docente que la imparte.');
-      return;
-    }
 
     setState(() {
       _guardando = true;
@@ -591,8 +593,8 @@ class _DialogoClaseState extends State<_DialogoClase> {
         : await widget.repo.crearClase(
             EntradaCrearClase(
               seccionId: _seccionId!,
-              docenteId: _docenteId!,
-              aulaId: _aulaId!,
+              docenteId: _docenteId,
+              aulaId: _aulaId,
               dia: _dia,
               bloque: _bloque,
             ),
@@ -849,13 +851,17 @@ class _DialogoClaseState extends State<_DialogoClase> {
                   onChanged: (v) => setState(() => _seccionId = v),
                 ),
               if (!_esEdicion) const SizedBox(height: 12),
-              _Desplegable<String>(
-                etiqueta: 'Espacio',
+              _Desplegable<String?>(
+                etiqueta: 'Espacio (opcional)',
                 ancho: double.infinity,
                 valor: _aulaId,
                 opciones: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Sin espacio asignado (opcional)', style: TextStyle(fontStyle: FontStyle.italic)),
+                  ),
                   for (final aula in widget.aulas)
-                    DropdownMenuItem(
+                    DropdownMenuItem<String?>(
                       value: aula.id,
                       child: Text(
                         aula.nombre,

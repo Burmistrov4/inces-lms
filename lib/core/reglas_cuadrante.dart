@@ -198,3 +198,57 @@ String sumarDuracion(
 
   throw ArgumentError('Unidad no soportada: $unidad');
 }
+
+/// ¿El identificador, código o nombre corresponde al Programa Nacional de Aprendizaje?
+bool esProgramaPNA(String? identificadorONombre) {
+  if (identificadorONombre == null) return false;
+  final limpio = identificadorONombre.trim().toLowerCase();
+  if (limpio.isEmpty) return false;
+  return limpio == 'cur-int-01' ||
+      limpio.contains('pna') ||
+      limpio.contains('aprendizaje');
+}
+
+/// Valida los requisitos mínimos de un bloque en el Horario Ordinario (D4).
+/// Regla dura: exige sección/curso; materia y espacio son opcionales.
+void validarHorarioOrdinario({String? seccionId, String? cursoId}) {
+  final tieneCurso = (seccionId != null && seccionId.trim().isNotEmpty) ||
+      (cursoId != null && cursoId.trim().isNotEmpty);
+  if (!tieneCurso) {
+    throw ArgumentError('El horario ordinario exige indicar el curso o sección.');
+  }
+}
+
+/// Valida los requisitos de una guardia MTP (D4).
+/// Regla dura: exige docente y espacio/taller; NO lleva materia ni alumnos.
+void validarHorarioMTP({
+  required String? docenteId,
+  required String? aulaId,
+  String? materiaId,
+}) {
+  if (docenteId == null || docenteId.trim().isEmpty) {
+    throw ArgumentError('El horario MTP exige asignar un docente.');
+  }
+  if (aulaId == null || aulaId.trim().isEmpty) {
+    throw ArgumentError('El horario MTP exige asignar un taller o espacio.');
+  }
+  if (materiaId != null && materiaId.trim().isNotEmpty) {
+    throw ArgumentError('El horario MTP es de custodia de talleres y no lleva materia.');
+  }
+}
+
+/// Valida los requisitos de un bloque de Horario PNA (D4).
+/// Regla dura: exige materia y docente; espacio es opcional.
+void validarHorarioPNA({
+  required String? materiaId,
+  required String? docenteId,
+  String? aulaId,
+}) {
+  if (materiaId == null || materiaId.trim().isEmpty) {
+    throw ArgumentError('El horario PNA exige asignar una materia.');
+  }
+  if (docenteId == null || docenteId.trim().isEmpty) {
+    throw ArgumentError('El horario PNA exige asignar un docente.');
+  }
+}
+

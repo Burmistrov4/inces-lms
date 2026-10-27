@@ -250,9 +250,6 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     if (_modalidadFiltro == 'MTP') {
       return notas.contains('MTP') || !notas.contains('PNA');
     }
-    if (_modalidadFiltro == 'PNA') {
-      return notas.contains('PNA');
-    }
     return true;
   }
 
@@ -260,7 +257,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     for (final g in _guardias) {
       if (!g.activa || g.dia != dia) continue;
       final notas = (g.notas ?? '').toUpperCase();
-      final esMod = modalidad == 'PNA' ? notas.contains('PNA') : (notas.contains('MTP') || !notas.contains('PNA'));
+      final esMod = notas.contains('MTP') || !notas.contains('PNA');
       if (esMod) {
         if (notas.contains('PUESTO $puesto') || notas.contains('PUESTO: $puesto') || notas.contains('($puesto)')) {
           return g;
@@ -270,7 +267,6 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     final coincidentes = _guardias.where((g) {
       if (!g.activa || g.dia != dia) return false;
       final notas = (g.notas ?? '').toUpperCase();
-      if (modalidad == 'PNA') return notas.contains('PNA');
       return notas.contains('MTP') || !notas.contains('PNA');
     }).toList();
 
@@ -416,7 +412,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
               ButtonSegment<bool>(
                 value: true,
                 icon: Icon(Icons.dashboard_outlined, size: 16),
-                label: Text('Pizarra Mural INCES (MTP / PNA)'),
+                label: Text('Pizarra Mural INCES (MTP)'),
               ),
             ],
             selected: {_subvistaPizarraMural},
@@ -484,9 +480,9 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     );
 
     return TituloSeccion(
-      'Guardias docentes',
-      subtitulo: 'Rol de Guardia MTP / PNA - Pizarra de control de talleres y espacios. '
-          'Quién custodia cada espacio por día y bloque, haya clase o no.',
+      'Guardias Docentes (Horario MTP)',
+      subtitulo: 'Custodia y control de talleres y espacios por docentes MTP '
+          '(Maestro Técnico Productivo). Quién custodia cada espacio por día y bloque, haya clase o no.',
       acciones: [
         if (widget.onNavegarA != null) ...[
           OutlinedButton.icon(
@@ -874,58 +870,6 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                                   padding: const EdgeInsets.all(4),
                                   decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
                                   child: _celdaPuestoMural(dia: dia, modalidad: 'MTP', puesto: puesto),
-                                ),
-                            ],
-                          ),
-
-                        const SizedBox(height: 12),
-
-                        // SECCIÓN P.N.A. (Puestos 1 al 5)
-                        Container(
-                          width: anchoGutter + (limiteDia * anchoDia),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          color: Colors.teal.shade50,
-                          child: Row(
-                            children: [
-                              Icon(Icons.engineering, size: 16, color: Colors.teal.shade800),
-                              const SizedBox(width: 6),
-                              Text(
-                                'P.N.A. — PROGRAMA NACIONAL DE APRENDIZAJE (Puestos 1 al 5)',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.teal.shade900),
-                              ),
-                            ],
-                          ),
-                        ),
-                        for (var puesto = 1; puesto <= 5; puesto++)
-                          Row(
-                            children: [
-                              Container(
-                                width: anchoGutter,
-                                height: 58,
-                                padding: const EdgeInsets.symmetric(horizontal: 10),
-                                alignment: Alignment.centerLeft,
-                                decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 11,
-                                      backgroundColor: Colors.teal.shade700,
-                                      child: Text('$puesto', style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text('Puesto $puesto', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12), overflow: TextOverflow.ellipsis),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              for (final dia in diasAMostrar)
-                                Container(
-                                  width: anchoDia,
-                                  height: 58,
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
-                                  child: _celdaPuestoMural(dia: dia, modalidad: 'PNA', puesto: puesto),
                                 ),
                             ],
                           ),
@@ -2024,13 +1968,8 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
                       ),
                       ButtonSegment<String?>(
                         value: 'MTP',
-                        label: Text('M.T.P.'),
+                        label: Text('M.T.P. (Talleres)'),
                         icon: Icon(Icons.school_outlined, size: 16),
-                      ),
-                      ButtonSegment<String?>(
-                        value: 'PNA',
-                        label: Text('P.N.A.'),
-                        icon: Icon(Icons.engineering_outlined, size: 16),
                       ),
                     ],
                     selected: {_modalidad},
@@ -2046,14 +1985,14 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
                   if (_modalidad != null) ...[
                     const SizedBox(height: 10),
                     _Desplegable<int>(
-                      etiqueta: 'Puesto en Pizarra Mural ($_modalidad)',
+                      etiqueta: 'Puesto en Pizarra Mural MTP',
                       ancho: double.infinity,
                       valor: _puesto ?? 1,
                       opciones: [
-                        for (var i = 1; i <= (_modalidad == 'MTP' ? 7 : 5); i++)
+                        for (var i = 1; i <= 7; i++)
                           DropdownMenuItem(
                             value: i,
-                            child: Text('Puesto #$i (${_modalidad == 'MTP' ? 'M.T.P. fila $i' : 'P.N.A. fila $i'})'),
+                            child: Text('Puesto #$i (M.T.P. fila $i)'),
                           ),
                       ],
                       onCambiar: (v) {

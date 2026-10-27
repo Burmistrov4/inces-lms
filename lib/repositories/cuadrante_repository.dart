@@ -303,16 +303,20 @@ class CuadranteRepository {
   Future<Result<ClaseCuadrante>> crearClase(EntradaCrearClase entrada) {
     return Result.guard(() async {
       _validarUuid(entrada.seccionId, 'la sección');
-      _validarUuid(entrada.docenteId, 'el docente');
-      _validarUuid(entrada.aulaId, 'el espacio');
+      if (entrada.docenteId != null && entrada.docenteId!.isNotEmpty) {
+        _validarUuid(entrada.docenteId!, 'el docente');
+      }
+      if (entrada.aulaId != null && entrada.aulaId!.isNotEmpty) {
+        _validarUuid(entrada.aulaId!, 'el espacio');
+      }
       _validarDia(entrada.dia);
       _validarBloque(entrada.bloque);
 
       return _gateway.crearClase(
         EntradaCrearClase(
           seccionId: entrada.seccionId.trim(),
-          docenteId: entrada.docenteId.trim(),
-          aulaId: entrada.aulaId.trim(),
+          docenteId: entrada.docenteId?.trim(),
+          aulaId: entrada.aulaId?.trim(),
           dia: entrada.dia,
           bloque: entrada.bloque,
         ),

@@ -547,8 +547,8 @@ export const SECCIONES_POR_DEFECTO: SeccionFalsa[] = [SECCION_SA, SECCION_SC];
 export interface ClaseFalsa {
   id: string;
   seccionId: string;
-  docenteId: string;
-  aulaId: string;
+  docenteId?: string | null;
+  aulaId?: string | null;
   dia: number;
   bloque: number;
   activa: boolean;
@@ -2293,15 +2293,16 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
     periodo: string,
     dia: number,
     bloque: number,
-    docenteId: string,
-    aulaId: string,
-    origen: 'guardia' | 'clase',
-    id: string,
+    docenteId?: string | null,
+    aulaId?: string | null,
+    origen?: 'guardia' | 'clase',
+    id?: string,
   ): void => {
     const diaTexto = diaLegible(dia);
 
     const docenteOcupado =
-      estado.guardias.some(
+      Boolean(docenteId) &&
+      (estado.guardias.some(
         (g) =>
           g.activa &&
           g.periodo === periodo &&
@@ -2310,15 +2311,15 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
           g.docenteId === docenteId &&
           !(origen === 'guardia' && g.id === id),
       ) ||
-      estado.clases.some(
-        (c) =>
-          c.activa &&
-          c.dia === dia &&
-          c.bloque === bloque &&
-          c.docenteId === docenteId &&
-          periodoDeClase(c) === periodo &&
-          !(origen === 'clase' && c.id === id),
-      );
+        estado.clases.some(
+          (c) =>
+            c.activa &&
+            c.dia === dia &&
+            c.bloque === bloque &&
+            c.docenteId === docenteId &&
+            periodoDeClase(c) === periodo &&
+            !(origen === 'clase' && c.id === id),
+        ));
 
     if (docenteOcupado) {
       throw ErrorApi.conflicto(
@@ -2329,7 +2330,8 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
     }
 
     const aulaOcupada =
-      estado.guardias.some(
+      Boolean(aulaId) &&
+      (estado.guardias.some(
         (g) =>
           g.activa &&
           g.periodo === periodo &&
@@ -2338,15 +2340,15 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
           g.aulaId === aulaId &&
           !(origen === 'guardia' && g.id === id),
       ) ||
-      estado.clases.some(
-        (c) =>
-          c.activa &&
-          c.dia === dia &&
-          c.bloque === bloque &&
-          c.aulaId === aulaId &&
-          periodoDeClase(c) === periodo &&
-          !(origen === 'clase' && c.id === id),
-      );
+        estado.clases.some(
+          (c) =>
+            c.activa &&
+            c.dia === dia &&
+            c.bloque === bloque &&
+            c.aulaId === aulaId &&
+            periodoDeClase(c) === periodo &&
+            !(origen === 'clase' && c.id === id),
+        ));
 
     if (aulaOcupada) {
       throw ErrorApi.conflicto(
@@ -2717,8 +2719,8 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
 
       const seccion = estado.secciones.find((s) => s.id === entrada.seccionId);
       if (!seccion) throw referenciaInvalida();
-      if (!estado.perfiles.some((p) => p.id === entrada.docenteId)) throw referenciaInvalida();
-      if (!estado.aulas.some((a) => a.id === entrada.aulaId)) throw referenciaInvalida();
+      if (entrada.docenteId && !estado.perfiles.some((p) => p.id === entrada.docenteId)) throw referenciaInvalida();
+      if (entrada.aulaId && !estado.aulas.some((a) => a.id === entrada.aulaId)) throw referenciaInvalida();
 
       const id = nuevoId('99999996', ++secuenciaCuadrante);
 
@@ -2760,8 +2762,8 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
 
       const seccion = estado.secciones.find((s) => s.id === actualizada.seccionId);
       if (!seccion) throw referenciaInvalida();
-      if (!estado.perfiles.some((p) => p.id === actualizada.docenteId)) throw referenciaInvalida();
-      if (!estado.aulas.some((a) => a.id === actualizada.aulaId)) throw referenciaInvalida();
+      if (actualizada.docenteId && !estado.perfiles.some((p) => p.id === actualizada.docenteId)) throw referenciaInvalida();
+      if (actualizada.aulaId && !estado.aulas.some((a) => a.id === actualizada.aulaId)) throw referenciaInvalida();
 
       if (actualizada.activa) {
         exigirAgendaLibre(

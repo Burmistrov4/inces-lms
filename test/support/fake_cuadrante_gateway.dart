@@ -335,8 +335,8 @@ class FakeCuadranteGateway implements CuadranteGateway {
   ClaseCuadrante _claseDesde(EntradaCrearClase entrada) => ClaseCuadrante(
         id: 'clase-nueva',
         seccionId: entrada.seccionId,
-        docenteId: entrada.docenteId,
-        aulaId: entrada.aulaId,
+        docenteId: entrada.docenteId ?? '',
+        aulaId: entrada.aulaId ?? '',
         dia: entrada.dia,
         bloque: entrada.bloque,
         turno: turnoDeBloque(entrada.bloque),

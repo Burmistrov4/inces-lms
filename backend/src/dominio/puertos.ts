@@ -654,16 +654,16 @@ export interface CambiosGuardia {
  */
 export interface EntradaCrearClase {
   seccionId: string;
-  docenteId: string;
-  aulaId: string;
+  docenteId?: string | null;
+  aulaId?: string | null;
   dia: number;
   bloque: number;
 }
 
 export interface CambiosClase {
   seccionId?: string;
-  docenteId?: string;
-  aulaId?: string;
+  docenteId?: string | null;
+  aulaId?: string | null;
   dia?: number;
   bloque?: number;
   activa?: boolean;

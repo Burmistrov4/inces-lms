@@ -23,6 +23,7 @@ import 'admin/cpanel_programas_panel.dart';
 import 'admin/cpanel_aulas_panel.dart';
 import 'admin/cpanel_cuadrante_panel.dart';
 import 'admin/cpanel_guardias_panel.dart';
+import 'admin/cpanel_pna_panel.dart';
 import 'admin/cpanel_lapsos_panel.dart';
 import 'admin/cpanel_inscripcion_campos_panel.dart';
 import 'admin/cpanel_inscripciones_panel.dart';
@@ -191,6 +192,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     ItemNavegacion(
       icono: Icons.calendar_month_outlined,
       titulo: 'Cuadrante de Horarios',
+      categoria: 'Control de aulas',
+      disponible: true,
+      modulo: 'm3_cuadrante',
+    ),
+    ItemNavegacion(
+      icono: Icons.school_outlined,
+      titulo: 'Horario PNA',
       categoria: 'Control de aulas',
       disponible: true,
       modulo: 'm3_cuadrante',
@@ -438,6 +446,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           return ContenidoSeccion(
             migas: const ['Inicio', 'Control de aulas', 'Cuadrante de Horarios'],
             child: CpanelCuadrantePanel(onNavegarA: _navegarA),
+          );
+        case 'Horario PNA':
+          return ContenidoSeccion(
+            migas: const ['Inicio', 'Control de aulas', 'Horario PNA'],
+            child: CpanelPnaPanel(onNavegarA: _navegarA),
           );
         case 'Espacios y Aulas':
           return ContenidoSeccion(

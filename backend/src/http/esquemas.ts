@@ -707,10 +707,10 @@ export const esquemaCrearClase = z
     }),
     docenteId: z.string().uuid({
       message: 'El docente debe referenciarse por su UUID.',
-    }),
+    }).nullable().optional(),
     aulaId: z.string().uuid({
       message: 'El espacio debe referenciarse por su UUID.',
-    }),
+    }).nullable().optional(),
     dia: diaSchema,
     bloque: bloqueSchema,
   })
@@ -719,8 +719,8 @@ export const esquemaCrearClase = z
 export const esquemaActualizarClase = z
   .object({
     seccionId: z.string().uuid().optional(),
-    docenteId: z.string().uuid().optional(),
-    aulaId: z.string().uuid().optional(),
+    docenteId: z.string().uuid().nullable().optional(),
+    aulaId: z.string().uuid().nullable().optional(),
     dia: diaSchema.optional(),
     bloque: bloqueSchema.optional(),
     activa: z.boolean().optional(),

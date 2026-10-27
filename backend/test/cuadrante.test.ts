@@ -1135,6 +1135,28 @@ describe('POST /api/v1/admin/cuadrante', () => {
     expect(cuerpo.clase.programa).toBe('Análisis de Sistemas');
   });
 
+  it('permite colocar una clase sin aula asignada (espacio opcional)', async () => {
+    const arnés = arnésConDosDocentes();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/cuadrante',
+      headers: conToken(TOKEN_ADMIN),
+      payload: {
+        seccionId: ID_SECCION_SC,
+        docenteId: ID_DOCENTE_2,
+        dia: 5,
+        bloque: 2,
+      },
+    });
+
+    expect(respuesta.statusCode).toBe(201);
+    const cuerpo = respuesta.json() as { clase: { aula: string; docente: string } };
+    expect(cuerpo.clase.aula).toBe('');
+    expect(cuerpo.clase.docente).toBe('Luisa Márquez');
+  });
+
   it('rechaza que el cliente mande el período o el turno', async () => {
     // Ninguno de los dos es una columna de `schedule_slots`: el período se
     // deriva de la sección y el turno del bloque. Aceptarlos abriría la puerta a

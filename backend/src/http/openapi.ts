@@ -691,8 +691,8 @@ const ClaseCuadrante = z
   .object({
     id: z.string().uuid(),
     seccionId: z.string().uuid(),
-    docenteId: z.string().uuid(),
-    aulaId: z.string().uuid(),
+    docenteId: z.string().uuid().nullable(),
+    aulaId: z.string().uuid().nullable(),
     dia: z.number().int(),
     bloque: z.number().int(),
     turno: z.enum(['MAÑANA', 'TARDE']).openapi({ description: NOTA_TURNO }),
@@ -874,8 +874,8 @@ const CuerpoActualizarGuardia = z
 const CuerpoCrearClase = z
   .object({
     seccionId: z.string().uuid(),
-    docenteId: z.string().uuid(),
-    aulaId: z.string().uuid(),
+    docenteId: z.string().uuid().nullable().optional(),
+    aulaId: z.string().uuid().nullable().optional(),
     dia: z.number().int(),
     bloque: z.number().int(),
   })
@@ -885,8 +885,8 @@ const CuerpoCrearClase = z
 const CuerpoActualizarClase = z
   .object({
     seccionId: z.string().uuid().optional(),
-    docenteId: z.string().uuid().optional(),
-    aulaId: z.string().uuid().optional(),
+    docenteId: z.string().uuid().nullable().optional(),
+    aulaId: z.string().uuid().nullable().optional(),
     dia: z.number().int().optional(),
     bloque: z.number().int().optional(),
     activa: z.boolean().optional(),

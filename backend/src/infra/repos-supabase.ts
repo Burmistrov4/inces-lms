@@ -504,8 +504,8 @@ function aClaseCuadrante(fila: Fila): ClaseCuadrante {
   return {
     id: textoObligatorio(fila.id),
     seccionId: textoObligatorio(fila.section_id),
-    docenteId: textoObligatorio(fila.teacher_id),
-    aulaId: textoObligatorio(fila.classroom_id),
+    docenteId: texto(fila.teacher_id),
+    aulaId: texto(fila.classroom_id),
     dia: entero(fila.day_of_week, 1),
     bloque,
     turno: turnoSeguro(fila.turno, bloque),
@@ -516,8 +516,8 @@ function aClaseCuadrante(fila: Fila): ClaseCuadrante {
     materiaId: textoObligatorio(fila.subject_id),
     materia: textoObligatorio(fila.subject_name),
     seccion: textoObligatorio(fila.section_name),
-    aula: textoObligatorio(fila.classroom_name),
-    docente: textoObligatorio(fila.teacher_name),
+    aula: texto(fila.classroom_name) ?? '',
+    docente: texto(fila.teacher_name) ?? '',
   };
 }
 
@@ -2698,8 +2698,8 @@ class CuadranteSupabase implements PuertaCuadrante {
       .from(TABLA_CUADRANTE)
       .insert({
         section_id: entrada.seccionId,
-        teacher_id: entrada.docenteId,
-        classroom_id: entrada.aulaId,
+        teacher_id: entrada.docenteId ?? null,
+        classroom_id: entrada.aulaId ?? null,
         day_of_week: entrada.dia,
         block: entrada.bloque,
       })

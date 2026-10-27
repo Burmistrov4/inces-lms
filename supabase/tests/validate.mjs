@@ -4572,6 +4572,39 @@ async function main() {
     `esperadas ${secOrigen}, encontradas ${secCopiadas}`,
   );
 
+  console.log('\n2026-10-27 · D3 y D4: Tres horarios distintos y columnas opcionales');
+  const colsSlots = (
+    await db.query(
+      "select column_name, is_nullable from information_schema.columns " +
+        "where table_schema = 'public' and table_name = 'schedule_slots' and column_name in ('classroom_id', 'teacher_id')",
+    )
+  ).rows;
+  const aulaNull = colsSlots.find((c) => c.column_name === 'classroom_id')?.is_nullable === 'YES';
+  const docenteNull = colsSlots.find((c) => c.column_name === 'teacher_id')?.is_nullable === 'YES';
+  check('classroom_id en schedule_slots es anulable (espacio opcional)', aulaNull);
+  check('teacher_id en schedule_slots es anulable (docente opcional)', docenteNull);
+
+  // Inserción de un slot con aula nula en schedule_slots
+  const seccionPrueba = (
+    await db.query("select id from public.sections where period_code = 'SA26-2' and is_active = true limit 1")
+  ).rows[0]?.id;
+  if (seccionPrueba) {
+    const slotCreado = (
+      await db.query(
+        `insert into public.schedule_slots (section_id, day_of_week, block, is_active) values ('${seccionPrueba}', 6, 12, true) returning id`,
+      )
+    ).rows[0]?.id;
+    check('se puede crear un bloque con aula y docente opcionales', typeof slotCreado === 'string');
+
+    const vistaSlot = (
+      await db.query(`select id, classroom_name, teacher_name from public.v_cuadrante_clases where id = '${slotCreado}'`)
+    ).rows[0];
+    check('la vista v_cuadrante_clases proyecta el bloque sin aula ni docente', vistaSlot?.id === slotCreado);
+
+    // Limpieza
+    await db.query(`delete from public.schedule_slots where id = '${slotCreado}'`);
+  }
+
 
   // ---------------------------------------------------------------- resumen
   console.log(

@@ -369,7 +369,7 @@ void main() {
       expect(find.byTooltip('Archivar'), findsOneWidget);
     });
 
-    testWidgets('muestra Pizarra Mural INCES con secciones MTP y PNA',
+    testWidgets('muestra Pizarra Mural INCES con sección MTP',
         (tester) async {
       sembrarCatalogo();
       gateway.guardias = const [
@@ -393,9 +393,8 @@ void main() {
       await tester.tap(find.textContaining('Pizarra Mural'));
       await tester.pumpAndSettle();
 
-      // Debe mostrar encabezados de M.T.P. y P.N.A.
+      // Debe mostrar encabezado de M.T.P.
       expect(find.textContaining('MEDIO TIEMPO PEDAGÓGICO'), findsOneWidget);
-      expect(find.textContaining('PROGRAMA NACIONAL DE APRENDIZAJE'), findsOneWidget);
 
       // Y encontrar al docente asignado en su puesto
       expect(find.text('Luis Márquez'), findsOneWidget);
