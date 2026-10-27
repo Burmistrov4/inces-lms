@@ -1817,12 +1817,12 @@ class _TarjetaCurso extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: (curso.cuposDisponibles ?? curso.cupo ?? 25) > 0
-                          ? const Color(0xFF16A34A).withValues(alpha: 0.12)
+                          ? IncesTheme.exito.withValues(alpha: 0.12)
                           : theme.colorScheme.errorContainer.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
                         color: (curso.cuposDisponibles ?? curso.cupo ?? 25) > 0
-                            ? const Color(0xFF16A34A).withValues(alpha: 0.4)
+                            ? IncesTheme.exito.withValues(alpha: 0.4)
                             : theme.colorScheme.error.withValues(alpha: 0.4),
                       ),
                     ),
@@ -1835,7 +1835,7 @@ class _TarjetaCurso extends StatelessWidget {
                               : Icons.hourglass_top_rounded,
                           size: 13,
                           color: (curso.cuposDisponibles ?? curso.cupo ?? 25) > 0
-                              ? const Color(0xFF16A34A)
+                              ? IncesTheme.exito
                               : theme.colorScheme.error,
                         ),
                         const SizedBox(width: 5),
@@ -1847,7 +1847,7 @@ class _TarjetaCurso extends StatelessWidget {
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: (curso.cuposDisponibles ?? curso.cupo ?? 25) > 0
-                                ? const Color(0xFF16A34A)
+                                ? IncesTheme.exito
                                 : theme.colorScheme.error,
                           ),
                         ),
