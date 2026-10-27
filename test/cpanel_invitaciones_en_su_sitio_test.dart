@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:inces_lms_app/core/gateways/invitacion_gateway.dart';
 import 'package:inces_lms_app/core/result.dart';
+import 'package:inces_lms_app/models/invitacion_docente.dart';
 import 'package:inces_lms_app/models/usuario_admin.dart';
+import 'package:inces_lms_app/repositories/invitacion_repository.dart';
 import 'package:inces_lms_app/repositories/usuario_admin_repository.dart';
 import 'package:inces_lms_app/screens/admin/cpanel_usuarios_roles_panel.dart';
 import 'package:inces_lms_app/theme/inces_theme.dart';
@@ -52,14 +55,26 @@ void main() {
   testWidgets(
     'el acordeón «Invitar docente» despliega el formulario sin romper el layout',
     (tester) async {
-      await montar(tester, CpanelUsuariosRolesPanel(repo: _RepoUsuariosVacio()));
+      await montar(
+        tester,
+        CpanelUsuariosRolesPanel(
+          repo: _RepoUsuariosVacio(),
+          repoInvitacion: InvitacionRepository(gateway: _GatewayInvitacionesVacio()),
+        ),
+      );
+
+      // El panel arranca con la tarjeta de acción para invitar
+      final botonInvitar = find.widgetWithText(FilledButton, 'Invitar');
+      expect(botonInvitar, findsOneWidget);
+
+      await tester.tap(botonInvitar);
+      await tester.pump();
+      await tester.pump();
 
       final acordeon = find.text('Invitar docente');
       expect(acordeon, findsOneWidget);
 
-      // **Arranca desplegado**: el formulario debe estar visible sin tocar nada.
-      // Si esto falla con «Vertical viewport was given unbounded height», es que
-      // el panel volvió a enraizarse en un desplazable bajo altura infinita.
+      // El formulario debe estar visible sin excepción de layout:
       expect(tester.takeException(), isNull);
       expect(find.text('Enviar invitación'), findsOneWidget);
 
@@ -67,9 +82,6 @@ void main() {
       await tester.ensureVisible(acordeon);
       await tester.pump();
       await tester.tap(acordeon);
-      // La expansión dura 200 ms. Se avanza en pasos fijos en vez de
-      // `pumpAndSettle`, que colgaría por el `CircularProgressIndicator` del
-      // listado de invitaciones (animación infinita).
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.text('Enviar invitación'), findsNothing);
@@ -110,4 +122,28 @@ class _RepoUsuariosVacio extends UsuariosAdminRepository {
       desplazamiento: desplazamiento,
     ),
   );
+}
+
+class _GatewayInvitacionesVacio implements InvitacionGateway {
+  @override
+  Future<InvitacionDocente> invitarDocente(String email, String nombres, String apellidos) =>
+      throw UnimplementedError();
+
+  @override
+  Future<ActivacionCuenta> activarCuenta({
+    required String token,
+    required String password,
+  }) =>
+      throw UnimplementedError();
+
+  @override
+  Future<List<InvitacionListada>> listarInvitaciones() async => const [];
+
+  @override
+  Future<void> revocarInvitacion(String id) =>
+      throw UnimplementedError();
+
+  @override
+  Future<InvitacionDocente> renovarInvitacion(String id) =>
+      throw UnimplementedError();
 }

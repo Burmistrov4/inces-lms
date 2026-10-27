@@ -417,7 +417,7 @@ void main() {
 
       expect(find.text('Actividades del Curso'), findsOneWidget);
       expect(
-        find.textContaining('1 tarea(s) evaluativa(s) · 1 material(es) de lectura'),
+        find.textContaining('1 tarea evaluativa · 1 material de lectura'),
         findsOneWidget,
       );
       expect(find.text('Anuncia algo a tu sección...'), findsOneWidget);

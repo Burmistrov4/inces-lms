@@ -49,6 +49,7 @@ class AspiranteDashboardScreen extends StatefulWidget {
     this.aulasPropias,
     this.modulos,
     this.planillaService,
+    this.seccionInicial,
   });
 
   final AspiranteRepository? repositorio;
@@ -81,6 +82,7 @@ class AspiranteDashboardScreen extends StatefulWidget {
   /// `GET /api/v1/mi-horario`: esa ruta **sí** está congelada y responde a los
   /// dos roles, así que el listado es real aunque el contenido no lo sea aún.
   final AulasPropiasGateway? aulasPropias;
+  final String? seccionInicial;
 
   @override
   State<AspiranteDashboardScreen> createState() =>
@@ -222,6 +224,12 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
   @override
   void initState() {
     super.initState();
+    if (widget.seccionInicial != null) {
+      final idx = _items.indexWhere(
+        (it) => it.titulo.toLowerCase() == widget.seccionInicial!.toLowerCase(),
+      );
+      if (idx != -1) _seleccionada = idx;
+    }
     _cargar();
   }
 
@@ -1054,15 +1062,6 @@ class _PanelOfertasState extends State<PanelOfertas> {
               'espera: se te guarda el turno y se te asigna un cupo en cuanto '
               'se libere uno. Puedes seguir el estado en «Mis inscripciones».',
           icono: Icons.route_outlined,
-          tono: TonoAviso.info,
-        ),
-        const SizedBox(height: 12),
-        const AvisoEnLinea(
-          texto:
-              'Si una sección dice «Asiento en asignación» no puedes pedirla: '
-              'el sistema está dando ese cupo a quien viene de la lista de '
-              'espera, aunque aparezcan cupos libres. Vuelve a mirar más tarde.',
-          icono: Icons.hourglass_empty_outlined,
           tono: TonoAviso.info,
         ),
         const SizedBox(height: 12),

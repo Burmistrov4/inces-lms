@@ -68,20 +68,18 @@ void main() {
       expect(find.text('No hay secciones'), findsOneWidget);
     });
 
-    testWidgets('muestra métricas y la etiqueta «Oferta en el aire»', (tester) async {
+    testWidgets('muestra métricas de ocupación', (tester) async {
       final fake = FakeInscripcionGateway()
         ..ocupacionDevuelta = [
           ocupacionSeccionEjemplo(
             id: 'sec-1',
             cuposDisponibles: 2,
             cuposOcupados: 3,
-            ofertaVigente: true,
           ),
           ocupacionSeccionEjemplo(
             id: 'sec-2',
             cuposDisponibles: 0,
             cuposOcupados: 5,
-            ofertaVigente: false,
           ),
         ];
       final repo = AdminInscripcionesRepository(gateway: fake);
@@ -89,19 +87,16 @@ void main() {
 
       // Etiquetas de las métricas presentes.
       expect(find.text('Secciones'), findsOneWidget);
-      expect(find.text('Con oferta en el aire'), findsOneWidget);
       expect(find.text('Cupos disponibles'), findsOneWidget);
       expect(find.text('Cupos ocupados'), findsOneWidget);
-      // La etiqueta destacada sólo sale para la sección con oferta vigente.
-      expect(find.text('Oferta en el aire'), findsOneWidget);
     });
 
     testWidgets('«Promover siguiente» delega la sección al repositorio (éxito)',
         (tester) async {
       final fake = FakeInscripcionGateway()
         ..ocupacionDevuelta = [
-          ocupacionSeccionEjemplo(id: 'sec-1', ofertaVigente: false),
-          ocupacionSeccionEjemplo(id: 'sec-2', ofertaVigente: false),
+          ocupacionSeccionEjemplo(id: 'sec-1'),
+          ocupacionSeccionEjemplo(id: 'sec-2'),
         ];
       final repo = AdminInscripcionesRepository(gateway: fake);
       await montarPanel(tester, CpanelInscripcionesPanel(repositorio: repo));
@@ -131,21 +126,6 @@ void main() {
       // La llamada se hizo igual (el gateway registra antes de lanzar).
       expect(fake.llamadas, contains('promoverSiguiente:sec-1'));
       await cerrarAvisos(tester);
-    });
-
-    testWidgets('«Expirar ofertas» delega al repositorio', (tester) async {
-      final fake = FakeInscripcionGateway()
-        ..ocupacionDevuelta = [ocupacionSeccionEjemplo(id: 'sec-1')];
-      final repo = AdminInscripcionesRepository(gateway: fake);
-      await montarPanel(tester, CpanelInscripcionesPanel(repositorio: repo));
-
-      await tester.tap(
-        botonOutlined('Expirar ofertas'),
-      );
-      await tester.pump();
-      await cerrarAvisos(tester);
-
-      expect(fake.llamadas, contains('expirarOfertas'));
     });
 
     testWidgets('«Reincorporar» ofrece las bajas de ESA sección y llama al repo',
@@ -354,7 +334,7 @@ void main() {
       expect(csv, contains('ALUMNA1 DEL'));
 
       expect(
-        find.textContaining('Nómina exportada: 1 matriculado(s)'),
+        find.textContaining('Nómina exportada: 1 matriculado'),
         findsOneWidget,
       );
       await cerrarAvisos(tester);

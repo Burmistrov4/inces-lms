@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import 'package:inces_lms_app/core/cache_lecturas.dart';
 import 'package:inces_lms_app/core/errors/app_exception.dart';
 import 'package:inces_lms_app/core/gateways/aula_gateway.dart';
 import 'package:inces_lms_app/core/network/api_client.dart';
@@ -302,6 +303,10 @@ BackendFalso conHorario(Map<String, dynamic> horario) =>
     BackendFalso({'GET $rutaMiHorario': json(horario)});
 
 void main() {
+  setUp(() {
+    cacheDeLecturas.invalidarTodo();
+  });
+
   group('misAulas · reducción de /mi-horario', () {
     test('una sección con varias franjas es un solo aula', () async {
       // Un horario real: la misma sección el lunes a primera y el miércoles a
@@ -379,6 +384,7 @@ void main() {
     test('el rol del payload decide esDocente', () async {
       final docente = await gatewayDe(conHorario(horarioJson(rol: 'docente')))
           .misAulas();
+      cacheDeLecturas.invalidarTodo();
       final estudiante =
           await gatewayDe(conHorario(horarioJson(rol: 'estudiante'))).misAulas();
 

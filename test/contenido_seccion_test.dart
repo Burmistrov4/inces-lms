@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:inces_lms_app/core/cache_lecturas.dart';
 import 'package:inces_lms_app/core/gateways/auditoria_acceso_gateway.dart';
 import 'package:inces_lms_app/core/gateways/invitacion_gateway.dart';
 import 'package:inces_lms_app/models/entrada_acceso.dart';
@@ -35,6 +36,10 @@ import 'support/fake_gateway.dart';
 /// un `Scaffold`, que no es como se monta de verdad. La lección está en el
 /// segundo grupo: **el layout se prueba montando el panel donde vive**.
 void main() {
+  setUp(() {
+    cacheDeLecturas.invalidarTodo();
+  });
+
   /// Rótulo tal y como queda en pantalla.
   ///
   /// `TituloSeccion` pinta `texto.toUpperCase()` (`widgets/comunes.dart`), así
@@ -144,9 +149,9 @@ void main() {
       final fake = FakeGateway()
         ..listaSettings = [
           const SystemSetting(
-            clave: 'inscripciones_abiertas',
-            valor: true,
-            tipo: 'boolean',
+            clave: 'cupo_maximo_por_seccion',
+            valor: 30,
+            tipo: 'number',
             categoria: 'academico',
           ),
         ];

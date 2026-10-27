@@ -326,16 +326,17 @@ class _AndamiajeAppState extends State<AndamiajeApp> {
           ),
         ],
       ),
-      bottomNavigationBar: usaBarraInferior && destinoBarra.isNotEmpty
-          ? _BarraInferiorNavegacion(
-              destinos: destinoBarra,
-              hayMas: hayMas,
-              seleccionado: widget.seleccionado,
-              items: disponibles,
-              onSeleccionar: widget.onSeleccionar,
-              onAbrirCajon: () => _scaffoldKey.currentState?.openDrawer(),
-            )
-          : null,
+      bottomNavigationBar:
+          usaBarraInferior && (destinoBarra.length + (hayMas ? 1 : 0) >= 2)
+              ? _BarraInferiorNavegacion(
+                  destinos: destinoBarra,
+                  hayMas: hayMas,
+                  seleccionado: widget.seleccionado,
+                  items: disponibles,
+                  onSeleccionar: widget.onSeleccionar,
+                  onAbrirCajon: () => _scaffoldKey.currentState?.openDrawer(),
+                )
+              : null,
     );
   }
 }

@@ -663,7 +663,7 @@ void main() {
         sinDesbordes(error, 'AndamiajeApp', ancho);
 
         final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
-        if (ancho < 900) {
+        if (ancho < 1200) {
           expect(scaffold.drawer, isNotNull,
               reason: 'A $ancho px debe proveer Drawer lateral');
         } else {

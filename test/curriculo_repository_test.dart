@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:inces_lms_app/core/cache_lecturas.dart';
 import 'package:inces_lms_app/core/errors/app_exception.dart';
 import 'package:inces_lms_app/core/gateways/curriculo_gateway.dart';
 import 'package:inces_lms_app/models/pensum.dart';
@@ -13,6 +14,7 @@ void main() {
   late CurriculoRepository repo;
 
   setUp(() {
+    cacheDeLecturas.invalidarTodo();
     gateway = FakeCurriculoGateway();
     repo = CurriculoRepository(gateway: gateway);
   });

@@ -125,7 +125,7 @@ void main() {
         ),
       );
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(EsqueletoLista), findsOneWidget);
     });
 
     testWidgets('agrupa los módulos por categoría', (tester) async {
@@ -352,8 +352,8 @@ void main() {
       final fake = FakeGateway()
         ..listaSettings = [
           const SystemSetting(
-            clave: 'max_faltas_consecutivas',
-            valor: 3,
+            clave: 'cupo_maximo_por_seccion',
+            valor: 30,
             tipo: 'number',
           ),
         ];
@@ -368,7 +368,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(fake.llamadas, contains('actualizarSetting:max_faltas_consecutivas'));
+      expect(fake.llamadas, contains('actualizarSetting:cupo_maximo_por_seccion'));
       expect(fake.listaSettings.first.valor, 2.5);
 
       await cerrarAvisos(tester);
@@ -378,8 +378,8 @@ void main() {
       final fake = FakeGateway()
         ..listaSettings = [
           const SystemSetting(
-            clave: 'max_faltas_consecutivas',
-            valor: 3,
+            clave: 'cupo_maximo_por_seccion',
+            valor: 30,
             tipo: 'number',
           ),
         ];
@@ -395,7 +395,7 @@ void main() {
 
       expect(find.textContaining('Escribe un número'), findsOneWidget);
       // Falla rápido en local: no se gasta una petición para algo que ya se sabe.
-      expect(fake.llamadas, isNot(contains('actualizarSetting:max_faltas_consecutivas')));
+      expect(fake.llamadas, isNot(contains('actualizarSetting:cupo_maximo_por_seccion')));
     });
   });
 

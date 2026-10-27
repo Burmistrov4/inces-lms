@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/recuperacion_password.dart';
 import '../../models/usuario_admin.dart';
 import '../../repositories/recuperacion_repository.dart';
+import '../../repositories/invitacion_repository.dart';
 import '../../repositories/usuario_admin_repository.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
@@ -18,10 +19,12 @@ class CpanelUsuariosRolesPanel extends StatefulWidget {
     super.key,
     this.repo,
     this.repoRecuperacion,
+    this.repoInvitacion,
   });
 
   final UsuariosAdminRepository? repo;
   final RecuperacionRepository? repoRecuperacion;
+  final InvitacionRepository? repoInvitacion;
 
   @override
   State<CpanelUsuariosRolesPanel> createState() =>
@@ -366,7 +369,7 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel>
             // desbordaba 5 px. El propio barrido responsive lo cazó.
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
-              child: CpanelInvitacionesPanel(),
+              child: CpanelInvitacionesPanel(repositorio: widget.repoInvitacion),
             ),
           ],
         ),

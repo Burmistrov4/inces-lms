@@ -8,6 +8,7 @@ import 'package:inces_lms_app/repositories/cuadrante_repository.dart';
 import 'package:inces_lms_app/screens/admin/cpanel_guardias_panel.dart';
 import 'package:inces_lms_app/theme/inces_theme.dart';
 import 'package:inces_lms_app/widgets/andamiaje.dart';
+import 'package:inces_lms_app/widgets/cuadrante_grid.dart';
 
 import 'support/fake_cuadrante_gateway.dart';
 
@@ -400,7 +401,7 @@ void main() {
       expect(find.text('Luis Márquez'), findsOneWidget);
     });
 
-    testWidgets('permite alternar entre semana laboral de 5 días y 6 días (+Sábado)',
+    testWidgets('permite filtrar por día con el SelectorDeDias',
         (tester) async {
       sembrarCatalogo();
       gateway.guardias = const [];
@@ -408,18 +409,17 @@ void main() {
 
       await montar(tester, CpanelGuardiasPanel(repositorio: repo));
 
-      // Por defecto muestra Lun - Vie (5 días laborales)
-      expect(find.text('Lun - Vie (Laboral)'), findsOneWidget);
-      expect(find.text('Viernes'), findsOneWidget);
-      // Sábado no debe estar visible en la vista de 5 días
-      expect(find.text('Sábado'), findsNothing);
+      // El SelectorDeDias permite enfocar la semana completa o días específicos
+      expect(find.byType(SelectorDeDias), findsOneWidget);
+      expect(find.text('Todo'), findsOneWidget);
+      expect(find.text('Lun'), findsOneWidget);
+      expect(find.text('Sáb'), findsOneWidget);
 
-      // Alternar a Lun - Sáb (+Sábado)
-      await tester.tap(find.text('Lun - Sáb (+Sábado)'));
+      // Alternar a viernes
+      await tester.tap(find.text('Vie'));
       await tester.pumpAndSettle();
 
-      // Ahora sí se debe encontrar Sábado
-      expect(find.text('Sábado'), findsOneWidget);
+      expect(find.text('Viernes'), findsWidgets);
     });
   });
 }

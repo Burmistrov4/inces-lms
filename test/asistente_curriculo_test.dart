@@ -382,7 +382,7 @@ void main() {
       );
 
       expect(find.textContaining('no se puede modificar'), findsOneWidget);
-      expect(find.textContaining('3 sección(es)'), findsOneWidget);
+      expect(find.textContaining('3 secciones activas'), findsOneWidget);
 
       // El candado vive en el pie, junto a donde iría el botón de guardar, y el
       // pie sólo lo enseña en el último paso. Se avanza para comprobarlo: el

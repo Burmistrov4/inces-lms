@@ -118,7 +118,7 @@ void main() {
       await asentar(tester);
 
       expect(find.text('¡Estás al día!'), findsOneWidget);
-      expect(find.text('No tienes tareas asignadas pendientes por entregar.'), findsOneWidget);
+      expect(find.textContaining('No tienes tareas pendientes por entregar'), findsOneWidget);
     });
 
     testWidgets('clasifica tareas en Asignadas, Vencidas y Calificadas',
@@ -157,7 +157,7 @@ void main() {
       expect(find.text('Seguridad en Oxicorte'), findsNothing);
     });
 
-    testWidgets('pulsar «Abrir en Aula» llama a onNavegarA con «Mis aulas»',
+    testWidgets('pulsar «Ir al aula» llama a onNavegarA con «Mis aulas»',
         (tester) async {
       String? destinoNavegado;
       final fake = FakeAulaGateway()
@@ -174,7 +174,7 @@ void main() {
       );
       await asentar(tester);
 
-      final botonAbrir = find.text('Abrir en Aula');
+      final botonAbrir = find.text('Ir al aula');
       expect(botonAbrir, findsOneWidget);
 
       await tester.tap(botonAbrir);

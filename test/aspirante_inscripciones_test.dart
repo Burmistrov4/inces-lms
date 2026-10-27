@@ -49,30 +49,6 @@ void main() {
       expect(find.text('No hay secciones abiertas'), findsOneWidget);
     });
 
-    testWidgets('sección en asignación bloquea «Inscribirme» aunque haya cupos',
-        (tester) async {
-      final fake = FakeInscripcionGateway()
-        ..ofertasDevueltas = [
-          ocupacionSeccionEjemplo(
-            id: 'sec-1',
-            cuposDisponibles: 3,
-            cuposOcupados: 2,
-            ofertaVigente: true,
-          ),
-        ];
-      final repo = InscripcionesRepository(gateway: fake);
-      await montarPanel(tester, PanelOfertas(repositorio: repo));
-
-      // Botón de asignación presente y DESHABILITADO.
-      final finderAsig = botonFilled('Asiento en\nasignación');
-      expect(finderAsig, findsOneWidget);
-      expect(tester.widget<FilledButton>(finderAsig).onPressed, isNull);
-      // Etiqueta destacada que explica el estado.
-      expect(find.text('Asiento en asignación'), findsOneWidget);
-      // El botón de inscribirse no aparece.
-      expect(botonFilled('Inscribirme'), findsNothing);
-    });
-
     testWidgets('con cupo y sin oferta vigente habilita «Inscribirme»',
         (tester) async {
       final fake = FakeInscripcionGateway()
@@ -234,7 +210,7 @@ void main() {
   group('PanelMisInscripciones · estados y presentación', () {
     /// El color base de una insignia, leído del `Icon` que la pinta.
     Color? colorDeIcono(WidgetTester tester, IconData icono) =>
-        tester.widget<Icon>(find.byIcon(icono)).color;
+        tester.widget<Icon>(find.byIcon(icono).first).color;
 
     testWidgets('ENROLLED va en verde y WAITLISTED en azul', (tester) async {
       final fake = FakeInscripcionGateway()

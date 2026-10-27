@@ -71,6 +71,7 @@ void main() {
           modulos: ModuloRepository(gateway: fake),
           auth: AuthService(gateway: fake),
           planillaService: planillaService,
+          seccionInicial: 'Mi inscripción',
         ),
       ),
     );
