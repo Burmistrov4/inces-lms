@@ -308,7 +308,7 @@ class EstudianteResumenPanel extends StatelessWidget {
         tono: TonoEstado.exito,
       ),
       const TarjetaMetrica(
-        etiqueta: 'Campus Virtual',
+        etiqueta: 'Aula Virtual',
         valor: 'Activo',
         icono: Icons.devices_rounded,
         tono: TonoEstado.info,

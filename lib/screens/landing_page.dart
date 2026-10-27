@@ -1201,6 +1201,18 @@ class _LandingPageState extends State<LandingPage> {
 
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(IncesTheme.radioTarjeta),
+            child: Image.asset(
+              'assets/images/inces_lms_logo.png',
+              width: double.infinity,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
+        ),
         for (final d in datos) ...[
           Container(
             padding: const EdgeInsets.all(16),
@@ -1588,21 +1600,14 @@ class _LandingPageState extends State<LandingPage> {
       children: [
         Row(
           children: [
-            Container(
-              width: 32,
-              height: 32,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Text(
-                'I',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.asset(
+                'assets/images/icono_app.png',
+                width: 32,
+                height: 32,
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.high,
               ),
             ),
             const SizedBox(width: 10),
