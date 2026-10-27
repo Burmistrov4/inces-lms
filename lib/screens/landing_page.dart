@@ -1494,7 +1494,10 @@ class _LandingPageState extends State<LandingPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
                   children: [
                     Text(
                       'Período Académico: $nombre',
@@ -1503,7 +1506,6 @@ class _LandingPageState extends State<LandingPage> {
                         color: theme.colorScheme.primary,
                       ),
                     ),
-                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
@@ -2121,7 +2123,9 @@ class _TarjetaCursoState extends State<_TarjetaCurso> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (curso.codigo != null || esPna) ...[
-                  Row(
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
                     children: [
                       if (curso.codigo != null)
                         Container(
@@ -2139,8 +2143,7 @@ class _TarjetaCursoState extends State<_TarjetaCurso> {
                             ),
                           ),
                         ),
-                      if (esPna) ...[
-                        const SizedBox(width: 6),
+                      if (esPna)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
@@ -2156,7 +2159,6 @@ class _TarjetaCursoState extends State<_TarjetaCurso> {
                             ),
                           ),
                         ),
-                      ],
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -2219,28 +2221,26 @@ class _TarjetaCursoState extends State<_TarjetaCurso> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    if (onVerDetalle != null) ...[
+                    if (onVerDetalle != null)
                       OutlinedButton.icon(
                         onPressed: onVerDetalle,
-                        icon: const Icon(Icons.info_outline_rounded, size: 15),
+                        icon: const Icon(Icons.info_outline_rounded, size: 14),
                         label: const Text('Detalles'),
                         style: OutlinedButton.styleFrom(
                           visualDensity: VisualDensity.compact,
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                    ],
-                    Expanded(
-                      child: FilledButton.tonalIcon(
-                        onPressed: onInscribir,
-                        icon: const Icon(Icons.how_to_reg_rounded, size: 16),
-                        label: const Text('Inscribirme'),
-                        style: FilledButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                        ),
+                    FilledButton.tonalIcon(
+                      onPressed: onInscribir,
+                      icon: const Icon(Icons.how_to_reg_rounded, size: 14),
+                      label: const Text('Inscribirme'),
+                      style: FilledButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
                       ),
                     ),
                   ],
