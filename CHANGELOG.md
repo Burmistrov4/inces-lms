@@ -11,7 +11,7 @@ Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en
 - **Backend:** `Programa`/`EntradaCrearPrograma`/`CambiosPrograma` con las 3 fechas; columnas en `COLUMNAS_PROGRAMA*`; escritura en crear (post-RPC) y actualizar; esquemas Zod (`fechaIsoSchema`, refine de coherencia cierre ≥ apertura). 721 tests backend en verde.
 - **Flutter:** modelo `Programa`/`ProgramaConTotales`/`OpcionCampo` con las fechas; catálogo del aspirante las lee (con select de respaldo); **asistente de creación** gana tarjeta «Cupos e inscripciones» (cupo + 3 selectores de fecha, en columna en móvil, aviso de incoherencia en vivo) y la revisión muestra cupos y fechas; **diálogo de edición** permite cambiarlas; tarjeta del listado muestra chips «Inscripciones hasta d/m» y «Nueva apertura: d/m»; **landing** muestra la ventana («Inscripciones: del X al Y», «abiertas hasta…») y la nueva apertura. 1057 tests Flutter en verde.
 
-**Pendiente del Lote 3:** aplicar la migración a producción (autorización + `node supabase/apply-migrations.mjs`) y verificar `verificar-esquema.mjs`.
+**Aplicado a producción (2026-10-28, con autorización del propietario):** producción estaba 8 migraciones atrás (todo el Rediseño 1.5 D1–D10 + la ventana de inscripciones). `apply-migrations.mjs` las aplicó: 61 versiones, 0 deriva; columnas verificadas en vivo contra `programs`. `verificar-esquema.mjs` reporta 5 comprobaciones desactualizadas respecto al Rediseño (bids eliminado → setting ausente, mapa de módulos, 6 cursos reales sembrados, límite de archivos 30, tablas heredadas residuales) — deriva conocida del verificador, no regresiones.
 
 ## [1.5.3] - 2026-10-28
 ### Lote 4 — Nomenclatura de Guardias
