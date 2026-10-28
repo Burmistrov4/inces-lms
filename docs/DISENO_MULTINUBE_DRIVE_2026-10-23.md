@@ -1,7 +1,7 @@
 # DISEÑO — Multi-nube con Google Drive (F1 → F2 → F3)
 
 > **Para qué existe.** Lorenzo me pidió seguir mejorando la app «acorde a los
-> planes». La Fase D del plan (`docs/PLAN_DE_TRABAJO_2026-10-23.md`) es la única
+> planes». La Fase D del plan (`docs/historial/reportes/PLAN_DE_TRABAJO_2026-10-23.md`) es la única
 > que queda, y su primer paso es **documento de diseño y decisión de Lorenzo**
 > antes de escribir código. Este documento es ese paso: estado medido, opciones
 > con consecuencias y una recomendación. **Nada de esto está implementado.**

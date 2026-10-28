@@ -54,6 +54,12 @@
 `docs/historial/` conserva **todo** lo que se movio el 2026-10-22. Nada se
 borro: la regla del proyecto es trazabilidad hacia atras.
 
+`docs/historial/reportes/` conserva los informes fechados de octubre 2026 que
+estaban sueltos en `docs/` (movidos 2026-10-28): análisis de video (1–3 y
+consolidado), auditoría independiente del 2026-10-25, decisión de carpetas,
+guía de indexación en Google, plan de trabajo del 2026-10-23 y propuesta de
+«próxima inscripción». Ya están aplicados o registrados; citarlos como historia.
+
 | Carpeta | Contenido |
 |---|---|
 | `historial/planes/` | Planes maestros, roadmaps y TODOs superados (8). |

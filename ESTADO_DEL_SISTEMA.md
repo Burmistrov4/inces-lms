@@ -39,7 +39,7 @@ de Lorenzo escritas en `docs/DISENO_MULTINUBE_DRIVE_2026-10-23.md`: opción B si
 OAuth, cuenta del usuario sin que el sistema la toque, enlace muerto se avisa, sin
 visores propios.
 
-**Auditoría independiente del 2026-10-25** (`docs/AUDITORIA_INDEPENDIENTE_2026-10-25.md`):
+**Auditoría independiente del 2026-10-25** (`docs/historial/reportes/AUDITORIA_INDEPENDIENTE_2026-10-25.md`):
 tres fallos de seguridad cerrados (JWT por query acotado al WebSocket, correo fuera
 de la respuesta de recuperación, comodines LIKE escapados) y cuatro de deuda. Siete
 hallazgos quedan **sin corregir a propósito**, con la razón escrita.
