@@ -6,6 +6,8 @@ import 'package:inces_lms_app/models/programa.dart';
 import 'package:inces_lms_app/repositories/cuadrante_repository.dart';
 import 'package:inces_lms_app/repositories/curriculo_repository.dart';
 import 'package:inces_lms_app/screens/admin/cpanel_cuadrante_panel.dart';
+import 'package:inces_lms_app/screens/admin/cpanel_guardias_panel.dart';
+import 'package:inces_lms_app/screens/admin/cpanel_pna_panel.dart';
 import 'package:inces_lms_app/screens/admin/cpanel_programas_panel.dart';
 import 'package:inces_lms_app/theme/inces_theme.dart';
 import 'package:inces_lms_app/widgets/andamiaje.dart';
@@ -25,16 +27,13 @@ void main() {
 
   Future<void> sinExcepcionesDeLayout(WidgetTester tester, String etapa) async {
     final e = tester.takeException();
-    expect(
-      e,
-      isNull,
-      reason: 'Excepción de layout en «$etapa»: $e',
-    );
+    expect(e, isNull, reason: 'Excepción de layout en «$etapa»: $e');
   }
 
   group('Cursos y PNA', () {
-    testWidgets('la lista desliza a 360×740 dentro de ContenidoSeccion',
-        (tester) async {
+    testWidgets('la lista desliza a 360×740 dentro de ContenidoSeccion', (
+      tester,
+    ) async {
       tester.view.physicalSize = ventanaRedmi10C;
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -80,10 +79,11 @@ void main() {
       // Arrastra hacia arriba de forma repetida (como haría un dedo): el
       // contenido debe desplazarse hasta que el último programa entre en
       // pantalla.
-      for (var i = 0;
-          i < 10 &&
-              find.text('Programa de Prueba Número 7').evaluate().isEmpty;
-          i++) {
+      for (
+        var i = 0;
+        i < 10 && find.text('Programa de Prueba Número 7').evaluate().isEmpty;
+        i++
+      ) {
         await tester.drag(find.byType(ListView).first, const Offset(0, -400));
         await tester.pumpAndSettle();
       }
@@ -92,7 +92,8 @@ void main() {
       expect(
         find.text('Programa de Prueba Número 7'),
         findsOneWidget,
-        reason: 'Tras arrastrar el último programa debe ser visible; '
+        reason:
+            'Tras arrastrar el último programa debe ser visible; '
             'si no, la lista no desliza (el bug reportado en el Redmi 10C).',
       );
     });
@@ -108,23 +109,23 @@ void main() {
     });
 
     ClaseCuadrante claseEn(int dia, int bloque) => ClaseCuadrante(
-          id: 'c-$dia-$bloque',
-          seccionId: 's1',
-          docenteId: 'd1',
-          aulaId: 'a1',
-          dia: dia,
-          bloque: bloque,
-          turno: bloque <= 6 ? Turno.manana : Turno.tarde,
-          activa: true,
-          periodo: 'SA26-2',
-          programaId: 'prog1',
-          programa: 'Soldadura',
-          materiaId: 'm1',
-          materia: 'Soldadura por Arco',
-          seccion: 'SC-01',
-          aula: 'Taller A',
-          docente: 'Luis Márquez',
-        );
+      id: 'c-$dia-$bloque',
+      seccionId: 's1',
+      docenteId: 'd1',
+      aulaId: 'a1',
+      dia: dia,
+      bloque: bloque,
+      turno: bloque <= 6 ? Turno.manana : Turno.tarde,
+      activa: true,
+      periodo: 'SA26-2',
+      programaId: 'prog1',
+      programa: 'Soldadura',
+      materiaId: 'm1',
+      materia: 'Soldadura por Arco',
+      seccion: 'SC-01',
+      aula: 'Taller A',
+      docente: 'Luis Márquez',
+    );
 
     testWidgets('la rejilla desliza verticalmente a 360×740', (tester) async {
       tester.view.physicalSize = ventanaRedmi10C;
@@ -197,9 +198,233 @@ void main() {
       expect(
         despues,
         lessThan(antes - 100),
-        reason: 'La rejilla debe desplazarse verticalmente con el dedo; '
+        reason:
+            'La rejilla debe desplazarse verticalmente con el dedo; '
             'si su contenido no se mueve, el «no desliza» del Redmi 10C '
             'está reproducido aquí.',
+      );
+    });
+  });
+
+  group('Horario PNA', () {
+    late FakeCuadranteGateway gateway;
+    late CuadranteRepository repo;
+
+    setUp(() {
+      gateway = FakeCuadranteGateway();
+      repo = CuadranteRepository(gateway: gateway);
+    });
+
+    ClaseCuadrante clasePnaEn(int dia, int bloque) => ClaseCuadrante(
+      id: 'c-pna-$dia-$bloque',
+      seccionId: 'sec-pna',
+      docenteId: 'd1',
+      aulaId: 'a1',
+      dia: dia,
+      bloque: bloque,
+      turno: bloque <= 6 ? Turno.manana : Turno.tarde,
+      activa: true,
+      periodo: '2026-1',
+      programaId: 'cur-int-01',
+      programa: 'PNA - Formación Dual',
+      materiaId: 'mat-1',
+      materia: 'Seguridad Industrial PNA',
+      seccion: 'PNA-01',
+      aula: 'Taller de Soldadura Cabina A',
+      docente: 'Carlos Facilitador',
+    );
+
+    testWidgets('la rejilla PNA desliza verticalmente a 360×740', (
+      tester,
+    ) async {
+      tester.view.physicalSize = ventanaRedmi10C;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      gateway.periodos = [
+        const Periodo(id: 'p1', codigo: '2026-1', activo: true, vigente: true),
+      ];
+      gateway.rejillaDevuelta = RejillaCuadrante(
+        periodo: '2026-1',
+        aulas: const [
+          Aula(
+            id: 'a1',
+            nombre: 'Taller de Soldadura Cabina A',
+            capacidad: 15,
+            esTaller: true,
+            activa: true,
+          ),
+        ],
+        docentes: const [
+          DocenteResumen(id: 'd1', nombre: 'Carlos Facilitador'),
+        ],
+        clases: [
+          for (var dia = 1; dia <= 6; dia++) ...[
+            clasePnaEn(dia, 1),
+            clasePnaEn(dia, 12),
+          ],
+        ],
+        guardias: const [],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: IncesTheme.claro(),
+          home: Scaffold(
+            body: SafeArea(
+              child: ContenidoSeccion(
+                migas: const ['Inicio', 'Control de aulas', 'Horario PNA'],
+                child: CpanelPnaPanel(repositorio: repo),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await sinExcepcionesDeLayout(tester, 'carga');
+
+      expect(find.byType(CuadranteGrid), findsOneWidget);
+
+      final rejilla = find.byType(CuadranteGrid);
+      final centro = tester.getCenter(rejilla);
+      final chipTarde = find.text('Seguridad Industrial PNA').last;
+      final antes = tester.getRect(chipTarde).top;
+
+      for (var i = 0; i < 6; i++) {
+        await tester.dragFrom(centro, const Offset(0, -350));
+        await tester.pumpAndSettle();
+        if (tester.getRect(chipTarde).top < antes - 150) break;
+      }
+      await sinExcepcionesDeLayout(tester, 'arrastre vertical');
+
+      final despues = tester.getRect(chipTarde).top;
+      expect(
+        despues,
+        lessThan(antes - 100),
+        reason: 'La rejilla PNA debe desplazarse verticalmente con el dedo.',
+      );
+    });
+  });
+
+  group('Guardias Docentes (matriz semanal)', () {
+    late FakeCuadranteGateway gateway;
+    late CuadranteRepository repo;
+
+    setUp(() {
+      gateway = FakeCuadranteGateway();
+      repo = CuadranteRepository(gateway: gateway);
+    });
+
+    testWidgets('la matriz de guardias desliza verticalmente a 360×740', (
+      tester,
+    ) async {
+      tester.view.physicalSize = ventanaRedmi10C;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      gateway.periodos = [
+        const Periodo(id: 'p1', codigo: 'SA26-2', activo: true, vigente: true),
+      ];
+      gateway.rejillaDevuelta = const RejillaCuadrante(
+        periodo: 'SA26-2',
+        aulas: [
+          Aula(
+            id: 'a1',
+            nombre: 'Taller A',
+            capacidad: 12,
+            esTaller: true,
+            activa: true,
+          ),
+        ],
+        docentes: [DocenteResumen(id: 'd1', nombre: 'Luis Márquez')],
+      );
+      gateway.guardias = const [
+        Guardia(
+          id: 'g1',
+          docenteId: 'd1',
+          aulaId: 'a1',
+          periodo: 'SA26-2',
+          dia: 1,
+          bloque: 1,
+          turno: Turno.manana,
+          activa: true,
+        ),
+        Guardia(
+          id: 'g2',
+          docenteId: 'd1',
+          aulaId: 'a1',
+          periodo: 'SA26-2',
+          dia: 6,
+          bloque: 12,
+          turno: Turno.tarde,
+          activa: true,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: IncesTheme.claro(),
+          home: Scaffold(
+            body: SafeArea(
+              child: ContenidoSeccion(
+                migas: const [
+                  'Inicio',
+                  'Control de aulas',
+                  'Guardias Docentes',
+                ],
+                child: CpanelGuardiasPanel(repositorio: repo),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 1) El contenido de la matriz (dentro de su scroll vertical propio)
+      //    debe desplazarse al arrastrar sobre ella.
+      // Punto visible sobre la matriz: la matriz arranca bajo la cabecera,
+      // así que su centro absoluto puede quedar fuera del viewport.
+      const centro = Offset(180, 500);
+      final chipTarde = find.text('Luis Márquez').last;
+      final antesChip = tester.getRect(chipTarde).top;
+      for (var i = 0; i < 8; i++) {
+        await tester.dragFrom(centro, const Offset(0, -350));
+        await tester.pumpAndSettle();
+        if (tester.getRect(chipTarde).top < antesChip - 150) break;
+      }
+      await sinExcepcionesDeLayout(tester, 'arrastre de la matriz');
+      expect(
+        tester.getRect(chipTarde).top,
+        lessThan(antesChip - 100),
+        reason:
+            'La matriz de guardias debe desplazar su contenido verticalmente.',
+      );
+
+      // 2) En móvil el panel completo también desliza: arrastrando desde la
+      //    zona de filtros, la cabecera sale de pantalla. Se vuelve arriba
+      //    primero (el paso 1 pudo dejar el panel al tope del scroll).
+      final titulo = find.text('GUARDIAS DOCENTES (HORARIO MTP)');
+      expect(titulo, findsOneWidget);
+      for (var i = 0; i < 4; i++) {
+        await tester.dragFrom(const Offset(180, 400), const Offset(0, 800));
+        await tester.pumpAndSettle();
+        if (tester.getRect(titulo).top >= 0) break;
+      }
+      final antesTitulo = tester.getRect(titulo).top;
+      final centroFiltros = Offset(
+        tester.getCenter(titulo).dx,
+        tester.getCenter(titulo).dy + 120,
+      );
+      for (var i = 0; i < 6; i++) {
+        await tester.dragFrom(centroFiltros, const Offset(0, -350));
+        await tester.pumpAndSettle();
+        if (tester.getRect(titulo).top < antesTitulo - 100) break;
+      }
+      await sinExcepcionesDeLayout(tester, 'arrastre del panel');
+      expect(
+        tester.getRect(find.text('GUARDIAS DOCENTES (HORARIO MTP)')).top,
+        lessThan(antesTitulo - 100),
+        reason: 'El panel de guardias debe desplazarse verticalmente en móvil.',
       );
     });
   });

@@ -20,11 +20,7 @@ import '../../widgets/guia_contextual_modulo.dart';
 /// - **Docente** es OBLIGATORIO.
 /// - **Espacio/Aula** es OPCIONAL (se puede cursar en aula fija, taller rotativo o aula compartida).
 class CpanelPnaPanel extends StatefulWidget {
-  const CpanelPnaPanel({
-    super.key,
-    this.repositorio,
-    this.onNavegarA,
-  });
+  const CpanelPnaPanel({super.key, this.repositorio, this.onNavegarA});
 
   final CuadranteRepository? repositorio;
   final void Function(String)? onNavegarA;
@@ -132,13 +128,17 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
         }
       }
 
-      final resSec = await _seccionesRepo.listarSecciones(soloActivas: true, limite: 150);
+      final resSec = await _seccionesRepo.listarSecciones(
+        soloActivas: true,
+        limite: 150,
+      );
       if (resSec.isSuccess) {
         final mapa = <String, String>{};
         for (final s in resSec.valueOrNull!.secciones) {
           if (_lapso != null && s.periodo != _lapso) continue;
           final progNombre = progMap[s.programaId] ?? s.programaId;
-          final esPna = esProgramaPNA(progNombre) ||
+          final esPna =
+              esProgramaPNA(progNombre) ||
               s.programaId.toLowerCase().contains('cur-int-01') ||
               s.programaId.toLowerCase().contains('pna');
           if (esPna) {
@@ -155,10 +155,12 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
   }
 
   List<ClaseCuadrante> get _clasesPna => _clases
-      .where((c) =>
-          esProgramaPNA(c.programa) ||
-          esProgramaPNA(c.materia) ||
-          c.programaId.toLowerCase().contains('cur-int-01'))
+      .where(
+        (c) =>
+            esProgramaPNA(c.programa) ||
+            esProgramaPNA(c.materia) ||
+            c.programaId.toLowerCase().contains('cur-int-01'),
+      )
       .toList();
 
   Map<String, String> get _seccionesPnaDisponibles {
@@ -251,8 +253,7 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
             PasoGuiaContextual(
               numero: 3,
               titulo: 'Espacio físico opcional',
-              descripcion:
-                  'El aula o taller es opcional según la rotación de prácticas en CFS La Isabelica.',
+              descripcion: 'El aula o taller es opcional según la rotación de prácticas en CFS La Isabelica.',
             ),
           ],
         ),
@@ -307,10 +308,7 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
     return SizedBox(
       width: 200,
       child: InputDecorator(
-        decoration: const InputDecoration(
-          labelText: 'Período',
-          isDense: true,
-        ),
+        decoration: const InputDecoration(labelText: 'Período', isDense: true),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             isExpanded: true,
@@ -341,7 +339,8 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: AvisoEnLinea(
-        texto: 'Ningún período está marcado como vigente. Se muestra '
+        texto:
+            'Ningún período está marcado como vigente. Se muestra '
             '«$_lapso»; márcalo vigente en «Período» para fijar el horario del centro.',
         icono: Icons.flag_outlined,
         tono: TonoAviso.advertencia,
@@ -353,7 +352,8 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
     if (_periodos.isEmpty) {
       return const PanelVacio(
         titulo: 'Todavía no hay períodos registrados',
-        mensaje: 'Registra un período académico para planificar el horario PNA.',
+        mensaje:
+            'Registra un período académico para planificar el horario PNA.',
         icono: Icons.calendar_month_outlined,
       );
     }
@@ -362,8 +362,7 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
     if (pnaClases.isEmpty) {
       return PanelVacio(
         titulo: 'Este período aún no tiene materias PNA asignadas',
-        mensaje:
-            'La rejilla PNA está lista. Pulsa «Asignar materia PNA» o toca una celda libre para programar.',
+        mensaje: 'La rejilla PNA está lista. Pulsa «Asignar materia PNA» o toca una celda libre para programar.',
         icono: Icons.school_outlined,
         nota: _razonParaNoAsignar(),
       );
@@ -374,7 +373,10 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
 
   Widget _rejilla(List<ClaseCuadrante> pnaClases) {
     final celdas = <String, List<Widget>>{};
-    for (final entrada in agruparClases(pnaClases, chip: _chipClasePna).entries) {
+    for (final entrada in agruparClases(
+      pnaClases,
+      chip: _chipClasePna,
+    ).entries) {
       celdas[entrada.key] = entrada.value;
     }
 
@@ -395,10 +397,17 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
         const SizedBox(height: 10),
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
-          child: Row(
+          // Wrap y no Row: la insignia «PNA: Materia y Docente…» desbordaba
+          // 327 px a 360 (Redmi 10C) — un Row de ancho mínimo no parte línea.
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.teal.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
@@ -409,12 +418,14 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
                   children: [
                     Icon(Icons.school, size: 14, color: Colors.teal),
                     SizedBox(width: 6),
-                    Text(
-                      'PNA: Materia y Docente asignados (Espacio opcional)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.teal,
+                    Flexible(
+                      child: Text(
+                        'PNA: Materia y Docente asignados (Espacio opcional)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.teal,
+                        ),
                       ),
                     ),
                   ],
@@ -430,7 +441,7 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
             mostrarSelectorDias: false,
             onCeldaTap: _razonParaNoAsignar() == null
                 ? (dia, bloque) =>
-                    _abrirCreacion(diaInicial: dia, bloqueInicial: bloque)
+                      _abrirCreacion(diaInicial: dia, bloqueInicial: bloque)
                 : null,
           ),
         ),
@@ -441,7 +452,9 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
   Widget _chipClasePna(ClaseCuadrante clase) {
     final docente = nombreDeDocente(clase.docente);
     final materia = clase.materia.isNotEmpty ? clase.materia : 'Materia PNA';
-    final subtitulo = clase.aula.isNotEmpty ? '$docente · ${clase.aula}' : '$docente · (Sin aula)';
+    final subtitulo = clase.aula.isNotEmpty
+        ? '$docente · ${clase.aula}'
+        : '$docente · (Sin aula)';
     return ChipCuadrante(
       titulo: materia,
       subtitulo: subtitulo,
@@ -480,7 +493,8 @@ class _DialogoMateriaPNA extends StatefulWidget {
 }
 
 class _DialogoMateriaPNAState extends State<_DialogoMateriaPNA> {
-  late String? _seccionId = widget.clase?.seccionId ?? widget.secciones.keys.firstOrNull;
+  late String? _seccionId =
+      widget.clase?.seccionId ?? widget.secciones.keys.firstOrNull;
   late String? _aulaId = widget.clase?.aulaId;
   late String? _docenteId = widget.clase?.docenteId;
   late int _dia = widget.clase?.dia ?? widget.diaInicial ?? 1;
@@ -497,7 +511,9 @@ class _DialogoMateriaPNAState extends State<_DialogoMateriaPNA> {
 
     // Validación dura D4 para PNA:
     if (!_esEdicion && (_seccionId == null || _seccionId!.trim().isEmpty)) {
-      setState(() => _error = 'Elige o registra una sección para la materia PNA.');
+      setState(
+        () => _error = 'Elige o registra una sección para la materia PNA.',
+      );
       return;
     }
     if (_docenteId == null || _docenteId!.trim().isEmpty) {
@@ -515,8 +531,9 @@ class _DialogoMateriaPNAState extends State<_DialogoMateriaPNA> {
             widget.clase!.id,
             CambiosClase(
               aulaId: _aulaId != widget.clase!.aulaId ? _aulaId : null,
-              docenteId:
-                  _docenteId != widget.clase!.docenteId ? _docenteId : null,
+              docenteId: _docenteId != widget.clase!.docenteId
+                  ? _docenteId
+                  : null,
               dia: _dia != widget.clase!.dia ? _dia : null,
               bloque: _bloque != widget.clase!.bloque ? _bloque : null,
               activa: _activa != widget.clase!.activa ? _activa : null,
@@ -555,8 +572,7 @@ class _DialogoMateriaPNAState extends State<_DialogoMateriaPNA> {
   @override
   Widget build(BuildContext context) {
     final docentes = _docentesLimpios;
-    final docenteActual =
-        docentes.where((d) => d.id == _docenteId).firstOrNull;
+    final docenteActual = docentes.where((d) => d.id == _docenteId).firstOrNull;
 
     return AlertDialog(
       title: Text(_esEdicion ? 'Editar materia PNA' : 'Asignar materia PNA'),
@@ -605,33 +621,38 @@ class _DialogoMateriaPNAState extends State<_DialogoMateriaPNA> {
                     optionsBuilder: (TextEditingValue textEditingValue) {
                       if (textEditingValue.text.isEmpty) return docentes;
                       final q = textEditingValue.text.toLowerCase();
-                      return docentes.where((d) =>
-                          d.nombre.toLowerCase().contains(q) ||
-                          (d.email?.toLowerCase().contains(q) ?? false));
+                      return docentes.where(
+                        (d) =>
+                            d.nombre.toLowerCase().contains(q) ||
+                            (d.email?.toLowerCase().contains(q) ?? false),
+                      );
                     },
                     onSelected: (DocenteResumen d) =>
                         setState(() => _docenteId = d.id),
                     fieldViewBuilder:
                         (context, controller, focusNode, onFieldSubmitted) {
-                      return TextField(
-                        controller: controller,
-                        focusNode: focusNode,
-                        decoration: InputDecoration(
-                          isDense: true,
-                          hintText: 'Buscar facilitador por nombre...',
-                          prefixIcon: const Icon(Icons.person_search, size: 20),
-                          suffixIcon: controller.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 18),
-                                  onPressed: () {
-                                    controller.clear();
-                                    setState(() => _docenteId = null);
-                                  },
-                                )
-                              : null,
-                        ),
-                      );
-                    },
+                          return TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            decoration: InputDecoration(
+                              isDense: true,
+                              hintText: 'Buscar facilitador por nombre...',
+                              prefixIcon: const Icon(
+                                Icons.person_search,
+                                size: 20,
+                              ),
+                              suffixIcon: controller.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear, size: 18),
+                                      onPressed: () {
+                                        controller.clear();
+                                        setState(() => _docenteId = null);
+                                      },
+                                    )
+                                  : null,
+                            ),
+                          );
+                        },
                   ),
                 ],
               ),
@@ -644,16 +665,15 @@ class _DialogoMateriaPNAState extends State<_DialogoMateriaPNA> {
                 opciones: [
                   const DropdownMenuItem<String?>(
                     value: null,
-                    child: Text('Sin aula asignada (opcional)',
-                        style: TextStyle(fontStyle: FontStyle.italic)),
+                    child: Text(
+                      'Sin aula asignada (opcional)',
+                      style: TextStyle(fontStyle: FontStyle.italic),
+                    ),
                   ),
                   for (final aula in widget.aulas)
                     DropdownMenuItem<String?>(
                       value: aula.id,
-                      child: Text(
-                        aula.nombre,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      child: Text(aula.nombre, overflow: TextOverflow.ellipsis),
                     ),
                 ],
                 onChanged: (v) => setState(() => _aulaId = v),
@@ -760,10 +780,7 @@ class _DesplegablePna<T> extends StatelessWidget {
     return SizedBox(
       width: ancho,
       child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: etiqueta,
-          isDense: true,
-        ),
+        decoration: InputDecoration(labelText: etiqueta, isDense: true),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<T>(
             isExpanded: true,

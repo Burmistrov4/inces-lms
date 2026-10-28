@@ -228,10 +228,9 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
   }
 
   int get _desde => _total == 0 ? 0 : _desplazamiento + 1;
-  int get _hasta =>
-      _desplazamiento + _guardias.length > _total
-          ? _total
-          : _desplazamiento + _guardias.length;
+  int get _hasta => _desplazamiento + _guardias.length > _total
+      ? _total
+      : _desplazamiento + _guardias.length;
 
   bool get _hayAnterior => _desplazamiento > 0;
   bool get _haySiguiente => _desplazamiento + _guardias.length < _total;
@@ -252,7 +251,6 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     }
     return true;
   }
-
 
   /// El nombre del docente, o `null` si no está en el catálogo.
   ///
@@ -337,35 +335,81 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
       // Reactivar puede chocar: el hueco pudo ocuparlo otra presencia mientras
       // la guardia estaba archivada, y el trigger vuelve a mirarlo en cuanto
       // `is_active` es verdadero.
-      failure: (fallo) => mostrarAviso(context, _mensajeDeChoque(fallo), error: true),
+      failure: (fallo) =>
+          mostrarAviso(context, _mensajeDeChoque(fallo), error: true),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _cabecera(),
-        const SizedBox(height: 12),
-        _filtros(),
-        const SizedBox(height: 16),
-        // **Los controles de vista NO se ocultan al cargar.** Medido el
-        // 2026-10-22: con la barra dentro del `EstadoPanel` desaparecía durante
-        // la carga y el salto al aparecer movía todo el panel. Ahora sólo gira
-        // el contenido: el usuario siempre ve dónde está.
-        if (_vistaMatriz) _barraSubVistasYControles(),
-        // `Expanded` y no un `ListView` suelto: `ContenidoSeccion` entrega una
-        // altura **acotada**, así que aquí se reparte en lugar de crecer.
-        Expanded(
+    // **En pantallas bajas (móvil) todo el panel desliza.** Medido a 360×740:
+    // cabecera + filtros + barra de vistas fijos desbordaban 202 px y dejaban
+    // la matriz sin altura. Arriba del umbral se conserva el comportamiento
+    // actual: controles fijos y contenido con Expanded.
+    return LayoutBuilder(
+      builder: (context, c) {
+        final contenidoFijo = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _cabecera(),
+            const SizedBox(height: 12),
+            _filtros(),
+            const SizedBox(height: 16),
+            // **Los controles de vista NO se ocultan al cargar.** Medido el
+            // 2026-10-22: con la barra dentro del `EstadoPanel` desaparecía
+            // durante la carga y el salto al aparecer movía todo el panel.
+            if (_vistaMatriz) _barraSubVistasYControles(),
+          ],
+        );
+
+        final cuerpo = Expanded(
           child: EstadoPanel(
             cargando: _cargando,
             error: _error,
             onReintentar: _cargar,
             child: _vistaMatriz ? _matrizSemanal() : _lista(),
           ),
-        ),
-      ],
+        );
+
+        if (c.maxHeight >= 700) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [contenidoFijo, cuerpo],
+          );
+        }
+
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              contenidoFijo,
+              const SizedBox(height: 10),
+              if (_vistaMatriz)
+                // Matriz compacta: altura natural, sin scroll interno (el
+                // panel completo desliza). Ver tarjetaMatriz.
+                EstadoPanel(
+                  cargando: _cargando,
+                  error: _error,
+                  onReintentar: _cargar,
+                  child: _matrizSemanal(compacta: true),
+                )
+              else
+                SizedBox(height: 560, child: _panelCentrado()),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// El mismo `EstadoPanel` del modo expandido, pero con altura acotada para
+  /// vivir dentro del scroll vertical del panel completo en móvil.
+  Widget _panelCentrado() {
+    return EstadoPanel(
+      cargando: _cargando,
+      error: _error,
+      onReintentar: _cargar,
+      child: _vistaMatriz ? _matrizSemanal() : _lista(),
     );
   }
 
@@ -390,12 +434,18 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
               children: [
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
                   ),
                   onPressed: () {
                     if (_scrollHorizontalCtrl.hasClients) {
                       _scrollHorizontalCtrl.animateTo(
-                        (_scrollHorizontalCtrl.offset - 250).clamp(0, _scrollHorizontalCtrl.position.maxScrollExtent),
+                        (_scrollHorizontalCtrl.offset - 250).clamp(
+                          0,
+                          _scrollHorizontalCtrl.position.maxScrollExtent,
+                        ),
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeOut,
                       );
@@ -406,12 +456,18 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                 ),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
                   ),
                   onPressed: () {
                     if (_scrollHorizontalCtrl.hasClients) {
                       _scrollHorizontalCtrl.animateTo(
-                        (_scrollHorizontalCtrl.offset + 250).clamp(0, _scrollHorizontalCtrl.position.maxScrollExtent),
+                        (_scrollHorizontalCtrl.offset + 250).clamp(
+                          0,
+                          _scrollHorizontalCtrl.position.maxScrollExtent,
+                        ),
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeOut,
                       );
@@ -438,7 +494,8 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
 
     return TituloSeccion(
       'Guardias Docentes (Horario MTP)',
-      subtitulo: 'Custodia y control de talleres y espacios por docentes MTP '
+      subtitulo:
+          'Custodia y control de talleres y espacios por docentes MTP '
           '(Maestro Técnico Productivo). Quién custodia cada espacio por día y bloque, haya clase o no.',
       acciones: [
         if (widget.onNavegarA != null) ...[
@@ -458,9 +515,8 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
         OutlinedButton.icon(
           onPressed: () => showDialog<void>(
             context: context,
-            builder: (_) => DialogoEditarHorasBloques(
-              onGuardado: () => setState(() {}),
-            ),
+            builder: (_) =>
+                DialogoEditarHorasBloques(onGuardado: () => setState(() {})),
           ),
           icon: const Icon(Icons.schedule_outlined, size: 16),
           label: const Text('Horas de bloques'),
@@ -491,11 +547,12 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     );
   }
 
-  Widget _matrizSemanal() {
+  Widget _matrizSemanal({bool compacta = false}) {
     if (_periodos.isEmpty) {
       return const PanelVacio(
         titulo: 'Todavía no hay períodos registrados',
-        mensaje: 'Una guardia pertenece siempre a un período: es lo que acota el '
+        mensaje:
+            'Una guardia pertenece siempre a un período: es lo que acota el '
             'chequeo de choques a una agenda concreta. Registra el período en '
             'curso en «Período» y vuelve a esta pantalla.',
         icono: Icons.event_note_outlined,
@@ -505,7 +562,8 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     if (_lapso == null) {
       return const PanelVacio(
         titulo: 'No hay ningún período vigente',
-        mensaje: 'Elige un período en el filtro de arriba, o marca uno como '
+        mensaje:
+            'Elige un período en el filtro de arriba, o marca uno como '
             'vigente en «Período». Cuál está en curso es una '
             'decisión del centro, y el sistema no la toma por ti.',
         icono: Icons.play_circle_outline,
@@ -521,7 +579,9 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     }
 
     final theme = Theme.of(context);
-    final borderSide = BorderSide(color: theme.dividerColor.withValues(alpha: 0.6));
+    final borderSide = BorderSide(
+      color: theme.dividerColor.withValues(alpha: 0.6),
+    );
     // **Filtro de dia:** null = toda la semana; un numero = solo ese.
     final diasAMostrar = _diaRejilla == null
         ? [for (var d = 1; d <= diaMaximo; d++) d]
@@ -543,168 +603,270 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                 .toDouble();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: borderSide,
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Scrollbar(
-              controller: _scrollHorizontalCtrl,
-              thumbVisibility: true,
-              child: SingleChildScrollView(
-                controller: _scrollHorizontalCtrl,
-                scrollDirection: Axis.horizontal,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.vertical,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Cabecera: Días y turnos
-                      Container(
-                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: anchoGutter,
-                              height: 56,
-                              alignment: Alignment.centerLeft,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
-                              child: Text(
-                                'Espacio / Taller',
-                                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            for (final dia in diasAMostrar)
-                              Container(
-                                width: anchoDia,
-                                height: 56,
-                                decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
-                                child: Column(
-                                  children: [
-                                    Expanded(
-                                      flex: 26,
-                                      child: Container(
-                                        alignment: Alignment.center,
-                                        color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                                        child: Text(
-                                          diasDeLaSemana[dia],
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: theme.colorScheme.primary,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 29,
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Container(
-                                              alignment: Alignment.center,
-                                              decoration: BoxDecoration(border: Border(right: borderSide)),
-                                              child: const Text('Mañana (07:30-12)', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600)),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            child: Container(
-                                              alignment: Alignment.center,
-                                              child: const Text('Tarde (13:00-17:30)', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600)),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      // Filas por espacio / aula
-                      for (final aula in _aulas)
-                        Container(
-                          decoration: BoxDecoration(border: Border(bottom: borderSide)),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: anchoGutter,
-                                constraints: const BoxConstraints(minHeight: 64),
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                alignment: Alignment.centerLeft,
-                                decoration: BoxDecoration(border: Border(right: borderSide)),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      aula.nombre,
-                                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
-                                    ),
-                                    Text(
-                                      aula.tipo.etiqueta,
-                                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 10.5, color: theme.colorScheme.onSurfaceVariant),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              for (final dia in diasAMostrar)
-                                Container(
-                                  width: anchoDia,
-                                  constraints: const BoxConstraints(minHeight: 64),
-                                  decoration: BoxDecoration(border: Border(right: borderSide)),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Container(
-                                          constraints: const BoxConstraints(minHeight: 64),
-                                          decoration: BoxDecoration(border: Border(right: borderSide)),
-                                          child: _celdaMatriz(aula: aula, dia: dia, turno: Turno.manana),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Container(
-                                          constraints: const BoxConstraints(minHeight: 64),
-                                          child: _celdaMatriz(aula: aula, dia: dia, turno: Turno.tarde),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                    ],
+          children: [
+            // **compacta (móvil): sin Expanded ni scroll propio.** Con altura
+            // acotada el scroll vertical interno quedaba con extensión 0 y se
+            // comía los gestos sin desplazar nada (el «no desliza» del Redmi 10C).
+            // En compacta la tarjeta toma su altura natural y desliza el panel
+            // completo.
+            compacta
+                ? tarjetaMatriz(
+                    theme,
+                    borderSide,
+                    compacta,
+                    diasAMostrar,
+                    anchoGutter,
+                    anchoDia,
+                  )
+                : Expanded(
+                    child: tarjetaMatriz(
+                      theme,
+                      borderSide,
+                      compacta,
+                      diasAMostrar,
+                      anchoGutter,
+                      anchoDia,
+                    ),
                   ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+          ],
+        );
       },
     );
   }
 
+  /// Tarjeta con la tabla semanal. En compacta (móvil) toma su altura natural
+  /// dentro del scroll del panel completo; el scroll vertical interno se
+  /// desactiva porque con extensión 0 se comía los gestos sin desplazar nada
+  /// (el «no desliza» del Redmi 10C, medido con test a 360×740).
+  Widget tarjetaMatriz(
+    ThemeData theme,
+    BorderSide borderSide,
+    bool compacta,
+    List<int> diasAMostrar,
+    double anchoGutter,
+    double anchoDia,
+  ) {
+    final contenidoTabla = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Cabecera: Días y turnos
+        Container(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.5,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: anchoGutter,
+                height: 56,
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  border: Border(right: borderSide, bottom: borderSide),
+                ),
+                child: Text(
+                  'Espacio / Taller',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              for (final dia in diasAMostrar)
+                Container(
+                  width: anchoDia,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    border: Border(right: borderSide, bottom: borderSide),
+                  ),
+                  child: Column(
+                    children: [
+                      Expanded(
+                        flex: 26,
+                        child: Container(
+                          alignment: Alignment.center,
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.08,
+                          ),
+                          child: Text(
+                            diasDeLaSemana[dia],
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 29,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  border: Border(right: borderSide),
+                                ),
+                                child: const Text(
+                                  'Mañana (07:30-12)',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Container(
+                                alignment: Alignment.center,
+                                child: const Text(
+                                  'Tarde (13:00-17:30)',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+        // Filas por espacio / aula
+        for (final aula in _aulas)
+          Container(
+            decoration: BoxDecoration(border: Border(bottom: borderSide)),
+            child: Row(
+              children: [
+                Container(
+                  width: anchoGutter,
+                  constraints: const BoxConstraints(minHeight: 64),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  alignment: Alignment.centerLeft,
+                  decoration: BoxDecoration(border: Border(right: borderSide)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        aula.nombre,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                      Text(
+                        aula.tipo.etiqueta,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 10.5,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                for (final dia in diasAMostrar)
+                  Container(
+                    width: anchoDia,
+                    constraints: const BoxConstraints(minHeight: 64),
+                    decoration: BoxDecoration(
+                      border: Border(right: borderSide),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            constraints: const BoxConstraints(minHeight: 64),
+                            decoration: BoxDecoration(
+                              border: Border(right: borderSide),
+                            ),
+                            child: _celdaMatriz(
+                              aula: aula,
+                              dia: dia,
+                              turno: Turno.manana,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Container(
+                            constraints: const BoxConstraints(minHeight: 64),
+                            child: _celdaMatriz(
+                              aula: aula,
+                              dia: dia,
+                              turno: Turno.tarde,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
 
-  Widget _celdaMatriz({required Aula aula, required int dia, required Turno turno}) {
-    final guardias = _guardias.where((g) =>
-        g.aulaId == aula.id &&
-        g.dia == dia &&
-        g.activa &&
-        _coincideModalidad(g) &&
-        turnoDeBloque(g.bloque) == turno).toList();
+    final tablaHorizontal = SingleChildScrollView(
+      controller: _scrollHorizontalCtrl,
+      scrollDirection: Axis.horizontal,
+      // En compacta (móvil) la tabla va sin scroll vertical propio: con
+      // altura acotada ese scrollable quedaba con extensión 0 y se comía
+      // los gestos sin desplazar nada. El panel completo desliza.
+      child: compacta
+          ? contenidoTabla
+          : SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: contenidoTabla,
+            ),
+    );
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: borderSide,
+      ),
+      clipBehavior: Clip.antiAlias,
+      // Sin Scrollbar en compacta: su reconocedor de arrastre vertical cubre
+      // toda el área de la tabla y, sin scroll vertical interno debajo, se
+      // quedaba los gestos del panel (medido con test a 360×740).
+      child: compacta
+          ? tablaHorizontal
+          : Scrollbar(
+              controller: _scrollHorizontalCtrl,
+              thumbVisibility: true,
+              child: tablaHorizontal,
+            ),
+    );
+  }
+
+  Widget _celdaMatriz({
+    required Aula aula,
+    required int dia,
+    required Turno turno,
+  }) {
+    final guardias = _guardias
+        .where(
+          (g) =>
+              g.aulaId == aula.id &&
+              g.dia == dia &&
+              g.activa &&
+              _coincideModalidad(g) &&
+              turnoDeBloque(g.bloque) == turno,
+        )
+        .toList();
 
     if (guardias.isEmpty) {
       return Tooltip(
-        message: 'Asignar guardia en ${aula.nombre} (${diasDeLaSemana[dia]}, ${turno == Turno.manana ? "Mañana" : "Tarde"})',
+        message:
+            'Asignar guardia en ${aula.nombre} (${diasDeLaSemana[dia]}, ${turno == Turno.manana ? "Mañana" : "Tarde"})',
         child: InkWell(
           onTap: () => _abrirFormulario(
             aulaIdInicial: aula.id,
@@ -720,7 +882,8 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
               height: 26,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.5),
               ),
               child: Icon(
                 Icons.add_rounded,
@@ -747,8 +910,15 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                 margin: const EdgeInsets.only(bottom: 2),
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
                 decoration: BoxDecoration(
-                  color: PaletaAulasCuadrante.colorGuardia.withValues(alpha: 0.15),
-                  border: Border.all(color: PaletaAulasCuadrante.colorGuardia.withValues(alpha: 0.5), width: 1),
+                  color: PaletaAulasCuadrante.colorGuardia.withValues(
+                    alpha: 0.15,
+                  ),
+                  border: Border.all(
+                    color: PaletaAulasCuadrante.colorGuardia.withValues(
+                      alpha: 0.5,
+                    ),
+                    width: 1,
+                  ),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Column(
@@ -758,26 +928,49 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                     if ((g.notas ?? '').toUpperCase().contains('PNA'))
                       Container(
                         margin: const EdgeInsets.only(bottom: 2),
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.teal.shade700,
                           borderRadius: BorderRadius.circular(3),
                         ),
-                        child: const Text('PNA', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          'PNA',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       )
                     else
                       Container(
                         margin: const EdgeInsets.only(bottom: 2),
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.indigo.shade700,
                           borderRadius: BorderRadius.circular(3),
                         ),
-                        child: const Text('MTP', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          'MTP',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     Text(
                       _nombreDelDocente(g.docenteId) ?? 'Docente asignado',
-                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.bold,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -891,10 +1084,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
           opciones: [
             const DropdownMenuItem(value: null, child: Text('Todos')),
             for (var dia = 1; dia <= diaMaximo; dia++)
-              DropdownMenuItem(
-                value: dia,
-                child: Text(diasDeLaSemana[dia]),
-              ),
+              DropdownMenuItem(value: dia, child: Text(diasDeLaSemana[dia])),
           ],
           onCambiar: (valor) => _refiltrar(() => _diaFiltro = valor),
         ),
@@ -909,7 +1099,9 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
                 value: bloque,
                 // El turno se enseña junto al bloque porque es lo que el bloque
                 // significa: los seis primeros son la mañana.
-                child: Text('B$bloque (${horaLegibleDeBloque(bloque)}) · ${turnoDeBloque(bloque).etiqueta}'),
+                child: Text(
+                  'B$bloque (${horaLegibleDeBloque(bloque)}) · ${turnoDeBloque(bloque).etiqueta}',
+                ),
               ),
           ],
           onCambiar: (valor) => _refiltrar(() => _bloqueFiltro = valor),
@@ -931,7 +1123,10 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
           valor: _modalidadFiltro,
           opciones: const [
             DropdownMenuItem(value: null, child: Text('Todas')),
-            DropdownMenuItem(value: 'MTP', child: Text('M.T.P. (Medio Tiempo)')),
+            DropdownMenuItem(
+              value: 'MTP',
+              child: Text('M.T.P. (Medio Tiempo)'),
+            ),
             DropdownMenuItem(value: 'PNA', child: Text('P.N.A. (Aprendizaje)')),
           ],
           onCambiar: (valor) => _refiltrar(() => _modalidadFiltro = valor),
@@ -955,7 +1150,8 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     if (_periodos.isEmpty) {
       return const PanelVacio(
         titulo: 'Todavía no hay períodos registrados',
-        mensaje: 'Una guardia pertenece siempre a un período: es lo que acota el '
+        mensaje:
+            'Una guardia pertenece siempre a un período: es lo que acota el '
             'chequeo de choques a una agenda concreta. Registra el período en '
             'curso en «Período» y vuelve a esta pantalla.',
         icono: Icons.event_note_outlined,
@@ -965,7 +1161,8 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     if (_lapso == null) {
       return const PanelVacio(
         titulo: 'No hay ningún período vigente',
-        mensaje: 'Elige un período en el filtro de arriba, o marca uno como '
+        mensaje:
+            'Elige un período en el filtro de arriba, o marca uno como '
             'vigente en «Período». Cuál está en curso es una '
             'decisión del centro, y el sistema no la toma por ti.',
         icono: Icons.play_circle_outline,
@@ -978,7 +1175,8 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
       if (_filtrando) {
         return const PanelVacio(
           titulo: 'Ninguna guardia coincide con el filtro',
-          mensaje: 'Prueba con otro día, otro bloque o quita el filtro de '
+          mensaje:
+              'Prueba con otro día, otro bloque o quita el filtro de '
               'estado o modalidad. Las guardias archivadas no aparecen salvo que las pidas.',
           icono: Icons.filter_alt_off_outlined,
         );
@@ -987,7 +1185,8 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
       if (_aulas.isEmpty) {
         return const PanelVacio(
           titulo: 'No hay espacios registrados',
-          mensaje: 'Una guardia custodia un sitio concreto: sin aulas, talleres '
+          mensaje:
+              'Una guardia custodia un sitio concreto: sin aulas, talleres '
               'ni zonas no hay nada que custodiar. Regístralos en «Espacios del '
               'centro».',
           icono: Icons.meeting_room_outlined,
@@ -997,7 +1196,8 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
       if (_docentes.isEmpty) {
         return const PanelVacio(
           titulo: 'No hay docentes activos',
-          mensaje: 'El sistema sólo puede asignar una guardia a un docente con '
+          mensaje:
+              'El sistema sólo puede asignar una guardia a un docente con '
               'perfil activo. Los perfiles se crean invitándolos desde '
               '«Accesos».',
           icono: Icons.person_off_outlined,
@@ -1006,11 +1206,13 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
 
       return PanelVacio(
         titulo: 'Todavía no hay guardias en este período',
-        mensaje: 'Asigna la primera con «Asignar guardia». Las guardias se '
+        mensaje:
+            'Asigna la primera con «Asignar guardia». Las guardias se '
             'repiten por día y bloque, así que cada una es una presencia '
             'semanal.',
         icono: Icons.shield_outlined,
-        nota: 'El sistema no siembra guardias de ejemplo: el reparto de '
+        nota:
+            'El sistema no siembra guardias de ejemplo: el reparto de '
             'custodia es una decisión del centro, y una guardia inventada '
             'bloquearía un hueco real.',
       );
@@ -1175,8 +1377,7 @@ class _FilaGuardia extends StatelessWidget {
               height: 38,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: colorAula
-                    .withValues(alpha: archivada ? 0.05 : 0.16),
+                color: colorAula.withValues(alpha: archivada ? 0.05 : 0.16),
                 borderRadius: BorderRadius.circular(IncesTheme.radioControl),
               ),
               child: Icon(
@@ -1216,19 +1417,14 @@ class _FilaGuardia extends StatelessWidget {
                       ),
                       Etiqueta(texto: guardia.turno.etiqueta),
                       if (horaLegibleDeBloque(guardia.bloque).isNotEmpty)
-                        Etiqueta(
-                          texto: horaLegibleDeBloque(guardia.bloque),
-                        ),
+                        Etiqueta(texto: horaLegibleDeBloque(guardia.bloque)),
                       Etiqueta(
                         texto: aula ?? 'Espacio no disponible',
                         color: colorAula,
                       ),
                       if (guardia.notas != null) ...[
                         if (guardia.notas!.toUpperCase().contains('[MTP'))
-                          const Etiqueta(
-                            texto: 'M.T.P.',
-                            color: Colors.blue,
-                          ),
+                          const Etiqueta(texto: 'M.T.P.', color: Colors.blue),
                         if (guardia.notas!.toUpperCase().contains('[PNA'))
                           const Etiqueta(
                             texto: 'P.N.A.',
@@ -1345,8 +1541,14 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
   void initState() {
     super.initState();
     final n = widget.existente?.notas ?? '';
-    final matchMtp = RegExp(r'\[MTP(?:\s*-\s*Puesto\s*(\d+))?\]', caseSensitive: false).firstMatch(n);
-    final matchPna = RegExp(r'\[PNA(?:\s*-\s*Puesto\s*(\d+))?\]', caseSensitive: false).firstMatch(n);
+    final matchMtp = RegExp(
+      r'\[MTP(?:\s*-\s*Puesto\s*(\d+))?\]',
+      caseSensitive: false,
+    ).firstMatch(n);
+    final matchPna = RegExp(
+      r'\[PNA(?:\s*-\s*Puesto\s*(\d+))?\]',
+      caseSensitive: false,
+    ).firstMatch(n);
     if (matchMtp != null) {
       _modalidad = 'MTP';
       _puesto = int.tryParse(matchMtp.group(1) ?? '') ?? 1;
@@ -1358,7 +1560,10 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
       _puesto = widget.puestoInicial ?? (_modalidad != null ? 1 : null);
     }
     final notasLimpias = n
-        .replaceAll(RegExp(r'\[(?:MTP|PNA)[^\]]*\]\s*', caseSensitive: false), '')
+        .replaceAll(
+          RegExp(r'\[(?:MTP|PNA)[^\]]*\]\s*', caseSensitive: false),
+          '',
+        )
         .trim();
     _notasCtrl.text = notasLimpias;
   }
@@ -1389,9 +1594,7 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
         content: SizedBox(
           width: anchoDialogoSeguro(context, 520),
           height: 480,
-          child: SingleChildScrollView(
-            child: CpanelInvitacionesPanel(),
-          ),
+          child: SingleChildScrollView(child: CpanelInvitacionesPanel()),
         ),
         actions: [
           TextButton(
@@ -1448,8 +1651,7 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
 
   Widget _selectorDocente() {
     final docentes = _docentesLimpios;
-    final docenteActual =
-        docentes.where((d) => d.id == _docenteId).firstOrNull;
+    final docenteActual = docentes.where((d) => d.id == _docenteId).firstOrNull;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1462,9 +1664,8 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
           children: [
             Text(
               'Docente custodio',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             TextButton.icon(
               style: TextButton.styleFrom(
@@ -1509,8 +1710,10 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
                 elevation: 4,
                 borderRadius: BorderRadius.circular(8),
                 child: ConstrainedBox(
-                  constraints:
-                      const BoxConstraints(maxHeight: 260, maxWidth: 440),
+                  constraints: const BoxConstraints(
+                    maxHeight: 260,
+                    maxWidth: 440,
+                  ),
                   child: Scrollbar(
                     thumbVisibility: true,
                     child: ListView.builder(
@@ -1540,10 +1743,12 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
                               fontSize: 13,
                             ),
                           ),
-                          subtitle: option.email != null &&
-                                  option.email!.isNotEmpty
-                              ? Text(option.email!,
-                                  style: const TextStyle(fontSize: 11))
+                          subtitle:
+                              option.email != null && option.email!.isNotEmpty
+                              ? Text(
+                                  option.email!,
+                                  style: const TextStyle(fontSize: 11),
+                                )
                               : null,
                           trailing: seleccionado
                               ? const Icon(Icons.check, size: 16)
@@ -1557,8 +1762,7 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
               ),
             );
           },
-          fieldViewBuilder:
-              (context, controller, focusNode, onFieldSubmitted) {
+          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
             return TextField(
               controller: controller,
               focusNode: focusNode,
@@ -1603,15 +1807,15 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
   }
 
   Future<Result<Guardia>> _crear() => widget.repo.crearGuardia(
-        EntradaCrearGuardia(
-          docenteId: _docenteId ?? '',
-          aulaId: _aulaId ?? '',
-          periodo: widget.periodo,
-          dia: _dia,
-          bloque: _bloque,
-          notas: _construirNotasFinales(),
-        ),
-      );
+    EntradaCrearGuardia(
+      docenteId: _docenteId ?? '',
+      aulaId: _aulaId ?? '',
+      periodo: widget.periodo,
+      dia: _dia,
+      bloque: _bloque,
+      notas: _construirNotasFinales(),
+    ),
+  );
 
   Future<Result<Guardia>> _guardarCambios() {
     final antes = widget.existente!;
@@ -1632,10 +1836,7 @@ class _DialogoGuardiaState extends State<_DialogoGuardia> {
   }
 
   DropdownMenuItem<String?> _itemAusente(String valor, String etiqueta) =>
-      DropdownMenuItem(
-        value: valor,
-        child: Text('$etiqueta (no disponible)'),
-      );
+      DropdownMenuItem(value: valor, child: Text('$etiqueta (no disponible)'));
 
   List<DropdownMenuItem<String?>> _opcionesDeAula() {
     final actual = _aulaId;

@@ -15,7 +15,12 @@ Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en
 - Tarjeta de programa (`cpanel_programas_panel.dart`): la columna lateral fija de acciones (switch + lápiz + ojo ≈ 150 px) dejaba el texto con ~102 px de ancho y desbordaba 129 px. En angosto (<420 px) las acciones editar/ver bajan a una fila propia y el contenido recupera el ancho.
 - Fila «Requiere pensum»: el botón de ancho intrínseco desbordaba la fila; en angosto se apila bajo el aviso, y «Gestionar pensum» se apila bajo el texto de materias.
 - Chips de código/«Sin pensum» con elipsis en vez de desbordar.
-- Verificación: 0 excepciones de layout en carga/settle/drag, la lista desliza hasta el último ítem; suite completa de Flutter (1051 tests) en verde.
+- Verificación: 0 excepciones de layout en carga/settle/drag, la lista desliza hasta el último ítem; suite completa de Flutter en verde.
+
+**Scroll en móvil — Cuadrante de Horarios, Horario PNA y Guardias Docentes**
+- Cuadrante: leyenda desbordaba 43 px (Row de ancho mínimo dentro de Wrap) → texto Flexible; la rejilla desliza verticalmente.
+- Horario PNA: insignia «PNA: Materia y Docente…» desbordaba 327 px (Row fija) → Wrap con texto Flexible.
+- Guardias Docentes: en móvil el panel completo desliza (cabecera+filtros fijos desbordaban 202 px); la matriz va en altura natural sin scroll vertical propio ni Scrollbar — con extensión 0 ese scrollable se comía los gestos sin desplazar nada (causa raíz del «no desliza»). Escritorio sin cambios.
 
 ## [1.5.0] - 2026-10-27
 ### Rediseño 1.5 — Culminación integral de las 11 tareas (D1 a D10)
