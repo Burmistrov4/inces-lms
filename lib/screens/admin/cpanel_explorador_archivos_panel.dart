@@ -852,6 +852,21 @@ class _CpanelExploradorArchivosPanelState
                     );
                   },
                   failure: (fallo) {
+                    final yaNoExiste = fallo.message.toLowerCase().contains('no encontramos') ||
+                        fallo.message.toLowerCase().contains('not found') ||
+                        fallo.message.toLowerCase().contains('404');
+                    if (yaNoExiste) {
+                      setState(() {
+                        _elementos.remove(item);
+                        if (_seleccionado == item) _seleccionado = null;
+                        _seleccionadosIds.remove(item.id);
+                      });
+                      Navigator.of(ctx).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('«${item.nombre}» ha sido eliminado de la vista.')),
+                      );
+                      return;
+                    }
                     Navigator.of(ctx).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -1621,7 +1636,7 @@ class _CpanelExploradorArchivosPanelState
   ) {
     if (carpetas.isEmpty && archivos.isEmpty) {
       if (_cargandoArchivos) {
-        return const Center(child: Padding(padding: EdgeInsets.all(48.0), child: CircularProgressIndicator()));
+        return const _EsqueletoArchivos();
       }
       return Center(
         child: Column(
@@ -2554,6 +2569,67 @@ class _CpanelExploradorArchivosPanelState
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Esqueleto de carga para el explorador de archivos estilo Google Drive.
+class _EsqueletoArchivos extends StatelessWidget {
+  const _EsqueletoArchivos();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorBase = theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
+
+    Widget caja({double? ancho, double? alto, double radio = 8}) {
+      return Container(
+        width: ancho,
+        height: alto,
+        decoration: BoxDecoration(
+          color: colorBase,
+          borderRadius: BorderRadius.circular(radio),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        caja(alto: 48, radio: 10),
+        const SizedBox(height: 16),
+        caja(ancho: 140, alto: 16, radio: 4),
+        const SizedBox(height: 12),
+        for (var i = 0; i < 5; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.15)),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  caja(ancho: 36, alto: 36, radio: 8),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        caja(ancho: 200, alto: 14, radio: 4),
+                        const SizedBox(height: 6),
+                        caja(ancho: 120, alto: 10, radio: 4),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  caja(ancho: 60, alto: 12, radio: 4),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

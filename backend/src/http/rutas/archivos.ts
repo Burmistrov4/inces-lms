@@ -183,7 +183,14 @@ export function rutasArchivos(
 
     const archivo = await reposDe(request).archivos.marcarBorrado(id);
 
-    await almacen.eliminar(archivo.r2Key);
+    try {
+      await almacen.eliminar(archivo.r2Key);
+    } catch (err) {
+      request.log.warn(
+        { err, r2Key: archivo.r2Key },
+        'No se pudo eliminar el objeto de R2 tras marcar la fila borrada en la base de datos',
+      );
+    }
 
     return { archivo };
   }

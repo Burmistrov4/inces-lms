@@ -21,10 +21,14 @@ class CuadranteGrid extends StatelessWidget {
     this.onCeldaTap,
     this.diaFiltro,
     this.mostrarSelectorDias = true,
+    this.horizontalController,
   });
 
   /// Contenido de cada celda, por clave `'$dia-$bloque'`.
   final Map<String, List<Widget>> celdas;
+
+  /// Controlador de desplazamiento horizontal opcional para navegar entre días.
+  final ScrollController? horizontalController;
 
   /// Acción interactiva al pulsar sobre una celda (ej. celda vacía para asignar clase).
   final void Function(int dia, int bloque)? onCeldaTap;
@@ -107,16 +111,21 @@ class CuadranteGrid extends StatelessWidget {
         final anchoDia = ((restricciones.maxWidth - 116) / dias.length)
             .clamp(140.0, 168.0)
             .toDouble();
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
+        return Scrollbar(
+          controller: horizontalController,
+          thumbVisibility: dias.length > 3,
           child: SingleChildScrollView(
-            child: Table(
-              border: TableBorder.all(color: borde, width: 1),
-              defaultColumnWidth: FixedColumnWidth(anchoDia),
-              columnWidths: const {
-                0: FixedColumnWidth(116),
-              },
-              children: hijos,
+            controller: horizontalController,
+            scrollDirection: Axis.horizontal,
+            child: SingleChildScrollView(
+              child: Table(
+                border: TableBorder.all(color: borde, width: 1),
+                defaultColumnWidth: FixedColumnWidth(anchoDia),
+                columnWidths: const {
+                  0: FixedColumnWidth(116),
+                },
+                children: hijos,
+              ),
             ),
           ),
         );

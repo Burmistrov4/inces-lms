@@ -27,7 +27,7 @@ import 'admin/cpanel_pna_panel.dart';
 import 'admin/cpanel_lapsos_panel.dart';
 import 'admin/cpanel_inscripcion_campos_panel.dart';
 import 'admin/cpanel_inscripciones_panel.dart';
-import 'admin/cpanel_secciones_panel.dart';
+export 'admin/cpanel_secciones_panel.dart';
 import 'admin/cpanel_explorador_archivos_panel.dart';
 import '../widgets/walkthrough_interactivo.dart';
 import '../widgets/guardia_toque.dart';
@@ -103,18 +103,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     ),
     ItemNavegacion(
       icono: Icons.menu_book_outlined,
-      titulo: 'Programas Académicos',
+      titulo: 'Cursos y PNA',
       etiquetaCorta: 'Cursos y PNA',
       categoria: 'Preparar el período',
       modulo: 'm2_curriculo',
-    ),
-    ItemNavegacion(
-      icono: Icons.class_outlined,
-      titulo: 'Secciones del Período',
-      etiquetaCorta: 'Secciones',
-      categoria: 'Preparar el período',
-      disponible: true,
-      modulo: 'm3_cuadrante',
     ),
     ItemNavegacion(
       icono: Icons.settings_outlined,
@@ -403,9 +395,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             migas: ['Inicio', 'Administración del sistema', 'Usuarios y Roles'],
             child: CpanelUsuariosRolesPanel(),
           );
-        case 'Programas Académicos':
+        case 'Cursos y PNA':
           return const ContenidoSeccion(
-            migas: ['Inicio', 'Gestión académica', 'Programas Académicos'],
+            migas: ['Inicio', 'Gestión académica', 'Cursos y PNA'],
             child: CpanelProgramasPanel(),
           );
         case 'Inscripciones y Cupos':
@@ -417,11 +409,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           return ContenidoSeccion(
             migas: const ['Inicio', 'Gestión académica', 'Campos de Inscripción'],
             child: CpanelInscripcionCamposPanel(onNavegarA: _navegarA),
-          );
-        case 'Secciones del Período':
-          return const ContenidoSeccion(
-            migas: ['Inicio', 'Gestión académica', 'Secciones del Período'],
-            child: CpanelSeccionesPanel(),
           );
         case 'Período':
           return const ContenidoSeccion(

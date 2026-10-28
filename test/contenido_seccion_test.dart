@@ -212,7 +212,7 @@ void main() {
       );
 
       expect(tester.takeException(), isNull);
-      expect(find.text(rotulo('Programas académicos')), findsOneWidget);
+      expect(find.text(rotulo('Cursos y PNA')), findsOneWidget);
       expect(find.text('Análisis de Sistemas'), findsOneWidget);
     });
 

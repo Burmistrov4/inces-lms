@@ -119,8 +119,8 @@ class _WalkthroughInteractivoCardState
       descripcion:
           'Verifica los programas de formación técnica (Soldadura, Gastronomía, Informática, etc.) y asigna las materias o módulos correspondientes en el asistente curricular.',
       icono: Icons.menu_book_outlined,
-      seccionDestino: 'Programas Académicos',
-      textoBoton: 'Ver Programas y Pensum',
+      seccionDestino: 'Cursos y PNA',
+      textoBoton: 'Ver Cursos y PNA',
     ),
     PasoWalkthrough(
       etiquetaCategoria: 'Paso 3 de 5 · Admisión y Matrícula',

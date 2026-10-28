@@ -369,7 +369,7 @@ void main() {
       expect(find.byTooltip('Archivar'), findsOneWidget);
     });
 
-    testWidgets('muestra Pizarra Mural INCES con sección MTP',
+    testWidgets('permite configurar horas de bloques desde guardias',
         (tester) async {
       sembrarCatalogo();
       gateway.guardias = const [
@@ -389,15 +389,13 @@ void main() {
 
       await montar(tester, CpanelGuardiasPanel(repositorio: repo));
 
-      // Alternar a subvista Pizarra Mural
-      await tester.tap(find.textContaining('Pizarra Mural'));
+      // Botón para configurar horas de bloques
+      expect(find.text('Horas de bloques'), findsOneWidget);
+      await tester.tap(find.text('Horas de bloques'));
       await tester.pumpAndSettle();
 
-      // Debe mostrar encabezado de M.T.P.
-      expect(find.textContaining('MEDIO TIEMPO PEDAGÓGICO'), findsOneWidget);
-
-      // Y encontrar al docente asignado en su puesto
-      expect(find.text('Luis Márquez'), findsOneWidget);
+      // Diálogo de horas de bloques abierto
+      expect(find.text('Configurar Horarios de Bloques'), findsOneWidget);
     });
 
     testWidgets('permite filtrar por día con el SelectorDeDias',

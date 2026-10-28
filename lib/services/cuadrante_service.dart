@@ -1,3 +1,4 @@
+import '../core/errors/app_exception.dart';
 import '../core/gateways/cuadrante_gateway.dart';
 import '../core/cache_lecturas.dart';
 import '../core/network/api_client.dart';
@@ -324,15 +325,18 @@ class BackendCuadranteGateway implements CuadranteGateway {
           .eq(esUuid ? 'id' : 'code', id)
           .select()
           .maybeSingle();
-      if (respuesta == null && esUuid) {
-        respuesta = await client
-            .from('academic_periods')
-            .update(parche)
-            .eq('code', id)
-            .select()
-            .single();
+      respuesta ??= await client
+          .from('academic_periods')
+          .update(parche)
+          .ilike('code', id)
+          .select()
+          .maybeSingle();
+      if (respuesta == null) {
+        throw const AppException.validacion(
+          'No encontramos el período solicitado.',
+        );
       }
-      final actualizado = respuesta!;
+      final actualizado = respuesta;
 
       final resVigente = await client
           .from('system_settings')

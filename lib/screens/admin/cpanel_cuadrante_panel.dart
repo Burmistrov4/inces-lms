@@ -69,11 +69,18 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
 
   bool _cargando = true;
   String? _error;
+  final ScrollController _scrollHorizontalCtrl = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _cargarPeriodos();
+  }
+
+  @override
+  void dispose() {
+    _scrollHorizontalCtrl.dispose();
+    super.dispose();
   }
 
   /// Carga primero el catálogo de lapsos para fijar el vigente por defecto; la
@@ -161,6 +168,11 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
           if (_lapso != null && s.periodo != _lapso) continue;
           final progNombre = progMap[s.programaId] ?? s.programaId;
           final matNombre = matMap[s.materiaId];
+          final esPna = esProgramaPNA(progNombre) ||
+              s.programaId.toLowerCase().contains('cur-int-01') ||
+              s.programaId.toLowerCase().contains('pna') ||
+              (matNombre != null && esProgramaPNA(matNombre));
+          if (esPna) continue;
           final etiqueta = matNombre != null && matNombre.isNotEmpty
               ? '$progNombre · Secc. ${s.nombre} ($matNombre)'
               : '$progNombre · Secc. ${s.nombre}';
@@ -233,7 +245,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
   Future<void> _abrirEditorDeBloques() async {
     await showDialog<void>(
       context: context,
-      builder: (ctx) => _DialogoEditarHorasBloques(
+      builder: (ctx) => DialogoEditarHorasBloques(
         onGuardado: () => setState(() {}),
       ),
     );
@@ -443,14 +455,57 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // **Filtro de dia, junto a la rejilla.** Medido el 2026-10-22: no había
-        // forma de ver un solo día y los controles andaban repartidos entre la
-        // cabecera y el contenido. Ahora el filtro vive aquí, igual que en
-        // Guardias: «Todo» muestra la semana y un día concreto lo enfoca.
-        SelectorDeDias(
-          seleccionado: _diaFiltro,
-          onCambio: (dia) => setState(() => _diaFiltro = dia),
-          diasConContenido: diasConContenido,
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            SelectorDeDias(
+              seleccionado: _diaFiltro,
+              onCambio: (dia) => setState(() => _diaFiltro = dia),
+              diasConContenido: diasConContenido,
+            ),
+            if (_diaFiltro == null)
+              Wrap(
+                spacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    ),
+                    onPressed: () {
+                      if (_scrollHorizontalCtrl.hasClients) {
+                        _scrollHorizontalCtrl.animateTo(
+                          (_scrollHorizontalCtrl.offset - 250).clamp(0, _scrollHorizontalCtrl.position.maxScrollExtent),
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.chevron_left, size: 18),
+                    label: const Text('Anterior'),
+                  ),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    ),
+                    onPressed: () {
+                      if (_scrollHorizontalCtrl.hasClients) {
+                        _scrollHorizontalCtrl.animateTo(
+                          (_scrollHorizontalCtrl.offset + 250).clamp(0, _scrollHorizontalCtrl.position.maxScrollExtent),
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                        );
+                      }
+                    },
+                    icon: const Text('Siguiente'),
+                    label: const Icon(Icons.chevron_right, size: 18),
+                  ),
+                ],
+              ),
+          ],
         ),
         const SizedBox(height: 10),
         Padding(
@@ -478,6 +533,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
             celdas: celdas,
             diaFiltro: _diaFiltro,
             mostrarSelectorDias: false,
+            horizontalController: _scrollHorizontalCtrl,
             onCeldaTap: _razonParaNoAsignar() == null
                 ? (dia, bloque) =>
                     _abrirCreacion(diaInicial: dia, bloqueInicial: bloque)
@@ -1030,16 +1086,16 @@ class _DialogoClaseState extends State<_DialogoClase> {
 }
 
 /// Diálogo para configurar y editar las horas de los 12 bloques académicos.
-class _DialogoEditarHorasBloques extends StatefulWidget {
-  const _DialogoEditarHorasBloques({required this.onGuardado});
+class DialogoEditarHorasBloques extends StatefulWidget {
+  const DialogoEditarHorasBloques({super.key, required this.onGuardado});
   final VoidCallback onGuardado;
 
   @override
-  State<_DialogoEditarHorasBloques> createState() =>
+  State<DialogoEditarHorasBloques> createState() =>
       _DialogoEditarHorasBloquesState();
 }
 
-class _DialogoEditarHorasBloquesState extends State<_DialogoEditarHorasBloques> {
+class _DialogoEditarHorasBloquesState extends State<DialogoEditarHorasBloques> {
   late final Map<int, TextEditingController> _controllers = {
     for (var b = 1; b <= 12; b++)
       b: TextEditingController(text: horaLegibleDeBloque(b)),
@@ -1195,6 +1251,30 @@ class _DialogoEditarHorasBloquesState extends State<_DialogoEditarHorasBloques> 
                     ];
                     for (var i = 1; i <= 12; i++) {
                       _controllers[i]?.text = evening[i - 1];
+                    }
+                    setState(() {});
+                  },
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.bedtime_outlined, size: 14),
+                  label: const Text('Nocturno INCES (17:30 - 21:45)'),
+                  onPressed: () {
+                    final nocturno = [
+                      '17:30 - 18:15',
+                      '18:15 - 19:00',
+                      '19:00 - 19:45',
+                      '19:45 - 20:30',
+                      '20:30 - 21:15',
+                      '21:15 - 22:00',
+                      '22:00 - 22:45',
+                      '22:45 - 23:30',
+                      '17:30 - 18:15',
+                      '18:15 - 19:00',
+                      '19:00 - 19:45',
+                      '19:45 - 20:30',
+                    ];
+                    for (var i = 1; i <= 12; i++) {
+                      _controllers[i]?.text = nocturno[i - 1];
                     }
                     setState(() {});
                   },

@@ -11,6 +11,7 @@ import '../../widgets/comunes.dart';
 import '../../widgets/cuadrante_grid.dart';
 import '../../widgets/responsivo.dart';
 import 'cpanel_invitaciones_panel.dart';
+import 'cpanel_cuadrante_panel.dart';
 
 /// Panel de guardias docentes (Módulo 3).
 ///
@@ -81,7 +82,6 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
   bool? _activaFiltro;
   String? _modalidadFiltro;
   late bool _vistaMatriz = widget.vistaMatrizInicial;
-  bool _subvistaPizarraMural = false;
 
   /// **Filtro de dia de la rejilla.** null = toda la semana.
   int? _diaRejilla;
@@ -362,9 +362,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
             cargando: _cargando,
             error: _error,
             onReintentar: _cargar,
-            child: _vistaMatriz
-                ? (_subvistaPizarraMural ? _pizarraMural() : _matrizSemanal())
-                : _lista(),
+            child: _vistaMatriz ? _matrizSemanal() : _lista(),
           ),
         ),
       ],
@@ -380,69 +378,50 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
         alignment: WrapAlignment.spaceBetween,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          SegmentedButton<bool>(
-            segments: const [
-              ButtonSegment<bool>(
-                value: false,
-                icon: Icon(Icons.table_chart_outlined, size: 16),
-                label: Text('Por Talleres / Espacios'),
-              ),
-              ButtonSegment<bool>(
-                value: true,
-                icon: Icon(Icons.dashboard_outlined, size: 16),
-                label: Text('Pizarra Mural INCES (MTP)'),
-              ),
-            ],
-            selected: {_subvistaPizarraMural},
-            onSelectionChanged: (set) =>
-                setState(() => _subvistaPizarraMural = set.first),
+          SelectorDeDias(
+            seleccionado: _diaRejilla,
+            onCambio: (dia) => setState(() => _diaRejilla = dia),
+            diasConContenido: {for (final g in _guardias) g.dia},
           ),
-          Wrap(
-            spacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              // **Filtro de día.** Medido el 2026-10-22: sustituye al
-              // «Lun–Vie / Lun–Sáb», que no dejaba ver un solo día. «Todo»
-              // muestra la semana completa y un día concreto lo enfoca.
-              SelectorDeDias(
-                seleccionado: _diaRejilla,
-                onCambio: (dia) => setState(() => _diaRejilla = dia),
-                diasConContenido: {for (final g in _guardias) g.dia},
-              ),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          if (_diaRejilla == null)
+            Wrap(
+              spacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                  onPressed: () {
+                    if (_scrollHorizontalCtrl.hasClients) {
+                      _scrollHorizontalCtrl.animateTo(
+                        (_scrollHorizontalCtrl.offset - 250).clamp(0, _scrollHorizontalCtrl.position.maxScrollExtent),
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.chevron_left, size: 18),
+                  label: const Text('Anterior'),
                 ),
-                onPressed: () {
-                  if (_scrollHorizontalCtrl.hasClients) {
-                    _scrollHorizontalCtrl.animateTo(
-                      (_scrollHorizontalCtrl.offset - 250).clamp(0, _scrollHorizontalCtrl.position.maxScrollExtent),
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOut,
-                    );
-                  }
-                },
-                icon: const Icon(Icons.chevron_left, size: 18),
-                label: const Text('Anterior'),
-              ),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                  onPressed: () {
+                    if (_scrollHorizontalCtrl.hasClients) {
+                      _scrollHorizontalCtrl.animateTo(
+                        (_scrollHorizontalCtrl.offset + 250).clamp(0, _scrollHorizontalCtrl.position.maxScrollExtent),
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.chevron_right, size: 18),
+                  label: const Text('Siguiente'),
                 ),
-                onPressed: () {
-                  if (_scrollHorizontalCtrl.hasClients) {
-                    _scrollHorizontalCtrl.animateTo(
-                      (_scrollHorizontalCtrl.offset + 250).clamp(0, _scrollHorizontalCtrl.position.maxScrollExtent),
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOut,
-                    );
-                  }
-                },
-                icon: const Text('Siguiente'),
-                label: const Icon(Icons.chevron_right, size: 18),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );
@@ -476,6 +455,17 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
           ),
           const SizedBox(width: 8),
         ],
+        OutlinedButton.icon(
+          onPressed: () => showDialog<void>(
+            context: context,
+            builder: (_) => DialogoEditarHorasBloques(
+              onGuardado: () => setState(() {}),
+            ),
+          ),
+          icon: const Icon(Icons.schedule_outlined, size: 16),
+          label: const Text('Horas de bloques'),
+        ),
+        const SizedBox(width: 8),
         SegmentedButton<bool>(
           segments: const [
             ButtonSegment<bool>(
@@ -703,247 +693,6 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     );
   }
 
-  Guardia? _guardiaParaPuesto(int dia, String modalidad, int puesto) {
-    for (final g in _guardias) {
-      if (!g.activa || g.dia != dia) continue;
-      final notas = (g.notas ?? '').toUpperCase();
-      final esMod = notas.contains('MTP') || !notas.contains('PNA');
-      if (esMod) {
-        if (notas.contains('PUESTO $puesto') || notas.contains('PUESTO: $puesto') || notas.contains('($puesto)')) {
-          return g;
-        }
-      }
-    }
-    final coincidentes = _guardias.where((g) {
-      if (!g.activa || g.dia != dia) return false;
-      final notas = (g.notas ?? '').toUpperCase();
-      return notas.contains('MTP') || !notas.contains('PNA');
-    }).toList();
-
-    if (coincidentes.length >= puesto) {
-      return coincidentes[puesto - 1];
-    }
-    return null;
-  }
-
-  Widget _pizarraMural() {
-    final theme = Theme.of(context);
-    final borderSide = BorderSide(color: theme.dividerColor.withValues(alpha: 0.6));
-    final diasAMostrar = _diaRejilla == null
-        ? [for (var d = 1; d <= diaMaximo; d++) d]
-        : [_diaRejilla!];
-    final limiteDia = diasAMostrar.length;
-
-    return LayoutBuilder(
-      builder: (context, restricciones) {
-        final anchoGutter = 150.0;
-        final anchoDia =
-            ((restricciones.maxWidth - anchoGutter - 8) / limiteDia)
-                .clamp(92.0, 168.0)
-                .toDouble();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: borderSide,
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Scrollbar(
-                  controller: _scrollHorizontalCtrl,
-                  thumbVisibility: true,
-                  child: SingleChildScrollView(
-                    controller: _scrollHorizontalCtrl,
-                    scrollDirection: Axis.horizontal,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.vertical,
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              margin: const EdgeInsets.only(bottom: 12),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.draw_outlined, size: 18, color: theme.colorScheme.primary),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Pizarra Mural de Guardias INCES — CFS Rafael Urdaneta (La Isabelica)',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.primary),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                Container(
-                                  width: anchoGutter,
-                                  height: 44,
-                                  alignment: Alignment.centerLeft,
-                                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                                    border: Border(right: borderSide, bottom: borderSide),
-                                  ),
-                                  child: const Text('Programa / Puesto', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                                ),
-                                for (final dia in diasAMostrar)
-                                  Container(
-                                    width: anchoDia,
-                                    height: 44,
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                                      border: Border(right: borderSide, bottom: borderSide),
-                                    ),
-                                    child: Text(
-                                      diasDeLaSemana[dia],
-                                      style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary, fontSize: 13),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            Container(
-                              width: anchoGutter + (limiteDia * anchoDia),
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              color: Colors.blue.shade50,
-                              child: Row(
-                                children: [
-                                  Icon(Icons.school, size: 16, color: Colors.blue.shade800),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'M.T.P. — MEDIO TIEMPO PEDAGÓGICO (Puestos 1 al 7)',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blue.shade900),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            for (var puesto = 1; puesto <= 7; puesto++)
-                              Row(
-                                children: [
-                                  Container(
-                                    width: anchoGutter,
-                                    height: 58,
-                                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                                    alignment: Alignment.centerLeft,
-                                    decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
-                                    child: Text('Puesto $puesto', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
-                                  ),
-                                  for (final dia in diasAMostrar)
-                                    Container(
-                                      width: anchoDia,
-                                      height: 58,
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
-                                      child: _celdaPuestoMural(dia: dia, modalidad: 'MTP', puesto: puesto),
-                                    ),
-                                ],
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _celdaPuestoMural({required int dia, required String modalidad, required int puesto}) {
-    final guardia = _guardiaParaPuesto(dia, modalidad, puesto);
-
-    if (guardia == null) {
-      return InkWell(
-        onTap: () => _abrirFormulario(
-          diaInicial: dia,
-          bloqueInicial: puesto <= 6 ? puesto : 1,
-          modalidadInicial: modalidad,
-          puestoInicial: puesto,
-        ),
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
-            borderRadius: BorderRadius.circular(4),
-            color: Colors.grey.shade50.withValues(alpha: 0.5),
-          ),
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.add, size: 14, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Text('Asignar', style: TextStyle(fontSize: 10.5, color: Colors.grey.shade600)),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final nombreDoc = _nombreDelDocente(guardia.docenteId) ?? 'Docente asignado';
-    final nombreAula = _nombreDelAula(guardia.aulaId) ?? 'Espacio asignado';
-    final esPna = modalidad == 'PNA';
-
-    return InkWell(
-      onTap: () => _abrirFormulario(existente: guardia),
-      borderRadius: BorderRadius.circular(4),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-        decoration: BoxDecoration(
-          color: esPna ? Colors.teal.shade50 : Colors.blue.shade50,
-          border: Border.all(color: esPna ? Colors.teal.shade300 : Colors.blue.shade300),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              nombreDoc,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-                color: esPna ? Colors.teal.shade900 : Colors.blue.shade900,
-              ),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    nombreAula,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 9.5, color: Colors.grey.shade700),
-                  ),
-                ),
-                Text(
-                  'B${guardia.bloque}',
-                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Colors.grey.shade800),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _celdaMatriz({required Aula aula, required int dia, required Turno turno}) {
     final guardias = _guardias.where((g) =>

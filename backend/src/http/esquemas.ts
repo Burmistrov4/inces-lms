@@ -468,7 +468,9 @@ function idDeRecurso(recurso: string) {
 }
 
 export const esquemaIdAula = idDeRecurso('espacio');
-export const esquemaIdPeriodo = idDeRecurso('lapso');
+export const esquemaIdPeriodo = z.string().min(1, {
+  message: 'El identificador de lapso debe ser un UUID o código válido.',
+});
 export const esquemaIdGuardia = idDeRecurso('guardia');
 export const esquemaIdClase = idDeRecurso('clase');
 

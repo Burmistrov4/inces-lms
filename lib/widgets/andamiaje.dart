@@ -1059,9 +1059,13 @@ class ContenidoSeccion extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, restricciones) {
+        final esMovil = restricciones.maxWidth < 500;
         final esAngosto = restricciones.maxWidth < 700;
         return Padding(
-          padding: EdgeInsets.all(esAngosto ? 16 : 24),
+          padding: EdgeInsets.symmetric(
+            horizontal: esMovil ? 10 : (esAngosto ? 16 : 24),
+            vertical: esMovil ? 10 : (esAngosto ? 16 : 24),
+          ),
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: anchoMaximo),

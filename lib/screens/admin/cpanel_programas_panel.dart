@@ -40,7 +40,8 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
   final _busquedaCtrl = TextEditingController();
   Timer? _debounce;
 
-  TipoPrograma? _tipo;
+  TipoPrograma? _tipo = TipoPrograma.cursoLibre;
+  String _tabVista = 'cursos';
   bool? _activo;
   int _desplazamiento = 0;
 
@@ -101,7 +102,7 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
   }
 
   @override
-  String get seccion => 'Programas Académicos';
+  String get seccion => 'Cursos y PNA';
 
   @override
   Future<void> refrescarEnSegundoPlano() => _cargar(silencioso: true);
@@ -118,8 +119,12 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
     setState(() {
       if (limpiarTipo) {
         _tipo = null;
+        _tabVista = 'todos';
       } else if (tipo != null) {
         _tipo = tipo;
+        _tabVista = tipo == TipoPrograma.cursoLibre
+            ? 'cursos'
+            : (tipo == TipoPrograma.carrera ? 'pna' : 'todos');
       }
       if (limpiarActivo) {
         _activo = null;
@@ -295,14 +300,13 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TituloSeccion(
-          'Programas académicos',
-          subtitulo: 'Cursos ordinarios y carreras PNA con su pensum formativo. Ninguna acción '
-              'borra: archivar es desactivar.',
+          'Cursos y PNA',
+          subtitulo: 'Cursos ordinarios y formación técnica PNA. Modifica cupos, duración y materias formativas.',
           acciones: [
             FilledButton.icon(
               onPressed: _abrirAsistente,
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Nuevo programa'),
+              label: const Text('Nuevo curso / PNA'),
             ),
           ],
         ),
@@ -312,10 +316,9 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
         // al pasar el ratón. Sin esta línea, «dónde se agrega el pensum» queda a
         // la vista pero no a la lectura.
         const AvisoEnLinea(
-          texto: 'Cada programa tiene su pensum: las materias y el período en que '
-              'se dictan. Se administra desde la tarjeta del programa, con '
-              '«Editar pensum» (el lápiz). Un programa sin materias no se puede '
-              'publicar.',
+          texto: 'Cada curso y programa PNA tiene su pensum: las materias y el período en que '
+              'se dictan. Puedes editar los datos del curso con el lápiz y gestionar sus materias '
+              'con «Gestionar pensum». Un programa sin materias no se puede publicar.',
         ),
         const SizedBox(height: 16),
         _filtros(),
@@ -336,15 +339,49 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
   }
 
   Widget _filtros() {
-    // **Barra de busqueda a todo el ancho, en su propia fila.** Patron de
-    // Google (Material 3): el campo de texto tiene su propia fila y los filtros
-    // van debajo. Medido el 2026-10-23: con ancho fijo de 280 px quedaba
-    // angosto junto a los filtros.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // `ListenableBuilder` para que el boton de limpiar aparezca y
-        // desaparezca sin hacer setState en cada tecla.
+        // Selector principal de Cursos vs PNA
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: SegmentedButton<String>(
+            segments: const [
+              ButtonSegment<String>(
+                value: 'cursos',
+                icon: Icon(Icons.auto_stories_outlined, size: 16),
+                label: Text('Cursos'),
+              ),
+              ButtonSegment<String>(
+                value: 'pna',
+                icon: Icon(Icons.school_outlined, size: 16),
+                label: Text('PNA (Aprendices)'),
+              ),
+              ButtonSegment<String>(
+                value: 'todos',
+                icon: Icon(Icons.apps_outlined, size: 16),
+                label: Text('Todos'),
+              ),
+            ],
+            selected: {_tabVista},
+            onSelectionChanged: (set) {
+              final nuevo = set.first;
+              setState(() {
+                _tabVista = nuevo;
+                if (nuevo == 'cursos') {
+                  _tipo = TipoPrograma.cursoLibre;
+                } else if (nuevo == 'pna') {
+                  _tipo = TipoPrograma.carrera;
+                } else {
+                  _tipo = null;
+                }
+                _desplazamiento = 0;
+              });
+              _cargar();
+            },
+          ),
+        ),
+        // Barra de búsqueda y filtros complementarios
         ListenableBuilder(
           listenable: _busquedaCtrl,
           builder: (context, _) => TextField(
@@ -363,56 +400,27 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
           runSpacing: 12,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-        SizedBox(
-          width: 190,
-          child: DropdownButtonFormField<TipoPrograma?>(
-            initialValue: _tipo,
-            // `isExpanded` deja que el botón mida lo que le da el `SizedBox`.
-            // Sin él, el desplegable se dimensiona por su ítem más ancho y
-            // desborda el filtro en cuanto la etiqueta es larga.
-            isExpanded: true,
-            decoration: const InputDecoration(isDense: true, labelText: 'Tipo'),
-            items: const [
-              DropdownMenuItem(value: null, child: Text('Todos')),
-              DropdownMenuItem(
-                value: TipoPrograma.carrera,
-                child: Text('Carreras'),
+            SizedBox(
+              width: 190,
+              child: DropdownButtonFormField<bool?>(
+                initialValue: _activo,
+                isExpanded: true,
+                decoration: const InputDecoration(isDense: true, labelText: 'Estado'),
+                items: const [
+                  DropdownMenuItem(value: null, child: Text('Todos los estados')),
+                  DropdownMenuItem(value: true, child: Text('Publicados / Vigentes')),
+                  DropdownMenuItem(value: false, child: Text('En borrador')),
+                ],
+                onChanged: (valor) {
+                  if (valor == null) {
+                    _cambiarFiltro(limpiarActivo: true);
+                  } else {
+                    _cambiarFiltro(activo: valor);
+                  }
+                },
               ),
-              DropdownMenuItem(
-                value: TipoPrograma.cursoLibre,
-                child: Text('Cursos libres'),
-              ),
-            ],
-            onChanged: (valor) {
-              if (valor == null) {
-                _cambiarFiltro(limpiarTipo: true);
-              } else {
-                _cambiarFiltro(tipo: valor);
-              }
-            },
-          ),
-        ),
-        SizedBox(
-          width: 190,
-          child: DropdownButtonFormField<bool?>(
-            initialValue: _activo,
-            isExpanded: true,
-            decoration: const InputDecoration(isDense: true, labelText: 'Estado'),
-            items: const [
-              DropdownMenuItem(value: null, child: Text('Todos')),
-              DropdownMenuItem(value: true, child: Text('Publicados')),
-              DropdownMenuItem(value: false, child: Text('En borrador')),
-            ],
-            onChanged: (valor) {
-              if (valor == null) {
-                _cambiarFiltro(limpiarActivo: true);
-              } else {
-                _cambiarFiltro(activo: valor);
-              }
-            },
-          ),
-        ),
-      ],
+            ),
+          ],
         ),
       ],
     );
@@ -450,6 +458,7 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
             itemBuilder: (context, i) => _TarjetaPrograma(
               programa: _programas[i],
               guardando: _guardandoId == _programas[i].id,
+              abriendoPensum: _abriendoPensumId == _programas[i].id,
               onVer: () => _verDetalle(_programas[i]),
               onEditarPrograma: () => _editarPrograma(_programas[i]),
               onEditarPensum: () => _editarPensum(_programas[i]),
@@ -511,6 +520,7 @@ class _TarjetaPrograma extends StatelessWidget {
   const _TarjetaPrograma({
     required this.programa,
     required this.guardando,
+    this.abriendoPensum = false,
     required this.onVer,
     required this.onEditarPrograma,
     required this.onEditarPensum,
@@ -519,6 +529,7 @@ class _TarjetaPrograma extends StatelessWidget {
 
   final ProgramaConTotales programa;
   final bool guardando;
+  final bool abriendoPensum;
   final VoidCallback onVer;
   final VoidCallback onEditarPrograma;
   final VoidCallback onEditarPensum;
@@ -585,11 +596,13 @@ class _TarjetaPrograma extends StatelessWidget {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       _Etiqueta(
-                        texto: programa.tipo.etiqueta,
+                        texto: programa.tipo == TipoPrograma.cursoLibre
+                            ? 'Curso Ordinario'
+                            : 'PNA (Aprendices)',
                         tono: TonoEstado.info,
                       ),
                       _Etiqueta(
-                        texto: programa.activo ? 'Publicado' : 'En borrador',
+                        texto: programa.activo ? 'Vigente / Activo' : 'En borrador',
                         tono: programa.activo
                             ? TonoEstado.exito
                             : TonoEstado.neutro,
@@ -661,8 +674,14 @@ class _TarjetaPrograma extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           FilledButton.tonalIcon(
-                            onPressed: onEditarPensum,
-                            icon: const Icon(Icons.playlist_add_rounded, size: 18),
+                            onPressed: abriendoPensum ? null : onEditarPensum,
+                            icon: abriendoPensum
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.playlist_add_rounded, size: 18),
                             label: const Text('Cargar / Asignar Pensum Académico'),
                             style: FilledButton.styleFrom(
                               visualDensity: VisualDensity.compact,
@@ -674,8 +693,14 @@ class _TarjetaPrograma extends StatelessWidget {
                   ] else ...[
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
-                      onPressed: onEditarPensum,
-                      icon: const Icon(Icons.menu_book_rounded, size: 16),
+                      onPressed: abriendoPensum ? null : onEditarPensum,
+                      icon: abriendoPensum
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.menu_book_rounded, size: 16),
                       label: const Text('Gestionar Pensum / Materias'),
                       style: OutlinedButton.styleFrom(
                         visualDensity: VisualDensity.compact,
@@ -708,20 +733,30 @@ class _TarjetaPrograma extends StatelessWidget {
                 ),
               ),
             IconButton(
-              tooltip: 'Editar datos del programa',
+              tooltip: 'Editar datos del curso / PNA',
               onPressed: onEditarPrograma,
-              icon: const Icon(Icons.edit_note_outlined, size: 21),
+              icon: const Icon(Icons.edit_outlined, size: 20),
             ),
             IconButton(
               tooltip: 'Ver pensum',
               onPressed: onVer,
               icon: const Icon(Icons.visibility_outlined, size: 19),
             ),
-            IconButton(
-              tooltip: 'Editar pensum',
-              onPressed: onEditarPensum,
-              icon: const Icon(Icons.edit_outlined, size: 19),
-            ),
+            if (abriendoPensum)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              IconButton(
+                tooltip: 'Gestionar materias y pensum',
+                onPressed: onEditarPensum,
+                icon: const Icon(Icons.playlist_add_check_rounded, size: 20),
+              ),
           ],
         ),
       ),
@@ -1100,6 +1135,26 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                   children: [
                     ActionChip(
                       avatar: const Icon(Icons.add, size: 14),
+                      label: const Text('2 Semanas'),
+                      onPressed: () {
+                        setState(() {
+                          _duracionValorCtrl.text = '2';
+                          _duracionUnidad = 'SEMANAS';
+                        });
+                      },
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.add, size: 14),
+                      label: const Text('4 Semanas'),
+                      onPressed: () {
+                        setState(() {
+                          _duracionValorCtrl.text = '4';
+                          _duracionUnidad = 'SEMANAS';
+                        });
+                      },
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.add, size: 14),
                       label: const Text('1 Mes'),
                       onPressed: () {
                         setState(() {
@@ -1120,11 +1175,11 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                     ),
                     ActionChip(
                       avatar: const Icon(Icons.add, size: 14),
-                      label: const Text('4 Semanas'),
+                      label: const Text('3 Meses'),
                       onPressed: () {
                         setState(() {
-                          _duracionValorCtrl.text = '4';
-                          _duracionUnidad = 'SEMANAS';
+                          _duracionValorCtrl.text = '3';
+                          _duracionUnidad = 'MESES';
                         });
                       },
                     ),

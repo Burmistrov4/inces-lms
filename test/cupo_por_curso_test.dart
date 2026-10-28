@@ -201,7 +201,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Abrir diálogo de edición de programa
-      final btnEditar = find.byIcon(Icons.edit_note_outlined).first;
+      final btnEditar = find.byIcon(Icons.edit_outlined).first;
       await tester.tap(btnEditar);
       await tester.pumpAndSettle();
 

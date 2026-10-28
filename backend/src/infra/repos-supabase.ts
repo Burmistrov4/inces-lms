@@ -1202,7 +1202,7 @@ class PerfilesSupabase implements PuertaPerfiles {
     const escapado = limpio.replace(/[\\%_]/g, (c) => `\\${c}`);
     const respuesta = limpio.includes('@')
       ? await query.ilike('email', escapado).maybeSingle()
-      : await query.eq('cedula', limpio).maybeSingle();
+      : await query.ilike('cedula', escapado).maybeSingle();
 
     if (respuesta.error) throw traducirError(respuesta.error, 'buscar perfil por identificador');
     if (!respuesta.data) return null;
@@ -2484,17 +2484,21 @@ class CuadranteSupabase implements PuertaCuadrante {
       .select(COLUMNAS_PERIODO)
       .maybeSingle();
 
-    if (!respuesta.data && esUuid) {
+    if (!respuesta.data) {
       respuesta = await this.cliente
         .from(TABLA_PERIODOS)
         .update(parche)
-        .eq('code', id)
+        .ilike('code', id)
         .select(COLUMNAS_PERIODO)
         .maybeSingle();
     }
 
     if (respuesta.error) {
       throw this.traducirEscritura(respuesta.error, 'actualizar período', RECURSO_PERIODO);
+    }
+
+    if (!respuesta.data) {
+      throw ErrorApi.noEncontrado(RECURSO_PERIODO.codigo, RECURSO_PERIODO.mensaje);
     }
 
     // Aquí sí hay que leer el vigente: el código del lapso no cambia, así que su
@@ -2551,11 +2555,20 @@ class CuadranteSupabase implements PuertaCuadrante {
   }
 
   private async periodoPorId(id: string): Promise<Periodo | null> {
-    const respuesta = await this.cliente
+    const esUuid = id.length === 36 && id.includes('-');
+    let respuesta = await this.cliente
       .from(TABLA_PERIODOS)
       .select(COLUMNAS_PERIODO)
-      .eq('id', id)
+      .eq(esUuid ? 'id' : 'code', id)
       .maybeSingle();
+
+    if (!respuesta.data) {
+      respuesta = await this.cliente
+        .from(TABLA_PERIODOS)
+        .select(COLUMNAS_PERIODO)
+        .ilike('code', id)
+        .maybeSingle();
+    }
 
     if (respuesta.error) throw traducirError(respuesta.error, 'leer período');
     if (!respuesta.data) return null;
