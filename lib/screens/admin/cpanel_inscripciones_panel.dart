@@ -108,6 +108,7 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel>
 
   final Set<String> _promoviendo = {};
   final Set<String> _exportando = {};
+  bool _mostrarGuia = false;
 
   int get _cuposDisponibles =>
       _secciones.fold(0, (s, o) => s + o.cuposDisponibles);
@@ -346,32 +347,56 @@ class _CpanelInscripcionesPanelState extends State<CpanelInscripcionesPanel>
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              const AvisoEnLinea(
-                texto: 'Ciclos de Formación y Convocatorias: Para programas con períodos trimestrales (ej. Soldadura Básica de 3 meses), las inscripciones se abren por cohorte. Si una sección llena su cupo, los aspirantes entran automáticamente a la cola de espera para la siguiente apertura.',
-                icono: Icons.calendar_today_outlined,
-                tono: TonoAviso.info,
-              ),
               const SizedBox(height: 8),
               const AvisoEnLinea(
-                texto: '«Promover siguiente» se usa tras ampliar la capacidad de '
-                    'una sección: sube al primero de la cola a «matriculado». Si '
-                    'la sección está llena o ya tiene una oferta en el aire, no '
-                    'promueve a nadie (lo confirma el mensaje).',
-                icono: Icons.info_outline,
-                tono: TonoAviso.info,
-              ),
-              const SizedBox(height: 8),
-              const AvisoEnLinea(
-                texto: '«Exportar Planilla HACER (.csv)» descarga la nómina de la '
-                    'sección: una fila por matriculado, con el contexto de la '
-                    'sección y sus datos de la planilla. Sólo salen los que tienen '
-                    'asiento confirmado — la cola de espera y las bajas no son '
-                    'nómina.',
+                texto: '«Exportar Planilla HACER (.csv)» descarga la nómina de la sección: '
+                    'Sólo salen los que tienen asiento confirmado — la cola de espera y las bajas no son nómina.',
                 icono: Icons.download_outlined,
                 tono: TonoAviso.info,
+                compacto: true,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => setState(() => _mostrarGuia = !_mostrarGuia),
+                  icon: Icon(
+                    _mostrarGuia ? Icons.expand_less_rounded : Icons.info_outline_rounded,
+                    size: 16,
+                  ),
+                  label: Text(
+                    _mostrarGuia
+                        ? 'Ocultar guía sobre convocatorias y promover cupos'
+                        : 'Ver guía sobre convocatorias y promover cupos',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                ),
+              ),
+              if (_mostrarGuia) ...[
+                const SizedBox(height: 6),
+                AvisoEnLinea(
+                  texto: 'Ciclos de Formación y Convocatorias: Para programas con períodos trimestrales (ej. Soldadura Básica de 3 meses), las inscripciones se abren por cohorte. Si una sección llena su cupo, los aspirantes entran automáticamente a la cola de espera para la siguiente apertura.',
+                  icono: Icons.calendar_today_outlined,
+                  tono: TonoAviso.info,
+                  compacto: true,
+                  onCerrar: () => setState(() => _mostrarGuia = false),
+                ),
+                const SizedBox(height: 6),
+                const AvisoEnLinea(
+                  texto: '«Promover siguiente» se usa tras ampliar la capacidad de '
+                      'una sección: sube al primero de la cola a «matriculado». Si '
+                      'la sección está llena o ya tiene una oferta en el aire, no '
+                      'promueve a nadie (lo confirma el mensaje).',
+                  icono: Icons.info_outline,
+                  tono: TonoAviso.info,
+                  compacto: true,
+                ),
+              ],
+              const SizedBox(height: 10),
               for (final o in _secciones) _filaOcupacion(o),
             ],
           ),

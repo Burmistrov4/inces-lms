@@ -53,6 +53,7 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
   /// Identificador del programa cuya activación está en curso. Se bloquea sólo
   /// esa fila: el guardado de un programa no debe impedir mirar los demás.
   String? _guardandoId;
+  bool _mostrarAyuda = false;
 
   static const int _limite = CurriculoRepository.limitePorPagina;
 
@@ -303,6 +304,11 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
           'Cursos y PNA',
           subtitulo: 'Cursos ordinarios y formación técnica PNA. Modifica cupos, duración y materias formativas.',
           acciones: [
+            IconButton(
+              tooltip: _mostrarAyuda ? 'Ocultar guía de pensum' : 'Ver guía de pensum',
+              icon: Icon(_mostrarAyuda ? Icons.info_rounded : Icons.info_outline_rounded, size: 20),
+              onPressed: () => setState(() => _mostrarAyuda = !_mostrarAyuda),
+            ),
             FilledButton.icon(
               onPressed: _abrirAsistente,
               icon: const Icon(Icons.add_rounded, size: 18),
@@ -310,19 +316,18 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        // La ruta al pensum se dice explícitamente: el panel lo administra desde
-        // la tarjeta de cada programa, y un icono con `tooltip` sólo se explica
-        // al pasar el ratón. Sin esta línea, «dónde se agrega el pensum» queda a
-        // la vista pero no a la lectura.
-        const AvisoEnLinea(
-          texto: 'Cada curso y programa PNA tiene su pensum: las materias y el período en que '
-              'se dictan. Puedes editar los datos del curso con el lápiz y gestionar sus materias '
-              'con «Gestionar pensum». Un programa sin materias no se puede publicar.',
-        ),
-        const SizedBox(height: 16),
+        if (_mostrarAyuda) ...[
+          const SizedBox(height: 8),
+          AvisoEnLinea(
+            texto: 'Cada curso y programa PNA tiene su pensum: las materias y el período en que '
+                'se dictan. Puedes editar los datos del curso con el lápiz y gestionar sus materias '
+                'con «Gestionar pensum». Un programa sin materias no se puede publicar.',
+            onCerrar: () => setState(() => _mostrarAyuda = false),
+          ),
+        ],
+        const SizedBox(height: 10),
         _filtros(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         Expanded(
           child: EstadoPanel(
             cargando: _cargando,
@@ -339,90 +344,126 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
   }
 
   Widget _filtros() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Selector principal de Cursos vs PNA
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: SegmentedButton<String>(
-            segments: const [
-              ButtonSegment<String>(
-                value: 'cursos',
-                icon: Icon(Icons.auto_stories_outlined, size: 16),
-                label: Text('Cursos'),
-              ),
-              ButtonSegment<String>(
-                value: 'pna',
-                icon: Icon(Icons.school_outlined, size: 16),
-                label: Text('PNA (Aprendices)'),
-              ),
-              ButtonSegment<String>(
-                value: 'todos',
-                icon: Icon(Icons.apps_outlined, size: 16),
-                label: Text('Todos'),
-              ),
-            ],
-            selected: {_tabVista},
-            onSelectionChanged: (set) {
-              final nuevo = set.first;
-              setState(() {
-                _tabVista = nuevo;
-                if (nuevo == 'cursos') {
-                  _tipo = TipoPrograma.cursoLibre;
-                } else if (nuevo == 'pna') {
-                  _tipo = TipoPrograma.carrera;
-                } else {
-                  _tipo = null;
-                }
-                _desplazamiento = 0;
-              });
-              _cargar();
-            },
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final ancho = constraints.maxWidth;
+        final selectorTipo = SegmentedButton<String>(
+          style: const ButtonStyle(
+            visualDensity: VisualDensity.compact,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-        ),
-        // Barra de búsqueda y filtros complementarios
-        ListenableBuilder(
+          segments: const [
+            ButtonSegment<String>(
+              value: 'cursos',
+              icon: Icon(Icons.auto_stories_outlined, size: 15),
+              label: Text('Cursos'),
+            ),
+            ButtonSegment<String>(
+              value: 'pna',
+              icon: Icon(Icons.school_outlined, size: 15),
+              label: Text('PNA (Aprendices)'),
+            ),
+            ButtonSegment<String>(
+              value: 'todos',
+              icon: Icon(Icons.apps_outlined, size: 15),
+              label: Text('Todos'),
+            ),
+          ],
+          selected: {_tabVista},
+          onSelectionChanged: (set) {
+            final nuevo = set.first;
+            setState(() {
+              _tabVista = nuevo;
+              if (nuevo == 'cursos') {
+                _tipo = TipoPrograma.cursoLibre;
+              } else if (nuevo == 'pna') {
+                _tipo = TipoPrograma.carrera;
+              } else {
+                _tipo = null;
+              }
+              _desplazamiento = 0;
+            });
+            _cargar();
+          },
+        );
+
+        final campoBusqueda = ListenableBuilder(
           listenable: _busquedaCtrl,
           builder: (context, _) => TextField(
             controller: _busquedaCtrl,
             onChanged: _buscar,
-            decoration: const InputDecoration(
+            style: const TextStyle(fontSize: 13),
+            decoration: InputDecoration(
               isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               hintText: 'Buscar por código o nombre',
-              prefixIcon: Icon(Icons.search_rounded, size: 19),
+              prefixIcon: const Icon(Icons.search_rounded, size: 18),
+              suffixIcon: _busquedaCtrl.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear_rounded, size: 16),
+                      onPressed: () {
+                        _busquedaCtrl.clear();
+                        _buscar('');
+                      },
+                    )
+                  : null,
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        );
+
+        final dropdownEstado = SizedBox(
+          width: ancho < 520 ? 135 : 180,
+          child: DropdownButtonFormField<bool?>(
+            initialValue: _activo,
+            isExpanded: true,
+            style: const TextStyle(fontSize: 13),
+            decoration: const InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              labelText: 'Estado',
+            ),
+            items: const [
+              DropdownMenuItem(value: null, child: Text('Todos los estados', overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: true, child: Text('Publicados / Vigentes', overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(value: false, child: Text('En borrador', overflow: TextOverflow.ellipsis)),
+            ],
+            onChanged: (valor) {
+              if (valor == null) {
+                _cambiarFiltro(limpiarActivo: true);
+              } else {
+                _cambiarFiltro(activo: valor);
+              }
+            },
+          ),
+        );
+
+        if (ancho >= 760) {
+          return Row(
+            children: [
+              selectorTipo,
+              const SizedBox(width: 12),
+              Expanded(child: campoBusqueda),
+              const SizedBox(width: 12),
+              dropdownEstado,
+            ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              width: 190,
-              child: DropdownButtonFormField<bool?>(
-                initialValue: _activo,
-                isExpanded: true,
-                decoration: const InputDecoration(isDense: true, labelText: 'Estado'),
-                items: const [
-                  DropdownMenuItem(value: null, child: Text('Todos los estados')),
-                  DropdownMenuItem(value: true, child: Text('Publicados / Vigentes')),
-                  DropdownMenuItem(value: false, child: Text('En borrador')),
-                ],
-                onChanged: (valor) {
-                  if (valor == null) {
-                    _cambiarFiltro(limpiarActivo: true);
-                  } else {
-                    _cambiarFiltro(activo: valor);
-                  }
-                },
-              ),
+            Center(child: selectorTipo),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(child: campoBusqueda),
+                const SizedBox(width: 8),
+                dropdownEstado,
+              ],
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -538,23 +579,19 @@ class _TarjetaPrograma extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Los dos tintes de esta tarjeta salen de la paleta y no del `ColorScheme`.
-    // El azul primario servía en claro (8.29:1) pero **no en oscuro**: ahí el
-    // primario es `#0059B3` y sobre un tinte de sí mismo da 1.99:1. Medido el
-    // 2026-09-30.
     final paleta = PaletaInces.de(context);
     final parIcono = paleta.etiquetaDe(TonoEstado.info);
     final vacio = programa.estaVacio;
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+        padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 36,
+              height: 36,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: parIcono.fondo,
@@ -564,11 +601,11 @@ class _TarjetaPrograma extends StatelessWidget {
                 programa.tipo == TipoPrograma.carrera
                     ? Icons.school_outlined
                     : Icons.auto_stories_outlined,
-                size: 20,
+                size: 18,
                 color: parIcono.texto,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -579,7 +616,9 @@ class _TarjetaPrograma extends StatelessWidget {
                         child: Text(
                           programa.nombre,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -587,12 +626,19 @@ class _TarjetaPrograma extends StatelessWidget {
                         texto: programa.codigo,
                         tono: TonoEstado.neutro,
                       ),
+                      if (vacio) ...[
+                        const SizedBox(width: 6),
+                        const _Etiqueta(
+                          texto: 'Sin pensum',
+                          tono: TonoEstado.error,
+                        ),
+                      ],
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
                   Wrap(
                     spacing: 6,
-                    runSpacing: 6,
+                    runSpacing: 4,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       _Etiqueta(
@@ -638,82 +684,78 @@ class _TarjetaPrograma extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if (vacio) ...[
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.errorContainer.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: theme.colorScheme.error.withValues(alpha: 0.35),
-                          width: 1,
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      if (vacio) ...[
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          size: 15,
+                          color: theme.colorScheme.error,
                         ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.warning_amber_rounded,
-                                size: 18,
-                                color: theme.colorScheme.error,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Sin materias cargadas: Requiere pensum para poder activarse y recibir inscripciones.',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: theme.colorScheme.onErrorContainer,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          FilledButton.tonalIcon(
-                            onPressed: abriendoPensum ? null : onEditarPensum,
-                            icon: abriendoPensum
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.playlist_add_rounded, size: 18),
-                            label: const Text('Cargar / Asignar Pensum Académico'),
-                            style: FilledButton.styleFrom(
-                              visualDensity: VisualDensity.compact,
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            'Requiere pensum para recibir inscripciones',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.error,
+                              fontWeight: FontWeight.w500,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
-                    ),
-                  ] else ...[
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed: abriendoPensum ? null : onEditarPensum,
-                      icon: abriendoPensum
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.menu_book_rounded, size: 16),
-                      label: const Text('Gestionar Pensum / Materias'),
-                      style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ),
-                  ],
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: abriendoPensum ? null : onEditarPensum,
+                          icon: abriendoPensum
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 1.5),
+                                )
+                              : const Icon(Icons.playlist_add_rounded, size: 15),
+                          label: const Text('Cargar pensum'),
+                          style: FilledButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ] else ...[
+                        Expanded(
+                          child: Text(
+                            '${programa.totalMaterias} ${programa.totalMaterias == 1 ? 'materia' : 'materias'} asignadas',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: abriendoPensum ? null : onEditarPensum,
+                          icon: abriendoPensum
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 1.5),
+                                )
+                              : const Icon(Icons.menu_book_rounded, size: 15),
+                          label: const Text('Gestionar pensum'),
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            textStyle: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             if (guardando)
               const Padding(
-                padding: EdgeInsets.all(12),
+                padding: EdgeInsets.all(8),
                 child: SizedBox(
                   width: 20,
                   height: 20,
@@ -742,21 +784,6 @@ class _TarjetaPrograma extends StatelessWidget {
               onPressed: onVer,
               icon: const Icon(Icons.visibility_outlined, size: 19),
             ),
-            if (abriendoPensum)
-              const Padding(
-                padding: EdgeInsets.all(12),
-                child: SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            else
-              IconButton(
-                tooltip: 'Gestionar materias y pensum',
-                onPressed: onEditarPensum,
-                icon: const Icon(Icons.playlist_add_check_rounded, size: 20),
-              ),
           ],
         ),
       ),

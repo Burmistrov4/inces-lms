@@ -697,11 +697,15 @@ class AvisoEnLinea extends StatelessWidget {
     required this.texto,
     this.icono = Icons.info_outline,
     this.tono = TonoAviso.info,
+    this.onCerrar,
+    this.compacto = false,
   });
 
   final String texto;
   final IconData icono;
   final TonoAviso tono;
+  final VoidCallback? onCerrar;
+  final bool compacto;
 
   @override
   Widget build(BuildContext context) {
@@ -721,25 +725,43 @@ class AvisoEnLinea extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: compacto ? 6 : 8,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(IncesTheme.radioControl),
         border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icono, size: 17, color: color),
-          const SizedBox(width: 10),
+          Icon(icono, size: compacto ? 15 : 17, color: color),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               texto,
-              style: theme.textTheme.bodySmall?.copyWith(
+              style: (compacto ? theme.textTheme.labelSmall : theme.textTheme.bodySmall)?.copyWith(
                 color: theme.colorScheme.onSurface,
               ),
             ),
           ),
+          if (onCerrar != null) ...[
+            const SizedBox(width: 6),
+            InkWell(
+              onTap: onCerrar,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 16,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
