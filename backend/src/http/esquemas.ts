@@ -347,6 +347,19 @@ export const esquemaListadoMaterias = z.object({
 export const duracionUnidadSchema = z.enum(['DIAS', 'SEMANAS', 'MESES']);
 
 /**
+ * Fecha de calendario ISO (`YYYY-MM-DD`), anulable y opcional.
+ *
+ * La base guarda `date`; PostgREST la devuelve como texto en ese formato y
+ * así mismo la recibe. No se acepta `datetime`: la ventana de inscripciones
+ * no necesita horas y un `23:59` ambiguo sólo genera dudas.
+ */
+export const fechaIsoSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Debe ser una fecha ISO YYYY-MM-DD.')
+  .nullable()
+  .optional();
+
+/**
  * El cuerpo del asistente: programa + pensum en una sola petición.
  *
  * `publicar` decide el `is_active` inicial y va separado de un `activo` porque
@@ -365,6 +378,9 @@ export const esquemaCrearPrograma = z
     duracionUnidad: duracionUnidadSchema.nullable().optional(),
     cupo: z.number().int().min(0).default(25),
     mostrarDisponibilidad: z.boolean().default(true),
+    inscripcionInicio: fechaIsoSchema,
+    inscripcionFin: fechaIsoSchema,
+    proximaApertura: fechaIsoSchema,
   })
   .strict()
   .refine(
@@ -374,6 +390,16 @@ export const esquemaCrearPrograma = z
     {
       path: ['duracionUnidad'],
       message: 'Si se indica duración, deben definirse tanto el valor (positivo) como la unidad (DIAS, SEMANAS, MESES).',
+    },
+  )
+  .refine(
+    (valor) =>
+      valor.inscripcionInicio == null ||
+      valor.inscripcionFin == null ||
+      valor.inscripcionFin >= valor.inscripcionInicio,
+    {
+      path: ['inscripcionFin'],
+      message: 'La fecha de cierre de inscripciones no puede ser anterior a la de apertura.',
     },
   );
 
@@ -394,6 +420,9 @@ export const esquemaActualizarPrograma = z
     duracionUnidad: duracionUnidadSchema.nullable().optional(),
     cupo: z.number().int().min(0).optional(),
     mostrarDisponibilidad: z.boolean().optional(),
+    inscripcionInicio: fechaIsoSchema,
+    inscripcionFin: fechaIsoSchema,
+    proximaApertura: fechaIsoSchema,
   })
   .strict()
   .refine((valor) => Object.keys(valor).length > 0, {

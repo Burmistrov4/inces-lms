@@ -62,6 +62,9 @@ class EntradaCrearPrograma {
     this.duracionUnidad,
     this.cupo = 25,
     this.mostrarDisponibilidad = true,
+    this.inscripcionInicio,
+    this.inscripcionFin,
+    this.proximaApertura,
   });
 
   final String codigo;
@@ -80,6 +83,11 @@ class EntradaCrearPrograma {
   final int cupo;
   final bool mostrarDisponibilidad;
 
+  /// Ventana de inscripciones y próxima apertura (fechas `YYYY-MM-DD`).
+  final String? inscripcionInicio;
+  final String? inscripcionFin;
+  final String? proximaApertura;
+
   /// Al menos una materia: el esquema del backend lo exige.
   final List<EntradaPensum> pensum;
 
@@ -93,6 +101,9 @@ class EntradaCrearPrograma {
         'mostrarDisponibilidad': mostrarDisponibilidad,
         if (duracionValor != null) 'duracionValor': duracionValor,
         if (duracionUnidad != null) 'duracionUnidad': duracionUnidad,
+        'inscripcionInicio': inscripcionInicio,
+        'inscripcionFin': inscripcionFin,
+        'proximaApertura': proximaApertura,
         'pensum': [for (final entrada in pensum) entrada.toJson()],
       };
 }
@@ -111,6 +122,9 @@ class CambiosPrograma {
     this.duracionUnidad,
     this.cupo,
     this.mostrarDisponibilidad,
+    this.inscripcionInicio,
+    this.inscripcionFin,
+    this.proximaApertura,
   });
 
   final String? nombre;
@@ -120,6 +134,9 @@ class CambiosPrograma {
   final String? duracionUnidad;
   final int? cupo;
   final bool? mostrarDisponibilidad;
+  final String? inscripcionInicio;
+  final String? inscripcionFin;
+  final String? proximaApertura;
 
   bool get vacio =>
       nombre == null &&
@@ -128,7 +145,10 @@ class CambiosPrograma {
       duracionValor == null &&
       duracionUnidad == null &&
       cupo == null &&
-      mostrarDisponibilidad == null;
+      mostrarDisponibilidad == null &&
+      inscripcionInicio == null &&
+      inscripcionFin == null &&
+      proximaApertura == null;
 
   Map<String, dynamic> toJson() => {
         if (nombre != null) 'nombre': nombre,
@@ -139,6 +159,9 @@ class CambiosPrograma {
         if (cupo != null) 'cupo': cupo,
         if (mostrarDisponibilidad != null)
           'mostrarDisponibilidad': mostrarDisponibilidad,
+        if (inscripcionInicio != null) 'inscripcionInicio': inscripcionInicio,
+        if (inscripcionFin != null) 'inscripcionFin': inscripcionFin,
+        if (proximaApertura != null) 'proximaApertura': proximaApertura,
       };
 }
 

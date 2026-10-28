@@ -74,6 +74,10 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
   bool _publicar = true;
   int? _duracionValor;
   String _duracionUnidad = 'MESES';
+  int _cupo = 25;
+  DateTime? _inscripcionInicio;
+  DateTime? _inscripcionFin;
+  DateTime? _proximaApertura;
 
   // --- Paso 2: pensum -------------------------------------------------------
   /// Borrador del pensum. Vive en memoria hasta el paso 3: el backend recibe el
@@ -118,11 +122,9 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
   /// la interfaz deshabilita antes de que el usuario choque contra el `409`.
   bool get _bloqueado => widget.detalleInicial?.editable == false;
 
-  static final TextInputFormatter _mayusculas =
-      TextInputFormatter.withFunction(
+  static final TextInputFormatter _mayusculas = TextInputFormatter.withFunction(
     (_, nuevo) => nuevo.copyWith(text: nuevo.text.toUpperCase()),
   );
-
 
   @override
   void initState() {
@@ -141,7 +143,10 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
       for (final grupo in detalle.pensum) {
         for (final materia in grupo.materias) {
           _pensum.add(
-            EntradaPensum(materiaId: materia.materiaId, periodo: materia.periodo),
+            EntradaPensum(
+              materiaId: materia.materiaId,
+              periodo: materia.periodo,
+            ),
           );
           _catalogo[materia.materiaId] = Materia(
             id: materia.materiaId,
@@ -238,7 +243,9 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
 
     setState(() {
       _catalogo[materia.id] = materia;
-      _pensum.add(EntradaPensum(materiaId: materia.id, periodo: _periodoDestino));
+      _pensum.add(
+        EntradaPensum(materiaId: materia.id, periodo: _periodoDestino),
+      );
     });
   }
 
@@ -336,6 +343,17 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
               publicar: _publicar,
               duracionValor: _duracionValor,
               duracionUnidad: _duracionValor != null ? _duracionUnidad : null,
+              cupo: _cupo,
+              mostrarDisponibilidad: true,
+              inscripcionInicio: _inscripcionInicio != null
+                  ? _fechaIso(_inscripcionInicio!)
+                  : null,
+              inscripcionFin: _inscripcionFin != null
+                  ? _fechaIso(_inscripcionFin!)
+                  : null,
+              proximaApertura: _proximaApertura != null
+                  ? _fechaIso(_proximaApertura!)
+                  : null,
             ),
           );
 
@@ -376,8 +394,12 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(3),
-          child: Container(height: 3, decoration:
-              const BoxDecoration(gradient: IncesTheme.degradadoMarca)),
+          child: Container(
+            height: 3,
+            decoration: const BoxDecoration(
+              gradient: IncesTheme.degradadoMarca,
+            ),
+          ),
         ),
       ),
       body: Center(
@@ -394,7 +416,9 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                     // Sólo se puede volver a un paso ya visitado. Saltar hacia
                     // adelante se hace con «Siguiente», que valida: dejar pulsar
                     // el paso 3 desde el 1 permitiría guardar sin pensum.
-                    if (destino < _posicion) setState(() => _posicion = destino);
+                    if (destino < _posicion) {
+                      setState(() => _posicion = destino);
+                    }
                   },
                 ),
               ),
@@ -494,7 +518,8 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
       children: [
         const TituloSeccion(
           'Identidad del programa',
-          subtitulo: 'El código y el tipo no se podrán cambiar después: son la '
+          subtitulo:
+              'El código y el tipo no se podrán cambiar después: son la '
               'identidad del programa y los citan los documentos impresos.',
         ),
         Form(
@@ -522,8 +547,9 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                       validator: (valor) {
                         final codigo = (valor ?? '').trim().toUpperCase();
                         if (codigo.isEmpty) return 'Ingresa el código.';
-                        if (!CurriculoRepository.patronCodigo
-                            .hasMatch(codigo)) {
+                        if (!CurriculoRepository.patronCodigo.hasMatch(
+                          codigo,
+                        )) {
                           return 'Sólo mayúsculas, dígitos y guiones, '
                               'empezando por letra o dígito.';
                         }
@@ -614,8 +640,8 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                       Text(
                         'Configura la duración prevista del trayecto (ej. Soldadura = 3 meses). Se usará para calcular automáticamente la fecha de fin de los períodos académicos.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 14),
                       Row(
@@ -637,8 +663,9 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                               onChanged: (val) {
                                 final n = int.tryParse(val.trim());
                                 setState(
-                                  () => _duracionValor =
-                                      (n != null && n > 0) ? n : null,
+                                  () => _duracionValor = (n != null && n > 0)
+                                      ? n
+                                      : null,
                                 );
                               },
                             ),
@@ -726,6 +753,120 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.event_available_outlined,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Cupos e inscripciones',
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Cuántos aspirantes admite el curso y cuándo abren, '
+                        'cierran y vuelven a comenzar sus inscripciones. Todo '
+                        'opcional: sin fechas, la ventana no restringe.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: 140,
+                        child: TextFormField(
+                          key: ValueKey('cupo-$_cupo'),
+                          initialValue: _cupo.toString(),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          decoration: const InputDecoration(
+                            labelText: 'Cupos',
+                            hintText: 'Ej. 25',
+                            isDense: true,
+                          ),
+                          onChanged: (val) {
+                            final n = int.tryParse(val.trim());
+                            setState(
+                              () => _cupo = (n != null && n >= 0) ? n : 25,
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      LayoutBuilder(
+                        builder: (context, c) {
+                          final enColumna = c.maxWidth < 520;
+                          final campos = <Widget>[
+                            _campoFecha(
+                              etiqueta: 'Abren inscripciones',
+                              ayuda: 'Fecha de apertura de la convocatoria.',
+                              valor: _inscripcionInicio,
+                              onElegir: (d) =>
+                                  setState(() => _inscripcionInicio = d),
+                            ),
+                            _campoFecha(
+                              etiqueta: 'Cierran inscripciones',
+                              ayuda: 'Último día para inscribirse.',
+                              valor: _inscripcionFin,
+                              onElegir: (d) =>
+                                  setState(() => _inscripcionFin = d),
+                            ),
+                            _campoFecha(
+                              etiqueta: 'Próxima apertura',
+                              ayuda: 'Cuándo vuelve a comenzar el curso.',
+                              valor: _proximaApertura,
+                              onElegir: (d) =>
+                                  setState(() => _proximaApertura = d),
+                            ),
+                          ];
+                          if (enColumna) {
+                            return Column(
+                              children: [
+                                for (final campo in campos) ...[
+                                  campo,
+                                  const SizedBox(height: 10),
+                                ],
+                              ],
+                            );
+                          }
+                          return Row(
+                            children: [
+                              for (final campo in campos) ...[
+                                Expanded(child: campo),
+                                const SizedBox(width: 10),
+                              ],
+                            ],
+                          );
+                        },
+                      ),
+                      if (_ventanaIncoherente) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          'El cierre no puede ser anterior a la apertura.',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -734,14 +875,82 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
           tono: TonoAviso.info,
           texto: _tipo == TipoPrograma.carrera
               ? 'Una carrera activa no puede quedarse sin materias: el sistema '
-                  'lo impide. El pensum se arma en el paso siguiente.'
+                    'lo impide. El pensum se arma en el paso siguiente.'
               : 'Un curso libre suele tener un solo período. Puedes añadir más '
-                  'si el curso lo necesita.',
+                    'si el curso lo necesita.',
         ),
       ],
     );
   }
 
+  // ---------------------------------------------------------------------------
+  //  Ventana de inscripciones: helpers de fecha
+  // ---------------------------------------------------------------------------
+
+  String _fechaIso(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  String _fechaLegible(DateTime d) => '${d.day}/${d.month}/${d.year}';
+
+  Future<void> _elegirFecha({
+    required String etiqueta,
+    required DateTime? valor,
+    required ValueChanged<DateTime?> onElegir,
+  }) async {
+    final ahora = DateTime.now();
+    final elegida = await showDatePicker(
+      context: context,
+      initialDate: valor ?? ahora,
+      firstDate: DateTime(ahora.year - 1),
+      lastDate: DateTime(ahora.year + 5),
+      helpText: etiqueta,
+    );
+    if (elegida != null) onElegir(elegida);
+  }
+
+  Widget _campoFecha({
+    required String etiqueta,
+    required String ayuda,
+    required DateTime? valor,
+    required ValueChanged<DateTime?> onElegir,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () =>
+          _elegirFecha(etiqueta: etiqueta, valor: valor, onElegir: onElegir),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: etiqueta,
+          helperText: ayuda,
+          helperMaxLines: 2,
+          isDense: true,
+          suffixIcon: valor == null
+              ? const Icon(Icons.calendar_today_outlined, size: 18)
+              : IconButton(
+                  tooltip: 'Quitar fecha',
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.close_rounded, size: 16),
+                  onPressed: () => onElegir(null),
+                ),
+        ),
+        child: Text(
+          valor != null ? _fechaLegible(valor) : 'Sin fecha',
+          style: TextStyle(
+            color: valor == null
+                ? Theme.of(context).colorScheme.onSurfaceVariant
+                : null,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Aviso de incoherencia: el cierre no puede ser anterior a la apertura.
+  /// El backend también lo rechaza; avisarlo aquí evita el viaje en vano.
+  bool get _ventanaIncoherente =>
+      _inscripcionInicio != null &&
+      _inscripcionFin != null &&
+      _inscripcionFin!.isBefore(_inscripcionInicio!);
   // ---------------------------------------------------------------------------
   //  Paso 2 — Pensum
   // ---------------------------------------------------------------------------
@@ -789,7 +998,8 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
           AvisoEnLinea(
             tono: TonoAviso.advertencia,
             icono: Icons.lock_outline,
-            texto: 'Este pensum no se puede modificar: hay '
+            texto:
+                'Este pensum no se puede modificar: hay '
                 '${plural(widget.detalleInicial!.seccionesActivas, 'sección activa', 'secciones activas')} '
                 'del período vigente cursando el programa. Archívalas primero.',
           ),
@@ -852,10 +1062,7 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                         style: theme.textTheme.titleMedium,
                       ),
                     ),
-                    _Insignia(
-                      texto: _tipo.etiqueta,
-                      tono: TonoEstado.info,
-                    ),
+                    _Insignia(texto: _tipo.etiqueta, tono: TonoEstado.info),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -899,6 +1106,29 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                             '$_duracionValor ${_duracionUnidad.toLowerCase()}',
                         icono: Icons.timelapse_outlined,
                       ),
+                    _DatoResumen(
+                      etiqueta: 'Cupos',
+                      valor: '$_cupo',
+                      icono: Icons.event_seat_outlined,
+                    ),
+                    if (_inscripcionInicio != null)
+                      _DatoResumen(
+                        etiqueta: 'Abren inscripciones',
+                        valor: _fechaLegible(_inscripcionInicio!),
+                        icono: Icons.event_available_outlined,
+                      ),
+                    if (_inscripcionFin != null)
+                      _DatoResumen(
+                        etiqueta: 'Cierran inscripciones',
+                        valor: _fechaLegible(_inscripcionFin!),
+                        icono: Icons.event_busy_outlined,
+                      ),
+                    if (_proximaApertura != null)
+                      _DatoResumen(
+                        etiqueta: 'Próxima apertura',
+                        valor: _fechaLegible(_proximaApertura!),
+                        icono: Icons.replay_outlined,
+                      ),
                   ],
                 ),
               ],
@@ -909,7 +1139,8 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
         if (widget.esEdicion)
           AvisoEnLinea(
             tono: TonoAviso.info,
-            texto: 'Se reemplaza el pensum completo. Las materias que ya no '
+            texto:
+                'Se reemplaza el pensum completo. Las materias que ya no '
                 'estén se quitan, las que cambien de período se reordenan y las '
                 'nuevas se añaden, todo en una sola operación.',
           )
@@ -919,16 +1150,13 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
             icono: _publicar ? Icons.public_outlined : Icons.drafts_outlined,
             texto: _publicar
                 ? 'El programa se crea publicado: quedará visible en el '
-                    'catálogo del aspirante.'
+                      'catálogo del aspirante.'
                 : 'El programa se crea en borrador. No aparecerá en el catálogo '
-                    'hasta que lo actives desde el listado.',
+                      'hasta que lo actives desde el listado.',
           ),
         const SizedBox(height: 20),
         for (final grupo in grupos) ...[
-          _GrupoRevisado(
-            grupo: grupo,
-            catalogo: _catalogo,
-          ),
+          _GrupoRevisado(grupo: grupo, catalogo: _catalogo),
           const SizedBox(height: 12),
         ],
       ],
@@ -981,8 +1209,8 @@ class _IndicadorPasos extends StatelessWidget {
             estado: i == actual
                 ? _EstadoPaso.actual
                 : i < actual
-                    ? _EstadoPaso.hecho
-                    : _EstadoPaso.pendiente,
+                ? _EstadoPaso.hecho
+                : _EstadoPaso.pendiente,
             onTap: i < actual ? () => onIr(i) : null,
           ),
         ],
@@ -1050,8 +1278,9 @@ class _Paso extends StatelessWidget {
           etiqueta,
           style: GoogleFonts.inter(
             fontSize: 13,
-            fontWeight:
-                estado == _EstadoPaso.actual ? FontWeight.w700 : FontWeight.w500,
+            fontWeight: estado == _EstadoPaso.actual
+                ? FontWeight.w700
+                : FontWeight.w500,
             color: estado == _EstadoPaso.pendiente
                 ? theme.colorScheme.onSurfaceVariant
                 : theme.colorScheme.onSurface,
@@ -1072,7 +1301,6 @@ class _Paso extends StatelessWidget {
     );
   }
 }
-
 // -----------------------------------------------------------------------------
 //  Paso 1 — Selector de tipo
 // -----------------------------------------------------------------------------
@@ -1150,8 +1378,11 @@ class _BancoMaterias extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.library_books_outlined,
-                    size: 18, color: theme.colorScheme.primary),
+                Icon(
+                  Icons.library_books_outlined,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Text('Banco de materias', style: theme.textTheme.titleSmall),
                 const Spacer(),
@@ -1242,15 +1473,18 @@ class _BancoMaterias extends StatelessWidget {
                           ? Icon(
                               Icons.check_circle_outline,
                               size: 19,
-                              color: PaletaInces.deBrillo(theme.brightness).exito,
+                              color: PaletaInces.deBrillo(theme.brightness)
+                                  .exito,
                             )
                           : IconButton(
                               tooltip: 'Añadir al pensum',
                               onPressed: habilitado
                                   ? () => onAgregar(materia)
                                   : null,
-                              icon: const Icon(Icons.add_circle_outline,
-                                  size: 19),
+                              icon: const Icon(
+                                Icons.add_circle_outline,
+                                size: 19,
+                              ),
                             ),
                     );
                   },
@@ -1320,8 +1554,9 @@ class _ConstructorPensum extends StatelessWidget {
     // El rango de períodos ofrecidos nunca puede quedarse por debajo del mayor
     // que ya esté en uso: un `DropdownButton` cuyo valor no esté entre sus
     // opciones lanza una aserción en tiempo de ejecución.
-    final mayorEnUso =
-        pensum.isEmpty ? 1 : pensum.map((e) => e.periodo).reduce(math.max);
+    final mayorEnUso = pensum.isEmpty
+        ? 1
+        : pensum.map((e) => e.periodo).reduce(math.max);
     final tope = math.max(topePeriodos, mayorEnUso);
     final periodos = [for (var p = 1; p <= tope; p++) p];
 
@@ -1333,8 +1568,11 @@ class _ConstructorPensum extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.account_tree_outlined,
-                    size: 18, color: theme.colorScheme.primary),
+                Icon(
+                  Icons.account_tree_outlined,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Text('Pensum', style: theme.textTheme.titleSmall),
                 const Spacer(),
@@ -1367,10 +1605,7 @@ class _ConstructorPensum extends StatelessWidget {
                       : null,
                   items: [
                     for (final periodo in periodos)
-                      DropdownMenuItem(
-                        value: periodo,
-                        child: Text('$periodo'),
-                      ),
+                      DropdownMenuItem(value: periodo, child: Text('$periodo')),
                   ],
                 ),
                 const Spacer(),
@@ -1580,8 +1815,10 @@ class _GrupoRevisado extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text('Módulo / Trimestre ${grupo.periodo}',
-                    style: theme.textTheme.titleSmall),
+                Text(
+                  'Módulo / Trimestre ${grupo.periodo}',
+                  style: theme.textTheme.titleSmall,
+                ),
                 const Spacer(),
                 Text(
                   _plural(grupo.totalMaterias, 'materia', 'materias'),
@@ -1798,7 +2035,8 @@ class _DialogoNuevaMateriaState extends State<_DialogoNuevaMateria> {
 
         if (encontrada == null) {
           setState(() {
-            _error = 'El código $codigo ya existe, pero no pudimos recuperar '
+            _error =
+                'El código $codigo ya existe, pero no pudimos recuperar '
                 'la materia. Búscala en el banco por su nombre.';
             _puedeBuscarExistente = false;
           });
@@ -1832,7 +2070,8 @@ class _DialogoNuevaMateriaState extends State<_DialogoNuevaMateria> {
                 textCapitalization: TextCapitalization.characters,
                 inputFormatters: [
                   TextInputFormatter.withFunction(
-                    (_, nuevo) => nuevo.copyWith(text: nuevo.text.toUpperCase()),
+                    (_, nuevo) =>
+                        nuevo.copyWith(text: nuevo.text.toUpperCase()),
                   ),
                   LengthLimitingTextInputFormatter(
                     CurriculoRepository.largoMaximoCodigo,
@@ -1888,8 +2127,9 @@ class _DialogoNuevaMateriaState extends State<_DialogoNuevaMateria> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: parError.fondo,
-                    borderRadius:
-                        BorderRadius.circular(IncesTheme.radioControl),
+                    borderRadius: BorderRadius.circular(
+                      IncesTheme.radioControl,
+                    ),
                     border: Border.all(
                       color: parError.texto.withValues(alpha: 0.3),
                     ),

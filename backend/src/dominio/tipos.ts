@@ -222,6 +222,12 @@ export interface Programa {
   duracionUnidad?: UnidadDuracion | null;
   cupo?: number;
   mostrarDisponibilidad?: boolean;
+  /** Fecha YYYY-MM-DD en que abren las inscripciones. Null = siempre abiertas. */
+  inscripcionInicio?: string | null;
+  /** Fecha YYYY-MM-DD en que cierran las inscripciones. Null = sin cierre. */
+  inscripcionFin?: string | null;
+  /** Fecha YYYY-MM-DD del próximo arranque del programa (cohortes). */
+  proximaApertura?: string | null;
   activo: boolean;
   creadoEn: string;
   actualizadoEn: string;

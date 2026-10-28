@@ -333,7 +333,7 @@ class SupabaseService implements AuthGateway, AspiranteGateway, ModulesGateway {
     try {
       final respuesta = await client
           .from(_tablaPrograms)
-          .select('id, code, name, type, duration_value, duration_unit, requires_internship, cupo, mostrar_disponibilidad')
+          .select('id, code, name, type, duration_value, duration_unit, requires_internship, cupo, mostrar_disponibilidad, inscripcion_inicio, inscripcion_fin, proxima_apertura')
           .eq('is_active', true)
           .order('name');
       filas = (respuesta as List<dynamic>).whereType<Map<String, dynamic>>().toList();
@@ -341,7 +341,7 @@ class SupabaseService implements AuthGateway, AspiranteGateway, ModulesGateway {
       // Respaldo resiliente si columnas de migración reciente aún no existen en el entorno remoto
       final respuesta = await client
           .from(_tablaPrograms)
-          .select('id, code, name, type, duration_value, duration_unit, requires_internship')
+          .select('id, code, name, type, duration_value, duration_unit, requires_internship, inscripcion_inicio, inscripcion_fin, proxima_apertura')
           .eq('is_active', true)
           .order('name');
       filas = (respuesta as List<dynamic>).whereType<Map<String, dynamic>>().toList();
@@ -355,6 +355,9 @@ class SupabaseService implements AuthGateway, AspiranteGateway, ModulesGateway {
             final dValor = fila['duration_value'] as num?;
             final dUnidad = fila['duration_unit']?.toString().toLowerCase();
             final duracion = dValor != null && dUnidad != null ? '$dValor $dUnidad' : null;
+            final ini = fila['inscripcion_inicio']?.toString();
+            final fin = fila['inscripcion_fin']?.toString();
+            final apertura = fila['proxima_apertura']?.toString();
             return OpcionCampo(
               // D14: el VALOR es el uuid y la ETIQUETA el nombre. Es el cambio que
               // hace que renombrar un programa no toque ninguna ficha.
@@ -367,6 +370,11 @@ class SupabaseService implements AuthGateway, AspiranteGateway, ModulesGateway {
               cupo: cupo,
               cuposDisponibles: cupo,
               mostrarDisponibilidad: mostrar,
+              inscripcionInicio:
+                  (ini == null || ini == 'null') ? null : ini,
+              inscripcionFin: (fin == null || fin == 'null') ? null : fin,
+              proximaApertura:
+                  (apertura == null || apertura == 'null') ? null : apertura,
             );
           },
         )

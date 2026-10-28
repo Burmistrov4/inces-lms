@@ -49,6 +49,9 @@ class Programa {
     this.duracionUnidad,
     this.cupo = 25,
     this.mostrarDisponibilidad = true,
+    this.inscripcionInicio,
+    this.inscripcionFin,
+    this.proximaApertura,
     this.creadoEn,
     this.actualizadoEn,
   });
@@ -66,6 +69,15 @@ class Programa {
   final String? duracionUnidad;
   final int? cupo;
   final bool mostrarDisponibilidad;
+
+  /// Ventana de inscripciones (fechas `YYYY-MM-DD` del backend). Null =
+  /// sin dato: la ventana no restringe y el estado de «inscripciones abiertas»
+  /// queda como esté el interruptor del programa.
+  final String? inscripcionInicio;
+  final String? inscripcionFin;
+
+  /// Próximo arranque del programa (cohortes): «cuándo vuelve a comenzar».
+  final String? proximaApertura;
   final bool activo;
   final DateTime? creadoEn;
   final DateTime? actualizadoEn;
@@ -99,6 +111,9 @@ class Programa {
       mostrarDisponibilidad: json['mostrarDisponibilidad'] as bool? ??
           json['mostrar_disponibilidad'] as bool? ??
           true,
+      inscripcionInicio: json['inscripcionInicio']?.toString(),
+      inscripcionFin: json['inscripcionFin']?.toString(),
+      proximaApertura: json['proximaApertura']?.toString(),
       activo: json['activo'] as bool? ?? false,
       creadoEn: DateTime.tryParse(json['creadoEn']?.toString() ?? ''),
       actualizadoEn: DateTime.tryParse(json['actualizadoEn']?.toString() ?? ''),
@@ -131,6 +146,9 @@ class ProgramaConTotales extends Programa {
     super.duracionUnidad,
     super.cupo = 25,
     super.mostrarDisponibilidad = true,
+    super.inscripcionInicio,
+    super.inscripcionFin,
+    super.proximaApertura,
     super.creadoEn,
     super.actualizadoEn,
   });
@@ -162,6 +180,9 @@ class ProgramaConTotales extends Programa {
       duracionUnidad: base.duracionUnidad,
       cupo: base.cupo,
       mostrarDisponibilidad: base.mostrarDisponibilidad,
+      inscripcionInicio: base.inscripcionInicio,
+      inscripcionFin: base.inscripcionFin,
+      proximaApertura: base.proximaApertura,
       activo: base.activo,
       totalMaterias: json['totalMaterias'] as int? ?? 0,
       totalPeriodos: json['totalPeriodos'] as int? ?? 0,

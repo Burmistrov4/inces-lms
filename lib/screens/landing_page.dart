@@ -1686,6 +1686,18 @@ class _LandingPageState extends State<LandingPage> {
                     ],
                   ),
                 ],
+                if (curso.inscripcionInicio != null || curso.inscripcionFin != null || curso.proximaApertura != null) ...[
+                  const SizedBox(height: 8),
+                  _FilaFechaCurso(
+                    icono: Icons.event_available_rounded,
+                    texto: _textoVentanaInscripciones(curso),
+                  ),
+                  if (curso.proximaApertura != null)
+                    _FilaFechaCurso(
+                      icono: Icons.replay_rounded,
+                      texto: 'Nueva apertura: ${_fechaCorta(curso.proximaApertura!)}',
+                    ),
+                ],
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -2787,3 +2799,51 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
   }
 }
 
+
+/// Fecha `YYYY-MM-DD` a `d/m/a` para las tarjetas del catálogo.
+String _fechaCorta(String iso) {
+  final partes = iso.split('-');
+  if (partes.length != 3) return iso;
+  final d = int.tryParse(partes[2]);
+  final m = int.tryParse(partes[1]);
+  final a = int.tryParse(partes[0]);
+  if (d == null || m == null || a == null) return iso;
+  return '$d/$m/$a';
+}
+
+/// Qué dice la tarjeta sobre la ventana de inscripciones.
+///
+/// Con apertura y cierre: «del X al Y». Sólo cierre: «hasta el Y». Sólo
+/// apertura: «desde el X». Sin datos no se muestra la fila.
+String _textoVentanaInscripciones(OpcionCampo curso) {
+  final ini = curso.inscripcionInicio;
+  final fin = curso.inscripcionFin;
+  if (ini != null && fin != null) {
+    return 'Inscripciones: del ${_fechaCorta(ini)} al ${_fechaCorta(fin)}';
+  }
+  if (fin != null) return 'Inscripciones abiertas hasta el ${_fechaCorta(fin)}';
+  if (ini != null) return 'Inscripciones desde el ${_fechaCorta(ini)}';
+  return '';
+}
+
+/// Fila de icono + texto para las fechas del curso en el catálogo.
+class _FilaFechaCurso extends StatelessWidget {
+  const _FilaFechaCurso({required this.icono, required this.texto});
+
+  final IconData icono;
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Icon(icono, size: 16, color: theme.colorScheme.primary),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(texto, style: theme.textTheme.bodySmall),
+        ),
+      ],
+    );
+  }
+}

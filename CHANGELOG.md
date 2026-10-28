@@ -2,6 +2,17 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.5.4] - 2026-10-28
+### Lote 3 — Ventana de inscripciones y próxima apertura (parcial: código listo, migración SIN aplicar)
+
+**Lo que el propietario pidió y no existía:** por curso/programa, decir cuándo abren y cierran las inscripciones, cuándo arranca y cuándo vuelve a comenzar — visible para admin, docente y aspirante.
+
+- **Migración nueva `202610280001_ventana_inscripciones_programas.sql`** (local): `programs.inscripcion_inicio/inscripcion_fin/proxima_apertura` (date, anulables) + constraint de coherencia. **No aplicada a producción** — requiere autorización explícita.
+- **Backend:** `Programa`/`EntradaCrearPrograma`/`CambiosPrograma` con las 3 fechas; columnas en `COLUMNAS_PROGRAMA*`; escritura en crear (post-RPC) y actualizar; esquemas Zod (`fechaIsoSchema`, refine de coherencia cierre ≥ apertura). 721 tests backend en verde.
+- **Flutter:** modelo `Programa`/`ProgramaConTotales`/`OpcionCampo` con las fechas; catálogo del aspirante las lee (con select de respaldo); **asistente de creación** gana tarjeta «Cupos e inscripciones» (cupo + 3 selectores de fecha, en columna en móvil, aviso de incoherencia en vivo) y la revisión muestra cupos y fechas; **diálogo de edición** permite cambiarlas; tarjeta del listado muestra chips «Inscripciones hasta d/m» y «Nueva apertura: d/m»; **landing** muestra la ventana («Inscripciones: del X al Y», «abiertas hasta…») y la nueva apertura. 1057 tests Flutter en verde.
+
+**Pendiente del Lote 3:** aplicar la migración a producción (autorización + `node supabase/apply-migrations.mjs`) y verificar `verificar-esquema.mjs`.
+
 ## [1.5.3] - 2026-10-28
 ### Lote 4 — Nomenclatura de Guardias
 - El módulo se llama ahora **«Guardias Docentes (MTP)»** en el menú, en el título del panel, en el horario del docente y en los accesos desde Cuadrante, Aulas y Horario PNA (clave de navegación actualizada en las 6 referencias juntas para no romper rutas).

@@ -439,6 +439,9 @@ export interface EntradaCrearPrograma {
   duracionUnidad?: UnidadDuracion | null;
   cupo?: number;
   mostrarDisponibilidad?: boolean;
+  inscripcionInicio?: string | null;
+  inscripcionFin?: string | null;
+  proximaApertura?: string | null;
 }
 
 /**
@@ -456,6 +459,9 @@ export interface CambiosPrograma {
   duracionUnidad?: UnidadDuracion | null;
   cupo?: number;
   mostrarDisponibilidad?: boolean;
+  inscripcionInicio?: string | null;
+  inscripcionFin?: string | null;
+  proximaApertura?: string | null;
 }
 
 export interface EntradaCrearMateria {

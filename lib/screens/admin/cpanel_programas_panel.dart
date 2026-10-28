@@ -682,6 +682,16 @@ class _TarjetaPrograma extends StatelessWidget {
                   '${programa.cuposOcupados} de ${programa.cupo ?? 25} cupos',
               tono: TonoEstado.info,
             ),
+            if (programa.inscripcionFin != null)
+              _Etiqueta(
+                texto: 'Inscripciones hasta ${_fechaCorta(programa.inscripcionFin!)}',
+                tono: TonoEstado.exito,
+              ),
+            if (programa.proximaApertura != null)
+              _Etiqueta(
+                texto: 'Nueva apertura: ${_fechaCorta(programa.proximaApertura!)}',
+                tono: TonoEstado.neutro,
+              ),
             if (!programa.mostrarDisponibilidad)
               const _Etiqueta(texto: 'Cupos ocultos', tono: TonoEstado.neutro),
             Text(
@@ -883,6 +893,16 @@ class _TarjetaPrograma extends StatelessWidget {
 /// oscuro, 1.99:1. Con un tono el color no se puede elegir mal — lo resuelve
 /// `PaletaInces` con el brillo montado, y el 12 % del tinte se decide en un solo
 /// sitio. Medido el 2026-09-30.
+/// Fecha `YYYY-MM-DD` del backend a `d/m` para chips compactos.
+String _fechaCorta(String iso) {
+  final partes = iso.split('-');
+  if (partes.length != 3) return iso;
+  final d = int.tryParse(partes[2]);
+  final m = int.tryParse(partes[1]);
+  if (d == null || m == null) return iso;
+  return '$d/$m';
+}
+
 class _Etiqueta extends StatelessWidget {
   const _Etiqueta({required this.texto, required this.tono});
 
@@ -1082,6 +1102,15 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
     text: (widget.programa.cupo ?? 25).toString(),
   );
   late bool _mostrarDisponibilidad = widget.programa.mostrarDisponibilidad;
+  late DateTime? _inscripcionInicio = widget.programa.inscripcionInicio != null
+      ? DateTime.tryParse(widget.programa.inscripcionInicio!)
+      : null;
+  late DateTime? _inscripcionFin = widget.programa.inscripcionFin != null
+      ? DateTime.tryParse(widget.programa.inscripcionFin!)
+      : null;
+  late DateTime? _proximaApertura = widget.programa.proximaApertura != null
+      ? DateTime.tryParse(widget.programa.proximaApertura!)
+      : null;
 
   bool _guardando = false;
   String? _error;
@@ -1126,6 +1155,17 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
           _mostrarDisponibilidad != widget.programa.mostrarDisponibilidad
           ? _mostrarDisponibilidad
           : null,
+      inscripcionInicio: _fechaIso(_inscripcionInicio) !=
+              widget.programa.inscripcionInicio
+          ? _fechaIso(_inscripcionInicio)
+          : null,
+      inscripcionFin: _fechaIso(_inscripcionFin) != widget.programa.inscripcionFin
+          ? _fechaIso(_inscripcionFin)
+          : null,
+      proximaApertura: _fechaIso(_proximaApertura) !=
+              widget.programa.proximaApertura
+          ? _fechaIso(_proximaApertura)
+          : null,
     );
 
     if (cambios.vacio) {
@@ -1144,6 +1184,61 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
       success: (_) => Navigator.of(context).pop(true),
       failure: (fallo) => setState(() => _error = fallo.message),
     );
+  }
+
+  String? _fechaIso(DateTime? d) =>
+      d == null
+          ? null
+          : '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  Widget _campoFecha({
+    required String etiqueta,
+    required DateTime? valor,
+    required ValueChanged<DateTime?> onElegir,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => _elegirFecha(etiqueta, onElegir),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: etiqueta,
+          isDense: true,
+          suffixIcon: valor == null
+              ? const Icon(Icons.calendar_today_outlined, size: 18)
+              : IconButton(
+                  tooltip: 'Quitar fecha',
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.close_rounded, size: 16),
+                  onPressed: () => onElegir(null),
+                ),
+        ),
+        child: Text(
+          valor == null
+              ? 'Sin fecha'
+              : '${valor.day}/${valor.month}/${valor.year}',
+          style: TextStyle(
+            color: valor == null
+                ? Theme.of(context).colorScheme.onSurfaceVariant
+                : null,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _elegirFecha(
+    String etiqueta,
+    ValueChanged<DateTime?> onElegir,
+  ) async {
+    final ahora = DateTime.now();
+    final elegida = await showDatePicker(
+      context: context,
+      initialDate: ahora,
+      firstDate: DateTime(ahora.year - 1),
+      lastDate: DateTime(ahora.year + 5),
+      helpText: etiqueta,
+    );
+    if (elegida != null) onElegir(elegida);
   }
 
   @override
@@ -1352,6 +1447,24 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                     }
                     return null;
                   },
+                ),
+                const SizedBox(height: 12),
+                _campoFecha(
+                  etiqueta: 'Abren inscripciones',
+                  valor: _inscripcionInicio,
+                  onElegir: (d) => setState(() => _inscripcionInicio = d),
+                ),
+                const SizedBox(height: 12),
+                _campoFecha(
+                  etiqueta: 'Cierran inscripciones',
+                  valor: _inscripcionFin,
+                  onElegir: (d) => setState(() => _inscripcionFin = d),
+                ),
+                const SizedBox(height: 12),
+                _campoFecha(
+                  etiqueta: 'Próxima apertura',
+                  valor: _proximaApertura,
+                  onElegir: (d) => setState(() => _proximaApertura = d),
                 ),
                 const SizedBox(height: 12),
                 SwitchListTile(

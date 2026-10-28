@@ -62,6 +62,9 @@ class OpcionCampo {
     this.cuposOcupados,
     this.cuposDisponibles,
     this.mostrarDisponibilidad = true,
+    this.inscripcionInicio,
+    this.inscripcionFin,
+    this.proximaApertura,
   });
 
   final String valor;
@@ -74,6 +77,14 @@ class OpcionCampo {
   final int? cuposOcupados;
   final int? cuposDisponibles;
   final bool mostrarDisponibilidad;
+
+  /// Ventana de inscripciones del programa (fechas `YYYY-MM-DD`). Null =
+  /// sin dato: no se muestra restricción temporal.
+  final String? inscripcionInicio;
+  final String? inscripcionFin;
+
+  /// Próximo arranque del programa (cohortes): «cuándo vuelve a comenzar».
+  final String? proximaApertura;
 
   factory OpcionCampo.fromJson(Map<String, dynamic> json) {
     final valor = (json['valor'] ?? '').toString();
@@ -90,6 +101,12 @@ class OpcionCampo {
     final mostrarDisponibilidad = (json['mostrarDisponibilidad'] as bool?) ??
         (json['mostrar_disponibilidad'] as bool?) ??
         true;
+    final inscripcionInicio = json['inscripcionInicio']?.toString() ??
+        json['inscripcion_inicio']?.toString();
+    final inscripcionFin =
+        json['inscripcionFin']?.toString() ?? json['inscripcion_fin']?.toString();
+    final proximaApertura = json['proximaApertura']?.toString() ??
+        json['proxima_apertura']?.toString();
     return OpcionCampo(
       valor: valor,
       // La etiqueta cae al valor: una opción sin texto que se pintara vacía
@@ -103,6 +120,15 @@ class OpcionCampo {
       cuposOcupados: cuposOcupados,
       cuposDisponibles: cuposDisponibles,
       mostrarDisponibilidad: mostrarDisponibilidad,
+      inscripcionInicio: (inscripcionInicio == null || inscripcionInicio == 'null')
+          ? null
+          : inscripcionInicio,
+      inscripcionFin: (inscripcionFin == null || inscripcionFin == 'null')
+          ? null
+          : inscripcionFin,
+      proximaApertura: (proximaApertura == null || proximaApertura == 'null')
+          ? null
+          : proximaApertura,
     );
   }
 }

@@ -360,6 +360,9 @@ function aPrograma(fila: Fila): Programa {
     duracionUnidad: esUnidadDuracion(fila.duration_unit) ? fila.duration_unit : null,
     cupo: entero(fila.cupo, 25),
     mostrarDisponibilidad: booleano(fila.mostrar_disponibilidad, true),
+    inscripcionInicio: texto(fila.inscripcion_inicio),
+    inscripcionFin: texto(fila.inscripcion_fin),
+    proximaApertura: texto(fila.proxima_apertura),
     activo: booleano(fila.is_active, false),
     creadoEn: textoObligatorio(fila.created_at),
     actualizadoEn: textoObligatorio(fila.updated_at),
@@ -1100,10 +1103,10 @@ const ROLES_DOCENTES: readonly Rol[] = ['docente', 'admin'];
  * silencio a cadena vacía.
  */
 const COLUMNAS_PROGRAMA_BASE =
-  'id,code,name,type,requires_internship,duration_value,duration_unit,is_active,created_at,updated_at';
+  'id,code,name,type,requires_internship,duration_value,duration_unit,inscripcion_inicio,inscripcion_fin,proxima_apertura,is_active,created_at,updated_at';
 
 const COLUMNAS_PROGRAMA =
-  'id,code,name,type,requires_internship,duration_value,duration_unit,cupo,mostrar_disponibilidad,is_active,created_at,updated_at';
+  'id,code,name,type,requires_internship,duration_value,duration_unit,cupo,mostrar_disponibilidad,inscripcion_inicio,inscripcion_fin,proxima_apertura,is_active,created_at,updated_at';
 
 const COLUMNAS_MATERIA = 'id,code,name,academic_hours,created_at,updated_at';
 
@@ -1985,6 +1988,23 @@ class CurriculoSupabase implements PuertaCurriculo {
         .eq('id', id);
     }
 
+    // La ventana de inscripciones no entra por el RPC: se escribe igual que la
+    // duración, en una segunda escritura acotada al programa recién creado.
+    if (
+      entrada.inscripcionInicio !== undefined ||
+      entrada.inscripcionFin !== undefined ||
+      entrada.proximaApertura !== undefined
+    ) {
+      await this.cliente
+        .from(TABLA_PROGRAMAS)
+        .update({
+          inscripcion_inicio: entrada.inscripcionInicio ?? null,
+          inscripcion_fin: entrada.inscripcionFin ?? null,
+          proxima_apertura: entrada.proximaApertura ?? null,
+        })
+        .eq('id', id);
+    }
+
     return this.detalleObligatorio(id);
   }
 
@@ -2006,6 +2026,15 @@ class CurriculoSupabase implements PuertaCurriculo {
     }
     if (cambios.mostrarDisponibilidad !== undefined) {
       parche.mostrar_disponibilidad = cambios.mostrarDisponibilidad;
+    }
+    if (cambios.inscripcionInicio !== undefined) {
+      parche.inscripcion_inicio = cambios.inscripcionInicio;
+    }
+    if (cambios.inscripcionFin !== undefined) {
+      parche.inscripcion_fin = cambios.inscripcionFin;
+    }
+    if (cambios.proximaApertura !== undefined) {
+      parche.proxima_apertura = cambios.proximaApertura;
     }
 
     if (Object.keys(parche).length === 0) {

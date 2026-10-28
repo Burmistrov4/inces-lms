@@ -208,8 +208,10 @@ pero **el día que caduca los despliegues fallan sin decir por qué** —el mens
 habla de autenticación, no de caducidad—. Si se elige con fecha, hay que anotarla
 aquí:
 
-> **Token `inces-lms pages deploy`: caduca el 2026-10-25 (1 año).** Si un
-> despliegue empieza a fallar por credencial después de esa fecha, es esto.
+> **Token `inces-lms pages deploy`: RENOVADO el 2026-10-26** (el anterior
+> caducaba el 2026-10-25). Verificado el 2026-10-28: el token figura **Active**
+> en el dashboard, `wrangler pages project list` responde y el último deploy
+> a `inces-lms.pages.dev` es de hace horas. No requiere acción.
 
 Para un proyecto que se defiende ante un jurado y sigue vivo después, «No
 expiration» evita esa trampa; con fecha, el riesgo es menor si el token se filtra.
