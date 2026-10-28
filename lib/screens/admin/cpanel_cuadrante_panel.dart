@@ -608,10 +608,15 @@ class _Leyenda extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        Text(
-          texto,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        // Flexible: el texto de la leyenda desbordaba 43 px a 360 — un Row de
+        // ancho mínimo dentro de un Wrap no parte la línea si su hijo es
+        // inflexible.
+        Flexible(
+          child: Text(
+            texto,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       ],
