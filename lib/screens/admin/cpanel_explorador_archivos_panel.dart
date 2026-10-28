@@ -15,7 +15,6 @@ import '../../widgets/comunes.dart';
 import '../../widgets/guardia_toque.dart';
 import '../../widgets/responsivo.dart';
 
-
 /// Tipo de elemento en el explorador de archivos.
 enum TipoElemento {
   carpeta,
@@ -107,33 +106,33 @@ class ElementoArchivo {
   }
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'nombre': nombre,
-        'tipo': tipo.name,
-        'tamanoBytes': tamanoBytes,
-        'fechaModificacion': fechaModificacion.toIso8601String(),
-        'propietario': propietario,
-        'ruta': ruta,
-        'colorIndice': _colorAIndice(colorCarpeta),
-        'esDrive': esDrive,
-        'urlDrive': urlDrive,
-        'permiso': permiso,
-        'aulaVirtual': aulaVirtual,
-        'esRemoto': esRemoto,
-        'estadoRemoto': estadoRemoto,
-        'materia': materia,
-      };
+    'id': id,
+    'nombre': nombre,
+    'tipo': tipo.name,
+    'tamanoBytes': tamanoBytes,
+    'fechaModificacion': fechaModificacion.toIso8601String(),
+    'propietario': propietario,
+    'ruta': ruta,
+    'colorIndice': _colorAIndice(colorCarpeta),
+    'esDrive': esDrive,
+    'urlDrive': urlDrive,
+    'permiso': permiso,
+    'aulaVirtual': aulaVirtual,
+    'esRemoto': esRemoto,
+    'estadoRemoto': estadoRemoto,
+    'materia': materia,
+  };
 
   factory ElementoArchivo.fromMap(Map<String, dynamic> map) {
     final colIndice = (map['colorIndice'] as num?)?.toInt();
-    final col = (colIndice != null &&
+    final col =
+        (colIndice != null &&
             colIndice >= 0 &&
             colIndice < _paletaColores.length)
         ? _paletaColores[colIndice]
         : null;
     return ElementoArchivo(
-      id: map['id'] as String? ??
-          'id_${DateTime.now().millisecondsSinceEpoch}',
+      id: map['id'] as String? ?? 'id_${DateTime.now().millisecondsSinceEpoch}',
       nombre: map['nombre'] as String? ?? 'Archivo',
       tipo: TipoElemento.values.firstWhere(
         (t) => t.name == map['tipo'],
@@ -142,7 +141,7 @@ class ElementoArchivo {
       tamanoBytes: (map['tamanoBytes'] as num?)?.toInt() ?? 0,
       fechaModificacion:
           DateTime.tryParse(map['fechaModificacion'] as String? ?? '') ??
-              DateTime.now(),
+          DateTime.now(),
       propietario: map['propietario'] as String? ?? 'Administrador',
       ruta: map['ruta'] as String? ?? 'Mi Unidad',
       colorCarpeta: col,
@@ -263,7 +262,6 @@ class _CpanelExploradorArchivosPanelState
       _elementos.fold<int>(0, (suma, e) => suma + e.tamanoBytes) /
       (1024 * 1024 * 1024);
 
-
   /// Catálogo de archivos y carpetas del centro.
   late List<ElementoArchivo> _elementos;
 
@@ -308,7 +306,8 @@ class _CpanelExploradorArchivosPanelState
                 nombre: a.nombreOriginal,
                 tipo: TipoElemento.documento,
                 tamanoBytes: a.tamanoBytes ?? 0,
-                fechaModificacion: DateTime.tryParse(a.creadoEn) ?? DateTime.now(),
+                fechaModificacion:
+                    DateTime.tryParse(a.creadoEn) ?? DateTime.now(),
                 propietario: _origenDelArchivo(a.entityType),
                 ruta: 'Mi Unidad',
                 permiso: 'Docentes y Estudiantes',
@@ -334,12 +333,12 @@ class _CpanelExploradorArchivosPanelState
       failure: (fallo) {
         setState(() {
           _cargandoArchivos = false;
-          _errorSubida = 'No pudimos cargar los archivos del centro: ${fallo.message}';
+          _errorSubida =
+              'No pudimos cargar los archivos del centro: ${fallo.message}';
         });
       },
     );
   }
-
 
   @override
   void dispose() {
@@ -365,10 +364,10 @@ class _CpanelExploradorArchivosPanelState
   /// administrador necesita saber no es quien lo subio sino **que es**, y eso si
   /// lo dice el servidor.
   static String _origenDelArchivo(TipoEntidadArchivo tipo) => switch (tipo) {
-        TipoEntidadArchivo.taskSubmission => 'Entrega de tarea',
-        TipoEntidadArchivo.teacherGuide => 'Guia del docente',
-        TipoEntidadArchivo.driveFile => 'Documento del centro',
-      };
+    TipoEntidadArchivo.taskSubmission => 'Entrega de tarea',
+    TipoEntidadArchivo.teacherGuide => 'Guia del docente',
+    TipoEntidadArchivo.driveFile => 'Documento del centro',
+  };
 
   /// Quien esta usando la app ahora mismo, para firmar lo que crea.
   ///
@@ -377,7 +376,8 @@ class _CpanelExploradorArchivosPanelState
   String get _nombreDelUsuario {
     final usuario = SupabaseService.instance.client.auth.currentUser;
     final metadatos = usuario?.userMetadata;
-    final nombre = (metadatos?['nombres'] as String?) ??
+    final nombre =
+        (metadatos?['nombres'] as String?) ??
         (metadatos?['full_name'] as String?);
     if (nombre != null && nombre.trim().isNotEmpty) return nombre.trim();
     return usuario?.email ?? 'Usuario del sistema';
@@ -392,7 +392,6 @@ class _CpanelExploradorArchivosPanelState
     if (diferencia.inHours < 24) return 'Hace ${diferencia.inHours} h';
     return 'Hace ${diferencia.inDays} dias';
   }
-
 
   List<ElementoArchivo> get _elementosFiltrados {
     if (_filtroBusqueda.isEmpty) return _elementos;
@@ -422,8 +421,11 @@ class _CpanelExploradorArchivosPanelState
         ),
         title: Row(
           children: [
-            const Icon(Icons.shield_outlined,
-                color: IncesTheme.azulPrimario, size: 24),
+            const Icon(
+              Icons.shield_outlined,
+              color: IncesTheme.azulPrimario,
+              size: 24,
+            ),
             const SizedBox(width: 10),
             const Expanded(
               child: Text(
@@ -465,7 +467,10 @@ class _CpanelExploradorArchivosPanelState
                   const Expanded(
                     child: Text(
                       'Límite asignado: 10 GB en la nube del centro, sin costo de transferencia.',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -490,7 +495,6 @@ class _CpanelExploradorArchivosPanelState
     );
   }
 
-
   void _vincularDriveDialogo() {
     final nombreCtrl = TextEditingController();
     final urlCtrl = TextEditingController();
@@ -503,8 +507,11 @@ class _CpanelExploradorArchivosPanelState
         ),
         title: Row(
           children: [
-            const Icon(Icons.add_to_drive_rounded,
-                color: IncesTheme.verdeGoogleDrive, size: 24),
+            const Icon(
+              Icons.add_to_drive_rounded,
+              color: IncesTheme.verdeGoogleDrive,
+              size: 24,
+            ),
             const SizedBox(width: 10),
             const Text('Vincular desde Google Drive'),
           ],
@@ -628,7 +635,8 @@ class _CpanelExploradorArchivosPanelState
       setState(() {
         _subiendoArchivo = false;
         _pasoSubida = '';
-        _errorSubida = 'No pudimos abrir el selector de archivos del navegador.';
+        _errorSubida =
+            'No pudimos abrir el selector de archivos del navegador.';
       });
       return;
     }
@@ -691,9 +699,7 @@ class _CpanelExploradorArchivosPanelState
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              '«${archivo.nombreOriginal}» subido y confirmado.',
-            ),
+            content: Text('«${archivo.nombreOriginal}» subido y confirmado.'),
             backgroundColor: IncesTheme.exito,
           ),
         );
@@ -724,10 +730,7 @@ class _CpanelExploradorArchivosPanelState
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                _pasoSubida,
-                style: theme.textTheme.bodySmall,
-              ),
+              child: Text(_pasoSubida, style: theme.textTheme.bodySmall),
             ),
           ],
         ),
@@ -740,14 +743,14 @@ class _CpanelExploradorArchivosPanelState
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
-            Icon(Icons.error_outline,
-                size: 16, color: theme.colorScheme.error),
+            Icon(Icons.error_outline, size: 16, color: theme.colorScheme.error),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 _errorSubida!,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.onErrorContainer),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onErrorContainer,
+                ),
               ),
             ),
             if (_errorPorTamano)
@@ -834,7 +837,9 @@ class _CpanelExploradorArchivosPanelState
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: IncesTheme.rojoInces),
+            style: FilledButton.styleFrom(
+              backgroundColor: IncesTheme.rojoInces,
+            ),
             onPressed: () async {
               if (item.esRemoto) {
                 final resultado = await _repoArchivos.borrarComoAdmin(item.id);
@@ -848,11 +853,16 @@ class _CpanelExploradorArchivosPanelState
                     });
                     Navigator.of(ctx).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('«${item.nombre}» eliminado del centro.')),
+                      SnackBar(
+                        content: Text('«${item.nombre}» eliminado del centro.'),
+                      ),
                     );
                   },
                   failure: (fallo) {
-                    final yaNoExiste = fallo.message.toLowerCase().contains('no encontramos') ||
+                    final yaNoExiste =
+                        fallo.message.toLowerCase().contains(
+                          'no encontramos',
+                        ) ||
                         fallo.message.toLowerCase().contains('not found') ||
                         fallo.message.toLowerCase().contains('404');
                     if (yaNoExiste) {
@@ -863,7 +873,11 @@ class _CpanelExploradorArchivosPanelState
                       });
                       Navigator.of(ctx).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('«${item.nombre}» ha sido eliminado de la vista.')),
+                        SnackBar(
+                          content: Text(
+                            '«${item.nombre}» ha sido eliminado de la vista.',
+                          ),
+                        ),
                       );
                       return;
                     }
@@ -895,7 +909,6 @@ class _CpanelExploradorArchivosPanelState
     );
   }
 
-
   Future<void> _abrirODescargarElemento(ElementoArchivo item) async {
     final selector = SelectorDeArchivosDelNavegador();
     if (item.esDrive && item.urlDrive != null) {
@@ -906,7 +919,9 @@ class _CpanelExploradorArchivosPanelState
       }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Abriendo enlace de Google Drive en una nueva pestaña...'),
+          content: Text(
+            'Abriendo enlace de Google Drive en una nueva pestaña...',
+          ),
           backgroundColor: IncesTheme.verdeGoogleDrive,
           duration: Duration(seconds: 3),
         ),
@@ -1026,7 +1041,8 @@ class _CpanelExploradorArchivosPanelState
       '>>\nendobj\n',
     );
 
-    final fechaStr = '${item.fechaModificacion.day.toString().padLeft(2, '0')}/'
+    final fechaStr =
+        '${item.fechaModificacion.day.toString().padLeft(2, '0')}/'
         '${item.fechaModificacion.month.toString().padLeft(2, '0')}/'
         '${item.fechaModificacion.year}';
 
@@ -1040,7 +1056,9 @@ class _CpanelExploradorArchivosPanelState
     sb.writeln('BT');
     sb.writeln('/F1 14 Tf');
     sb.writeln('48 732 Td');
-    sb.writeln('(INSTITUTO NACIONAL DE CAPACITACION Y EDUCACION SOCIALISTA) Tj');
+    sb.writeln(
+      '(INSTITUTO NACIONAL DE CAPACITACION Y EDUCACION SOCIALISTA) Tj',
+    );
     sb.writeln('/F2 10 Tf');
     sb.writeln('0 -16 Td');
     sb.writeln('(CFS Rafael Urdaneta - Centro de Formacion Socialista) Tj');
@@ -1096,11 +1114,17 @@ class _CpanelExploradorArchivosPanelState
     sb.writeln('/F2 9 Tf');
     sb.writeln('0.2 0.2 0.2 rg');
     sb.writeln('0 -16 Td');
-    sb.writeln('(Este archivo ha sido verificado por la administracion del CFS Rafael Urdaneta y) Tj');
+    sb.writeln(
+      '(Este archivo ha sido verificado por la administracion del CFS Rafael Urdaneta y) Tj',
+    );
     sb.writeln('0 -14 Td');
-    sb.writeln('(asignado al entorno curricular para su uso por estudiantes, aprendices e instructores.) Tj');
+    sb.writeln(
+      '(asignado al entorno curricular para su uso por estudiantes, aprendices e instructores.) Tj',
+    );
     sb.writeln('0 -14 Td');
-    sb.writeln('(Alojado bajo protocolo de alta disponibilidad en la nube del centro.) Tj');
+    sb.writeln(
+      '(Alojado bajo protocolo de alta disponibilidad en la nube del centro.) Tj',
+    );
     sb.writeln('ET');
 
     // Footer line
@@ -1112,7 +1136,9 @@ class _CpanelExploradorArchivosPanelState
     sb.writeln('/F2 8 Tf');
     sb.writeln('0.5 0.5 0.5 rg');
     sb.writeln('40 45 Td');
-    sb.writeln('(INCES LMS v1.2.4 - Centro de Formacion Socialista Rafael Urdaneta - Prod 2026) Tj');
+    sb.writeln(
+      '(INCES LMS v1.2.4 - Centro de Formacion Socialista Rafael Urdaneta - Prod 2026) Tj',
+    );
     sb.writeln('ET');
 
     final streamBytes = utf8.encode(sb.toString());
@@ -1214,7 +1240,12 @@ class _CpanelExploradorArchivosPanelState
                     prefixIcon: Icon(Icons.meeting_room_outlined),
                   ),
                   items: aulasDisponibles
-                      .map((a) => DropdownMenuItem(value: a, child: Text(a, overflow: TextOverflow.ellipsis)))
+                      .map(
+                        (a) => DropdownMenuItem(
+                          value: a,
+                          child: Text(a, overflow: TextOverflow.ellipsis),
+                        ),
+                      )
                       .toList(),
                   onChanged: (val) {
                     if (val != null) setDlgState(() => aulaSeleccionada = val);
@@ -1222,7 +1253,8 @@ class _CpanelExploradorArchivosPanelState
                 ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
-                  initialValue: permisosDisponibles.contains(permisoSeleccionado)
+                  initialValue:
+                      permisosDisponibles.contains(permisoSeleccionado)
                       ? permisoSeleccionado
                       : permisosDisponibles.first,
                   decoration: const InputDecoration(
@@ -1233,7 +1265,9 @@ class _CpanelExploradorArchivosPanelState
                       .map((p) => DropdownMenuItem(value: p, child: Text(p)))
                       .toList(),
                   onChanged: (val) {
-                    if (val != null) setDlgState(() => permisoSeleccionado = val);
+                    if (val != null) {
+                      setDlgState(() => permisoSeleccionado = val);
+                    }
                   },
                 ),
               ],
@@ -1251,7 +1285,8 @@ class _CpanelExploradorArchivosPanelState
                   item.permiso = permisoSeleccionado;
                   item.actividad = [
                     EventoActividad(
-                      accion: 'Asignado a $aulaSeleccionada ($permisoSeleccionado)',
+                      accion:
+                          'Asignado a $aulaSeleccionada ($permisoSeleccionado)',
                       tiempo: _cuandoFue(DateTime.now()),
                       usuario: _nombreDelUsuario,
                       icono: Icons.school_outlined,
@@ -1262,7 +1297,9 @@ class _CpanelExploradorArchivosPanelState
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('«${item.nombre}» asignado a «$aulaSeleccionada».'),
+                    content: Text(
+                      '«${item.nombre}» asignado a «$aulaSeleccionada».',
+                    ),
                     backgroundColor: IncesTheme.azulPrimario,
                   ),
                 );
@@ -1299,7 +1336,6 @@ class _CpanelExploradorArchivosPanelState
                     Expanded(
                       child: Column(
                         children: [
-
                           const Divider(height: 1),
                           _bannerEstadoSubida(theme),
                           Expanded(child: _construirContenidoPrincipal(theme)),
@@ -1466,8 +1502,11 @@ class _CpanelExploradorArchivosPanelState
                 value: 'drive',
                 child: Row(
                   children: [
-                    Icon(Icons.add_to_drive_rounded,
-                        color: IncesTheme.verdeGoogleDrive, size: 18),
+                    Icon(
+                      Icons.add_to_drive_rounded,
+                      color: IncesTheme.verdeGoogleDrive,
+                      size: 18,
+                    ),
                     SizedBox(width: 10),
                     Text('Vincular Google Drive'),
                   ],
@@ -1519,7 +1558,9 @@ class _CpanelExploradorArchivosPanelState
           if (!esCompacto(context)) ...[
             const SizedBox(width: 8),
             IconButton(
-              tooltip: _vistaCuadricula ? 'Vista de lista' : 'Vista de cuadrícula',
+              tooltip: _vistaCuadricula
+                  ? 'Vista de lista'
+                  : 'Vista de cuadrícula',
               icon: Icon(
                 _vistaCuadricula
                     ? Icons.view_list_rounded
@@ -1532,8 +1573,7 @@ class _CpanelExploradorArchivosPanelState
           ],
           // Alternador de panel lateral
           IconButton(
-            tooltip:
-                _mostrarPanelLateral ? 'Ocultar detalles' : 'Ver detalles',
+            tooltip: _mostrarPanelLateral ? 'Ocultar detalles' : 'Ver detalles',
             icon: Icon(
               _mostrarPanelLateral
                   ? Icons.info_rounded
@@ -1601,10 +1641,7 @@ class _CpanelExploradorArchivosPanelState
               subtitle: const Text('Se guarda en la nube del centro'),
               onTap: () {
                 Navigator.pop(ctx);
-                conGuardia(
-                  _subirArchivoReal,
-                  'subir-archivo-drive',
-                );
+                conGuardia(_subirArchivoReal, 'subir-archivo-drive');
               },
             ),
             ListTile(
@@ -1642,9 +1679,11 @@ class _CpanelExploradorArchivosPanelState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.folder_open_outlined,
-                size: 56,
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
+            Icon(
+              Icons.folder_open_outlined,
+              size: 56,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+            ),
             const SizedBox(height: 12),
             Text(
               'Todavía no hay archivos',
@@ -1671,54 +1710,57 @@ class _CpanelExploradorArchivosPanelState
       children: [
         if (_mostrarTarjetaInfo)
           Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.28),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: theme.colorScheme.primary.withValues(alpha: 0.25),
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.28),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.25),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: theme.colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Almacenamiento Híbrido: la nube del centro + Google Drive + Aulas Virtuales',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '• Documentos y Pensum (< 10 MB): Se almacenan directamente en la nube del centro con descargas de alta velocidad.\n'
+                        '• Videos y Clases Grabadas (> 10 MB): Se enlazan vía Google Drive sin consumir la cuota de 10 GB del centro.\n'
+                        '• Asignación a Aulas: Puedes vincular cualquier archivo a un aula o taller (ej. Soldadura Básica) para que sus docentes y aprendices lo tengan a mano.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Ocultar',
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: () => setState(() => _mostrarTarjetaInfo = false),
+                ),
+              ],
             ),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.info_outline_rounded,
-                  color: theme.colorScheme.primary, size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Almacenamiento Híbrido: la nube del centro + Google Drive + Aulas Virtuales',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '• Documentos y Pensum (< 10 MB): Se almacenan directamente en la nube del centro con descargas de alta velocidad.\n'
-                      '• Videos y Clases Grabadas (> 10 MB): Se enlazan vía Google Drive sin consumir la cuota de 10 GB del centro.\n'
-                      '• Asignación a Aulas: Puedes vincular cualquier archivo a un aula o taller (ej. Soldadura Básica) para que sus docentes y aprendices lo tengan a mano.',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                tooltip: 'Ocultar',
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.close_rounded, size: 18),
-                onPressed: () => setState(() => _mostrarTarjetaInfo = false),
-              ),
-            ],
-          ),
-        ),
         if (archivos.isNotEmpty) ...[
           Text('Archivos y Enlaces', style: theme.textTheme.titleSmall),
           const SizedBox(height: 10),
@@ -1730,14 +1772,13 @@ class _CpanelExploradorArchivosPanelState
     );
   }
 
-
-
   Widget _rejillaArchivos(List<ElementoArchivo> archivos, ThemeData theme) {
     return Wrap(
       spacing: 12,
       runSpacing: 12,
       children: archivos.map((f) {
-        final seleccionada = _seleccionado == f || _seleccionadosIds.contains(f.id);
+        final seleccionada =
+            _seleccionado == f || _seleccionadosIds.contains(f.id);
 
         return SizedBox(
           width: 220,
@@ -1766,7 +1807,8 @@ class _CpanelExploradorArchivosPanelState
                         Checkbox(
                           value: _seleccionadosIds.contains(f.id),
                           visualDensity: VisualDensity.compact,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
                           onChanged: (_) => _seleccionarElemento(f, archivos),
                         ),
                         const SizedBox(width: 4),
@@ -1775,9 +1817,13 @@ class _CpanelExploradorArchivosPanelState
                         if (f.esDrive)
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: IncesTheme.verdeGoogleDrive.withValues(alpha: 0.12),
+                              color: IncesTheme.verdeGoogleDrive.withValues(
+                                alpha: 0.12,
+                              ),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: const Text(
@@ -1803,9 +1849,16 @@ class _CpanelExploradorArchivosPanelState
                               value: 'abrir',
                               child: Row(
                                 children: [
-                                  Icon(f.esDrive ? Icons.open_in_new_rounded : Icons.download_rounded, size: 18),
+                                  Icon(
+                                    f.esDrive
+                                        ? Icons.open_in_new_rounded
+                                        : Icons.download_rounded,
+                                    size: 18,
+                                  ),
                                   const SizedBox(width: 8),
-                                  Text(f.esDrive ? 'Abrir en Drive' : 'Descargar'),
+                                  Text(
+                                    f.esDrive ? 'Abrir en Drive' : 'Descargar',
+                                  ),
                                 ],
                               ),
                             ),
@@ -1855,9 +1908,13 @@ class _CpanelExploradorArchivosPanelState
                     ),
                     const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
+                        color: theme.colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -1874,10 +1931,13 @@ class _CpanelExploradorArchivosPanelState
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Text(
-                          f.tamanoFormateado,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                        Flexible(
+                          child: Text(
+                            f.tamanoFormateado,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ),
                         const Spacer(),
@@ -1892,11 +1952,14 @@ class _CpanelExploradorArchivosPanelState
                               color: IncesTheme.advertencia,
                             ),
                           ),
-                        Text(
-                          f.esDrive ? 'Google Drive' : 'Nube del centro',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w500,
+                        Flexible(
+                          child: Text(
+                            f.esDrive ? 'Google Drive' : 'Nube del centro',
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
@@ -1916,7 +1979,8 @@ class _CpanelExploradorArchivosPanelState
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: archivos.map((f) {
-          final seleccionada = _seleccionado == f || _seleccionadosIds.contains(f.id);
+          final seleccionada =
+              _seleccionado == f || _seleccionadosIds.contains(f.id);
           return GestureDetector(
             onDoubleTap: () => _abrirODescargarElemento(f),
             child: ListTile(
@@ -1935,10 +1999,13 @@ class _CpanelExploradorArchivosPanelState
                   _iconoPorTipo(f),
                 ],
               ),
-              title: Text(f.nombre,
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              title: Text(
+                f.nombre,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
               subtitle: Text(
-                  '${f.tamanoFormateado} • ${f.propietario} • 🏛️ ${f.aulaVirtual}'),
+                '${f.tamanoFormateado} • ${f.propietario} • 🏛️ ${f.aulaVirtual}',
+              ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1984,13 +2051,19 @@ class _CpanelExploradorArchivosPanelState
 
   Widget _iconoPorTipo(ElementoArchivo item) {
     if (item.esDrive) {
-      return const Icon(Icons.add_to_drive_rounded,
-          color: IncesTheme.verdeGoogleDrive, size: 24);
+      return const Icon(
+        Icons.add_to_drive_rounded,
+        color: IncesTheme.verdeGoogleDrive,
+        size: 24,
+      );
     }
     switch (item.tipo) {
       case TipoElemento.carpeta:
-        return Icon(Icons.folder_rounded,
-            color: item.colorCarpeta ?? IncesTheme.azulPrimario, size: 24);
+        return Icon(
+          Icons.folder_rounded,
+          color: item.colorCarpeta ?? IncesTheme.azulPrimario,
+          size: 24,
+        );
       case TipoElemento.documento:
         return const Icon(Icons.picture_as_pdf, color: Colors.red, size: 24);
       case TipoElemento.hojaCalculo:
@@ -2000,8 +2073,11 @@ class _CpanelExploradorArchivosPanelState
       case TipoElemento.imagen:
         return const Icon(Icons.image, color: Colors.purple, size: 24);
       case TipoElemento.enlaceDrive:
-        return const Icon(Icons.add_to_drive_rounded,
-            color: IncesTheme.verdeGoogleDrive, size: 24);
+        return const Icon(
+          Icons.add_to_drive_rounded,
+          color: IncesTheme.verdeGoogleDrive,
+          size: 24,
+        );
     }
   }
 
@@ -2041,7 +2117,9 @@ class _CpanelExploradorArchivosPanelState
                         fontWeight: _tabLateral == 0
                             ? FontWeight.bold
                             : FontWeight.normal,
-                        color: _tabLateral == 0 ? IncesTheme.azulPrimario : null,
+                        color: _tabLateral == 0
+                            ? IncesTheme.azulPrimario
+                            : null,
                       ),
                     ),
                   ),
@@ -2069,7 +2147,9 @@ class _CpanelExploradorArchivosPanelState
                         fontWeight: _tabLateral == 1
                             ? FontWeight.bold
                             : FontWeight.normal,
-                        color: _tabLateral == 1 ? IncesTheme.azulPrimario : null,
+                        color: _tabLateral == 1
+                            ? IncesTheme.azulPrimario
+                            : null,
                       ),
                     ),
                   ),
@@ -2093,8 +2173,8 @@ class _CpanelExploradorArchivosPanelState
                     ),
                   )
                 : _tabLateral == 0
-                    ? _vistaDetalles(item, theme)
-                    : _vistaActividad(item, theme),
+                ? _vistaDetalles(item, theme)
+                : _vistaActividad(item, theme),
           ),
         ],
       ),
@@ -2130,8 +2210,10 @@ class _CpanelExploradorArchivosPanelState
         const SizedBox(height: 12),
         _propiedadFila('Tipo', item.tipo.name.toUpperCase()),
         _propiedadFila('Tamaño', item.tamanoFormateado),
-        _propiedadFila('Almacenamiento',
-            item.esDrive ? 'Google Drive (Enlace)' : 'Nube del centro (Directo)'),
+        _propiedadFila(
+          'Almacenamiento',
+          item.esDrive ? 'Google Drive (Enlace)' : 'Nube del centro (Directo)',
+        ),
         _propiedadFila('🏛️ Aula Virtual', item.aulaVirtual),
         _propiedadFila('📚 Materia', item.materia),
         _propiedadFila('Ubicación', item.ruta),
@@ -2194,7 +2276,10 @@ class _CpanelExploradorArchivosPanelState
           Expanded(
             child: Text(
               valor,
-              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -2293,8 +2378,9 @@ class _CpanelExploradorArchivosPanelState
           value: porcentaje,
           minHeight: 6,
           backgroundColor: theme.colorScheme.outline.withValues(alpha: 0.3),
-          valueColor:
-              const AlwaysStoppedAnimation<Color>(IncesTheme.azulPrimario),
+          valueColor: const AlwaysStoppedAnimation<Color>(
+            IncesTheme.azulPrimario,
+          ),
         ),
       ),
     );
@@ -2390,7 +2476,9 @@ class _CpanelExploradorArchivosPanelState
     final isShift = HardwareKeyboard.instance.isShiftPressed;
     setState(() {
       if (isShift && _ultimoSeleccionadoId != null) {
-        final idxAnterior = lista.indexWhere((e) => e.id == _ultimoSeleccionadoId);
+        final idxAnterior = lista.indexWhere(
+          (e) => e.id == _ultimoSeleccionadoId,
+        );
         final idxActual = lista.indexWhere((e) => e.id == f.id);
         if (idxAnterior != -1 && idxActual != -1) {
           final start = idxAnterior < idxActual ? idxAnterior : idxActual;
@@ -2413,7 +2501,9 @@ class _CpanelExploradorArchivosPanelState
 
   Future<void> _descargarSeleccionadosComoZip() async {
     final archivosR2 = _elementos
-        .where((e) => _seleccionadosIds.contains(e.id) && !e.esDrive && !e.esCarpeta)
+        .where(
+          (e) => _seleccionadosIds.contains(e.id) && !e.esDrive && !e.esCarpeta,
+        )
         .toList();
     if (archivosR2.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2444,7 +2534,8 @@ class _CpanelExploradorArchivosPanelState
       res.when(
         success: (bytes) async {
           await _selectorArchivos.descargarBytes(
-            nombre: 'archivos_inces_${DateTime.now().millisecondsSinceEpoch}.zip',
+            nombre:
+                'archivos_inces_${DateTime.now().millisecondsSinceEpoch}.zip',
             contenido: bytes,
             tipoMime: 'application/zip',
           );
@@ -2486,14 +2577,18 @@ class _CpanelExploradorArchivosPanelState
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Eliminar elementos'),
-        content: Text('¿Estás seguro de eliminar los $cant elementos seleccionados?'),
+        content: Text(
+          '¿Estás seguro de eliminar los $cant elementos seleccionados?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: IncesTheme.rojoInces),
+            style: FilledButton.styleFrom(
+              backgroundColor: IncesTheme.rojoInces,
+            ),
             onPressed: () {
               setState(() {
                 _elementos.removeWhere((e) => _seleccionadosIds.contains(e.id));
@@ -2515,7 +2610,9 @@ class _CpanelExploradorArchivosPanelState
   Widget _construirBarraFlotanteSeleccion(ThemeData theme) {
     final cant = _seleccionadosIds.length;
     final r2Count = _elementos
-        .where((e) => _seleccionadosIds.contains(e.id) && !e.esDrive && !e.esCarpeta)
+        .where(
+          (e) => _seleccionadosIds.contains(e.id) && !e.esDrive && !e.esCarpeta,
+        )
         .length;
 
     return Center(
@@ -2540,7 +2637,9 @@ class _CpanelExploradorArchivosPanelState
                 const SizedBox(width: 8),
                 Text(
                   '$cant ${cant == 1 ? 'seleccionado' : 'seleccionados'}',
-                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const Spacer(),
                 if (_descargandoZip)
@@ -2554,14 +2653,23 @@ class _CpanelExploradorArchivosPanelState
                   )
                 else
                   FilledButton.icon(
-                    onPressed: r2Count > 0 ? _descargarSeleccionadosComoZip : null,
+                    onPressed: r2Count > 0
+                        ? _descargarSeleccionadosComoZip
+                        : null,
                     icon: const Icon(Icons.archive_outlined, size: 18),
-                    label: Text(r2Count > 1 ? 'Descargar ZIP ($r2Count)' : 'Descargar ZIP'),
+                    label: Text(
+                      r2Count > 1
+                          ? 'Descargar ZIP ($r2Count)'
+                          : 'Descargar ZIP',
+                    ),
                   ),
                 const SizedBox(width: 8),
                 IconButton(
                   tooltip: 'Eliminar seleccionados',
-                  icon: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.error),
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: theme.colorScheme.error,
+                  ),
                   onPressed: _eliminarSeleccionados,
                 ),
               ],
@@ -2580,7 +2688,9 @@ class _EsqueletoArchivos extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorBase = theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
+    final colorBase = theme.colorScheme.surfaceContainerHighest.withValues(
+      alpha: 0.5,
+    );
 
     Widget caja({double? ancho, double? alto, double radio = 8}) {
       return Container(
@@ -2606,7 +2716,9 @@ class _EsqueletoArchivos extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.15)),
+                border: Border.all(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.15),
+                ),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(

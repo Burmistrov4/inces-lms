@@ -21,6 +21,8 @@ Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en
 - Cuadrante: leyenda desbordaba 43 px (Row de ancho mínimo dentro de Wrap) → texto Flexible; la rejilla desliza verticalmente.
 - Horario PNA: insignia «PNA: Materia y Docente…» desbordaba 327 px (Row fija) → Wrap con texto Flexible.
 - Guardias Docentes: en móvil el panel completo desliza (cabecera+filtros fijos desbordaban 202 px); la matriz va en altura natural sin scroll vertical propio ni Scrollbar — con extensión 0 ese scrollable se comía los gestos sin desplazar nada (causa raíz del «no desliza»). Escritorio sin cambios.
+- Explorador de archivos: fila de metadatos de tarjeta desbordaba 43 px en celdas angostas → tamaño y origen con elipsis.
+- **Cierre del Lote 2:** `scroll_movil_redmi10c_test.dart` cubre 7 módulos (Cursos y PNA, Cuadrante, Horario PNA, Guardias, Aulas, Explorador, Gestor documental) con verificación estricta de 0 excepciones de layout a 360×740; suite completa en verde (1057 tests).
 
 ## [1.5.0] - 2026-10-27
 ### Rediseño 1.5 — Culminación integral de las 11 tareas (D1 a D10)

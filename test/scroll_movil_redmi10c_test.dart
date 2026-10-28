@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:inces_lms_app/models/archivo.dart';
 import 'package:inces_lms_app/models/cuadrante.dart';
 import 'package:inces_lms_app/models/programa.dart';
+import 'package:inces_lms_app/repositories/archivos_repository.dart';
 import 'package:inces_lms_app/repositories/cuadrante_repository.dart';
 import 'package:inces_lms_app/repositories/curriculo_repository.dart';
+import 'package:inces_lms_app/screens/admin/cpanel_aulas_panel.dart';
 import 'package:inces_lms_app/screens/admin/cpanel_cuadrante_panel.dart';
+import 'package:inces_lms_app/screens/admin/cpanel_explorador_archivos_panel.dart';
 import 'package:inces_lms_app/screens/admin/cpanel_guardias_panel.dart';
 import 'package:inces_lms_app/screens/admin/cpanel_pna_panel.dart';
 import 'package:inces_lms_app/screens/admin/cpanel_programas_panel.dart';
+import 'package:inces_lms_app/screens/gestor_documental_panel.dart';
 import 'package:inces_lms_app/theme/inces_theme.dart';
 import 'package:inces_lms_app/widgets/andamiaje.dart';
 import 'package:inces_lms_app/widgets/cuadrante_grid.dart';
 
+import 'support/fake_archivos_gateway.dart';
 import 'support/fake_curriculo_gateway.dart';
+import 'support/fake_selector_archivos.dart';
 import 'support/fake_cuadrante_gateway.dart';
 
 /// Diagnóstico del Lote 2 — scroll en móvil (Redmi 10C, 360×740 dp).
@@ -172,7 +179,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      // DIAG: sin captura
+      await sinExcepcionesDeLayout(tester, 'carga');
 
       // La rejilla semanal existe (no el modo «por día»).
       expect(find.byType(CuadranteGrid), findsOneWidget);
@@ -192,7 +199,7 @@ void main() {
         await tester.pumpAndSettle();
         if (tester.getRect(chipTarde).top < antes - 150) break;
       }
-      // DIAG: se deja consumir al framework para ver el dump completo
+      await sinExcepcionesDeLayout(tester, 'arrastre vertical');
 
       final despues = tester.getRect(chipTarde).top;
       expect(
@@ -425,6 +432,184 @@ void main() {
         tester.getRect(find.text('GUARDIAS DOCENTES (HORARIO MTP)')).top,
         lessThan(antesTitulo - 100),
         reason: 'El panel de guardias debe desplazarse verticalmente en móvil.',
+      );
+    });
+  });
+
+  group('Espacios y Aulas', () {
+    late FakeCuadranteGateway gateway;
+    late CuadranteRepository repo;
+
+    setUp(() {
+      gateway = FakeCuadranteGateway();
+      repo = CuadranteRepository(gateway: gateway);
+    });
+
+    testWidgets('la lista de aulas desliza a 360×740', (tester) async {
+      tester.view.physicalSize = ventanaRedmi10C;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      gateway.periodos = [
+        const Periodo(id: 'p1', codigo: 'SA26-2', activo: true, vigente: true),
+      ];
+      gateway.aulas = [
+        for (var i = 0; i < 8; i++)
+          Aula(
+            id: 'a-$i',
+            nombre: 'Espacio de Prueba Número $i',
+            capacidad: 15,
+            esTaller: i.isEven,
+            activa: true,
+          ),
+      ];
+      gateway.totalAulas = 8;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: IncesTheme.claro(),
+          home: Scaffold(
+            body: SafeArea(
+              child: ContenidoSeccion(
+                migas: const ['Inicio', 'Control de aulas', 'Espacios'],
+                child: CpanelAulasPanel(repositorio: repo),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await sinExcepcionesDeLayout(tester, 'carga');
+
+      expect(find.text('Espacio de Prueba Número 0'), findsOneWidget);
+
+      for (
+        var i = 0;
+        i < 10 && find.text('Espacio de Prueba Número 7').evaluate().isEmpty;
+        i++
+      ) {
+        await tester.drag(find.byType(ListView).first, const Offset(0, -400));
+        await tester.pumpAndSettle();
+      }
+      await sinExcepcionesDeLayout(tester, 'arrastre');
+
+      expect(
+        find.text('Espacio de Prueba Número 7'),
+        findsOneWidget,
+        reason: 'La lista de aulas debe deslizar hasta el último espacio.',
+      );
+    });
+  });
+
+  group('Archivos del Centro (explorador)', () {
+    testWidgets('la lista de archivos desliza a 360×740', (tester) async {
+      tester.view.physicalSize = ventanaRedmi10C;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final gateway = FakeArchivosGateway()
+        ..archivosMios = [
+          for (var i = 0; i < 10; i++)
+            archivoEjemplo(
+              id: 'arch-$i',
+              nombreOriginal: 'Archivo de Prueba Número $i.pdf',
+              entityType: TipoEntidadArchivo.driveFile,
+              estado: EstadoArchivo.confirmed,
+              tamanoBytes: 1024 * (i + 1),
+            ),
+        ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: IncesTheme.claro(),
+          home: Scaffold(
+            body: SafeArea(
+              child: ContenidoSeccion(
+                migas: const ['Inicio', 'Gestión académica', 'Archivos'],
+                child: CpanelExploradorArchivosPanel(
+                  repositorio: ArchivosRepository(gateway: gateway),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // El GridView es perezoso: los archivos están bajo el banner
+      // informativo, así que se arrastra desde un punto visible y luego se
+      // comprueba el último.
+      for (
+        var i = 0;
+        i < 14 &&
+            find.text('Archivo de Prueba Número 9.pdf').evaluate().isEmpty;
+        i++
+      ) {
+        await tester.dragFrom(const Offset(180, 600), const Offset(0, -400));
+        await tester.pumpAndSettle();
+      }
+      await sinExcepcionesDeLayout(tester, 'arrastre');
+
+      expect(
+        find.text('Archivo de Prueba Número 9.pdf'),
+        findsOneWidget,
+        reason: 'La lista de archivos debe deslizar hasta el último.',
+      );
+    });
+  });
+
+  group('Gestor documental (tarjeta de archivo)', () {
+    testWidgets('desliza a 360×740 con archivos confirmados', (tester) async {
+      tester.view.physicalSize = ventanaRedmi10C;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final gateway = FakeArchivosGateway()
+        ..archivosListados = [
+          for (var i = 0; i < 8; i++)
+            archivoEjemplo(
+              id: 'doc-$i',
+              nombreOriginal: 'Documento de Prueba Número $i.pdf',
+              estado: EstadoArchivo.confirmed,
+              tamanoBytes: 248_512 + i,
+              confirmadoEn: '2026-09-18T12:05:00.000Z',
+            ),
+        ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: IncesTheme.claro(),
+          home: Scaffold(
+            body: SafeArea(
+              child: ContenidoSeccion(
+                child: GestorDocumentalPanel(
+                  entityType: TipoEntidadArchivo.taskSubmission,
+                  entidadId: 'tarea-1',
+                  repositorio: ArchivosRepository(gateway: gateway),
+                  selector: FakeSelectorDeArchivos(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (
+        var i = 0;
+        i < 12 &&
+            find.text('Documento de Prueba Número 7.pdf').evaluate().isEmpty;
+        i++
+      ) {
+        await tester.dragFrom(const Offset(180, 600), const Offset(0, -400));
+        await tester.pumpAndSettle();
+      }
+      await sinExcepcionesDeLayout(tester, 'arrastre');
+
+      expect(
+        find.text('Documento de Prueba Número 7.pdf'),
+        findsOneWidget,
+        reason: 'El gestor documental debe deslizar hasta el último archivo.',
       );
     });
   });
