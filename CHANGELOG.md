@@ -2,6 +2,21 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.5.2] - 2026-10-28
+### Responsive móvil (Lote 1 y Lote 2) — «Precisión quirúrgica» sobre la cabecera y el scroll
+
+**Cabecera institucional compacta en móvil (<640 px)** — `lib/widgets/comunes.dart`
+- `EncabezadoInstitucional` pasa a una sola línea (~56 px): menú + escudo 32 px + saludo + insignias de rol/período.
+- Se retiran del encabezado móvil el correo (ya está en Perfil) y la fila de accesos directos que duplicaba el cajón lateral.
+- Escritorio sin cambios.
+
+**Scroll roto en móvil — Cursos y PNA** — reproducido y corregido con `test/scroll_movil_redmi10c_test.dart` (360×740 dp, Redmi 10C):
+- `EsqueletoLista` (`comunes.dart`): el Column fijo desbordaba 162 px cuando el hueco restante era menor que el esqueleto (el «se queda cargando» a medias). Ahora se acota con scroll interno.
+- Tarjeta de programa (`cpanel_programas_panel.dart`): la columna lateral fija de acciones (switch + lápiz + ojo ≈ 150 px) dejaba el texto con ~102 px de ancho y desbordaba 129 px. En angosto (<420 px) las acciones editar/ver bajan a una fila propia y el contenido recupera el ancho.
+- Fila «Requiere pensum»: el botón de ancho intrínseco desbordaba la fila; en angosto se apila bajo el aviso, y «Gestionar pensum» se apila bajo el texto de materias.
+- Chips de código/«Sin pensum» con elipsis en vez de desbordar.
+- Verificación: 0 excepciones de layout en carga/settle/drag, la lista desliza hasta el último ítem; suite completa de Flutter (1051 tests) en verde.
+
 ## [1.5.0] - 2026-10-27
 ### Rediseño 1.5 — Culminación integral de las 11 tareas (D1 a D10)
 

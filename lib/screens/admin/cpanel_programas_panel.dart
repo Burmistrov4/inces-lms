@@ -116,7 +116,12 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
     });
   }
 
-  void _cambiarFiltro({TipoPrograma? tipo, bool? activo, bool limpiarTipo = false, bool limpiarActivo = false}) {
+  void _cambiarFiltro({
+    TipoPrograma? tipo,
+    bool? activo,
+    bool limpiarTipo = false,
+    bool limpiarActivo = false,
+  }) {
     setState(() {
       if (limpiarTipo) {
         _tipo = null;
@@ -138,10 +143,9 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
   }
 
   int get _desde => _total == 0 ? 0 : _desplazamiento + 1;
-  int get _hasta =>
-      _desplazamiento + _programas.length > _total
-          ? _total
-          : _desplazamiento + _programas.length;
+  int get _hasta => _desplazamiento + _programas.length > _total
+      ? _total
+      : _desplazamiento + _programas.length;
 
   bool get _hayAnterior => _desplazamiento > 0;
   bool get _haySiguiente => _desplazamiento + _programas.length < _total;
@@ -201,7 +205,8 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
     // Se comprueba aquí, con la razón a la vista, en vez de dejar que el
     // administrador pulse y reciba un 400 que ya se podía prever: publicar un
     // programa sin materias lo rechaza el trigger diferido del backend.
-    if (quiereActivar && !puedeActivarse(totalMaterias: programa.totalMaterias)) {
+    if (quiereActivar &&
+        !puedeActivarse(totalMaterias: programa.totalMaterias)) {
       mostrarAviso(
         context,
         '«${programa.codigo}» no tiene materias. Añade el pensum antes de '
@@ -284,10 +289,7 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
   Future<void> _editarPrograma(ProgramaConTotales programa) async {
     final guardado = await showDialog<bool>(
       context: context,
-      builder: (_) => _DialogoEditarPrograma(
-        repo: _repo,
-        programa: programa,
-      ),
+      builder: (_) => _DialogoEditarPrograma(repo: _repo, programa: programa),
     );
     if (guardado == true && mounted) {
       mostrarAviso(context, 'Programa actualizado correctamente.', exito: true);
@@ -305,8 +307,13 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
           subtitulo: 'Cursos ordinarios y formación técnica PNA. Modifica cupos, duración y materias formativas.',
           acciones: [
             IconButton(
-              tooltip: _mostrarAyuda ? 'Ocultar guía de pensum' : 'Ver guía de pensum',
-              icon: Icon(_mostrarAyuda ? Icons.info_rounded : Icons.info_outline_rounded, size: 20),
+              tooltip: _mostrarAyuda
+                  ? 'Ocultar guía de pensum'
+                  : 'Ver guía de pensum',
+              icon: Icon(
+                _mostrarAyuda ? Icons.info_rounded : Icons.info_outline_rounded,
+                size: 20,
+              ),
               onPressed: () => setState(() => _mostrarAyuda = !_mostrarAyuda),
             ),
             FilledButton.icon(
@@ -319,7 +326,8 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
         if (_mostrarAyuda) ...[
           const SizedBox(height: 8),
           AvisoEnLinea(
-            texto: 'Cada curso y programa PNA tiene su pensum: las materias y el período en que '
+            texto:
+                'Cada curso y programa PNA tiene su pensum: las materias y el período en que '
                 'se dictan. Puedes editar los datos del curso con el lápiz y gestionar sus materias '
                 'con «Gestionar pensum». Un programa sin materias no se puede publicar.',
             onCerrar: () => setState(() => _mostrarAyuda = false),
@@ -395,7 +403,10 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
             style: const TextStyle(fontSize: 13),
             decoration: InputDecoration(
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 8,
+              ),
               hintText: 'Buscar por código o nombre',
               prefixIcon: const Icon(Icons.search_rounded, size: 18),
               suffixIcon: _busquedaCtrl.text.isNotEmpty
@@ -423,9 +434,24 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
               labelText: 'Estado',
             ),
             items: const [
-              DropdownMenuItem(value: null, child: Text('Todos los estados', overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: true, child: Text('Publicados / Vigentes', overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(value: false, child: Text('En borrador', overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(
+                value: null,
+                child: Text(
+                  'Todos los estados',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              DropdownMenuItem(
+                value: true,
+                child: Text(
+                  'Publicados / Vigentes',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              DropdownMenuItem(
+                value: false,
+                child: Text('En borrador', overflow: TextOverflow.ellipsis),
+              ),
             ],
             onChanged: (valor) {
               if (valor == null) {
@@ -478,10 +504,10 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
             titulo: 'No hay programas que mostrar',
             mensaje: _total == 0 && _filtrosActivos
                 ? 'Ningún programa coincide con los filtros aplicados. Prueba a '
-                    'quitarlos.'
+                      'quitarlos.'
                 : 'Todavía no se ha registrado ningún programa académico. Crea '
-                    'el primero con el asistente: los datos del programa y su '
-                    'pensum se guardan en una sola operación.',
+                      'el primero con el asistente: los datos del programa y su '
+                      'pensum se guardan en una sola operación.',
             icono: Icons.menu_book_outlined,
             nota: 'Un programa sin materias no se puede activar.',
           ),
@@ -583,208 +609,266 @@ class _TarjetaPrograma extends StatelessWidget {
     final parIcono = paleta.etiquetaDe(TonoEstado.info);
     final vacio = programa.estaVacio;
 
+    final icono = Container(
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: parIcono.fondo,
+        borderRadius: BorderRadius.circular(IncesTheme.radioControl),
+      ),
+      child: Icon(
+        programa.tipo == TipoPrograma.carrera
+            ? Icons.school_outlined
+            : Icons.auto_stories_outlined,
+        size: 18,
+        color: parIcono.texto,
+      ),
+    );
+    final contenido = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Flexible(
+              child: Text(
+                programa.nombre,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: _Etiqueta(texto: programa.codigo, tono: TonoEstado.neutro),
+            ),
+            if (vacio) ...[
+              const SizedBox(width: 6),
+              Flexible(
+                child: const _Etiqueta(
+                  texto: 'Sin pensum',
+                  tono: TonoEstado.error,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 5),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _Etiqueta(
+              texto: programa.tipo == TipoPrograma.cursoLibre
+                  ? 'Curso Ordinario'
+                  : 'PNA (Aprendices)',
+              tono: TonoEstado.info,
+            ),
+            _Etiqueta(
+              texto: programa.activo ? 'Vigente / Activo' : 'En borrador',
+              tono: programa.activo ? TonoEstado.exito : TonoEstado.neutro,
+            ),
+            if (programa.requierePasantia)
+              const _Etiqueta(texto: 'Con pasantía', tono: TonoEstado.info),
+            if (programa.duracionLegible != null)
+              _Etiqueta(
+                texto: programa.duracionLegible!,
+                tono: TonoEstado.info,
+              ),
+            _Etiqueta(
+              texto:
+                  '${programa.cuposOcupados} de ${programa.cupo ?? 25} cupos',
+              tono: TonoEstado.info,
+            ),
+            if (!programa.mostrarDisponibilidad)
+              const _Etiqueta(texto: 'Cupos ocultos', tono: TonoEstado.neutro),
+            Text(
+              '${programa.totalMaterias} '
+              '${programa.totalMaterias == 1 ? 'materia' : 'materias'}'
+              ' · ${programa.totalPeriodos} '
+              '${programa.totalPeriodos == 1 ? 'período' : 'períodos'}',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        // En angosto el botón no cabe en la misma línea que el aviso:
+        // su ancho intrínseco (~250 px) desbordaba la Row (medido:
+        // +129 px a 360). Dos líneas bajo 480 px, una arriba.
+        LayoutBuilder(
+          builder: (context, c) {
+            final enColumna = c.maxWidth < 480;
+            final aviso = Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  size: 15,
+                  color: theme.colorScheme.error,
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    'Requiere pensum para recibir inscripciones',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            );
+            final boton = Padding(
+              padding: EdgeInsets.only(top: enColumna ? 6 : 0),
+              child: FilledButton.tonalIcon(
+                onPressed: abriendoPensum ? null : onEditarPensum,
+                icon: abriendoPensum
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 1.5),
+                      )
+                    : const Icon(Icons.playlist_add_rounded, size: 15),
+                label: const Text('Cargar pensum'),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            );
+            final gestionar = TextButton.icon(
+              onPressed: abriendoPensum ? null : onEditarPensum,
+              icon: abriendoPensum
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 1.5),
+                    )
+                  : const Icon(Icons.menu_book_rounded, size: 15),
+              label: const Text('Gestionar pensum'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                textStyle: const TextStyle(fontSize: 12),
+              ),
+            );
+
+            if (!vacio) {
+              final textoAsignadas = Text(
+                '${programa.totalMaterias} ${programa.totalMaterias == 1 ? 'materia' : 'materias'} asignadas',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                overflow: TextOverflow.ellipsis,
+              );
+              // En angosto el botón «Gestionar pensum» no cabe junto al texto
+              // (min ~145 px): se apila en vez de desbordar.
+              return enColumna
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [textoAsignadas, gestionar],
+                    )
+                  : Row(children: [Expanded(child: textoAsignadas), gestionar]);
+            }
+            if (enColumna) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [aviso, boton],
+              );
+            }
+            return Row(children: [aviso, boton]);
+          },
+        ),
+      ],
+    );
+
+    final publicar = guardando
+        ? const Padding(
+            padding: EdgeInsets.all(8),
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        : Tooltip(
+            message: vacio && !programa.activo
+                ? 'Sin materias: añade el pensum primero'
+                : programa.activo
+                ? 'Archivar'
+                : 'Publicar',
+            child: Switch(
+              value: programa.activo,
+              onChanged: (_) => onAlternarActivo(),
+            ),
+          );
+    final editar = IconButton(
+      tooltip: 'Editar datos del curso / PNA',
+      onPressed: onEditarPrograma,
+      icon: const Icon(Icons.edit_outlined, size: 20),
+    );
+    final ver = IconButton(
+      tooltip: 'Ver pensum',
+      onPressed: onVer,
+      icon: const Icon(Icons.visibility_outlined, size: 19),
+    );
+
+    // **La columna lateral de acciones se retira en pantallas angostas.**
+    // Medido a 360 (Redmi 10C): icono + switch + lápiz + ojo dejaban la
+    // columna de texto con ~102 px útiles — el contenido no cabía y la fila
+    // desbordaba. En angosto, editar/ver bajan a una fila propia.
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: parIcono.fondo,
-                borderRadius: BorderRadius.circular(IncesTheme.radioControl),
-              ),
-              child: Icon(
-                programa.tipo == TipoPrograma.carrera
-                    ? Icons.school_outlined
-                    : Icons.auto_stories_outlined,
-                size: 18,
-                color: parIcono.texto,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
+        child: LayoutBuilder(
+          builder: (context, c) {
+            final enColumna = c.maxWidth < 420;
+            if (!enColumna) {
+              return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          programa.nombre,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _Etiqueta(
-                        texto: programa.codigo,
-                        tono: TonoEstado.neutro,
-                      ),
-                      if (vacio) ...[
-                        const SizedBox(width: 6),
-                        const _Etiqueta(
-                          texto: 'Sin pensum',
-                          tono: TonoEstado.error,
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      _Etiqueta(
-                        texto: programa.tipo == TipoPrograma.cursoLibre
-                            ? 'Curso Ordinario'
-                            : 'PNA (Aprendices)',
-                        tono: TonoEstado.info,
-                      ),
-                      _Etiqueta(
-                        texto: programa.activo ? 'Vigente / Activo' : 'En borrador',
-                        tono: programa.activo
-                            ? TonoEstado.exito
-                            : TonoEstado.neutro,
-                      ),
-                      if (programa.requierePasantia)
-                        const _Etiqueta(
-                          texto: 'Con pasantía',
-                          tono: TonoEstado.info,
-                        ),
-                      if (programa.duracionLegible != null)
-                        _Etiqueta(
-                          texto: programa.duracionLegible!,
-                          tono: TonoEstado.info,
-                        ),
-                      _Etiqueta(
-                        texto: '${programa.cuposOcupados} de ${programa.cupo ?? 25} cupos',
-                        tono: TonoEstado.info,
-                      ),
-                      if (!programa.mostrarDisponibilidad)
-                        const _Etiqueta(
-                          texto: 'Cupos ocultos',
-                          tono: TonoEstado.neutro,
-                        ),
-                      Text(
-                        '${programa.totalMaterias} '
-                        '${programa.totalMaterias == 1 ? 'materia' : 'materias'}'
-                        ' · ${programa.totalPeriodos} '
-                        '${programa.totalPeriodos == 1 ? 'período' : 'períodos'}',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      if (vacio) ...[
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          size: 15,
-                          color: theme.colorScheme.error,
-                        ),
-                        const SizedBox(width: 5),
-                        Expanded(
-                          child: Text(
-                            'Requiere pensum para recibir inscripciones',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.error,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        FilledButton.tonalIcon(
-                          onPressed: abriendoPensum ? null : onEditarPensum,
-                          icon: abriendoPensum
-                              ? const SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(strokeWidth: 1.5),
-                                )
-                              : const Icon(Icons.playlist_add_rounded, size: 15),
-                          label: const Text('Cargar pensum'),
-                          style: FilledButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      ] else ...[
-                        Expanded(
-                          child: Text(
-                            '${programa.totalMaterias} ${programa.totalMaterias == 1 ? 'materia' : 'materias'} asignadas',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        TextButton.icon(
-                          onPressed: abriendoPensum ? null : onEditarPensum,
-                          icon: abriendoPensum
-                              ? const SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(strokeWidth: 1.5),
-                                )
-                              : const Icon(Icons.menu_book_rounded, size: 15),
-                          label: const Text('Gestionar pensum'),
-                          style: TextButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            textStyle: const TextStyle(fontSize: 12),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                  icono,
+                  const SizedBox(width: 12),
+                  Expanded(child: contenido),
+                  const SizedBox(width: 4),
+                  publicar,
+                  editar,
+                  ver,
                 ],
-              ),
-            ),
-            const SizedBox(width: 4),
-            if (guardando)
-              const Padding(
-                padding: EdgeInsets.all(8),
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    icono,
+                    const SizedBox(width: 12),
+                    Expanded(child: contenido),
+                    const SizedBox(width: 4),
+                    publicar,
+                  ],
                 ),
-              )
-            else
-              Tooltip(
-                message: vacio && !programa.activo
-                    ? 'Sin materias: añade el pensum primero'
-                    : programa.activo
-                        ? 'Archivar'
-                        : 'Publicar',
-                child: Switch(
-                  value: programa.activo,
-                  onChanged: (_) => onAlternarActivo(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [editar, ver],
                 ),
-              ),
-            IconButton(
-              tooltip: 'Editar datos del curso / PNA',
-              onPressed: onEditarPrograma,
-              icon: const Icon(Icons.edit_outlined, size: 20),
-            ),
-            IconButton(
-              tooltip: 'Ver pensum',
-              onPressed: onVer,
-              icon: const Icon(Icons.visibility_outlined, size: 19),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
@@ -817,6 +901,8 @@ class _Etiqueta extends StatelessWidget {
       ),
       child: Text(
         texto,
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
         style: GoogleFonts.inter(
           fontSize: 10.5,
           fontWeight: FontWeight.w700,
@@ -854,10 +940,7 @@ class _DialogoDetallePrograma extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          _Etiqueta(
-            texto: detalle.programa.codigo,
-            tono: TonoEstado.neutro,
-          ),
+          _Etiqueta(texto: detalle.programa.codigo, tono: TonoEstado.neutro),
         ],
       ),
       content: SizedBox(
@@ -902,7 +985,8 @@ class _DialogoDetallePrograma extends StatelessWidget {
                 AvisoEnLinea(
                   tono: TonoAviso.advertencia,
                   icono: Icons.lock_outline,
-                  texto: 'Pensum bloqueado: hay ${detalle.seccionesActivas} '
+                  texto:
+                      'Pensum bloqueado: hay ${detalle.seccionesActivas} '
                       'secciones activas del período vigente cursando este '
                       'programa. Añadir materias sí está permitido; quitarlas o '
                       'reordenarlas, no.',
@@ -975,10 +1059,7 @@ class _DialogoDetallePrograma extends StatelessWidget {
 
 /// Modal para editar los datos y metadatos de un programa formativo.
 class _DialogoEditarPrograma extends StatefulWidget {
-  const _DialogoEditarPrograma({
-    required this.repo,
-    required this.programa,
-  });
+  const _DialogoEditarPrograma({required this.repo, required this.programa});
 
   final CurriculoRepository repo;
   final ProgramaConTotales programa;
@@ -989,14 +1070,17 @@ class _DialogoEditarPrograma extends StatefulWidget {
 
 class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
   final _forma = GlobalKey<FormState>();
-  late final TextEditingController _nombreCtrl =
-      TextEditingController(text: widget.programa.nombre);
+  late final TextEditingController _nombreCtrl = TextEditingController(
+    text: widget.programa.nombre,
+  );
   late bool _requierePasantia = widget.programa.requierePasantia;
-  late final TextEditingController _duracionValorCtrl =
-      TextEditingController(text: widget.programa.duracionValor?.toString() ?? '');
+  late final TextEditingController _duracionValorCtrl = TextEditingController(
+    text: widget.programa.duracionValor?.toString() ?? '',
+  );
   late String _duracionUnidad = widget.programa.duracionUnidad ?? 'MESES';
-  late final TextEditingController _cupoCtrl =
-      TextEditingController(text: (widget.programa.cupo ?? 25).toString());
+  late final TextEditingController _cupoCtrl = TextEditingController(
+    text: (widget.programa.cupo ?? 25).toString(),
+  );
   late bool _mostrarDisponibilidad = widget.programa.mostrarDisponibilidad;
 
   bool _guardando = false;
@@ -1040,8 +1124,8 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
       cupo: cupoVal != widget.programa.cupo ? cupoVal : null,
       mostrarDisponibilidad:
           _mostrarDisponibilidad != widget.programa.mostrarDisponibilidad
-              ? _mostrarDisponibilidad
-              : null,
+          ? _mostrarDisponibilidad
+          : null,
     );
 
     if (cambios.vacio) {
@@ -1049,8 +1133,10 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
       return;
     }
 
-    final resultado =
-        await widget.repo.actualizarPrograma(widget.programa.id, cambios);
+    final resultado = await widget.repo.actualizarPrograma(
+      widget.programa.id,
+      cambios,
+    );
     if (!mounted) return;
     setState(() => _guardando = false);
 
@@ -1076,7 +1162,10 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(6),
@@ -1085,14 +1174,19 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                         'Código: ${widget.programa.codigo}',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimaryContainer,
                           fontSize: 12,
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.secondaryContainer,
                         borderRadius: BorderRadius.circular(6),
@@ -1101,7 +1195,9 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                         'Tipo: ${widget.programa.tipo.etiqueta}',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSecondaryContainer,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSecondaryContainer,
                           fontSize: 12,
                         ),
                       ),
@@ -1144,8 +1240,14 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                           isDense: true,
                         ),
                         items: const [
-                          DropdownMenuItem(value: 'MESES', child: Text('Meses')),
-                          DropdownMenuItem(value: 'SEMANAS', child: Text('Semanas')),
+                          DropdownMenuItem(
+                            value: 'MESES',
+                            child: Text('Meses'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'SEMANAS',
+                            child: Text('Semanas'),
+                          ),
                           DropdownMenuItem(value: 'DIAS', child: Text('Días')),
                         ],
                         onChanged: (v) {
@@ -1226,7 +1328,9 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Requiere pasantías'),
-                  subtitle: const Text('Fase práctica laboral en taller o empresa'),
+                  subtitle: const Text(
+                    'Fase práctica laboral en taller o empresa',
+                  ),
                   value: _requierePasantia,
                   onChanged: (v) => setState(() => _requierePasantia = v),
                 ),
@@ -1243,7 +1347,9 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Indica el cupo';
                     final n = int.tryParse(v.trim());
-                    if (n == null || n < 0) return 'El cupo debe ser un entero ≥ 0';
+                    if (n == null || n < 0) {
+                      return 'El cupo debe ser un entero ≥ 0';
+                    }
                     return null;
                   },
                 ),
@@ -1251,7 +1357,9 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Disponibilidad de cupos visible'),
-                  subtitle: const Text('Muestra los cupos restantes en landing y portal'),
+                  subtitle: const Text(
+                    'Muestra los cupos restantes en landing y portal',
+                  ),
                   value: _mostrarDisponibilidad,
                   onChanged: (v) => setState(() => _mostrarDisponibilidad = v),
                 ),

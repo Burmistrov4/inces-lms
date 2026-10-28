@@ -59,9 +59,7 @@ class EncabezadoInstitucional extends StatelessWidget {
         color: esOscuro
             ? IncesTheme.superficieOscura
             : IncesTheme.superficieClara,
-        border: Border(
-          bottom: BorderSide(color: theme.colorScheme.outline),
-        ),
+        border: Border(bottom: BorderSide(color: theme.colorScheme.outline)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -69,12 +67,70 @@ class EncabezadoInstitucional extends StatelessWidget {
           // Franja de marca: 3 px de degradado azul→rojo. Es la firma visual más
           // barata y reconocible; basta para que la aplicación se lea como
           // institucional sin ocupar espacio útil.
-          Container(height: 3, decoration:
-              const BoxDecoration(gradient: IncesTheme.degradadoMarca)),
+          Container(
+            height: 3,
+            decoration: const BoxDecoration(
+              gradient: IncesTheme.degradadoMarca,
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: LayoutBuilder(
               builder: (context, restricciones) {
+                // **Móvil compacto (<640): cabecera de UNA línea.** Medido en
+                // dispositivo real (Redmi 10C, 2026-10-28): el encabezado
+                // apilaba saludo + insignias + correo + una fila de 5 accesos
+                // directos y se comía ~un tercio de la pantalla. Esos accesos
+                // duplican entradas que ya están en el cajón, y el correo ya
+                // está en Perfil — en compacto no aportan nada y roban el
+                // espacio del contenido, que es lo único que importa.
+                final esCompacto = restricciones.maxWidth < 640;
+
+                if (esCompacto) {
+                  return Row(
+                    children: [
+                      if (onAbrirMenu != null)
+                        IconButton(
+                          tooltip: 'Menú',
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.menu_rounded),
+                          onPressed: onAbrirMenu,
+                        ),
+                      const _EscudoInces(diminuto: true),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              saludo,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleSmall,
+                            ),
+                            const SizedBox(height: 1),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: _InsigniaRol(etiqueta: rolEtiqueta),
+                                ),
+                                if (periodoActivo != null) ...[
+                                  const SizedBox(width: 6),
+                                  _InsigniaPeriodo(periodo: periodoActivo!),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Las `acciones` se omiten a propósito en compacto:
+                      // duplican el cajón y en 360 px obligan a una segunda
+                      // fila que vuelve a duplicar la altura de la cabecera.
+                    ],
+                  );
+                }
+
                 final identidad = <Widget>[
                   if (onAbrirMenu != null) ...[
                     IconButton(
@@ -131,7 +187,8 @@ class EncabezadoInstitucional extends StatelessWidget {
                 // sólo espera al primero que meta un botón. Por debajo de
                 // 640 px las acciones bajan a una segunda línea.
                 const anchoMinimoParaFila = 640.0;
-                final cabenEnLaFila = acciones.isEmpty ||
+                final cabenEnLaFila =
+                    acciones.isEmpty ||
                     restricciones.maxWidth >= anchoMinimoParaFila;
 
                 if (cabenEnLaFila) {
@@ -163,13 +220,17 @@ class EncabezadoInstitucional extends StatelessWidget {
 /// logotipo oficial es peor que no ponerlo. Es una marca tipográfica neutra,
 /// fácil de sustituir por el archivo real cuando se tenga.
 class _EscudoInces extends StatelessWidget {
-  const _EscudoInces();
+  const _EscudoInces({this.diminuto = false});
+
+  /// Versión compacta para la cabecera de una línea en móvil.
+  final bool diminuto;
 
   @override
   Widget build(BuildContext context) {
+    final lado = diminuto ? 32.0 : 40.0;
     return Container(
-      width: 40,
-      height: 40,
+      width: lado,
+      height: lado,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         gradient: IncesTheme.degradadoAzul,
@@ -178,7 +239,7 @@ class _EscudoInces extends StatelessWidget {
       child: Text(
         'I',
         style: GoogleFonts.inter(
-          fontSize: 19,
+          fontSize: diminuto ? 15 : 19,
           fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
@@ -397,8 +458,9 @@ class TarjetaModulo extends StatelessWidget {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: par.fondo,
-                        borderRadius:
-                            BorderRadius.circular(IncesTheme.radioControl),
+                        borderRadius: BorderRadius.circular(
+                          IncesTheme.radioControl,
+                        ),
                       ),
                       child: Icon(icono, size: 20, color: par.texto),
                     ),
@@ -407,10 +469,7 @@ class TarjetaModulo extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            titulo,
-                            style: theme.textTheme.titleSmall,
-                          ),
+                          Text(titulo, style: theme.textTheme.titleSmall),
                           const SizedBox(height: 4),
                           _BadgeEstado(estado: estado),
                         ],
@@ -444,10 +503,7 @@ class TarjetaModulo extends StatelessWidget {
                         ),
                       )
                     else
-                      Switch(
-                        value: habilitado,
-                        onChanged: onAlternar,
-                      ),
+                      Switch(value: habilitado, onChanged: onAlternar),
                   ],
                 ),
                 if (descripcion != null) ...[
@@ -725,10 +781,7 @@ class AvisoEnLinea extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: compacto ? 6 : 8,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: compacto ? 6 : 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(IncesTheme.radioControl),
@@ -742,9 +795,11 @@ class AvisoEnLinea extends StatelessWidget {
           Expanded(
             child: Text(
               texto,
-              style: (compacto ? theme.textTheme.labelSmall : theme.textTheme.bodySmall)?.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
+              style:
+                  (compacto
+                          ? theme.textTheme.labelSmall
+                          : theme.textTheme.bodySmall)
+                      ?.copyWith(color: theme.colorScheme.onSurface),
             ),
           ),
           if (onCerrar != null) ...[
@@ -970,10 +1025,7 @@ class TituloSeccion extends StatelessWidget {
 
     final botones = acciones;
     if (botones == null || botones.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: titulo,
-      );
+      return Padding(padding: const EdgeInsets.only(bottom: 12), child: titulo);
     }
 
     return Padding(
@@ -1146,8 +1198,9 @@ class Etiqueta extends StatelessWidget {
         texto,
         style: GoogleFonts.inter(
           fontSize: 11,
-          fontWeight:
-              (destacada || color != null) ? FontWeight.w600 : FontWeight.w500,
+          fontWeight: (destacada || color != null)
+              ? FontWeight.w600
+              : FontWeight.w500,
           color: (destacada || color != null)
               ? acento
               : theme.colorScheme.onSurfaceVariant,
@@ -1186,14 +1239,15 @@ void mostrarAviso(
   final color = error
       ? IncesTheme.error
       : exito
-          ? IncesTheme.exito
-          : null;
+      ? IncesTheme.exito
+      : null;
 
   // El icono depende del tono; el color del texto, de si hay tono o no. Un
   // SnackBar sin tono usa el color de acento del tema, que ya contrasta sobre
   // el fondo inverso.
-  final colorContenido =
-      color != null ? Colors.white : theme.colorScheme.onInverseSurface;
+  final colorContenido = color != null
+      ? Colors.white
+      : theme.colorScheme.onInverseSurface;
 
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
@@ -1208,8 +1262,8 @@ void mostrarAviso(
               error
                   ? Icons.error_outline
                   : exito
-                      ? Icons.check_circle_outline
-                      : Icons.info_outline,
+                  ? Icons.check_circle_outline
+                  : Icons.info_outline,
               size: 19,
               color: colorContenido,
             ),
@@ -1217,10 +1271,7 @@ void mostrarAviso(
             Expanded(
               child: Text(
                 mensaje,
-                style: GoogleFonts.inter(
-                  fontSize: 13.5,
-                  color: colorContenido,
-                ),
+                style: GoogleFonts.inter(fontSize: 13.5, color: colorContenido),
               ),
             ),
           ],
@@ -1228,7 +1279,6 @@ void mostrarAviso(
       ),
     );
 }
-
 
 /// **Esqueleto de carga: la forma del contenido que viene.**
 ///
@@ -1294,8 +1344,9 @@ class _EsqueletoListaState extends State<EsqueletoLista>
         child: Container(
           height: alto,
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.6),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.6,
+            ),
             borderRadius: BorderRadius.circular(6),
           ),
         ),
@@ -1323,8 +1374,9 @@ class _EsqueletoListaState extends State<EsqueletoLista>
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest
-                      .withValues(alpha: 0.6),
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.6,
+                  ),
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -1345,38 +1397,44 @@ class _EsqueletoListaState extends State<EsqueletoLista>
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (widget.conBarraFiltros) ...[
-          Container(
-            height: 48,
-            decoration: BoxDecoration(
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-              borderRadius: BorderRadius.circular(10),
+    // Acotado con scroll interno: cuando el hueco restante es menor que el
+    // esqueleto (pantallas bajas en móvil, p. ej. Redmi 10C), el Column fijo
+    // desbordaba ~162 px y reventaba la fase de layout — el «se queda cargando»
+    // con el esqueleto pintado a medias que se reportó a mano.
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (widget.conBarraFiltros) ...[
+            Container(
+              height: 48,
+              decoration: BoxDecoration(
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (var i = 0; i < 4; i++)
-                Container(
-                  width: 74,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(8),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (var i = 0; i < 4; i++)
+                  Container(
+                    width: 74,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+          for (var i = 0; i < widget.tarjetas; i++) tarjeta(),
         ],
-        for (var i = 0; i < widget.tarjetas; i++) tarjeta(),
-      ],
+      ),
     );
   }
 }
