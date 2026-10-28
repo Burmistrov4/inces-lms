@@ -317,12 +317,22 @@ class BackendCuadranteGateway implements CuadranteGateway {
       if (cambios.fechaInicio != null) parche['start_date'] = cambios.fechaInicio;
       if (cambios.fechaFin != null) parche['end_date'] = cambios.fechaFin;
 
-      final actualizado = await client
+      final esUuid = id.length == 36 && id.contains('-');
+      var respuesta = await client
           .from('academic_periods')
           .update(parche)
-          .eq('id', id)
+          .eq(esUuid ? 'id' : 'code', id)
           .select()
-          .single();
+          .maybeSingle();
+      if (respuesta == null && esUuid) {
+        respuesta = await client
+            .from('academic_periods')
+            .update(parche)
+            .eq('code', id)
+            .select()
+            .single();
+      }
+      final actualizado = respuesta!;
 
       final resVigente = await client
           .from('system_settings')

@@ -253,28 +253,6 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     return true;
   }
 
-  Guardia? _guardiaParaPuesto(int dia, String modalidad, int puesto) {
-    for (final g in _guardias) {
-      if (!g.activa || g.dia != dia) continue;
-      final notas = (g.notas ?? '').toUpperCase();
-      final esMod = notas.contains('MTP') || !notas.contains('PNA');
-      if (esMod) {
-        if (notas.contains('PUESTO $puesto') || notas.contains('PUESTO: $puesto') || notas.contains('($puesto)')) {
-          return g;
-        }
-      }
-    }
-    final coincidentes = _guardias.where((g) {
-      if (!g.activa || g.dia != dia) return false;
-      final notas = (g.notas ?? '').toUpperCase();
-      return notas.contains('MTP') || !notas.contains('PNA');
-    }).toList();
-
-    if (coincidentes.length >= puesto) {
-      return coincidentes[puesto - 1];
-    }
-    return null;
-  }
 
   /// El nombre del docente, o `null` si no está en el catálogo.
   ///
@@ -725,164 +703,163 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     );
   }
 
+  Guardia? _guardiaParaPuesto(int dia, String modalidad, int puesto) {
+    for (final g in _guardias) {
+      if (!g.activa || g.dia != dia) continue;
+      final notas = (g.notas ?? '').toUpperCase();
+      final esMod = notas.contains('MTP') || !notas.contains('PNA');
+      if (esMod) {
+        if (notas.contains('PUESTO $puesto') || notas.contains('PUESTO: $puesto') || notas.contains('($puesto)')) {
+          return g;
+        }
+      }
+    }
+    final coincidentes = _guardias.where((g) {
+      if (!g.activa || g.dia != dia) return false;
+      final notas = (g.notas ?? '').toUpperCase();
+      return notas.contains('MTP') || !notas.contains('PNA');
+    }).toList();
+
+    if (coincidentes.length >= puesto) {
+      return coincidentes[puesto - 1];
+    }
+    return null;
+  }
+
   Widget _pizarraMural() {
     final theme = Theme.of(context);
     final borderSide = BorderSide(color: theme.dividerColor.withValues(alpha: 0.6));
-    // **Filtro de dia:** null = toda la semana; un numero = solo ese.
     final diasAMostrar = _diaRejilla == null
         ? [for (var d = 1; d <= diaMaximo; d++) d]
         : [_diaRejilla!];
     final limiteDia = diasAMostrar.length;
 
-    // **Rejilla de ancho adaptativo.** Medido el 2026-10-22: con columnas de
-    // día fijas de 190 px la tabla desbordaba 363 px a 840. Ahora el ancho del
-    // día se calcula del espacio disponible: cabe sin scroll desde ~840 px y
-    // sólo arrastra cuando la pantalla es móvil.
     return LayoutBuilder(
       builder: (context, restricciones) {
         final anchoGutter = 150.0;
-        // Minimo 92 y margen de 8 px: con 6 dias y minimo 104 la tabla
-        // media 774 px y desbordaba 37 px a 840 (medido el 2026-10-22).
         final anchoDia =
             ((restricciones.maxWidth - anchoGutter - 8) / limiteDia)
                 .clamp(92.0, 168.0)
                 .toDouble();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: borderSide,
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Scrollbar(
-              controller: _scrollHorizontalCtrl,
-              thumbVisibility: true,
-              child: SingleChildScrollView(
-                controller: _scrollHorizontalCtrl,
-                scrollDirection: Axis.horizontal,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.vertical,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Encabezado descriptivo pizarra
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.draw_outlined, size: 18, color: theme.colorScheme.primary),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Pizarra Mural de Guardias INCES — CFS Rafael Urdaneta (La Isabelica)',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.primary),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Cabecera de Días
-                        Row(
+          children: [
+            Expanded(
+              child: Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: borderSide,
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Scrollbar(
+                  controller: _scrollHorizontalCtrl,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _scrollHorizontalCtrl,
+                    scrollDirection: Axis.horizontal,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
-                              width: anchoGutter,
-                              height: 44,
-                              alignment: Alignment.centerLeft,
-                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              margin: const EdgeInsets.only(bottom: 12),
                               decoration: BoxDecoration(
-                                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                                border: Border(right: borderSide, bottom: borderSide),
+                                color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
                               ),
-                              child: const Text('Programa / Puesto', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.draw_outlined, size: 18, color: theme.colorScheme.primary),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Pizarra Mural de Guardias INCES — CFS Rafael Urdaneta (La Isabelica)',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.primary),
+                                  ),
+                                ],
+                              ),
                             ),
-                            for (final dia in diasAMostrar)
-                              Container(
-                                width: anchoDia,
-                                height: 44,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                                  border: Border(right: borderSide, bottom: borderSide),
+                            Row(
+                              children: [
+                                Container(
+                                  width: anchoGutter,
+                                  height: 44,
+                                  alignment: Alignment.centerLeft,
+                                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                                    border: Border(right: borderSide, bottom: borderSide),
+                                  ),
+                                  child: const Text('Programa / Puesto', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                                 ),
-                                child: Text(
-                                  diasDeLaSemana[dia],
-                                  style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary, fontSize: 13),
-                                ),
+                                for (final dia in diasAMostrar)
+                                  Container(
+                                    width: anchoDia,
+                                    height: 44,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                                      border: Border(right: borderSide, bottom: borderSide),
+                                    ),
+                                    child: Text(
+                                      diasDeLaSemana[dia],
+                                      style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary, fontSize: 13),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            Container(
+                              width: anchoGutter + (limiteDia * anchoDia),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              color: Colors.blue.shade50,
+                              child: Row(
+                                children: [
+                                  Icon(Icons.school, size: 16, color: Colors.blue.shade800),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'M.T.P. — MEDIO TIEMPO PEDAGÓGICO (Puestos 1 al 7)',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blue.shade900),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            for (var puesto = 1; puesto <= 7; puesto++)
+                              Row(
+                                children: [
+                                  Container(
+                                    width: anchoGutter,
+                                    height: 58,
+                                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                                    alignment: Alignment.centerLeft,
+                                    decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
+                                    child: Text('Puesto $puesto', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                                  ),
+                                  for (final dia in diasAMostrar)
+                                    Container(
+                                      width: anchoDia,
+                                      height: 58,
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
+                                      child: _celdaPuestoMural(dia: dia, modalidad: 'MTP', puesto: puesto),
+                                    ),
+                                ],
                               ),
                           ],
                         ),
-
-                        // SECCIÓN M.T.P. (Puestos 1 al 7)
-                        Container(
-                          width: anchoGutter + (limiteDia * anchoDia),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          color: Colors.blue.shade50,
-                          child: Row(
-                            children: [
-                              Icon(Icons.school, size: 16, color: Colors.blue.shade800),
-                              const SizedBox(width: 6),
-                              Text(
-                                'M.T.P. — MEDIO TIEMPO PEDAGÓGICO (Puestos 1 al 7)',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blue.shade900),
-                              ),
-                            ],
-                          ),
-                        ),
-                        for (var puesto = 1; puesto <= 7; puesto++)
-                          Row(
-                            children: [
-                              Container(
-                                width: anchoGutter,
-                                height: 58,
-                                padding: const EdgeInsets.symmetric(horizontal: 10),
-                                alignment: Alignment.centerLeft,
-                                decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 11,
-                                      backgroundColor: Colors.blue.shade700,
-                                      child: Text('$puesto', style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text('Puesto $puesto', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12), overflow: TextOverflow.ellipsis),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              for (final dia in diasAMostrar)
-                                Container(
-                                  width: anchoDia,
-                                  height: 58,
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(border: Border(right: borderSide, bottom: borderSide)),
-                                  child: _celdaPuestoMural(dia: dia, modalidad: 'MTP', puesto: puesto),
-                                ),
-                            ],
-                          ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ),
-      ],
-    );
+          ],
+        );
       },
     );
   }
@@ -977,20 +954,31 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
         turnoDeBloque(g.bloque) == turno).toList();
 
     if (guardias.isEmpty) {
-      return InkWell(
-        onTap: () => _abrirFormulario(
-          aulaIdInicial: aula.id,
-          diaInicial: dia,
-          bloqueInicial: turno == Turno.manana ? 1 : 7,
-          modalidadInicial: _modalidadFiltro ?? 'MTP',
-        ),
-        child: Container(
-          alignment: Alignment.center,
-          padding: const EdgeInsets.all(4),
-          child: Icon(
-            Icons.add_rounded,
-            size: 16,
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+      return Tooltip(
+        message: 'Asignar guardia en ${aula.nombre} (${diasDeLaSemana[dia]}, ${turno == Turno.manana ? "Mañana" : "Tarde"})',
+        child: InkWell(
+          onTap: () => _abrirFormulario(
+            aulaIdInicial: aula.id,
+            diaInicial: dia,
+            bloqueInicial: turno == Turno.manana ? 1 : 7,
+            modalidadInicial: _modalidadFiltro ?? 'MTP',
+          ),
+          child: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.all(4),
+            child: Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              ),
+              child: Icon(
+                Icons.add_rounded,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
           ),
         ),
       );

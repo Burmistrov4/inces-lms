@@ -102,5 +102,6 @@ abstract interface class AuthGateway {
   Future<PerfilUsuario> actualizarPerfil({
     required String nombres,
     required String apellidos,
+    String? cedula,
   });
 }

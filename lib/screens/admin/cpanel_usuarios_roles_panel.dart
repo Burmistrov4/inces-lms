@@ -117,7 +117,7 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel>
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 350), () {
       _paginaActual = 0;
-      _cargar();
+      _cargar(silencioso: _pagina != null);
     });
   }
 
@@ -472,7 +472,7 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel>
                                     _rol = v;
                                     _paginaActual = 0;
                                   });
-                                  _cargar();
+                                  _cargar(silencioso: _pagina != null);
                                 },
                               ),
                               DropdownButton<bool?>(
@@ -497,7 +497,7 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel>
                                     _activo = v;
                                     _paginaActual = 0;
                                   });
-                                  _cargar();
+                                  _cargar(silencioso: _pagina != null);
                                 },
                               ),
                               IconButton(
@@ -508,20 +508,30 @@ class _CpanelUsuariosRolesPanelState extends State<CpanelUsuariosRolesPanel>
                               FilterChip(
                                 label: const Text('Ocultar pruebas'),
                                 selected: _ocultarCuentasDemo,
-                                // **Recarga, no sólo repinta.** Desde el
-                                // 2026-10-25 el filtro de cuentas de siembra lo
-                                // aplica el servidor, así que cambiar el chip
-                                // sin volver a pedir deja la lista anterior en
-                                // pantalla y el usuario cree que el chip no
-                                // hace nada. Y se vuelve a la primera página:
-                                // el total cambia, así que la página actual
-                                // puede quedar fuera de rango.
                                 onSelected: (v) {
                                   setState(() {
                                     _ocultarCuentasDemo = v;
                                     _paginaActual = 0;
                                   });
-                                  _cargar();
+                                  _cargar(silencioso: _pagina != null);
+                                },
+                              ),
+                              DropdownButton<int>(
+                                value: _limite,
+                                items: const [
+                                  DropdownMenuItem(value: 10, child: Text('10 / pág.')),
+                                  DropdownMenuItem(value: 25, child: Text('25 / pág.')),
+                                  DropdownMenuItem(value: 50, child: Text('50 / pág.')),
+                                  DropdownMenuItem(value: 100, child: Text('100 / pág.')),
+                                ],
+                                onChanged: (v) {
+                                  if (v != null && v != _limite) {
+                                    setState(() {
+                                      _limite = v;
+                                      _paginaActual = 0;
+                                    });
+                                    _cargar(silencioso: _pagina != null);
+                                  }
                                 },
                               ),
                             ],

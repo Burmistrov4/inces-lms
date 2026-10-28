@@ -152,31 +152,39 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
     await _cargar();
   }
 
+  String? _abriendoPensumId;
+
   Future<void> _editarPensum(ProgramaConTotales programa) async {
-    final resultado = await _repo.detallePrograma(programa.id);
-    if (!mounted) return;
+    if (_abriendoPensumId != null) return;
+    setState(() => _abriendoPensumId = programa.id);
+    try {
+      final resultado = await _repo.detallePrograma(programa.id);
+      if (!mounted) return;
 
-    final detalle = resultado.valueOrNull;
-    if (detalle == null) {
-      mostrarAviso(
-        context,
-        resultado.errorOrNull?.message ?? 'No pudimos cargar el pensum.',
-        error: true,
-      );
-      return;
-    }
+      final detalle = resultado.valueOrNull;
+      if (detalle == null) {
+        mostrarAviso(
+          context,
+          resultado.errorOrNull?.message ?? 'No pudimos cargar el pensum.',
+          error: true,
+        );
+        return;
+      }
 
-    final guardado = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => AsistenteCurriculoScreen(
-          repositorio: _repo,
-          detalleInicial: detalle,
+      final guardado = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => AsistenteCurriculoScreen(
+            repositorio: _repo,
+            detalleInicial: detalle,
+          ),
         ),
-      ),
-    );
+      );
 
-    if (guardado != true || !mounted) return;
-    await _cargar();
+      if (guardado != true || !mounted) return;
+      await _cargar();
+    } finally {
+      if (mounted) setState(() => _abriendoPensumId = null);
+    }
   }
 
   Future<void> _alternarActivo(ProgramaConTotales programa) async {
@@ -288,7 +296,7 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
       children: [
         TituloSeccion(
           'Programas académicos',
-          subtitulo: 'Carreras y cursos libres con su pensum. Ninguna acción '
+          subtitulo: 'Cursos ordinarios y carreras PNA con su pensum formativo. Ninguna acción '
               'borra: archivar es desactivar.',
           acciones: [
             FilledButton.icon(
@@ -1082,6 +1090,53 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                           if (v != null) setState(() => _duracionUnidad = v);
                         },
                       ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    ActionChip(
+                      avatar: const Icon(Icons.add, size: 14),
+                      label: const Text('1 Mes'),
+                      onPressed: () {
+                        setState(() {
+                          _duracionValorCtrl.text = '1';
+                          _duracionUnidad = 'MESES';
+                        });
+                      },
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.add, size: 14),
+                      label: const Text('2 Meses'),
+                      onPressed: () {
+                        setState(() {
+                          _duracionValorCtrl.text = '2';
+                          _duracionUnidad = 'MESES';
+                        });
+                      },
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.add, size: 14),
+                      label: const Text('4 Semanas'),
+                      onPressed: () {
+                        setState(() {
+                          _duracionValorCtrl.text = '4';
+                          _duracionUnidad = 'SEMANAS';
+                        });
+                      },
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.add, size: 14),
+                      label: const Text('6 Meses'),
+                      onPressed: () {
+                        setState(() {
+                          _duracionValorCtrl.text = '6';
+                          _duracionUnidad = 'MESES';
+                        });
+                      },
                     ),
                   ],
                 ),

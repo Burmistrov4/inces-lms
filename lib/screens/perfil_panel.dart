@@ -41,6 +41,7 @@ class _PerfilPanelState extends State<PerfilPanel> {
 
   final _nombreCtrl = TextEditingController();
   final _apellidoCtrl = TextEditingController();
+  final _cedulaCtrl = TextEditingController();
 
   PerfilUsuario? _perfil;
   bool _cargando = true;
@@ -66,6 +67,7 @@ class _PerfilPanelState extends State<PerfilPanel> {
   void dispose() {
     _nombreCtrl.dispose();
     _apellidoCtrl.dispose();
+    _cedulaCtrl.dispose();
     super.dispose();
   }
 
@@ -89,6 +91,7 @@ class _PerfilPanelState extends State<PerfilPanel> {
         // con el nombre que tecleó en el formulario de inscripción.
         _nombreCtrl.text = perfil?.nombres ?? '';
         _apellidoCtrl.text = perfil?.apellidos ?? '';
+        _cedulaCtrl.text = perfil?.cedula ?? '';
       }),
       failure: (fallo) => setState(() {
         _cargando = false;
@@ -108,6 +111,7 @@ class _PerfilPanelState extends State<PerfilPanel> {
     final resultado = await _auth.actualizarPerfil(
       nombres: _nombreCtrl.text,
       apellidos: _apellidoCtrl.text,
+      cedula: _cedulaCtrl.text,
     );
 
     if (!mounted) return;
@@ -122,6 +126,7 @@ class _PerfilPanelState extends State<PerfilPanel> {
           _perfil = perfil;
           _nombreCtrl.text = perfil.nombres;
           _apellidoCtrl.text = perfil.apellidos;
+          _cedulaCtrl.text = perfil.cedula;
         });
         mostrarAviso(context, 'Tus datos se guardaron.', exito: true);
       },
@@ -198,6 +203,14 @@ class _PerfilPanelState extends State<PerfilPanel> {
               etiqueta: 'Rol',
               valor: perfil.rolLegible,
             ),
+            if (perfil.cedula.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _datoFijo(
+                icono: Icons.credit_card_outlined,
+                etiqueta: 'Cédula',
+                valor: perfil.cedula,
+              ),
+            ],
           ],
         ),
       ),
@@ -251,10 +264,10 @@ class _PerfilPanelState extends State<PerfilPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Nombre y apellido', style: theme.textTheme.titleSmall),
+            Text('Nombre, apellido y documento', style: theme.textTheme.titleSmall),
             const SizedBox(height: 4),
             Text(
-              'Son los únicos datos que puedes corregir por tu cuenta.',
+              'Puedes actualizar tu nombre o registrar tu cédula para ingresar al sistema con ella.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -275,13 +288,25 @@ class _PerfilPanelState extends State<PerfilPanel> {
               controller: _apellidoCtrl,
               enabled: !_guardando,
               textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.done,
-              // Guardar con «Intro» en el último campo: es lo que uno intenta
-              // después de teclear el apellido.
-              onSubmitted: (_) => _guardar(),
+              textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 labelText: 'Apellidos',
                 prefixIcon: Icon(Icons.person_outline, size: 20),
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _cedulaCtrl,
+              enabled: !_guardando,
+              textCapitalization: TextCapitalization.characters,
+              keyboardType: TextInputType.text,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _guardar(),
+              decoration: const InputDecoration(
+                labelText: 'Cédula de identidad',
+                hintText: 'ej. V-12345678 o 12345678',
+                prefixIcon: Icon(Icons.badge_outlined, size: 20),
+                helperText: 'Permite iniciar sesión con tu cédula además del correo institucional.',
               ),
             ),
             if (_errorFormulario != null) ...[

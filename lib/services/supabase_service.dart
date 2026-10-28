@@ -172,7 +172,7 @@ class SupabaseService implements AuthGateway, AspiranteGateway, ModulesGateway {
 
     final fila = await client
         .from(_tablaPerfiles)
-        .select('id, email, nombres, apellidos, rol')
+        .select('id, email, nombres, apellidos, rol, cedula')
         .eq('id', id)
         .maybeSingle();
 
@@ -184,6 +184,7 @@ class SupabaseService implements AuthGateway, AspiranteGateway, ModulesGateway {
   Future<PerfilUsuario> actualizarPerfil({
     required String nombres,
     required String apellidos,
+    String? cedula,
   }) async {
     final id = userId;
     if (id == null) {
@@ -204,9 +205,13 @@ class SupabaseService implements AuthGateway, AspiranteGateway, ModulesGateway {
     // desde aquí sería una segunda fuente de verdad para la misma columna.
     final fila = await client
         .from(_tablaPerfiles)
-        .update({'nombres': nombres, 'apellidos': apellidos})
+        .update({
+          'nombres': nombres,
+          'apellidos': apellidos,
+          if (cedula != null) 'cedula': cedula.trim().isEmpty ? null : cedula.trim(),
+        })
         .eq('id', id)
-        .select('id, email, nombres, apellidos, rol')
+        .select('id, email, nombres, apellidos, rol, cedula')
         .single();
 
     return PerfilUsuario.fromJson(fila);

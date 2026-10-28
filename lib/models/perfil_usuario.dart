@@ -28,6 +28,7 @@ class PerfilUsuario {
     required this.nombres,
     required this.apellidos,
     required this.rol,
+    this.cedula = '',
   });
 
   final String id;
@@ -37,6 +38,9 @@ class PerfilUsuario {
 
   /// `estudiante`, `docente` o `admin`. Se muestra, no se edita.
   final String rol;
+
+  /// Cédula de identidad (V-12345678 o dígitos), para login con documento.
+  final String cedula;
 
   /// `nombres apellidos`, ya recortado.
   ///
@@ -59,16 +63,14 @@ class PerfilUsuario {
         nombres: json['nombres'] as String? ?? '',
         apellidos: json['apellidos'] as String? ?? '',
         rol: json['rol'] as String? ?? '',
+        cedula: json['cedula'] as String? ?? '',
       );
 
-  /// Copia con el nombre corregido, conservando lo que no es editable.
-  ///
-  /// Existe para que el panel pueda enseñar el resultado de guardar sin volver a
-  /// pedir la fila: el correo y el rol no cambian, así que releerlos sería una
-  /// llamada de red para recibir lo que ya se tiene.
+  /// Copia con el nombre y opcionalmente la cédula corregidos, conservando lo que no es editable.
   PerfilUsuario conNombre({
     required String nombres,
     required String apellidos,
+    String? cedula,
   }) =>
       PerfilUsuario(
         id: id,
@@ -76,8 +78,9 @@ class PerfilUsuario {
         nombres: nombres,
         apellidos: apellidos,
         rol: rol,
+        cedula: cedula ?? this.cedula,
       );
 
   @override
-  String toString() => 'PerfilUsuario($id, $nombreCompleto, $rol)';
+  String toString() => 'PerfilUsuario($id, $nombreCompleto, $rol, $cedula)';
 }

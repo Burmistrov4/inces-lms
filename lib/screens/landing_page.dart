@@ -2437,10 +2437,12 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
         width: esMovil ? double.infinity : 520,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(esMovil ? 20 : 24),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.35),
+            color: theme.brightness == Brightness.dark
+                ? theme.colorScheme.outlineVariant.withValues(alpha: 0.3)
+                : Colors.white.withValues(alpha: 0.35),
             width: 1.5,
           ),
           boxShadow: [
@@ -2716,10 +2718,16 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: IncesTheme.azulPrimario.withValues(alpha: 0.07),
+                            color: (theme.brightness == Brightness.dark
+                                    ? theme.colorScheme.primary
+                                    : IncesTheme.azulPrimario)
+                                .withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: IncesTheme.azulPrimario.withValues(alpha: 0.18),
+                              color: (theme.brightness == Brightness.dark
+                                      ? theme.colorScheme.primary
+                                      : IncesTheme.azulPrimario)
+                                  .withValues(alpha: 0.28),
                             ),
                           ),
                           child: Text(
@@ -2727,7 +2735,9 @@ class _CarruselHeroOfertasState extends State<_CarruselHeroOfertas> {
                             style: GoogleFonts.inter(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: IncesTheme.azulPrimario,
+                              color: theme.brightness == Brightness.dark
+                                  ? theme.colorScheme.primary
+                                  : IncesTheme.azulPrimario,
                             ),
                           ),
                         ),

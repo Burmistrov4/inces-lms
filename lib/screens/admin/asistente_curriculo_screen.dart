@@ -623,6 +623,7 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                           SizedBox(
                             width: 140,
                             child: TextFormField(
+                              key: ValueKey('duracion-$_duracionValor'),
                               initialValue: _duracionValor?.toString() ?? '',
                               keyboardType: TextInputType.number,
                               inputFormatters: [
@@ -645,6 +646,7 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                           const SizedBox(width: 14),
                           Expanded(
                             child: DropdownButtonFormField<String>(
+                              key: ValueKey('unidad-$_duracionUnidad'),
                               initialValue: _duracionUnidad,
                               decoration: const InputDecoration(
                                 labelText: 'Unidad',
@@ -670,6 +672,53 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                                 }
                               },
                             ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          ActionChip(
+                            avatar: const Icon(Icons.add, size: 14),
+                            label: const Text('1 Mes'),
+                            onPressed: () {
+                              setState(() {
+                                _duracionValor = 1;
+                                _duracionUnidad = 'MESES';
+                              });
+                            },
+                          ),
+                          ActionChip(
+                            avatar: const Icon(Icons.add, size: 14),
+                            label: const Text('2 Meses'),
+                            onPressed: () {
+                              setState(() {
+                                _duracionValor = 2;
+                                _duracionUnidad = 'MESES';
+                              });
+                            },
+                          ),
+                          ActionChip(
+                            avatar: const Icon(Icons.add, size: 14),
+                            label: const Text('4 Semanas'),
+                            onPressed: () {
+                              setState(() {
+                                _duracionValor = 4;
+                                _duracionUnidad = 'SEMANAS';
+                              });
+                            },
+                          ),
+                          ActionChip(
+                            avatar: const Icon(Icons.add, size: 14),
+                            label: const Text('6 Meses'),
+                            onPressed: () {
+                              setState(() {
+                                _duracionValor = 6;
+                                _duracionUnidad = 'MESES';
+                              });
+                            },
                           ),
                         ],
                       ),

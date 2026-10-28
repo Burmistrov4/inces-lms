@@ -104,7 +104,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     ItemNavegacion(
       icono: Icons.menu_book_outlined,
       titulo: 'Programas Académicos',
-      etiquetaCorta: 'Programas',
+      etiquetaCorta: 'Cursos y PNA',
       categoria: 'Preparar el período',
       modulo: 'm2_curriculo',
     ),

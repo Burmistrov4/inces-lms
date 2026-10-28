@@ -306,6 +306,7 @@ class AuthService {
   Future<Result<PerfilUsuario>> actualizarPerfil({
     required String nombres,
     required String apellidos,
+    String? cedula,
   }) {
     return Result.guard(() async {
       // Se recorta **antes** de validar y de enviar: un nombre de solo espacios
@@ -329,6 +330,7 @@ class AuthService {
       return _gateway.actualizarPerfil(
         nombres: nombreLimpio,
         apellidos: apellidoLimpio,
+        cedula: cedula?.trim(),
       );
     });
   }

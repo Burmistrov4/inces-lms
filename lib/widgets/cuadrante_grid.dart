@@ -96,7 +96,7 @@ class CuadranteGrid extends StatelessWidget {
       builder: (context, restricciones) {
         // Lista vertical si la pantalla es estrecha O si se filtro a un solo
         // dia: una columna suelta se lee peor que la lista de bloques.
-        if (restricciones.maxWidth < 1200 || dias.length == 1) {
+        if (dias.length == 1) {
           return _CuadrantePorDia(
             celdas: celdas,
             dias: dias,

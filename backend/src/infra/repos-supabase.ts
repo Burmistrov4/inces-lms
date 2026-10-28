@@ -2466,6 +2466,7 @@ class CuadranteSupabase implements PuertaCuadrante {
     if (cambios.cerrado === true) {
       parche.closed_at = new Date().toISOString();
       parche.closed_by = null;
+      parche.is_active = false;
     } else if (cambios.cerrado === false) {
       parche.closed_at = null;
       parche.closed_by = null;
@@ -2475,12 +2476,22 @@ class CuadranteSupabase implements PuertaCuadrante {
       throw ErrorApi.peticionInvalida('No se indicó ningún cambio para el lapso.');
     }
 
-    const respuesta = await this.cliente
+    const esUuid = id.length === 36 && id.includes('-');
+    let respuesta = await this.cliente
       .from(TABLA_PERIODOS)
       .update(parche)
-      .eq('id', id)
+      .eq(esUuid ? 'id' : 'code', id)
       .select(COLUMNAS_PERIODO)
-      .single();
+      .maybeSingle();
+
+    if (!respuesta.data && esUuid) {
+      respuesta = await this.cliente
+        .from(TABLA_PERIODOS)
+        .update(parche)
+        .eq('code', id)
+        .select(COLUMNAS_PERIODO)
+        .maybeSingle();
+    }
 
     if (respuesta.error) {
       throw this.traducirEscritura(respuesta.error, 'actualizar período', RECURSO_PERIODO);

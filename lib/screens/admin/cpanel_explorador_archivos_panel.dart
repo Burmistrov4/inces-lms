@@ -206,6 +206,7 @@ class _CpanelExploradorArchivosPanelState
   bool _subiendoArchivo = false;
   String _pasoSubida = '';
   String? _errorSubida;
+  bool _cargandoArchivos = true;
 
   /// `true` cuando el último fallo fue «el archivo no cabe».
   ///
@@ -319,6 +320,9 @@ class _CpanelExploradorArchivosPanelState
             )
             .toList();
 
+        setState(() {
+          _cargandoArchivos = false;
+        });
         if (nuevos.isEmpty) return;
         setState(() {
           // Los archivos del servidor van primero: son los más nuevos
@@ -329,6 +333,7 @@ class _CpanelExploradorArchivosPanelState
       },
       failure: (fallo) {
         setState(() {
+          _cargandoArchivos = false;
           _errorSubida = 'No pudimos cargar los archivos del centro: ${fallo.message}';
         });
       },
@@ -830,15 +835,43 @@ class _CpanelExploradorArchivosPanelState
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: IncesTheme.rojoInces),
-            onPressed: () {
-              setState(() {
-                _elementos.remove(item);
-                if (_seleccionado == item) _seleccionado = null;
-              });
-              Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('«${item.nombre}» eliminado.')),
-              );
+            onPressed: () async {
+              if (item.esRemoto) {
+                final resultado = await _repoArchivos.borrarComoAdmin(item.id);
+                if (!mounted) return;
+                resultado.when(
+                  success: (_) {
+                    setState(() {
+                      _elementos.remove(item);
+                      if (_seleccionado == item) _seleccionado = null;
+                      _seleccionadosIds.remove(item.id);
+                    });
+                    Navigator.of(ctx).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('«${item.nombre}» eliminado del centro.')),
+                    );
+                  },
+                  failure: (fallo) {
+                    Navigator.of(ctx).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('No se pudo eliminar: ${fallo.message}'),
+                        backgroundColor: IncesTheme.rojoInces,
+                      ),
+                    );
+                  },
+                );
+              } else {
+                setState(() {
+                  _elementos.remove(item);
+                  if (_seleccionado == item) _seleccionado = null;
+                  _seleccionadosIds.remove(item.id);
+                });
+                Navigator.of(ctx).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('«${item.nombre}» eliminado.')),
+                );
+              }
             },
             child: const Text('Eliminar'),
           ),
@@ -1587,6 +1620,9 @@ class _CpanelExploradorArchivosPanelState
     List<ElementoArchivo> archivos,
   ) {
     if (carpetas.isEmpty && archivos.isEmpty) {
+      if (_cargandoArchivos) {
+        return const Center(child: Padding(padding: EdgeInsets.all(48.0), child: CircularProgressIndicator()));
+      }
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1915,6 +1951,11 @@ class _CpanelExploradorArchivosPanelState
                     icon: const Icon(Icons.school_outlined, size: 18),
                     tooltip: 'Asignar a Aula Virtual',
                     onPressed: () => _vincularAulaVirtual(f),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    tooltip: 'Eliminar',
+                    onPressed: () => _eliminarElemento(f),
                   ),
                 ],
               ),

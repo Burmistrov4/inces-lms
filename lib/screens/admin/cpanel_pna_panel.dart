@@ -173,17 +173,7 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
             : clase.seccionId;
       }
     }
-    // Si todavía no hay secciones con clases PNA, permitir usar cualquier sección existente
-    if (mapa.isEmpty) {
-      for (final clase in _clases) {
-        if (clase.seccionId.isNotEmpty && !mapa.containsKey(clase.seccionId)) {
-          mapa[clase.seccionId] = clase.seccion.isNotEmpty
-              ? '${clase.programa} · ${clase.seccion}'
-              : clase.seccionId;
-          break;
-        }
-      }
-    }
+    // Separación estricta PNA: no mezclar secciones de cursos ordinarios
     return mapa;
   }
 

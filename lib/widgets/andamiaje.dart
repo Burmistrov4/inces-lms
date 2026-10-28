@@ -1048,7 +1048,7 @@ class ContenidoSeccion extends StatelessWidget {
     super.key,
     required this.child,
     this.migas = const [],
-    this.anchoMaximo = 1280,
+    this.anchoMaximo = double.infinity,
   });
 
   final Widget child;

@@ -1146,6 +1146,61 @@ class _DialogoEditarHorasBloquesState extends State<_DialogoEditarHorasBloques> 
               contentPadding: EdgeInsets.zero,
               dense: true,
             ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                ActionChip(
+                  avatar: const Icon(Icons.restore, size: 14),
+                  label: const Text('Estándar INCES (07:30 - 17:30)'),
+                  onPressed: () {
+                    final defaults = [
+                      '07:30 - 08:15',
+                      '08:15 - 09:00',
+                      '09:00 - 09:45',
+                      '10:00 - 10:45',
+                      '10:45 - 11:30',
+                      '11:30 - 12:15',
+                      '13:00 - 13:45',
+                      '13:45 - 14:30',
+                      '14:30 - 15:15',
+                      '15:30 - 16:15',
+                      '16:15 - 17:00',
+                      '17:00 - 17:45',
+                    ];
+                    for (var i = 1; i <= 12; i++) {
+                      _controllers[i]?.text = defaults[i - 1];
+                    }
+                    setState(() {});
+                  },
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.nightlight_outlined, size: 14),
+                  label: const Text('Vespertino / Nocturno (13:00 - 20:30)'),
+                  onPressed: () {
+                    final evening = [
+                      '13:00 - 13:45',
+                      '13:45 - 14:30',
+                      '14:30 - 15:15',
+                      '15:30 - 16:15',
+                      '16:15 - 17:00',
+                      '17:00 - 17:45',
+                      '17:45 - 18:30',
+                      '18:30 - 19:15',
+                      '19:15 - 20:00',
+                      '20:00 - 20:45',
+                      '20:45 - 21:30',
+                      '21:30 - 22:15',
+                    ];
+                    for (var i = 1; i <= 12; i++) {
+                      _controllers[i]?.text = evening[i - 1];
+                    }
+                    setState(() {});
+                  },
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             const Text(
               'Turno Mañana (Bloques 1 al 6)',

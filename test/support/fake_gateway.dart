@@ -74,6 +74,7 @@ class FakeGateway implements AuthGateway, AspiranteGateway, ModulesGateway {
   /// sólo el resultado, una prueba no distingue «recortó» de «ya venía limpio».
   String? nombresEnviados;
   String? apellidosEnviados;
+  String? cedulaEnviada;
 
   Object? errorAlLeerPerfil;
   Object? errorAlActualizarPerfil;
@@ -198,10 +199,12 @@ class FakeGateway implements AuthGateway, AspiranteGateway, ModulesGateway {
   Future<PerfilUsuario> actualizarPerfil({
     required String nombres,
     required String apellidos,
+    String? cedula,
   }) async {
     llamadas.add('actualizarPerfil');
     nombresEnviados = nombres;
     apellidosEnviados = apellidos;
+    cedulaEnviada = cedula;
     _lanzarSi(errorAlActualizarPerfil);
 
     final actual = perfil ??
@@ -211,9 +214,14 @@ class FakeGateway implements AuthGateway, AspiranteGateway, ModulesGateway {
           nombres: '',
           apellidos: '',
           rol: 'estudiante',
+          cedula: '',
         );
 
-    final actualizado = actual.conNombre(nombres: nombres, apellidos: apellidos);
+    final actualizado = actual.conNombre(
+      nombres: nombres,
+      apellidos: apellidos,
+      cedula: cedula,
+    );
     perfil = actualizado;
     return actualizado;
   }

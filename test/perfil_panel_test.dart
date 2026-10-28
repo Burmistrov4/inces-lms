@@ -323,11 +323,13 @@ void main() {
       final resultado = await auth.actualizarPerfil(
         nombres: '  Luis  ',
         apellidos: '  Pérez  ',
+        cedula: '  V-12345678  ',
       );
 
       expect(resultado.isSuccess, isTrue);
       expect(fake.nombresEnviados, 'Luis');
       expect(fake.apellidosEnviados, 'Pérez');
+      expect(fake.cedulaEnviada, 'V-12345678');
     });
 
     test('el nombre en blanco falla como validación y no toca la red',
