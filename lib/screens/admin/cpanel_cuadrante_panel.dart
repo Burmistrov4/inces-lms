@@ -320,7 +320,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
           ),
           const SizedBox(width: 8),
           OutlinedButton.icon(
-            onPressed: () => widget.onNavegarA?.call('Guardias Docentes'),
+            onPressed: () => widget.onNavegarA?.call('Guardias Docentes (MTP)'),
             icon: const Icon(Icons.shield_outlined, size: 16),
             label: const Text('Guardias'),
           ),

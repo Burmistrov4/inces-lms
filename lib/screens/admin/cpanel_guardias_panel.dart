@@ -493,7 +493,7 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
     );
 
     return TituloSeccion(
-      'Guardias Docentes (Horario MTP)',
+      'Guardias Docentes (MTP)',
       subtitulo:
           'Custodia y control de talleres y espacios por docentes MTP '
           '(Maestro Técnico Productivo). Quién custodia cada espacio por día y bloque, haya clase o no.',

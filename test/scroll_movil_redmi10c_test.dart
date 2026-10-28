@@ -377,7 +377,7 @@ void main() {
                 migas: const [
                   'Inicio',
                   'Control de aulas',
-                  'Guardias Docentes',
+                  'Guardias Docentes (MTP)',
                 ],
                 child: CpanelGuardiasPanel(repositorio: repo),
               ),
@@ -410,7 +410,7 @@ void main() {
       // 2) En móvil el panel completo también desliza: arrastrando desde la
       //    zona de filtros, la cabecera sale de pantalla. Se vuelve arriba
       //    primero (el paso 1 pudo dejar el panel al tope del scroll).
-      final titulo = find.text('GUARDIAS DOCENTES (HORARIO MTP)');
+      final titulo = find.text('GUARDIAS DOCENTES (MTP)');
       expect(titulo, findsOneWidget);
       for (var i = 0; i < 4; i++) {
         await tester.dragFrom(const Offset(180, 400), const Offset(0, 800));
@@ -429,7 +429,7 @@ void main() {
       }
       await sinExcepcionesDeLayout(tester, 'arrastre del panel');
       expect(
-        tester.getRect(find.text('GUARDIAS DOCENTES (HORARIO MTP)')).top,
+        tester.getRect(find.text('GUARDIAS DOCENTES (MTP)')).top,
         lessThan(antesTitulo - 100),
         reason: 'El panel de guardias debe desplazarse verticalmente en móvil.',
       );

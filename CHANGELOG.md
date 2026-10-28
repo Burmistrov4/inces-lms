@@ -2,6 +2,10 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.5.3] - 2026-10-28
+### Lote 4 — Nomenclatura de Guardias
+- El módulo se llama ahora **«Guardias Docentes (MTP)»** en el menú, en el título del panel, en el horario del docente y en los accesos desde Cuadrante, Aulas y Horario PNA (clave de navegación actualizada en las 6 referencias juntas para no romper rutas).
+
 ## [1.5.2] - 2026-10-28
 ### Responsive móvil (Lote 1 y Lote 2) — «Precisión quirúrgica» sobre la cabecera y el scroll
 

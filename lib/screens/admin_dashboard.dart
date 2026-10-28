@@ -160,7 +160,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     ),
     ItemNavegacion(
       icono: Icons.shield_outlined,
-      titulo: 'Guardias Docentes',
+      titulo: 'Guardias Docentes (MTP)',
       etiquetaCorta: 'MTP',
       categoria: 'Dar clase',
       disponible: true,
@@ -435,7 +435,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             migas: const ['Inicio', 'Control de aulas', 'Espacios'],
             child: CpanelAulasPanel(onNavegarA: _navegarA),
           );
-        case 'Guardias Docentes':
+        case 'Guardias Docentes (MTP)':
           return ContenidoSeccion(
             migas: const ['Inicio', 'Control de aulas', 'Guardias'],
             child: CpanelGuardiasPanel(onNavegarA: _navegarA),

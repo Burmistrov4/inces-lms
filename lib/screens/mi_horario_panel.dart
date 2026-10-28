@@ -201,7 +201,7 @@ class _MiHorarioPanelState extends State<MiHorarioPanel> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'Guardias Docentes',
+                    'Guardias Docentes (MTP)',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
