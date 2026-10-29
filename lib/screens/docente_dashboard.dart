@@ -114,7 +114,7 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
   static const List<ItemNavegacion> _items = [
     ItemNavegacion(
       icono: Icons.dashboard_outlined,
-      titulo: 'Mis aulas',
+      titulo: 'Aulas Virtuales',
       etiquetaCorta: 'Aulas',
       categoria: 'Control de aulas',
       modulo: 'm6_aula_virtual',

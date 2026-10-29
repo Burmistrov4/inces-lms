@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:inces_lms_app/models/archivo.dart';
+import 'package:inces_lms_app/models/materia.dart';
 import 'package:inces_lms_app/models/cuadrante.dart';
 import 'package:inces_lms_app/models/programa.dart';
 import 'package:inces_lms_app/repositories/archivos_repository.dart';
+import 'package:inces_lms_app/models/seccion.dart';
 import 'package:inces_lms_app/repositories/cuadrante_repository.dart';
+import 'package:inces_lms_app/repositories/secciones_repository.dart';
 import 'package:inces_lms_app/repositories/curriculo_repository.dart';
 import 'package:inces_lms_app/screens/admin/cpanel_aulas_panel.dart';
+import 'package:inces_lms_app/screens/admin/cpanel_aulas_virtuales_panel.dart';
 import 'package:inces_lms_app/screens/admin/cpanel_cuadrante_panel.dart';
 import 'package:inces_lms_app/screens/admin/cpanel_explorador_archivos_panel.dart';
 import 'package:inces_lms_app/screens/admin/cpanel_guardias_panel.dart';
@@ -19,6 +23,7 @@ import 'package:inces_lms_app/widgets/andamiaje.dart';
 import 'package:inces_lms_app/widgets/cuadrante_grid.dart';
 
 import 'support/fake_archivos_gateway.dart';
+import 'support/fake_secciones_gateway.dart';
 import 'support/fake_curriculo_gateway.dart';
 import 'support/fake_selector_archivos.dart';
 import 'support/fake_cuadrante_gateway.dart';
@@ -611,6 +616,104 @@ void main() {
         findsOneWidget,
         reason: 'El gestor documental debe deslizar hasta el último archivo.',
       );
+    });
+  });
+
+  group('Aulas Virtuales (admin)', () {
+    testWidgets('lista secciones, desliza y abre el aula a 360×740',
+        (tester) async {
+      tester.view.physicalSize = ventanaRedmi10C;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final secciones = FakeSeccionesGateway()
+        ..paginaDevuelta = PaginaSecciones(
+          secciones: [
+            for (var i = 0; i < 8; i++)
+              Seccion(
+                id: 'sec-$i',
+                programaId: 'prog-1',
+                materiaId: 'mat-1',
+                periodo: 'SA26-2',
+                nombre: 'S${i + 1}',
+                cupoMaximo: 20,
+                activa: true,
+              ),
+          ],
+          total: 8,
+          limite: 50,
+          desplazamiento: 0,
+        );
+      final curriculo = FakeCurriculoGateway()
+        ..programas = const [
+          ProgramaConTotales(
+            id: 'prog-1',
+            codigo: 'CUR-TES-01',
+            nombre: 'Programa de Prueba',
+            tipo: TipoPrograma.cursoLibre,
+            requierePasantia: false,
+            activo: true,
+            totalMaterias: 1,
+            totalPeriodos: 1,
+          ),
+        ]
+        ..totalProgramas = 1
+        ..materias = const [
+          Materia(
+            id: 'mat-1',
+            codigo: 'MAT-TES-01',
+            nombre: 'Materia de Prueba',
+            horasAcademicas: 40,
+          ),
+        ]
+        ..totalMaterias = 1;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: IncesTheme.claro(),
+          home: Scaffold(
+            body: SafeArea(
+              child: ContenidoSeccion(
+                migas: const ['Inicio', 'Dar clase', 'Aulas Virtuales'],
+                child: CpanelAulasVirtualesPanel(
+                  seccionesRepo: SeccionesRepository(gateway: secciones),
+                  curriculoRepo: CurriculoRepository(gateway: curriculo),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await sinExcepcionesDeLayout(tester, 'carga');
+
+      // Nombres resueltos desde los catálogos.
+      expect(find.text('Materia de Prueba (S1)'), findsOneWidget);
+
+      // La lista desliza hasta la última sección.
+      for (var i = 0;
+          i < 10 && find.text('Materia de Prueba (S8)').evaluate().isEmpty;
+          i++) {
+        await tester.drag(find.byType(ListView).first, const Offset(0, -400));
+        await tester.pumpAndSettle();
+      }
+      await sinExcepcionesDeLayout(tester, 'arrastre');
+      expect(find.text('Materia de Prueba (S8)'), findsOneWidget);
+
+      // Volver arriba: la lista es perezosa y S1 ya se desmontó al fondo.
+      for (var i = 0;
+          i < 10 && find.text('Materia de Prueba (S1)').evaluate().isEmpty;
+          i++) {
+        await tester.drag(find.byType(ListView).first, const Offset(0, 600));
+        await tester.pumpAndSettle();
+      }
+
+      // Abrir el aula de la primera sección: aparece la puerta de vuelta.
+      await tester.tap(find.text('Materia de Prueba (S1)').first);
+      await tester.pumpAndSettle();
+            await sinExcepcionesDeLayout(tester, 'apertura del aula');
+
+      expect(find.text('Volver a las aulas'), findsOneWidget);
     });
   });
 }

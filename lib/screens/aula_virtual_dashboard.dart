@@ -353,15 +353,20 @@ class _AulaVirtualDashboardScreenState
 
   // ── Tablón ─────────────────────────────────────────────────────────────────
 
+  // **Una sola lista desplazable.** Antes era un Column con Expanded: en
+  // pantallas bajas los bloques fijos (banner, entregas, caja de anuncio)
+  // desbordaban ~900 px y el contenido quedaba inaccesible. Ahora todo el
+  // tablón desliza, como el resto de los módulos.
   Widget _tablon(BuildContext tabContext) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 8),
       children: [
         _cabeceraGoogleClassroom(),
         const SizedBox(height: 14),
         _bloqueProximasEntregas(tabContext),
         if (widget.esDocente) _cajaNuevoAnuncio(),
-        Expanded(child: _contenidoTablon()),
+        const SizedBox(height: 4),
+        ..._contenidoTablonComoLista(),
       ],
     );
   }
@@ -540,25 +545,35 @@ class _AulaVirtualDashboardScreenState
         onTap: _cargandoTablon ? null : _crearAnuncio,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
+          // Wrap permite que el botón baje de línea en pantallas estrechas
+          // sin necesidad de LayoutBuilder. Evita el desbordamiento de 10px.
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: theme.colorScheme.primaryContainer,
-                child: Icon(
-                  Icons.campaign_outlined,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  'Anuncia algo a tu sección...',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: theme.colorScheme.primaryContainer,
+                    child: const Icon(
+                      Icons.campaign_outlined,
+                      size: 20,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      'Anuncia algo a tu sección...',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               FilledButton.icon(
                 onPressed: _cargandoTablon ? null : _crearAnuncio,
@@ -651,12 +666,15 @@ class _AulaVirtualDashboardScreenState
                       children: [
                         Icon(area.icono, size: 14, color: Colors.white),
                         const SizedBox(width: 6),
-                        Text(
-                          area.etiqueta,
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                        Flexible(
+                          child: Text(
+                            area.etiqueta,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ],
@@ -703,45 +721,46 @@ class _AulaVirtualDashboardScreenState
     );
   }
 
-  Widget _contenidoTablon() {
+  /// El contenido del tablón como **hijos de la lista** del tablón, no como
+  /// un scrollable propio: listas dentro de listas se comían los gestos.
+  List<Widget> _contenidoTablonComoLista() {
     if (_cargandoTablon) {
-      return const Center(child: CircularProgressIndicator());
+      return const [
+        SizedBox(
+          height: 180,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ];
     }
 
     // Un fallo de carga se cuenta **sin** vaciar la pantalla: las pestañas
     // siguen ahí y la otra sigue funcionando. Es la diferencia entre un feed
     // incompleto y una pantalla muerta.
     if (_errorTablon != null) {
-      return ListView(
-        children: [
-          AvisoEnLinea(
-            tono: TonoAviso.peligro,
-            icono: Icons.cloud_off_outlined,
-            texto: 'No pudimos cargar el tablón: $_errorTablon',
-          ),
-        ],
-      );
+      return [
+        AvisoEnLinea(
+          tono: TonoAviso.peligro,
+          icono: Icons.cloud_off_outlined,
+          texto: 'No pudimos cargar el tablón: $_errorTablon',
+        ),
+      ];
     }
 
     if (_anuncios.isEmpty) {
-      return ListView(
-        children: const [
-          PanelVacio(
-            titulo: 'Todavía no hay anuncios',
-            mensaje: 'Cuando el docente publique algo en el tablón de esta '
-                'sección, aparecerá aquí.',
-            icono: Icons.campaign_outlined,
-          ),
-        ],
-      );
+      return const [
+        PanelVacio(
+          titulo: 'Todavía no hay anuncios',
+          mensaje: 'Cuando el docente publique algo en el tablón de esta '
+              'sección, aparecerá aquí.',
+          icono: Icons.campaign_outlined,
+        ),
+      ];
     }
 
     // **Sin reordenar.** El servidor ya entrega el feed de más reciente a más
     // antiguo; un segundo criterio de orden aquí sería una segunda fuente de
     // verdad que se desvía de la del feed en cuanto una cambie.
-    return ListView(
-      children: [for (final anuncio in _anuncios) _tarjetaAnuncio(anuncio)],
-    );
+    return [for (final anuncio in _anuncios) _tarjetaAnuncio(anuncio)];
   }
 
   Widget _tarjetaAnuncio(Anuncio anuncio) {

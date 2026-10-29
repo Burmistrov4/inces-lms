@@ -21,6 +21,7 @@ import 'admin/cpanel_programas_panel.dart';
 // cuadrante, y guardias comparte su rejilla. Se importan los tres últimos
 // porque hasta ahora no los importaba nadie — ver la nota de `_items`.
 import 'admin/cpanel_aulas_panel.dart';
+import 'admin/cpanel_aulas_virtuales_panel.dart';
 import 'admin/cpanel_cuadrante_panel.dart';
 import 'admin/cpanel_guardias_panel.dart';
 import 'admin/cpanel_pna_panel.dart';
@@ -173,6 +174,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       categoria: 'Dar clase',
       disponible: true,
       modulo: 'm3_cuadrante',
+    ),
+    ItemNavegacion(
+      icono: Icons.school_outlined,
+      titulo: 'Aulas Virtuales',
+      etiquetaCorta: 'Aulas',
+      categoria: 'Dar clase',
+      disponible: true,
+      modulo: 'm6_aula_virtual',
     ),
 
     // 4. Archivos
@@ -429,6 +438,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           return ContenidoSeccion(
             migas: const ['Inicio', 'Control de aulas', 'Horario PNA'],
             child: CpanelPnaPanel(onNavegarA: _navegarA),
+          );
+        case 'Aulas Virtuales':
+          return ContenidoSeccion(
+            migas: const ['Inicio', 'Dar clase', 'Aulas Virtuales'],
+            child: CpanelAulasVirtualesPanel(onNavegarA: _navegarA),
           );
         case 'Espacios y Aulas':
           return ContenidoSeccion(
