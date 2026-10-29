@@ -1038,6 +1038,43 @@ export interface PuertaInscripciones {
 
   /** Vence las ofertas caducadas. **Idempotente**: devuelve cuántas venció. */
   expirarOfertas(): Promise<number>;
+
+  /**
+   * Resumen de ocupación **por curso (programa)** para el panel único «Cursos».
+   *
+   * Es la pieza que permite absorber «Inscripciones y Cupos» dentro de «Cursos y
+   * PNA»: en vez de una fila por sección, devuelve una por programa con su cupo
+   * agregado, sus inscritos y el estado de la ventana de inscripción. La interfaz
+   * pinta esa franja y abre los diálogos de cupo por sección con `secciones`.
+   *
+   * El cupo es el de `programs.cupo` (modelo «cupo por curso», D5): no se suman
+   * los `max_capacity` de cada sección. Los inscritos son los `ENROLLED` de todas
+   * las secciones del programa. El estado de la ventana se deriva de
+   * `inscripcion_inicio`/`inscripcion_fin` contra la fecha de hoy en el servidor.
+   */
+  resumenCursos(): Promise<ResumenCurso[]>;
+}
+
+/** Estado de la ventana de inscripción de un curso, derivado de sus fechas. */
+export type EstadoVentanaInscripcion = 'ABIERTA' | 'CERRADA' | 'PROXIMA_APERTURA';
+
+/**
+ * Ocupación agregada de un curso (programa) para el panel «Cursos».
+ *
+ * `secciones` trae las secciones activas del programa para que la pantalla pueda
+ * abrir los diálogos de cola/inscritos por sección sin una segunda llamada.
+ */
+export interface ResumenCurso {
+  programaId: string;
+  nombre: string;
+  cupo: number;
+  ocupados: number;
+  disponibles: number;
+  estadoInscripcion: EstadoVentanaInscripcion;
+  inscripcionInicio: string | null;
+  inscripcionFin: string | null;
+  proximaApertura: string | null;
+  secciones: { id: string; nombre: string; periodo: string | null }[];
 }
 
 export interface OpcionesListadoOfertas {

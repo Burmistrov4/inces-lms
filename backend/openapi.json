@@ -2556,6 +2556,119 @@
           "mensaje"
         ]
       },
+      "SeccionResumen": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Identificador de la sección (grupo)."
+          },
+          "nombre": {
+            "type": "string",
+            "description": "Nombre automático del grupo (A, B, …)."
+          },
+          "periodo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Código del período de la sección (para nombrar la exportación HACER)."
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "periodo"
+        ]
+      },
+      "ResumenCurso": {
+        "type": "object",
+        "properties": {
+          "programaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "cupo": {
+            "type": "integer",
+            "description": "Cupo del curso (`programs.cupo`, D5)."
+          },
+          "ocupados": {
+            "type": "integer",
+            "description": "Matriculados (ENROLLED) en sus secciones."
+          },
+          "disponibles": {
+            "type": "integer",
+            "description": "Cupo menos ocupados, nunca negativo."
+          },
+          "estadoInscripcion": {
+            "type": "string",
+            "enum": [
+              "ABIERTA",
+              "CERRADA",
+              "PROXIMA_APERTURA"
+            ],
+            "description": "Derivado de la ventana de inscripción del programa."
+          },
+          "inscripcionInicio": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Fecha de apertura (YYYY-MM-DD) o null."
+          },
+          "inscripcionFin": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Fecha de cierre (YYYY-MM-DD) o null."
+          },
+          "proximaApertura": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Próximo arranque del curso o null."
+          },
+          "secciones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SeccionResumen"
+            },
+            "description": "Secciones activas del programa, para abrir diálogos de cupo por sección."
+          }
+        },
+        "required": [
+          "programaId",
+          "nombre",
+          "cupo",
+          "ocupados",
+          "disponibles",
+          "estadoInscripcion",
+          "inscripcionInicio",
+          "inscripcionFin",
+          "proximaApertura",
+          "secciones"
+        ]
+      },
+      "RespuestaResumenCursos": {
+        "type": "object",
+        "properties": {
+          "cursos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResumenCurso"
+            }
+          }
+        },
+        "required": [
+          "cursos"
+        ]
+      },
       "CampoInscripcion": {
         "type": "object",
         "properties": {
@@ -8725,6 +8838,62 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RespuestaExpiracion"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta la sesión o el token no es válido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "La sesión es válida pero el rol no alcanza, o la cuenta está inactiva.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El servicio o la base de datos no están disponibles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/cursos/resumen": {
+      "get": {
+        "tags": [
+          "Inscripciones"
+        ],
+        "summary": "Resumen de ocupación por curso (programa)",
+        "description": "Una fila por programa —no por sección— con su cupo agregado (D5), sus inscritos y el estado de la ventana de inscripción. Es la lectura que absorbe «Inscripciones y Cupos» dentro del panel único «Cursos»: la tarjeta pinta la franja y abre los diálogos de cupo por sección con `secciones`, sin una segunda llamada.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El resumen de ocupación por curso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaResumenCursos"
                 }
               }
             }

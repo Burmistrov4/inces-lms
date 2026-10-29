@@ -76,7 +76,7 @@ async function main() {
   await btnEntrar.click();
 
   console.log('3. Esperando carga del cPanel...');
-  const entro = await esperarTexto(page, 'Inscripciones y Cupos', 45000);
+  const entro = await esperarTexto(page, 'Cursos y PNA', 45000);
   if (!entro) {
     throw new Error('No cargó el cPanel a tiempo');
   }

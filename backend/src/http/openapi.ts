@@ -1288,6 +1288,40 @@ const RespuestaOcupacion = z
   })
   .openapi('RespuestaOcupacion');
 
+const SeccionResumen = z
+  .object({
+    id: z.string().uuid().openapi({ description: 'Identificador de la sección (grupo).' }),
+    nombre: z.string().openapi({ description: 'Nombre automático del grupo (A, B, …).' }),
+    periodo: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Código del período de la sección (para nombrar la exportación HACER).' }),
+  })
+  .openapi('SeccionResumen');
+
+const ResumenCursoSchema = z
+  .object({
+    programaId: z.string().uuid(),
+    nombre: z.string(),
+    cupo: z.number().int().openapi({ description: 'Cupo del curso (`programs.cupo`, D5).' }),
+    ocupados: z.number().int().openapi({ description: 'Matriculados (ENROLLED) en sus secciones.' }),
+    disponibles: z.number().int().openapi({ description: 'Cupo menos ocupados, nunca negativo.' }),
+    estadoInscripcion: z
+      .enum(['ABIERTA', 'CERRADA', 'PROXIMA_APERTURA'])
+      .openapi({ description: 'Derivado de la ventana de inscripción del programa.' }),
+    inscripcionInicio: z.string().nullable().openapi({ description: 'Fecha de apertura (YYYY-MM-DD) o null.' }),
+    inscripcionFin: z.string().nullable().openapi({ description: 'Fecha de cierre (YYYY-MM-DD) o null.' }),
+    proximaApertura: z.string().nullable().openapi({ description: 'Próximo arranque del curso o null.' }),
+    secciones: z.array(SeccionResumen).openapi({
+      description: 'Secciones activas del programa, para abrir diálogos de cupo por sección.',
+    }),
+  })
+  .openapi('ResumenCurso');
+
+const RespuestaResumenCursos = z
+  .object({ cursos: z.array(ResumenCursoSchema) })
+  .openapi('RespuestaResumenCursos');
+
 const RespuestaInscripciones = z
   .object({ inscripciones: z.array(InscripcionDetallada) })
   .openapi('RespuestaInscripciones');
@@ -3417,6 +3451,25 @@ export function construirRegistro(): OpenAPIRegistry {
       200: {
         description: 'Cuántas ofertas se vencieron.',
         content: { 'application/json': { schema: RespuestaExpiracion } },
+      },
+      401: RESPUESTAS_ERROR[401],
+      403: RESPUESTAS_ERROR[403],
+      503: RESPUESTAS_ERROR[503],
+    },
+  });
+
+  registro.registerPath({
+    ...inscripcionesTag,
+    method: 'get',
+    path: '/api/v1/admin/cursos/resumen',
+    summary: 'Resumen de ocupación por curso (programa)',
+    description:
+      'Una fila por programa —no por sección— con su cupo agregado (D5), sus inscritos y el estado de la ventana de inscripción. Es la lectura que absorbe «Inscripciones y Cupos» dentro del panel único «Cursos»: la tarjeta pinta la franja y abre los diálogos de cupo por sección con `secciones`, sin una segunda llamada.',
+    security: [{ bearerAuth: [] }],
+    responses: {
+      200: {
+        description: 'El resumen de ocupación por curso.',
+        content: { 'application/json': { schema: RespuestaResumenCursos } },
       },
       401: RESPUESTAS_ERROR[401],
       403: RESPUESTAS_ERROR[403],

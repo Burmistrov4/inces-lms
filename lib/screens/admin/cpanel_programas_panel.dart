@@ -5,10 +5,18 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/gateways/curriculo_gateway.dart';
 import '../../core/reglas_curriculo.dart';
+import '../../core/result.dart';
 import '../../models/pensum.dart';
 import '../../models/programa.dart';
+import '../../models/resumen_curso.dart';
 import '../../repositories/curriculo_repository.dart';
+import '../../repositories/inscripcion_repository.dart';
+import '../../services/hacer_export_service.dart';
+import '../../services/planilla_admin_pdf_service.dart';
 import '../../theme/inces_theme.dart';
+import 'cpanel_inscripciones_cola_dialog.dart';
+import 'cpanel_inscripciones_inscritos_dialog.dart';
+import 'reincorporar_dialog.dart';
 import '../../widgets/comunes.dart';
 import '../../core/refresco_secciones.dart';
 import '../../widgets/responsivo.dart';
@@ -24,9 +32,14 @@ import 'asistente_curriculo_screen.dart';
 /// **Ninguna acción borra.** Archivar es desactivar: un `DELETE` se llevaría por
 /// delante el histórico de secciones y notas que apunta al programa.
 class CpanelProgramasPanel extends StatefulWidget {
-  const CpanelProgramasPanel({super.key, this.repositorio});
+  const CpanelProgramasPanel({
+    super.key,
+    this.repositorio,
+    this.repositorioInscripciones,
+  });
 
   final CurriculoRepository? repositorio;
+  final AdminInscripcionesRepository? repositorioInscripciones;
 
   @override
   State<CpanelProgramasPanel> createState() => _CpanelProgramasPanelState();
@@ -36,6 +49,13 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
     with RefrescoAlVolver<CpanelProgramasPanel> {
   late final CurriculoRepository _repo =
       widget.repositorio ?? CurriculoRepository();
+
+  /// Repositorio de inscripciones: el resumen por curso absorbe «Inscripciones y
+  /// Cupos» dentro de este único módulo «Cursos y PNA».
+  late final AdminInscripcionesRepository _repoInscripciones =
+      widget.repositorioInscripciones ?? AdminInscripcionesRepository();
+  late final HacerExportService _exportacion = HacerExportService();
+  late final PlanillaAdminPdfService _planillaAdmin = PlanillaAdminPdfService();
 
   final _busquedaCtrl = TextEditingController();
   Timer? _debounce;
@@ -49,6 +69,11 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
   int _total = 0;
   bool _cargando = true;
   String? _error;
+
+  /// Resumen de ocupación por programa (de `GET /api/v1/admin/cursos/resumen`),
+  /// indexado por `programaId`. Es complementario: si falla, las tarjetas
+  /// muestran el cupo del propio programa.
+  Map<String, ResumenCurso> _resumenPorPrograma = const {};
 
   /// Identificador del programa cuya activación está en curso. Se bloquea sólo
   /// esa fila: el guardado de un programa no debe impedir mirar los demás.
@@ -85,21 +110,28 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
       limite: _limite,
       desplazamiento: _desplazamiento,
     );
-
+    // El resumen por programa es complementario (ver `_resumenPorPrograma`): si
+    // falla, las tarjetas siguen mostrando el cupo del propio programa.
+    final resumenResult = await _repoInscripciones.obtenerResumenCursos();
     if (!mounted) return;
 
     resultado.when(
-      success: (pagina) => setState(() {
-        _cargando = false;
+      success: (pagina) {
         _programas = pagina.programas;
         _total = pagina.total;
         marcarCarga();
-      }),
-      failure: (fallo) => setState(() {
-        _cargando = false;
-        _error = fallo.message;
-      }),
+      },
+      failure: (fallo) => _error = fallo.message,
     );
+
+    switch (resumenResult) {
+      case Success(value: final cursos):
+        _resumenPorPrograma = {for (final c in cursos) c.programaId: c};
+      case Failure():
+        _resumenPorPrograma = const {};
+    }
+
+    setState(() => _cargando = false);
   }
 
   @override
@@ -336,6 +368,10 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
         const SizedBox(height: 10),
         _filtros(),
         const SizedBox(height: 10),
+        if (_resumenPorPrograma.isNotEmpty) ...[
+          _FranjaResumen(resumen: _resumenPorPrograma.values.toList()),
+          const SizedBox(height: 10),
+        ],
         Expanded(
           child: EstadoPanel(
             cargando: _cargando,
@@ -524,6 +560,11 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
             separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, i) => _TarjetaPrograma(
               programa: _programas[i],
+              resumen: _resumenPorPrograma[_programas[i].id],
+              repoInscripciones: _repoInscripciones,
+              exportacion: _exportacion,
+              planilla: _planillaAdmin,
+              onAccion: () => _cargar(silencioso: true),
               guardando: _guardandoId == _programas[i].id,
               abriendoPensum: _abriendoPensumId == _programas[i].id,
               onVer: () => _verDetalle(_programas[i]),
@@ -594,6 +635,11 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
 class _TarjetaPrograma extends StatelessWidget {
   const _TarjetaPrograma({
     required this.programa,
+    this.resumen,
+    required this.repoInscripciones,
+    required this.exportacion,
+    required this.planilla,
+    required this.onAccion,
     required this.guardando,
     this.abriendoPensum = false,
     required this.onVer,
@@ -603,6 +649,11 @@ class _TarjetaPrograma extends StatelessWidget {
   });
 
   final ProgramaConTotales programa;
+  final ResumenCurso? resumen;
+  final AdminInscripcionesRepository repoInscripciones;
+  final HacerExportService exportacion;
+  final PlanillaAdminPdfService planilla;
+  final VoidCallback onAccion;
   final bool guardando;
   final bool abriendoPensum;
   final VoidCallback onVer;
@@ -685,11 +736,25 @@ class _TarjetaPrograma extends StatelessWidget {
                 texto: programa.duracionLegible!,
                 tono: TonoEstado.info,
               ),
-            _Etiqueta(
-              texto:
-                  '${programa.cuposOcupados} de ${programa.cupo ?? 25} cupos',
-              tono: TonoEstado.info,
-            ),
+            // El resumen por programa (panel «Cursos y PNA» absorbe «Inscripciones
+            // y Cupos») trae cupo/ocupados/disponibles y la ventana de
+            // inscripción. Si no está disponible, se cae al cupo del programa.
+            if (resumen != null)
+              _Etiqueta(
+                texto: '${resumen!.ocupados} de ${resumen!.cupo} cupos · '
+                    '${resumen!.disponibles} libres',
+                tono: TonoEstado.info,
+              )
+            else
+              _Etiqueta(
+                texto: '${programa.cuposOcupados} de ${programa.cupo ?? 25} cupos',
+                tono: TonoEstado.info,
+              ),
+            if (resumen != null)
+              _Etiqueta(
+                texto: _textoEstadoVentana(resumen!.estadoInscripcion),
+                tono: _tonoEstadoVentana(resumen!.estadoInscripcion),
+              ),
             if (programa.inscripcionFin != null)
               _Etiqueta(
                 texto: 'Inscripciones hasta ${_fechaCorta(programa.inscripcionFin!)}',
@@ -714,6 +779,26 @@ class _TarjetaPrograma extends StatelessWidget {
             ),
           ],
         ),
+        if (resumen != null && resumen!.secciones.isNotEmpty) ...[
+          const Divider(height: 1),
+          const SizedBox(height: 6),
+          Text(
+            'Grupos / Secciones',
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 6),
+          for (final s in resumen!.secciones)
+            _FilaSeccionCupo(
+              seccion: s,
+              repo: repoInscripciones,
+              exportacion: exportacion,
+              planilla: planilla,
+              onAccion: onAccion,
+            ),
+        ],
         const SizedBox(height: 6),
         // En angosto el botón no cabe en la misma línea que el aviso:
         // su ancho intrínseco (~250 px) desbordaba la Row (medido:
@@ -944,6 +1029,274 @@ class _Etiqueta extends StatelessWidget {
 // -----------------------------------------------------------------------------
 //  Detalle del programa
 // -----------------------------------------------------------------------------
+
+/// Franja de métricas agregadas del resumen por programa (cupo global del
+/// módulo «Cursos y PNA», que absorbió «Inscripciones y Cupos»).
+class _FranjaResumen extends StatelessWidget {
+  const _FranjaResumen({required this.resumen});
+
+  final List<ResumenCurso> resumen;
+
+  @override
+  Widget build(BuildContext context) {
+    final secciones = resumen.fold<int>(0, (s, r) => s + r.secciones.length);
+    final ocupados = resumen.fold<int>(0, (s, r) => s + r.ocupados);
+    final disponibles = resumen.fold<int>(0, (s, r) => s + r.disponibles);
+
+    return LayoutBuilder(
+      builder: (context, restricciones) {
+        final ancho = restricciones.maxWidth >= 480
+            ? 200.0
+            : (restricciones.maxWidth - 12) / 2;
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            SizedBox(
+              width: ancho,
+              child: TarjetaMetrica(
+                etiqueta: 'Grupos activos',
+                valor: '$secciones',
+                icono: Icons.explore_outlined,
+              ),
+            ),
+            SizedBox(
+              width: ancho,
+              child: TarjetaMetrica(
+                etiqueta: 'Cupos ocupados',
+                valor: '$ocupados',
+                icono: Icons.people_outline,
+              ),
+            ),
+            SizedBox(
+              width: ancho,
+              child: TarjetaMetrica(
+                etiqueta: 'Cupos disponibles',
+                valor: '$disponibles',
+                icono: Icons.event_seat_outlined,
+                tono: TonoEstado.exito,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+String _textoEstadoVentana(EstadoVentanaInscripcion e) => switch (e) {
+      EstadoVentanaInscripcion.abierta => 'Inscripción abierta',
+      EstadoVentanaInscripcion.cerrada => 'Inscripción cerrada',
+      EstadoVentanaInscripcion.proximaApertura => 'Próxima apertura',
+    };
+
+TonoEstado _tonoEstadoVentana(EstadoVentanaInscripcion e) => switch (e) {
+      EstadoVentanaInscripcion.abierta => TonoEstado.exito,
+      EstadoVentanaInscripcion.cerrada => TonoEstado.neutro,
+      EstadoVentanaInscripcion.proximaApertura => TonoEstado.info,
+    };
+
+/// Fila de una sección dentro de la tarjeta del programa: nombre + acciones de
+/// cupo reutilizadas del antiguo panel «Inscripciones y Cupos» (ver
+/// `cpanel_inscripciones_cola_dialog`, `..._inscritos_dialog`, `reincorporar_dialog`).
+class _FilaSeccionCupo extends StatefulWidget {
+  const _FilaSeccionCupo({
+    required this.seccion,
+    required this.repo,
+    required this.exportacion,
+    required this.planilla,
+    required this.onAccion,
+  });
+
+  final SeccionResumenCurso seccion;
+  final AdminInscripcionesRepository repo;
+  final HacerExportService exportacion;
+  final PlanillaAdminPdfService planilla;
+  final VoidCallback onAccion;
+
+  @override
+  State<_FilaSeccionCupo> createState() => _FilaSeccionCupoState();
+}
+
+class _FilaSeccionCupoState extends State<_FilaSeccionCupo> {
+  bool _promoviendo = false;
+  bool _exportando = false;
+
+  static const ButtonStyle _estilo = ButtonStyle(
+    visualDensity: VisualDensity.compact,
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  );
+
+  Future<void> _promover() async {
+    if (_promoviendo) return;
+    setState(() => _promoviendo = true);
+    final resultado = await widget.repo.promoverSiguiente(widget.seccion.id);
+    if (!mounted) return;
+    setState(() => _promoviendo = false);
+    resultado.when(
+      success: (promovida) {
+        mostrarAviso(
+          context,
+          'Promovido ${promovida.etiquetaEstudiante}: ya tiene su asiento.',
+          exito: true,
+        );
+        widget.onAccion();
+      },
+      failure: (fallo) => mostrarAviso(context, fallo.message, error: true),
+    );
+  }
+
+  Future<void> _exportar() async {
+    if (_exportando) return;
+    setState(() => _exportando = true);
+    final resultado = await widget.exportacion.exportarSeccion(
+      seccionId: widget.seccion.id,
+      periodo: widget.seccion.periodo ?? '',
+      seccion: widget.seccion.nombre,
+      materia: null,
+    );
+    if (!mounted) return;
+    setState(() => _exportando = false);
+
+    // `switch` sobre un `sealed`: si el servicio gana un desenlace nuevo, esto
+    // deja de compilar en vez de dejar caer el caso al vacío.
+    switch (resultado) {
+      case ConsultaFallida(mensaje: final mensaje):
+        mostrarAviso(context, mensaje, error: true);
+      case DescargaFallida():
+        mostrarAviso(
+          context,
+          'No se pudo descargar el archivo. Inténtalo de nuevo.',
+          error: true,
+        );
+      case NadaQueExportar(seccion: final nombre):
+        mostrarAviso(
+          context,
+          'La sección «$nombre» no tiene matriculados todavía: no hay '
+          'nómina que exportar.',
+        );
+      case NominaDescargada(nombreArchivo: final nombre, matriculados: final total):
+        mostrarAviso(
+          context,
+          'Nómina exportada: $total matriculados en «$nombre».',
+          exito: true,
+        );
+    }
+  }
+
+  Future<void> _reincorporar() async {
+    final hecho = await mostrarReincorporar(
+      context: context,
+      repo: widget.repo,
+      seccionId: widget.seccion.id,
+      seccionNombre: widget.seccion.nombre,
+    );
+    if (hecho == true && mounted) widget.onAccion();
+  }
+
+  void _verCola() => mostrarColaDeSeccion(
+        context: context,
+        repo: widget.repo,
+        seccionId: widget.seccion.id,
+        seccionNombre: widget.seccion.nombre,
+      );
+
+  void _verInscritos() => mostrarInscritosDeSeccion(
+        context: context,
+        repo: widget.repo,
+        planilla: widget.planilla,
+        seccionId: widget.seccion.id,
+        seccionNombre: widget.seccion.nombre,
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.groups_outlined,
+                size: 16,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  widget.seccion.nombre,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (widget.seccion.periodo != null)
+                Text(
+                  widget.seccion.periodo!,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _verCola,
+                icon: const Icon(Icons.list_alt_outlined, size: 15),
+                label: const Text('Ver cola'),
+                style: _estilo,
+              ),
+              OutlinedButton.icon(
+                onPressed: _verInscritos,
+                icon: const Icon(Icons.badge_outlined, size: 15),
+                label: const Text('Ver inscritos'),
+                style: _estilo,
+              ),
+              OutlinedButton.icon(
+                onPressed: _exportando ? null : _exportar,
+                icon: _exportando
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.download_outlined, size: 15),
+                label: Text(_exportando ? 'Exportando…' : 'Exportar HACER'),
+                style: _estilo,
+              ),
+              OutlinedButton.icon(
+                onPressed: _reincorporar,
+                icon: const Icon(Icons.person_add_alt_1_outlined, size: 15),
+                label: const Text('Reincorporar'),
+                style: _estilo,
+              ),
+              FilledButton.icon(
+                onPressed: _promoviendo ? null : _promover,
+                icon: _promoviendo
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.arrow_upward_outlined, size: 15),
+                label: Text(_promoviendo ? 'Promoviendo…' : 'Promover siguiente'),
+                style: _estilo,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _DialogoDetallePrograma extends StatelessWidget {
   const _DialogoDetallePrograma({

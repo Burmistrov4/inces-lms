@@ -75,11 +75,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Generación de Reportes'), findsOneWidget);
-      expect(find.text('Inscripciones y Cupos Oficiales'), findsOneWidget);
+      expect(find.text('Cursos y Cupos Oficiales'), findsOneWidget);
       expect(find.text('Horarios y Ocupación de Espacios'), findsOneWidget);
       expect(find.text('Trazabilidad de Accesos y Seguridad'), findsOneWidget);
 
-      await tester.tap(find.text('Inscripciones y Cupos Oficiales'));
+      await tester.tap(find.text('Cursos y Cupos Oficiales'));
       await tester.pumpAndSettle();
       expect(verInscripcionesLlamado, isTrue);
     });

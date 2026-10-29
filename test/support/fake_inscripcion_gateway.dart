@@ -1,6 +1,7 @@
 import 'package:inces_lms_app/core/errors/app_exception.dart';
 import 'package:inces_lms_app/core/gateways/inscripcion_gateway.dart';
 import 'package:inces_lms_app/models/inscripcion.dart';
+import 'package:inces_lms_app/models/resumen_curso.dart';
 
 /// Doble de prueba de [InscripcionGateway] para el Módulo 4.
 ///
@@ -26,6 +27,9 @@ class FakeInscripcionGateway implements InscripcionGateway {
 
   InscripcionDetallada promovidaDevuelta = inscripcionDetalladaEjemplo();
 
+  /// Resumen de cursos por programa que devuelve `obtenerResumenCursos`.
+  List<ResumenCurso> resumenCursosDevuelto = const [];
+
   /// Secuencia de «ofertas vencidas» que devuelve `expirarOfertas`. Vacía → 0.
   /// Sirve para probar la idempotencia: [3, 0] simula «primera llamada 3,
   /// segunda 0».
@@ -42,6 +46,7 @@ class FakeInscripcionGateway implements InscripcionGateway {
   Object? errorAlPromover;
   Object? errorAlExpirar;
   Object? errorAlReincorporar;
+  Object? errorAlObtenerResumenCursos;
 
   // --- Registro de llamadas -------------------------------------------------
 
@@ -167,6 +172,13 @@ class FakeInscripcionGateway implements InscripcionGateway {
     ultimaSeccion = seccionId;
     _lanzarSi(errorAlObtenerInscripcionesDeSeccion);
     return inscripcionesDeSeccionDevueltas;
+  }
+
+  @override
+  Future<List<ResumenCurso>> obtenerResumenCursos() async {
+    llamadas.add('obtenerResumenCursos');
+    _lanzarSi(errorAlObtenerResumenCursos);
+    return resumenCursosDevuelto;
   }
 
   // ---------------------------------------------------------------------------

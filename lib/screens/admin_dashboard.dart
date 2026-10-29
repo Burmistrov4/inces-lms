@@ -27,7 +27,6 @@ import 'admin/cpanel_guardias_panel.dart';
 import 'admin/cpanel_pna_panel.dart';
 import 'admin/cpanel_lapsos_panel.dart';
 import 'admin/cpanel_inscripcion_campos_panel.dart';
-import 'admin/cpanel_inscripciones_panel.dart';
 export 'admin/cpanel_secciones_panel.dart';
 import 'admin/cpanel_explorador_archivos_panel.dart';
 import '../widgets/walkthrough_interactivo.dart';
@@ -125,14 +124,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     ),
 
     // 2. Inscribir
-    ItemNavegacion(
-      icono: Icons.confirmation_number_outlined,
-      titulo: 'Inscripciones y Cupos',
-      etiquetaCorta: 'Inscripciones',
-      categoria: 'Inscribir',
-      disponible: true,
-      modulo: 'm4_inscripciones',
-    ),
     ItemNavegacion(
       icono: Icons.edit_note_outlined,
       titulo: 'Campos de Inscripción',
@@ -300,9 +291,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       onCambiarTema: tema?.cambiar,
       accionesEncabezado: [
         IconButton(
-          tooltip: 'Inscripciones y Cupos',
+          tooltip: 'Cursos y Cupos',
           icon: const Icon(Icons.person_add_alt_1_rounded, size: 20),
-          onPressed: () => conGuardia(() => _navegarA('Inscripciones y Cupos'), 'nav-Inscripciones y Cupos'),
+          onPressed: () => conGuardia(() => _navegarA('Cursos y PNA'), 'nav-Cursos y PNA'),
         ),
         IconButton(
           tooltip: 'Cuadrante de Horarios',
@@ -332,7 +323,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           onPressed: () => conGuardia(
             () => BarraAccionesSuperiores.mostrarDialogoReportes(
               context,
-              onVerInscripciones: () => _navegarA('Inscripciones y Cupos'),
+              onVerInscripciones: () => _navegarA('Cursos y PNA'),
               onVerHorarios: () => _navegarA('Cuadrante de Horarios'),
               onVerAccesos: () =>
                   _navegarA('Registro de Inicios de Sesión / Accesos'),
@@ -408,11 +399,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           return const ContenidoSeccion(
             migas: ['Inicio', 'Gestión académica', 'Cursos y PNA'],
             child: CpanelProgramasPanel(),
-          );
-        case 'Inscripciones y Cupos':
-          return ContenidoSeccion(
-            migas: const ['Inicio', 'Gestión académica', 'Inscripciones y Cupos'],
-            child: CpanelInscripcionesPanel(onNavegarA: _navegarA),
           );
         case 'Campos de Inscripción':
           return ContenidoSeccion(

@@ -78,6 +78,36 @@ buscador y paginación.
 - **`TituloSeccion` se estiraba a toda la altura disponible** porque su `Column`
   no llevaba `mainAxisSize.min`. Una cabecera de 74 px medía 780.
 
+#### 6. Un solo módulo «Cursos»: «Inscripciones y Cupos» desaparece del menú
+
+La queja con más detalle del propietario era tener el mismo dato partido en dos
+sitios: el catálogo en «Cursos y PNA» y la ocupación/cupos en «Inscripciones y
+Cupos». Ahora es **una** pantalla.
+
+- **Backend `GET /api/v1/admin/cursos/resumen`** (ruta nueva, con contrato
+  OpenAPI y prueba D6): por programa devuelve la `ventana de inscripción`
+  (`estadoInscripcion` ABIERTA/CERRADA/PROXIMA_APERTURA + fechas), el `cupo`
+  agregado, `ocupados`, `disponibles`, `inscritos` y la lista de `secciones`
+  del grupo vigente, cada una con `seccionId`, `nombre` y `periodo` (este
+  último enriquecido para nombrar el archivo de exportación HACER).
+- **Frontend `CpanelProgramasPanel`** pinta una franja resumen (Grupos activos,
+  Cupos ocupados, Cupos disponibles) y, por cada sección bajo «Grupos /
+  Secciones», reutiliza los diálogos que ya existían: **Ver cola**
+  (`mostrarColaDeSeccion`), **Ver inscritos** (`mostrarInscritosDeSeccion`),
+  **Exportar HACER** (`HacerExportService`), **Reincorporar** y **Promover
+  siguiente**. Nada se duplica: los diálogos son los mismos del módulo 4.
+- **Se borró `lib/screens/admin/cpanel_inscripciones_panel.dart`** (795 líneas)
+  y su prueba `test/cpanel_inscripciones_test.dart`. El `_DialogoReincorporar`
+  se sacó a `reincorporar_dialog.dart` para seguir disponible.
+- **Navegación**: se retiró la entrada «Inscripciones y Cupos» del menú y se
+  repuntaron todos los `onNavegarA('Inscripciones y Cupos')` → `'Cursos y PNA'`
+  (dashboard, resumen, campos de planilla, walkthrough). El modal de reportes
+  «Inscripciones y Cupos Oficiales» ahora dice «Cursos y Cupos Oficiales».
+- **E2E**: la señal de sesión y las 6 specs/navegaciones que citaban el módulo
+  borrado apuntan a «Cursos y PNA»; el page object de exportación HACER usa
+  «Exportar HACER» dentro de «Cursos y PNA». `test/m4_responsive_test.dart`
+  conserva las pruebas de layout de Secciones y del diálogo de cola.
+
 #### Verificación de este lote
 
 | Control | Resultado |

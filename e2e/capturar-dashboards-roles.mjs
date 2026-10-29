@@ -116,7 +116,7 @@ async function capturarDashboards() {
     await btnEntrar.click();
 
     console.log('Esperando carga del cPanel...');
-    const entroAdmin = await esperarTexto(page, 'Inscripciones y Cupos', 45000);
+    const entroAdmin = await esperarTexto(page, 'Cursos y PNA', 45000);
     if (entroAdmin) {
       await page.waitForTimeout(5000);
       const rutaAdmin = path.join(dirDestino, '02_dashboard_admin_cpanel.png');

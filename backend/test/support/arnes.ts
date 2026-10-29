@@ -15,6 +15,7 @@ import type {
   PuertaCuadrante,
   PuertaCurriculo,
   PuertaInscripciones,
+  ResumenCurso,
   PuertaInvitacionesDocente,
   PuertaRecuperacionPassword,
   PuertaModulos,
@@ -3229,6 +3230,66 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
     async expirarOfertas() {
       revisar('inscripciones.expirarOfertas');
       return 0;
+    },
+
+    async resumenCursos() {
+      revisar('inscripciones.resumenCursos');
+
+      // Mismo criterio que el repositorio real: secciones activas, una sola pasada
+      // sobre las inscripciones ENROLLED para contar ocupados por programa, y el
+      // estado de la ventana derivado de las fechas contra hoy.
+      const hoy = new Date().toISOString().slice(0, 10);
+      const seccionesActivas = estado.secciones.filter((s) => s.activa ?? true);
+      const seccionDe = new Map(seccionesActivas.map((s) => [s.id, s]));
+
+      const ocupadosPorPrograma = new Map<string, number>();
+      for (const i of estado.inscripciones) {
+        if (i.estado !== 'ENROLLED') continue;
+        const seccion = seccionDe.get(i.seccionId);
+        if (!seccion) continue;
+        ocupadosPorPrograma.set(
+          seccion.programaId,
+          (ocupadosPorPrograma.get(seccion.programaId) ?? 0) + 1,
+        );
+      }
+
+      const seccionesPorPrograma = new Map<
+        string,
+        { id: string; nombre: string; periodo: string | null }[]
+      >();
+      for (const s of seccionesActivas) {
+        const lista = seccionesPorPrograma.get(s.programaId) ?? [];
+        lista.push({ id: s.id, nombre: s.nombre, periodo: s.periodo ?? null });
+        seccionesPorPrograma.set(s.programaId, lista);
+      }
+
+      return estado.programas
+        .filter((p) => p.activo)
+        .map((p): ResumenCurso => {
+          const cupo = p.cupo ?? 25;
+          const ocupados = ocupadosPorPrograma.get(p.id) ?? 0;
+          const inicio = p.inscripcionInicio ?? null;
+          const fin = p.inscripcionFin ?? null;
+          const estadoInscripcion =
+            inicio && hoy < inicio
+              ? 'PROXIMA_APERTURA'
+              : fin && hoy > fin
+                ? 'CERRADA'
+                : 'ABIERTA';
+
+          return {
+            programaId: p.id,
+            nombre: p.nombre,
+            cupo,
+            ocupados,
+            disponibles: Math.max(cupo - ocupados, 0),
+            estadoInscripcion,
+            inscripcionInicio: inicio,
+            inscripcionFin: fin,
+            proximaApertura: p.proximaApertura ?? null,
+            secciones: seccionesPorPrograma.get(p.id) ?? [],
+          };
+        });
     },
   };
 

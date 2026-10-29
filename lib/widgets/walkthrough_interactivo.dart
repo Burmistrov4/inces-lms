@@ -124,11 +124,11 @@ class _WalkthroughInteractivoCardState
     ),
     PasoWalkthrough(
       etiquetaCategoria: 'Paso 3 de 5 · Admisión y Matrícula',
-      titulo: 'Gestión de Inscripciones y Cupos',
+      titulo: 'Gestión de Cursos y Cupos',
       descripcion:
           'Supervisa las solicitudes enviadas por los aspirantes en línea, asigna turnos por sección y gestiona las colas de espera con control estricto de cupos y emisión de Planilla Oficial.',
       icono: Icons.how_to_reg_outlined,
-      seccionDestino: 'Inscripciones y Cupos',
+      seccionDestino: 'Cursos y PNA',
       textoBoton: 'Supervisar Inscripciones',
     ),
     PasoWalkthrough(

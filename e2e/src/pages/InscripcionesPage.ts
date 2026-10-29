@@ -1,21 +1,23 @@
-// Page Object del panel de inscripciones, donde vive el botón de exportación.
+// Page Object del módulo «Cursos y PNA», donde vive el botón de exportación HACER.
 //
 // Etiquetas tomadas del código, no supuestas:
 //   · `lib/screens/admin_dashboard.dart` — la entrada del menú se titula
-//     `'Inscripciones y Cupos'` y el panel se monta por un `switch` sobre ese
-//     título, no por una ruta. Por eso se navega pulsando el menú.
-//   · `lib/screens/admin/cpanel_inscripciones_panel.dart` — el botón es un
-//     `OutlinedButton.icon` con `label: Text('Exportar Planilla HACER (.csv)')`,
-//     y cambia a `'Exportando…'` mientras trabaja.
+//     `'Cursos y PNA'` (absorbió «Inscripciones y Cupos» en la fase 3 de
+//     simplificación) y el panel se monta por un `switch` sobre ese título, no
+//     por una ruta. Por eso se navega pulsando el menú.
+//   · `lib/screens/admin/cpanel_programas_panel.dart` — cada fila de grupo
+//     («Grupos / Secciones») tiene un `FilledButton` con
+//     `label: Text('Exportar HACER')` que cambia a `'Exportando…'` mientras
+//     trabaja.
 
 import { expect, type Download, type Page } from '@playwright/test';
 import { FlutterApp } from './FlutterApp.js';
 
-/** La entrada del menú lateral que abre el panel. */
-export const MENU_INSCRIPCIONES = 'Inscripciones y Cupos';
+/** La entrada del menú lateral que abre el módulo unificado. */
+export const MENU_INSCRIPCIONES = 'Cursos y PNA';
 
 /** La etiqueta del botón de exportación, en reposo. */
-export const BOTON_EXPORTAR = 'Exportar Planilla HACER (.csv)';
+export const BOTON_EXPORTAR = 'Exportar HACER';
 
 /** La etiqueta del botón mientras exporta. */
 export const BOTON_EXPORTANDO = 'Exportando…';
@@ -47,7 +49,7 @@ export class InscripcionesPage {
     await expect
       .poll(async () => await this.app.cuantos(BOTON_EXPORTAR), {
         message:
-          'Se pulsó «Inscripciones y Cupos» pero no apareció ningún botón de exportación. ' +
+          'Se pulsó «Cursos y PNA» pero no apareció ningún botón de exportación. ' +
           'Puede que la cuenta no sea de administración, o que no haya secciones.\n' +
           (await this.app.diagnostico()),
         timeout: 45_000,

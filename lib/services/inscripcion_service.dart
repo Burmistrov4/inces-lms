@@ -3,6 +3,7 @@ import '../core/gateways/inscripcion_gateway.dart';
 import '../core/cache_lecturas.dart';
 import '../core/network/api_client.dart';
 import '../models/inscripcion.dart';
+import '../models/resumen_curso.dart';
 import 'supabase_service.dart';
 
 /// Implementación de [InscripcionGateway] contra el backend Fastify.
@@ -60,6 +61,7 @@ class BackendInscripcionGateway implements InscripcionGateway {
     cacheDeLecturas.invalidarPorPrefijo('ofertas');
     cacheDeLecturas.invalidarPorPrefijo('mis-inscripciones');
     cacheDeLecturas.invalidarPorPrefijo('ocupacion');
+    cacheDeLecturas.invalidarPorPrefijo('resumen-cursos');
   }
 
   @override
@@ -179,5 +181,23 @@ class BackendInscripcionGateway implements InscripcionGateway {
       token: _tokenSesion,
     );
     return EstadoInscripcion.desde(respuesta['estado'] as String?);
+  }
+
+  @override
+  Future<List<ResumenCurso>> obtenerResumenCursos() async {
+    // **Cache compartida.** Misma táctica que [obtenerOcupacion]: el resumen por
+    // programa agrega cupos/ocupados y la ventana de inscripción, y se invalida
+    // tras cada escritura de cupos (ver [promoverSiguiente] / [reincorporar]).
+    final respuesta = await cacheDeLecturas.leer<Map<String, dynamic>>(
+      'resumen-cursos',
+      ttl: const Duration(seconds: 45),
+      fn: () => _api.get(
+        '/api/v1/admin/cursos/resumen',
+        token: _tokenSesion,
+      ),
+    );
+    final cursos =
+        (respuesta['cursos'] as List?)?.cast<Map<String, dynamic>>();
+    return cursos?.map(ResumenCurso.fromJson).toList() ?? const [];
   }
 }

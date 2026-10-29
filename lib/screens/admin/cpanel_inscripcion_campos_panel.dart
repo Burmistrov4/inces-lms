@@ -314,7 +314,7 @@ class _CpanelInscripcionCamposPanelState
           acciones: [
             if (widget.onNavegarA != null)
               OutlinedButton.icon(
-                onPressed: () => widget.onNavegarA?.call('Inscripciones y Cupos'),
+                onPressed: () => widget.onNavegarA?.call('Cursos y PNA'),
                 icon: const Icon(Icons.confirmation_number_outlined, size: 18),
                 label: const Text('Ver Inscripciones'),
               ),

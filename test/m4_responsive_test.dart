@@ -4,7 +4,6 @@ import 'package:inces_lms_app/models/seccion.dart';
 import 'package:inces_lms_app/repositories/inscripcion_repository.dart';
 import 'package:inces_lms_app/repositories/secciones_repository.dart';
 import 'package:inces_lms_app/screens/admin/cpanel_inscripciones_cola_dialog.dart';
-import 'package:inces_lms_app/screens/admin/cpanel_inscripciones_panel.dart';
 import 'package:inces_lms_app/screens/admin/cpanel_secciones_panel.dart';
 import 'package:inces_lms_app/theme/inces_theme.dart';
 import 'package:inces_lms_app/widgets/andamiaje.dart';
@@ -12,7 +11,8 @@ import 'package:inces_lms_app/widgets/andamiaje.dart';
 import 'support/fake_inscripcion_gateway.dart';
 import 'support/fake_secciones_gateway.dart';
 
-/// Auditoría de layout responsive de los paneles de M4 (Inscripciones y Cupos).
+/// Auditoría de layout responsive de los paneles de M4 (Cursos, Secciones y
+/// diálogos de cupo).
 ///
 /// **Por qué esto es un test y no una captura de pantalla.** La auditoría en
 /// navegador no puede cubrir el layout de estas pantallas por dos motivos
@@ -54,7 +54,7 @@ void main() {
         theme: IncesTheme.claro(),
         home: Scaffold(
           body: ContenidoSeccion(
-            migas: const ['Inicio', 'Inscripciones y Cupos'],
+            migas: const ['Inicio', 'Cursos y PNA'],
             child: hijo,
           ),
         ),
@@ -121,53 +121,6 @@ void main() {
         CpanelSeccionesPanel(repositorio: SeccionesRepository(gateway: fake)),
       );
       sinDesbordes(tester, 'CpanelSeccionesPanel (vacío)', movil);
-    });
-  });
-
-  group('CpanelInscripcionesPanel · sin desbordes en móvil ni escritorio', () {
-    Future<void> montarPanel(WidgetTester tester, Size tamano) async {
-      final fake = FakeInscripcionGateway()
-        ..ocupacionDevuelta = [
-          ocupacionSeccionEjemplo(id: 'sec-1', nombre: 'Soldadura por Arco'),
-          ocupacionSeccionEjemplo(
-            id: 'sec-2',
-            nombre: 'Soldadura TIG',
-            cuposOcupados: 5,
-            cuposDisponibles: 0,
-            ofertaVigente: true,
-          ),
-        ];
-      await montarA(
-        tester,
-        tamano,
-        CpanelInscripcionesPanel(
-          repositorio: AdminInscripcionesRepository(gateway: fake),
-        ),
-      );
-    }
-
-    testWidgets('a 375 px (móvil)', (tester) async {
-      await montarPanel(tester, movil);
-      expect(find.text('Soldadura por Arco'), findsWidgets);
-      sinDesbordes(tester, 'CpanelInscripcionesPanel', movil);
-    });
-
-    testWidgets('a 1440 px (escritorio)', (tester) async {
-      await montarPanel(tester, escritorio);
-      expect(find.text('Soldadura por Arco'), findsWidgets);
-      sinDesbordes(tester, 'CpanelInscripcionesPanel', escritorio);
-    });
-
-    testWidgets('sin ocupación tampoco desborda a 375 px', (tester) async {
-      final fake = FakeInscripcionGateway()..ocupacionDevuelta = const [];
-      await montarA(
-        tester,
-        movil,
-        CpanelInscripcionesPanel(
-          repositorio: AdminInscripcionesRepository(gateway: fake),
-        ),
-      );
-      sinDesbordes(tester, 'CpanelInscripcionesPanel (vacío)', movil);
     });
   });
 

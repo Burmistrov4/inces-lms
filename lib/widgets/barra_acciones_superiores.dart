@@ -435,7 +435,7 @@ class BarraAccionesSuperiores extends StatelessWidget {
                 const SizedBox(height: 16),
                 ListTile(
                   leading: const Icon(Icons.confirmation_number_outlined),
-                  title: const Text('Inscripciones y Cupos Oficiales'),
+                  title: const Text('Cursos y Cupos Oficiales'),
                   subtitle: const Text(
                       'Postulaciones de aspirantes, cupos ofertados y colas de espera.'),
                   trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),

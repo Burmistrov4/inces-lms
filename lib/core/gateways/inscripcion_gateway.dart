@@ -1,4 +1,5 @@
 import '../../models/inscripcion.dart';
+import '../../models/resumen_curso.dart';
 
 /// Contrato de la capa de datos del Módulo 4 (Inscripciones y Cupos).
 ///
@@ -44,4 +45,11 @@ abstract interface class InscripcionGateway {
     required String estudianteId,
     required String seccionId,
   });
+
+  /// Resumen de ocupación por curso (programa) para el panel «Cursos y PNA».
+  ///
+  /// Agrupa por programa: cupo, ocupados, disponibles, estado de la ventana de
+  /// inscripción y la lista de secciones activas. Absorbe «Inscripciones y Cupos»
+  /// dentro del único módulo «Cursos».
+  Future<List<ResumenCurso>> obtenerResumenCursos();
 }

@@ -1,6 +1,7 @@
 import '../core/gateways/inscripcion_gateway.dart';
 import '../core/result.dart';
 import '../models/inscripcion.dart';
+import '../models/resumen_curso.dart';
 import '../services/inscripcion_service.dart';
 
 /// Repositorio de inscripciones del estudiante (Módulo 4).
@@ -73,4 +74,8 @@ class AdminInscripcionesRepository {
   Future<Result<List<InscripcionDetallada>>>
       obtenerInscripcionesDeSeccion(String seccionId) =>
           Result.guard(() => _gateway.obtenerInscripcionesDeSeccion(seccionId));
+
+  /// Resumen de ocupación por curso (programa) para el panel «Cursos y PNA».
+  Future<Result<List<ResumenCurso>>> obtenerResumenCursos() =>
+      Result.guard(_gateway.obtenerResumenCursos);
 }

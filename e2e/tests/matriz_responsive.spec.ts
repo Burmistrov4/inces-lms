@@ -38,7 +38,7 @@ const ALUMNO = {
   pass: process.env.E2E_ALUMNO_PASSWORD ?? 'SemillaInces26!',
 };
 
-// Las 17 secciones del admin, tal como las declara `admin_dashboard.dart`.
+// Las 16 secciones del admin, tal como las declara `admin_dashboard.dart`.
 //
 // **Medido el 2026-10-29.** Esta lista llevaba tres nombres muertos y dos
 // ausentes: `Programas Académicos` (hoy «Cursos y PNA»), `Secciones del Período`
@@ -52,7 +52,6 @@ const SECCIONES_ADMIN = [
   'Cursos y PNA',
   'Configuración del Centro',
   'Módulos del Sistema',
-  'Inscripciones y Cupos',
   'Campos de Inscripción',
   'Cuadrante de Horarios',
   'Horario PNA',

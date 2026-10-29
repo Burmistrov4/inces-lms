@@ -69,19 +69,19 @@ test('1. Flujo Público y Responsive (Landing, Oferta, Móvil, Inscripción, Log
     await page.waitForTimeout(7000);
     await page.screenshot({ path: `${BRAIN_DIR}/audit_08_admin_horarios.png` });
 
-    // I. Programas Académicos (Pensum)
-    console.log('[AUDITORÍA ADMIN] Navegando a Programas Académicos...');
+    // I. Cursos y PNA (antes «Programas Académicos»)
+    console.log('[AUDITORÍA ADMIN] Navegando a Cursos y PNA...');
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
-    await login.app.pulsarReal('Programas Académicos', { tiempoLimiteMs: 15000 });
+    await login.app.pulsarReal('Cursos y PNA', { tiempoLimiteMs: 15000 });
     await page.waitForTimeout(4000);
     await page.screenshot({ path: `${BRAIN_DIR}/audit_09_admin_programas.png` });
 
-    // J. Inscripciones y Cupos
-    console.log('[AUDITORÍA ADMIN] Navegando a Inscripciones y Cupos...');
+    // J. Cursos y PNA (absorbió «Inscripciones y Cupos»: cupos, colas y exportación HACER)
+    console.log('[AUDITORÍA ADMIN] Navegando a Cursos y PNA (cupos)...');
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
-    await login.app.pulsarReal('Inscripciones y Cupos', { tiempoLimiteMs: 15000 });
+    await login.app.pulsarReal('Cursos y PNA', { tiempoLimiteMs: 15000 });
     await page.waitForTimeout(4000);
     await page.screenshot({ path: `${BRAIN_DIR}/audit_10_admin_inscripciones.png` });
 

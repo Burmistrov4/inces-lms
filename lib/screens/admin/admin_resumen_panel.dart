@@ -77,7 +77,7 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
         children: [
           BarraAccionesSuperiores(
             onInscribirAspirante: () =>
-                widget.onNavegarA?.call('Inscripciones y Cupos'),
+                widget.onNavegarA?.call('Cursos y PNA'),
             onAsignarClase: () =>
                 widget.onNavegarA?.call('Cuadrante de Horarios'),
             onVerAulas: () =>
@@ -86,7 +86,7 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
                 BarraAccionesSuperiores.mostrarDialogoReportes(
               context,
               onVerInscripciones: () =>
-                  widget.onNavegarA?.call('Inscripciones y Cupos'),
+                  widget.onNavegarA?.call('Cursos y PNA'),
               onVerHorarios: () =>
                   widget.onNavegarA?.call('Cuadrante de Horarios'),
               onVerAccesos: () =>
@@ -377,10 +377,10 @@ class _AdminResumenPanelState extends State<AdminResumenPanel> {
     final paleta = PaletaInces.deBrillo(theme.brightness);
     final acciones = [
       _AccionRapidaData(
-        titulo: 'Inscripciones y Cupos',
+        titulo: 'Cursos y Cupos',
         descripcion: 'Supervisar cupos ofertados, inscritos y colas de espera.',
         icono: Icons.confirmation_number_outlined,
-        seccionDestino: 'Inscripciones y Cupos',
+        seccionDestino: 'Cursos y PNA',
         colorIcono: IncesTheme.azulPrimario,
       ),
       _AccionRapidaData(

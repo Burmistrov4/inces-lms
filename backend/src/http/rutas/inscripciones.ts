@@ -288,6 +288,21 @@ export function rutasInscripciones(app: FastifyInstance, deps: DependenciasRutas
               : `Se vencieron ${vencidas} oferta(s) de cupo y se promovió a quien correspondía.`,
         };
       });
+
+      /**
+       * Resumen de ocupación **por curso**, para absorber «Inscripciones y Cupos»
+       * dentro del panel único «Cursos».
+       *
+       * Devuelve una fila por programa (no por sección) con su cupo agregado, sus
+       * inscritos y el estado de la ventana de inscripción. La pantalla pinta esa
+       * franja en la tarjeta del curso y abre los diálogos de cupo por sección con
+       * `secciones`, sin una segunda llamada.
+       */
+      admin.get('/cursos/resumen', async (request) => {
+        const cursos = await reposDe(request).inscripciones.resumenCursos();
+
+        return { cursos };
+      });
     },
     { prefix: '/api/v1/admin' },
   );

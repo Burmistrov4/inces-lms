@@ -61,13 +61,17 @@ env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
 
 ### Deuda que este lote NO cierra (y es la siguiente)
 
-- **Unificar «Cursos y PNA» + «Inscripciones y Cupos»** (fase 3 de
-  `docs/PLAN_SIMPLIFICACION_SECCIONES_2026-10-29.md`). Es la queja con más detalle
-  del propietario y sigue abierta: un curso en una pestaña, seis en la otra.
+- ✅ **Unificar «Cursos y PNA» + «Inscripciones y Cupos»** (fase 3 de
+  `docs/PLAN_SIMPLIFICACION_SECCIONES_2026-10-29.md`) — **CERRADA el 2026-10-29**:
+  la tarjeta de `CpanelProgramasPanel` pinta cupo/ocupados/disponibles, ventana de
+  inscripción y acciones por sección; el panel de 795 líneas y su prueba se borraron.
 - **Landing por curso** con cupos y «próxima apertura» (fase 4).
 - **Expediente del aprendiz** y constancia de lectura de entregas: no existe.
 - **`admin_dashboard.dart:242`** sigue con `SA26-2` escrito a mano en la cabecera.
-- Los **6 E2E en rojo** y `cleanstack-ci.yml` (0 bytes) siguen igual.
+- ✅ **Los 6 E2E en rojo** se corrigieron el 2026-10-29: la señal de sesión y las
+  6 specs/navegaciones apuntan a «Cursos y PNA»; el page object de exportación HACER
+  ahora usa «Exportar HACER» dentro de «Cursos y PNA». `cleanstack-ci.yml` (0 bytes)
+  sigue igual.
 
 ---
 
@@ -659,7 +663,7 @@ Las ejecuciones verdes de Flutter CI, E2E y web bundle (p. ej. las corridas 3805
 | **Módulo 3 (frontend)** | Pantallas de aulas, lapsos, guardias y cuadrante (rejilla `CuadranteGrid`, `MiHorarioPanel`) | ✅ Completo |
 | **Módulo 4 (esquema)** | Inscripciones y cupos: cola FIFO, ofertas con vencimiento, anti-acaparamiento y **frontera de escritura por RPC** | ✅ **Aplicado y verificado** (2026-09-18) |
 | **Módulo 4 (backend)** | Las 14 rutas de inscripciones y del catálogo de secciones | ✅ **Completo** |
-| **Módulo 4 (frontend)** | Catálogo de secciones, solicitud y aceptación de cupo, panel de cola en el cPanel | ⏳ Pendiente |
+| **Módulo 4 (frontend)** | Catálogo de secciones, solicitud y aceptación de cupo, **panel de cola y acciones de cupo unificados en `CpanelProgramasPanel`** (fase 3: el antiguo `cpanel_inscripciones_panel.dart` se borró) | ✅ Completo |
 | **Módulo 5 (esquema)** | Archivos en R2: `files_metadata`, 3 RPC `security definer`, 2 parámetros configurables y la frontera de escritura | ✅ **Aplicado y verificado** (2026-09-18) |
 | **Módulo 5 (dominio)** | Reglas puras de almacenamiento: construcción de claves, extensiones, límite de tamaño y `Content-Disposition` | ✅ **Completo** |
 | **Módulo 5 (adaptador R2)** | `PuertaAlmacenamiento` sobre el SDK de S3: URLs prefirmadas y traducción de errores | ✅ **Completo**, verificado en vivo |
@@ -1908,7 +1912,7 @@ El cliente sólo necesita leer `error.codigo`; el `mensaje` es para el usuario y
 | `lib/screens/activar_cuenta_screen.dart` | ✅ | **Módulo 1**: lee el token de `Uri.base.fragment` y fija la contraseña |
 | `lib/screens/docente_dashboard.dart` | ✅ | Marcador con cierre de sesión real |
 | `lib/screens/aspirante_dashboard.dart` | ✅ | Usa el repositorio, con estado de error y reintento |
-| `lib/screens/admin/cpanel_inscripciones_panel.dart` | ✅ | **Módulo 4**: ocupación por sección, cola, promover, reincorporar y **«Exportar Planilla HACER (.csv)»** — uno **por tarjeta**, porque el panel no tiene selector de sección y la tarjeta **es** el contexto |
+| `lib/screens/admin/cpanel_inscripciones_panel.dart` | ❌ **Eliminado el 2026-10-29 (fase 3)** | Su funcionalidad se absorbió en `cpanel_programas_panel.dart`: la tarjeta pinta cupo/ocupados/disponibles + ventana, y cada fila de sección tiene Ver cola · Ver inscritos · **Exportar HACER** · Reincorporar · Promover siguiente |
 | `lib/screens/admin/cpanel_inscripciones_cola_dialog.dart` | ✅ | **Módulo 4**: la cola de espera y las inscripciones de una sección |
 | `lib/screens/admin/cpanel_inscripcion_campos_panel.dart` | ✅ | **Módulo 4**: el catálogo de la planilla. Grupos en `ExpansionTile`, obligatorio/activo por interruptor, orden por **intercambio con el vecino del grupo**. `codigo`/`tipo` inmutables por firma |
 | `lib/services/hacer_export_service.dart` | ✅ | **Módulo 4**: la secuencia «consultar → serializar → descargar» de la exportación hacia HACER, extraída del `State` del panel para poder probarla sin montar pantalla. **Compone** piezas que ya existían (`ExportacionHacerRepository` + `csvDeExportacionHacer` + `SelectorDeArchivos`); no duplica ni la consulta ni la serialización. Devuelve un `sealed` de cuatro desenlaces —uno de ellos «no hay nada que exportar», que **no** es un error— y **nunca lanza** |

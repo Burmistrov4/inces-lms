@@ -40,6 +40,8 @@ import type {
   PaginaProgramas,
   PaginaSecciones,
   PaginaUsuarios,
+  ResumenCurso,
+  EstadoVentanaInscripcion,
   PuertaArchivos,
   PuertaAula,
   PuertaAuditoria,
@@ -176,6 +178,29 @@ function texto(valor: unknown): string | null {
 
 function textoObligatorio(valor: unknown, porDefecto = ''): string {
   return typeof valor === 'string' ? valor : porDefecto;
+}
+
+/** Como `textoObligatorio`, pero devuelve `null` cuando el valor no es texto. */
+function textoONulo(valor: unknown): string | null {
+  return typeof valor === 'string' && valor.length > 0 ? valor : null;
+}
+
+/**
+ * Estado de la ventana de inscripción, derivado de sus fechas contra hoy.
+ *
+ * `ABIERTA` si hoy está dentro del rango (o no hay fechas: ventana legacy siempre
+ * abierta); `PROXIMA_APERTURA` si hoy es anterior al inicio; `CERRADA` si hoy es
+ * posterior al fin. La comparación es de texto `YYYY-MM-DD`, que ordena igual que
+ * la fecha para ese formato.
+ */
+function estadoVentana(
+  hoy: string,
+  inicio: string | null,
+  fin: string | null,
+): EstadoVentanaInscripcion {
+  if (inicio && hoy < inicio) return 'PROXIMA_APERTURA';
+  if (fin && hoy > fin) return 'CERRADA';
+  return 'ABIERTA';
 }
 
 function entero(valor: unknown, porDefecto = 0): number {
@@ -3814,6 +3839,99 @@ class InscripcionesSupabase implements PuertaInscripciones {
     }
 
     return traducirError(error, contexto);
+  }
+
+  /**
+   * Resumen de ocupación **por curso (programa)** para el panel único «Cursos».
+   *
+   * Tres lecturas independientes en paralelo —programas activos, secciones
+   * activas e inscripciones `ENROLLED`— y todo el agregado se hace en memoria.
+   * Así no hay N+1: el recuento de ocupados no depende de cuántos programas haya,
+   * sino de una sola consulta a `enrollments`.
+   *
+   * El cupo es `programs.cupo` (modelo «cupo por curso», D5); los inscritos son
+   * los `ENROLLED` de todas las secciones del programa. El estado de la ventana se
+   * deriva de `inscripcion_inicio`/`inscripcion_fin` contra la fecha del servidor.
+   */
+  async resumenCursos(): Promise<ResumenCurso[]> {
+    const hoy = new Date().toISOString().slice(0, 10);
+
+    const [programasResp, seccionesResp, inscritosResp] = await Promise.all([
+      this.cliente
+        .from(TABLA_PROGRAMAS)
+        .select(
+          'id,name,cupo,mostrar_disponibilidad,inscripcion_inicio,inscripcion_fin,proxima_apertura',
+        )
+        .eq('is_active', true),
+      this.cliente
+        .from(TABLA_SECCIONES)
+        .select('id,program_id,name,period_code')
+        .eq('is_active', true),
+      this.cliente
+        .from(TABLA_INSCRIPCIONES)
+        .select('section_id')
+        .eq('status', 'ENROLLED'),
+    ]);
+
+    if (programasResp.error) throw traducirError(programasResp.error, 'leer los programas');
+    if (seccionesResp.error) throw traducirError(seccionesResp.error, 'leer las secciones');
+    if (inscritosResp.error) throw traducirError(inscritosResp.error, 'leer las inscripciones');
+
+    const programas = (programasResp.data ?? []) as Fila[];
+    const secciones = (seccionesResp.data ?? []) as Fila[];
+    const inscritos = (inscritosResp.data ?? []) as Fila[];
+
+    // Mapa sección → programa para no volver a consultar al contar.
+    const programaDeSeccion = new Map<string, string>();
+    for (const s of secciones) {
+      programaDeSeccion.set(textoObligatorio(s.id), textoObligatorio(s.program_id));
+    }
+
+    // Ocupados por programa: una sola pasada sobre las inscripciones ENROLLED.
+    const ocupadosPorPrograma = new Map<string, number>();
+    for (const i of inscritos) {
+      const programaId = programaDeSeccion.get(textoObligatorio(i.section_id));
+      // Inscripción de una sección archivada: fuera del resumen, se ignora.
+      if (!programaId) continue;
+      ocupadosPorPrograma.set(programaId, (ocupadosPorPrograma.get(programaId) ?? 0) + 1);
+    }
+
+    // Secciones activas agrupadas por programa (para abrir diálogos por sección).
+    const seccionesPorPrograma = new Map<
+      string,
+      { id: string; nombre: string; periodo: string | null }[]
+    >();
+    for (const s of secciones) {
+      const programaId = textoObligatorio(s.program_id);
+      const lista = seccionesPorPrograma.get(programaId) ?? [];
+      lista.push({
+        id: textoObligatorio(s.id),
+        nombre: textoObligatorio(s.name),
+        periodo: textoONulo(s.period_code),
+      });
+      seccionesPorPrograma.set(programaId, lista);
+    }
+
+    return programas.map((p) => {
+      const programaId = textoObligatorio(p.id);
+      const cupo = entero(p.cupo, 0);
+      const ocupados = ocupadosPorPrograma.get(programaId) ?? 0;
+      const inicio = textoONulo(p.inscripcion_inicio);
+      const fin = textoONulo(p.inscripcion_fin);
+
+      return {
+        programaId,
+        nombre: textoObligatorio(p.name),
+        cupo,
+        ocupados,
+        disponibles: Math.max(cupo - ocupados, 0),
+        estadoInscripcion: estadoVentana(hoy, inicio, fin),
+        inscripcionInicio: inicio,
+        inscripcionFin: fin,
+        proximaApertura: textoONulo(p.proxima_apertura),
+        secciones: seccionesPorPrograma.get(programaId) ?? [],
+      };
+    });
   }
 }
 

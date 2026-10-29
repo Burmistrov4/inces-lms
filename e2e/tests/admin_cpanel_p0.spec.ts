@@ -5,14 +5,22 @@ const ADMIN = process.env.E2E_ADMIN_EMAIL ?? '';
 const PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? '';
 
 const MODULOS = [
-  'Auditoría de Accesos',
-  'Cuadrante y Horarios',
-  'Espacios y Aulas',
-  'Guardias Docentes',
-  'Inscripciones y Cupos',
+  'Centro de Mando',
   'Período',
-  'Programas Académicos',
-  'Secciones del Período',
+  'Cursos y PNA',
+  'Configuración del Centro',
+  'Módulos del Sistema',
+  'Campos de Inscripción',
+  'Cuadrante de Horarios',
+  'Horario PNA',
+  'Guardias Docentes (MTP)',
+  'Espacios y Aulas',
+  'Aulas Virtuales',
+  'Archivos del Centro',
+  'Usuarios y Roles',
+  'Historial de Configuración',
+  'Registro de Inicios de Sesión / Accesos',
+  'Mi Perfil',
 ] as const;
 
 test.describe.serial('CPanel P0 — carga real de módulos administrativos', () => {
@@ -27,7 +35,7 @@ test.describe.serial('CPanel P0 — carga real de módulos administrativos', () 
   for (const modulo of MODULOS) {
     test('carga ' + modulo + ' sin error de pantalla', async ({ page }) => {
       const login = new LoginPage(page);
-      if ((await login.app.cuantos('Inscripciones y Cupos')) === 0) {
+      if ((await login.app.cuantos('Cursos y PNA')) === 0) {
         await login.abrir();
         await login.entrar(ADMIN, PASSWORD);
       }
@@ -49,7 +57,7 @@ test.describe.serial('CPanel P0 — carga real de módulos administrativos', () 
 
   test('Usuarios y Roles expone gestión real, no sólo invitaciones', async ({ page }) => {
     const login = new LoginPage(page);
-    if ((await login.app.cuantos('Inscripciones y Cupos')) === 0) {
+    if ((await login.app.cuantos('Cursos y PNA')) === 0) {
       await login.abrir();
       await login.entrar(ADMIN, PASSWORD);
     }

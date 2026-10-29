@@ -25,13 +25,13 @@ export const BOTON_ENTRAR = 'Ingresar al sistema';
  * desaparezca el botón de entrar no sirve: Flutter reconstruye el árbol y hay un
  * instante en el que no hay ni lo uno ni lo otro.
  */
-export const SENAL_DE_SESION = 'Inscripciones y Cupos';
+export const SENAL_DE_SESION = 'Cursos y PNA';
 
 /**
  * Un rótulo que sólo existe en el panel del **alumno**.
  *
  * Hace falta porque [SENAL_DE_SESION] es un rótulo del panel de administración
- * —«Inscripciones y Cupos» es una sección suya— y usarlo para comprobar un
+ * —«Cursos y PNA» es una sección suya— y usarlo para comprobar un
  * acceso de alumno da un fallo con el mensaje equivocado: diría «revisa las
  * credenciales» cuando lo que pasa es que la señal no es de ese rol.
  *
