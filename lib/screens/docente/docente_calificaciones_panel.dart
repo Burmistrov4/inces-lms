@@ -451,7 +451,7 @@ class _DocenteCalificacionesPanelState
                         // No abre un segundo formulario: lleva al aula, que es
                         // donde se crean las tareas. La etiqueta lo dice para
                         // que el salto no se lea como un botón roto.
-                        onPressed: () => widget.onNavegarA!('Mis aulas'),
+                        onPressed: () => widget.onNavegarA!('Aulas Virtuales'),
                         icon: const Icon(Icons.add_circle_outline, size: 16),
                         label: const Text('Crear tarea en el aula'),
                       ),

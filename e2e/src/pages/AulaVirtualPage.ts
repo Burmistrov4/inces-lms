@@ -80,6 +80,21 @@ export const BOTON_CERRAR_MODAL = 'Listo'; // medido — cierra el modal de éxi
  */
 const OPCIONES = { ignorarMayusculas: true } as const;
 
+/**
+ * Cómo se llama la entrada al Aula Virtual en el menú, **por rol**.
+ *
+ * Medido el 2026-10-29: el docente la llama «Aulas Virtuales» y el aprendiz
+ * sigue llamándola «Mis aulas». Antes el helper tenía «Mis aulas» escrito a
+ * mano y, al renombrar el menú del docente en el Lote 5, este page object dejó
+ * de encontrar la entrada: el fallo aparecía como «no hay ningún widget
+ * pulsable» —un síntoma que apunta al menú, no al nombre— y tumbaba las dos
+ * suites que lo usan.
+ *
+ * Se resuelve por **presencia**, no por rol: el page object no sabe con qué
+ * cuenta está logueado y no hace falta que lo sepa.
+ */
+const ENTRADAS_AULA = ['Aulas Virtuales', 'Mis aulas'] as const;
+
 export class AulaVirtualPage {
   readonly app: FlutterApp;
 
@@ -91,7 +106,8 @@ export class AulaVirtualPage {
   private readonly page: Page;
 
   /**
-   * Entra a «Mis aulas» y espera la respuesta o la tarjeta ya montada.
+   * Entra al Aula Virtual desde el menú y espera la respuesta o la tarjeta ya
+   * montada.
    *
    * El listener se registra **antes** de pulsar: si se registra después, una
    * respuesta rápida llega antes que él y la espera se agota sin que nada esté
@@ -108,7 +124,8 @@ export class AulaVirtualPage {
     const respuesta = this.page.waitForResponse((r) => r.url().includes(RUTA_LISTADO), {
       timeout: 30_000,
     });
-    await this.app.pulsar('Mis aulas');
+    const entrada = await this._entradaDelMenu();
+    await this.app.pulsar(entrada);
 
     try {
       if (!seccion) return await respuesta;
@@ -120,7 +137,7 @@ export class AulaVirtualPage {
       const tarjeta = expect
         .poll(async () => await this.cuantos(seccion), {
           timeout: 30_000,
-          message: `la tarjeta «${seccion}» no apareció en «Mis aulas».\\n${await this.diagnostico()}`,
+          message: `la tarjeta «${seccion}» no apareció en «${entrada}».\\n${await this.diagnostico()}`,
         })
         .toBeGreaterThan(0)
         .then(() => null);
@@ -130,10 +147,18 @@ export class AulaVirtualPage {
       // conocida, sólo se acepta el fallback si la tarjeta real está montada.
       const panelMontado = seccion
         ? (await this.cuantos(seccion)) > 0
-        : (await this.cuantos('Mis aulas')) > 0;
+        : (await this.cuantos(entrada)) > 0;
       if (panelMontado) return null;
       throw error;
     }
+  }
+
+  /** La primera entrada de menú del aula que de verdad exista en el árbol. */
+  private async _entradaDelMenu(): Promise<string> {
+    for (const etiqueta of ENTRADAS_AULA) {
+      if ((await this.app.cuantos(etiqueta)) > 0) return etiqueta;
+    }
+    return ENTRADAS_AULA[0];
   }
 
   /**

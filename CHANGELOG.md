@@ -1,6 +1,47 @@
-# CHANGELOG — INCES LMS
+﻿# CHANGELOG — INCES LMS
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
+
+## [1.5.5] - 2026-10-29
+### Lote 5 — Aulas Virtuales del admin, scroll del tablón y **el daño que el renombrado hizo** (reparado)
+
+**Lo que trajo el Lote 5** (commit `21cbdaf`, 2026-10-28):
+
+- **Panel nuevo `CpanelAulasVirtualesPanel`** (256 líneas): lista las secciones del centro con su aula virtual y abre cada una en modo docente. Resuelve los nombres de programa y materia con dos lecturas de catálogo; si fallan, degrada la etiqueta al identificador y el aula sigue abriendo. El administrador **sí** puede publicar: `m6_dicta_seccion()` incluye `is_admin()` (migración `202609220001`, línea 339), así que la RPC no devuelve 42501. Archivadas separadas, con filtro de facto por la cabecera.
+- **Tablón de la móvil con una sola `ListView`**: antes era un `Column` con un `Expanded` que contenía otra lista; en 360×740 los bloques fijos desbordaban y el contenido quedaba inalcanzable. Ahora el tablón entero desliza y la lista de anuncios son hijos de esa lista, no un scrollable anidado.
+- **Caja «Nuevo anuncio» responsive** con `Wrap`.
+
+**Lo que el Lote 5 rompió, y se repara aquí:**
+
+- **El Aula Virtual del docente quedó inalcanzable.** El menú pasó de «Mis aulas» a «Aulas Virtuales» pero la rama del `switch` siguió siendo `case 'Mis aulas'`, así que caía en el `default` y el docente veía «Esta sección está pendiente de construir» en su primer apartado. Lo cazaron **6 pruebas** —3 de `aula_produccion_test.dart`, 1 de `menu_alcanzable_test.dart` («disponibles no contiene 'Mis aulas'») y 2 de `menu_gobernado_por_modulos_test.dart` («Found 0 widgets with type PanelMisAulas»)—. Ninguna prueba de panel podía verlo: el panel estaba bien, faltaba la puerta.
+- **`_navegarA` fallaba en silencio** con el nombre viejo. Tres accesos del propio panel docente (`docente_resumen_panel` ×2, `docente_calificaciones_panel`) llamaban con «Mis aulas» y no pasaba nada: sin error, sin log, sin cambio de pantalla. Se alinean los llamadores y se añade un **alias explícito** (`'Mis aulas' → 'Aulas Virtuales'`) para que un renombrado futuro no vuelva a dejar un botón mudo.
+- **El panel se contradecía con el menú**: `PanelMisAulas` escribía «Mis aulas» en el título, en las migas y en «Volver a…». Ahora recibe `titulo` (por defecto «Mis aulas», que es el nombre del aprendiz) y el docente le pasa el suyo.
+- **Contraste del icono de la caja de anuncio**: se había puesto `Colors.white` sobre `primaryContainer`, que es el tono pálido de `ColorScheme.fromSeed` (≈1,3:1). Vuelve a un color de rol, `onPrimaryContainer`, que contrasta en claro y en oscuro.
+- **El botón subía de línea también a 1440 px**, porque un `Expanded` dentro de un `Row` con `mainAxisSize.min` obliga a la fila a ocupar todo el ancho. El texto va en `Flexible`: una línea cuando cabe, dos cuando no.
+
+**E2E y matriz, que estaban desincronizados desde antes de este lote:**
+
+- `matriz_responsive.spec.ts` listaba **tres nombres muertos** y **dos ausentes** en el admin: `Programas Académicos` (hoy «Cursos y PNA»), `Secciones del Período` (retirada por D11) y `Guardias Docentes` (hoy «Guardias Docentes (MTP)»), y faltaban `Horario PNA` y `Aulas Virtuales`. Con nombres muertos la matriz no falla en el panel: falla al pulsar y anota `NO PULSABLE`, que es peor porque se lee como un fallo de layout. Lista corregida a las **17** reales.
+- La señal de login del docente era «Mis aulas»; `LoginPage.entrar` **lanza** si no aparece, así que el rol docente entero se perdía (25 capturas). Corregida.
+- `AulaVirtualPage` tenía «Mis aulas» escrito a mano y lo usan las dos suites (docente y aprendiz). Ahora resuelve la entrada del menú **por presencia** entre los dos nombres.
+- Se actualizan `aula_virtual_ciclo`, `captura_dashboards_roles`, `performance_baseline` y `capturar-dashboards-roles.mjs`.
+
+**Encontrado en la revisión de cierre (y corregido):**
+
+- **La interfaz mostraba la versión equivocada.** `AppConfig.version` estaba en `1.5.1` mientras `pubspec.yaml` iba por `1.5.5+7`: el menú, el pie y la portada pintaban «v1.5.1» y el CHANGELOG documentaba 1.5.5. Corregido, y **cerrado con guardia**: `test/version_coherente_test.dart` compara `pubspec.yaml` ↔ `AppConfig.version` ↔ primera entrada del CHANGELOG y falla si se separan.
+- **Mensaje que mandaba a un apartado inexistente.** El cuadrante decía «crea primero una sección en “Secciones del Período”»; ese apartado se retiró en D11 y su panel quedó sin punto de entrada. Ahora el aviso no nombra un sitio que no existe.
+- **Pendiente detectado, no corregido aquí:** `CpanelSeccionesPanel` (676 líneas, con pruebas propias) **no lo instancia nadie** desde D11, y `crearSeccion` no tiene otro llamador, así que hoy **no hay forma de crear una sección desde la interfaz**. Es la lección de R-22 repetida: probar el panel donde vive no prueba que se pueda llegar a él. Queda como **P1** en `docs/BACKLOG_PENDIENTES.md` (C10) porque resolverlo exige decidir la forma —pestaña dentro de «Cursos y PNA», filtrada por programa— y eso pide capturas y juicio de intuitividad.
+
+**Medido el 2026-10-29 (este equipo, toolchain real):**
+
+| Control | Comando | Resultado |
+|---|---|---|
+| Analizador | `node devops/analizar-dart.mjs` | **249 archivos · 0/0/0** · exit 0 |
+| Analizador real | `flutter analyze` | **No issues found!** (51,2 s) · exit 0 |
+| Suite Flutter | `flutter test` | **1060/1060** · exit 0 |
+| Backend | `cd backend && npm run verify` | **34 suites · 721/721** · exit 0 |
+
+> **El bloqueo `CreateFile failed 231` no se reproduce.** `flutter test`, `flutter analyze` y `flutter build` corren en esta máquina el 2026-10-29. La entrada «BLOCKED» de `ESTADO_DEL_SISTEMA.md` queda como histórica, con su fecha.
 
 ## [1.5.4] - 2026-10-28
 ### Lote 3 — Ventana de inscripciones y próxima apertura (parcial: código listo, migración SIN aplicar)

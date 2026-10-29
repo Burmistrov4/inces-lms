@@ -168,7 +168,7 @@ async function capturarDashboards() {
     await btnEntrar.click();
 
     console.log('Esperando carga del portal Docente...');
-    const entroDocente = await esperarTexto(page, 'Mis aulas', 45000);
+    const entroDocente = await esperarTexto(page, 'Aulas Virtuales', 45000);
     if (entroDocente) {
       await page.waitForTimeout(5000);
       const rutaDocente = path.join(dirDestino, '05_dashboard_docente_facilitador.png');

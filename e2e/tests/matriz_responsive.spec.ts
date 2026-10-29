@@ -38,29 +38,37 @@ const ALUMNO = {
   pass: process.env.E2E_ALUMNO_PASSWORD ?? 'SemillaInces26!',
 };
 
-// Las 16 secciones del admin, tal como las declara `admin_dashboard.dart`.
+// Las 17 secciones del admin, tal como las declara `admin_dashboard.dart`.
+//
+// **Medido el 2026-10-29.** Esta lista llevaba tres nombres muertos y dos
+// ausentes: `Programas Académicos` (hoy «Cursos y PNA»), `Secciones del Período`
+// (retirada del menú por D11) y `Guardias Docentes` (hoy «Guardias Docentes
+// (MTP)»), y faltaban `Horario PNA` y `Aulas Virtuales`. Con nombres muertos la
+// matriz no falla en el panel: falla al pulsar, se anota como `NO PULSABLE` y la
+// corrida entera deja de significar «0 no navegables».
 const SECCIONES_ADMIN = [
   'Centro de Mando',
-  'Módulos del Sistema',
+  'Período',
+  'Cursos y PNA',
   'Configuración del Centro',
-  'Historial de Configuración',
-  'Registro de Inicios de Sesión / Accesos',
-  'Usuarios y Roles',
-  'Programas Académicos',
+  'Módulos del Sistema',
   'Inscripciones y Cupos',
   'Campos de Inscripción',
-  'Secciones del Período',
-  'Período',
-  'Archivos del Centro',
   'Cuadrante de Horarios',
+  'Horario PNA',
+  'Guardias Docentes (MTP)',
   'Espacios y Aulas',
-  'Guardias Docentes',
+  'Aulas Virtuales',
+  'Archivos del Centro',
+  'Usuarios y Roles',
+  'Historial de Configuración',
+  'Registro de Inicios de Sesión / Accesos',
   'Mi Perfil',
 ];
 
 // Las 5 del docente (`docente_dashboard.dart`).
 const SECCIONES_DOCENTE = [
-  'Mis aulas',
+  'Aulas Virtuales',
   'Pasar lista',
   'Calificaciones',
   'Guías y materiales',
@@ -374,15 +382,15 @@ async function correrRol(
   }
 }
 
-test('matriz - admin (16 apartados x 5 perfiles)', async ({ page }) => {
+test('matriz - admin (17 apartados x perfiles)', async ({ page }) => {
   await correrRol(page, 'admin', ADMIN, SENAL_DE_SESION, SECCIONES_ADMIN);
 });
 
-test('matriz - docente (5 apartados x 5 perfiles)', async ({ page }) => {
-  await correrRol(page, 'docente', DOCENTE, 'Mis aulas', SECCIONES_DOCENTE);
+test('matriz - docente (5 apartados x perfiles)', async ({ page }) => {
+  await correrRol(page, 'docente', DOCENTE, 'Aulas Virtuales', SECCIONES_DOCENTE);
 });
 
-test('matriz - estudiante (8 apartados x 5 perfiles)', async ({ page }) => {
+test('matriz - estudiante (8 apartados x perfiles)', async ({ page }) => {
   await correrRol(page, 'estudiante', ALUMNO, SENAL_DE_SESION_ALUMNO, SECCIONES_ALUMNO);
 });
 

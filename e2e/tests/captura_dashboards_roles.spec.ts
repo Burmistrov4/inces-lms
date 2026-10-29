@@ -73,7 +73,7 @@ test.describe.serial('Captura de Dashboards Multi-Rol (Admin, Docente, Estudiant
     await login.abrir();
 
     console.log(`[E2E-CAPTURA] Iniciando sesión Docente (${DOCENTE_EMAIL})...`);
-    await login.entrar(DOCENTE_EMAIL, DOCENTE_PASSWORD, 'Mis aulas');
+    await login.entrar(DOCENTE_EMAIL, DOCENTE_PASSWORD, 'Aulas Virtuales');
 
     await page.waitForTimeout(5000);
     const rutaDocente = path.join(DIR_DESTINO, '05_dashboard_docente_facilitador.png');

@@ -64,7 +64,7 @@ class DocenteDashboardScreen extends StatefulWidget {
   /// en `null`—.
   final AulaGateway? aulaGateway;
 
-  /// De dónde sale el listado de secciones de «Mis aulas».
+  /// De dónde sale el listado de secciones de «Aulas Virtuales».
   ///
   /// Opcional para las pruebas. Sin él se usa [BackendAulaGateway], que lee
   /// `GET /api/v1/mi-horario`: es la misma ruta que alimenta «Mi horario», y
@@ -89,7 +89,7 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
   @override
   ModuloRepository get repositorioDeModulos => _modulosRepo;
 
-  /// El listado de aulas de «Mis aulas».
+  /// El listado de aulas de «Aulas Virtuales».
   ///
   /// Cae al gateway de contenido cuando se inyecta —un [AulaGateway] **es** un
   /// [AulasPropiasGateway], así que vale como fuente del listado— y si no, a la
@@ -160,11 +160,25 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
     Navigator.of(context, rootNavigator: true).pushReplacementNamed('/login');
   }
 
+  /// Nombres anteriores de una sección, para que un renombrado no deje muerta
+  /// una navegación interna.
+  ///
+  /// **Por qué existe.** Medido el 2026-10-29: cuando «Mis aulas» pasó a
+  /// «Aulas Virtuales», tres accesos del propio panel siguieron llamando con el
+  /// nombre viejo. [_navegarA] no los encuentra y **no hace nada, en silencio**
+  /// —sin error, sin log, sin cambio de pantalla—, que es la peor forma de
+  /// romper un botón: parece que no responde el gesto. El alias convierte ese
+  /// no-op mudo en el destino correcto mientras queden llamadores antiguos.
+  static const Map<String, String> _aliasDeNavegacion = {
+    'Mis aulas': 'Aulas Virtuales',
+  };
+
   void _navegarA(String destino) {
+    final buscado = (_aliasDeNavegacion[destino] ?? destino).toLowerCase();
     final idx = _items.indexWhere(
       (it) =>
-          it.titulo.toLowerCase() == destino.toLowerCase() ||
-          it.titulo.toLowerCase().contains(destino.toLowerCase()),
+          it.titulo.toLowerCase() == buscado ||
+          it.titulo.toLowerCase().contains(buscado),
     );
     if (idx != -1) {
       setState(() => _seleccionada = idx);
@@ -257,11 +271,20 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
 
     _panelesCargados.putIfAbsent(item.titulo, () {
       switch (item.titulo) {
-        case 'Mis aulas':
-          // El Aula Virtual (M6) es el destino de «Mis aulas». El listado de
-          // secciones es real —sale de `/mi-horario`, la misma ruta que alimenta
-          // «Mi horario»— y cada tarjeta abre el tablón y el trabajo de clase de
-          // esa sección.
+        case 'Aulas Virtuales':
+          // El Aula Virtual (M6) es el destino de la primera sección. El listado
+          // de secciones es real —sale de `/mi-horario`, la misma ruta que
+          // alimenta «Mi horario»— y cada tarjeta abre el tablón y el trabajo de
+          // clase de esa sección.
+          //
+          // **La rama y el título del menú se renombran juntos o no se renombra
+          // ninguno.** Medido el 2026-10-29: el Lote 5 cambió el título a
+          // «Aulas Virtuales» y dejó esta rama como `case 'Mis aulas'`, así que
+          // el `switch` caía en el `default` y el docente veía «Esta sección
+          // está pendiente de construir» en su primer apartado. Lo cazaron seis
+          // pruebas (`aula_produccion`, `menu_alcanzable` y
+          // `menu_gobernado_por_modulos`); ninguna prueba de panel lo habría
+          // visto, porque el panel estaba bien: lo que faltaba era la puerta.
           //
           // `_aulaContenido` —y no `widget.aulaGateway`— es lo que hace que en
           // producción la tarjeta se pueda pulsar: sin inyectar nada resuelve el
@@ -270,6 +293,9 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
             gateway: _aulasPropias,
             aulaGateway: _aulaContenido,
             onNavegarA: _navegarA,
+            // El título del panel sigue al del menú: si el menú dice «Aulas
+            // Virtuales», el encabezado y las migas no pueden decir «Mis aulas».
+            titulo: item.titulo,
           );
 
         case 'Pasar lista':

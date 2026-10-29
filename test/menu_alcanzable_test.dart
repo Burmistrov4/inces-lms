@@ -48,9 +48,12 @@ import 'package:inces_lms_app/widgets/andamiaje.dart';
 /// archivo, no una estimación: `items` es el total del menú y `ramas` las
 /// secciones que de verdad tienen panel.
 const Map<String, ({int items, int ramas})> _dashboards = {
-  // 14 y 14: Todas las 14 secciones del menú de administración están 100%
-  // operativas y disponibles, sin elementos residuales o deshabilitados.
-  'admin_dashboard.dart': (items: 14, ramas: 14),
+  // **17 y 17, medido el 2026-10-29.** El suelo decía 14 mientras el menú ya
+  // tenía 17 secciones: un suelo por debajo del estado real deja de avisar
+  // cuando alguien pierde tres secciones de golpe, que es justo lo que el suelo
+  // existe para impedir. Se sube al número medido y se corrige el comentario,
+  // que también mentía.
+  'admin_dashboard.dart': (items: 17, ramas: 17),
   'docente_dashboard.dart': (items: 5, ramas: 5),
   'aspirante_dashboard.dart': (items: 8, ramas: 8),
 };

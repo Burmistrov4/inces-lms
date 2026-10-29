@@ -121,8 +121,8 @@ ModuloRepository _modulosDePrueba() => ModuloRepository(
 /// Monta el dashboard del docente con lo mínimo.
 ///
 /// Se usa el del **docente** y no el del estudiante por una razón de forma: su
-/// primera sección ya es «Mis aulas», así que el panel se monta sin tener que
-/// navegar por el menú. La lógica del cableado es la misma en los dos.
+/// primera sección ya es «Aulas Virtuales», así que el panel se monta sin tener
+/// que navegar por el menú. La lógica del cableado es la misma en los dos.
 ///
 /// `auth` se dobla **siempre**: sin él, `AuthService` leería
 /// `Supabase.instance`, que lanza si Supabase no está inicializado. Es la

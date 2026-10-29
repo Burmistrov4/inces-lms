@@ -204,7 +204,11 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
       return 'No hay docentes activos a los que asignar la clase.';
     }
     if (_seccionesDisponibles.isEmpty) {
-      return 'Crea primero una sección en «Secciones del Período» para asignarle un horario.';
+      // **Sin nombrar un apartado.** Medido el 2026-10-29: decía «Crea primero
+      // una sección en “Secciones del Período”», pero ese apartado ya no existe
+      // en el menú desde D11 y su panel quedó sin punto de entrada. Mandar al
+      // usuario a un sitio que no está es peor que no mandarlo a ninguno.
+      return 'Crea primero una sección para poder asignarle un horario.';
     }
     return null;
   }

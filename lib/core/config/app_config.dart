@@ -1,7 +1,20 @@
 import 'package:flutter/foundation.dart';
 
 class AppConfig {
-  static const String version = '1.5.1';
+  /// Versión visible en la interfaz (menú, pie y portada).
+  ///
+  /// **Tiene que coincidir con `pubspec.yaml`.** Medido el 2026-10-29: el
+  /// `pubspec` iba por 1.5.5+7 y esta constante seguía en 1.5.1, así que la app
+  /// mostraba «v1.5.1» en el menú, en el pie y en la portada mientras el
+  /// CHANGELOG documentaba 1.5.5. Es la misma discrepancia que ya se corrigió
+  /// una vez haciendo que los paneles lean `AppConfig.version` — la constante
+  /// era la única fuente y se quedó atrás.
+  ///
+  /// No se deriva del `pubspec` en tiempo de ejecución porque leer el paquete
+  /// exigiría `package_info_plus` (y una llamada de plataforma en cada arranque
+  /// web). En su lugar, `test/version_coherente_test.dart` compara las dos y
+  /// falla si se separan.
+  static const String version = '1.5.5';
   static const String versionLabel =
       'INCES LMS v$version · CFS Rafael Urdaneta · Prod 2026';
 

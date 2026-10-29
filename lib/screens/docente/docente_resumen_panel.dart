@@ -31,7 +31,7 @@ class DocenteResumenPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           BarraAccionesSuperiores.docente(
-            onMisAulas: () => onNavegarA?.call('Mis aulas'),
+            onMisAulas: () => onNavegarA?.call('Aulas Virtuales'),
             onAsistencia: () => onNavegarA?.call('Pasar lista'),
             onCalificaciones: () => onNavegarA?.call('Calificaciones'),
             onMiHorario: () => onNavegarA?.call('Mi horario'),
@@ -303,10 +303,10 @@ class DocenteResumenPanel extends StatelessWidget {
         color: IncesTheme.azulPrimario,
       ),
       _DocenteAccionData(
-        titulo: 'Mis Aulas Virtuales',
+        titulo: 'Aulas Virtuales',
         descripcion: 'Acceder a las secciones, publicar anuncios y gestionar tareas prácticas.',
         icono: Icons.dashboard_outlined,
-        seccionDestino: 'Mis aulas',
+        seccionDestino: 'Aulas Virtuales',
         color: paleta.exito,
       ),
       _DocenteAccionData(

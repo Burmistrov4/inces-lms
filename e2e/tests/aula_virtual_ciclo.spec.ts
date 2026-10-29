@@ -32,7 +32,7 @@ test.describe.serial('Ciclo de la Tarea — docente y aprendiz', () => {
 
     const login = new LoginPage(pgDocente);
     await login.abrir();
-    await login.entrar(DOCENTE, CLAVE_DOCENTE, 'Mis aulas');
+    await login.entrar(DOCENTE, CLAVE_DOCENTE, 'Aulas Virtuales');
   });
 
   test.afterAll(async () => {
@@ -221,7 +221,7 @@ test.describe.serial('Ciclo de la Tarea — docente y aprendiz', () => {
 
     const login = new LoginPage(pgCalificador);
     await login.abrir();
-    await login.entrar(DOCENTE, CLAVE_DOCENTE, 'Mis aulas');
+    await login.entrar(DOCENTE, CLAVE_DOCENTE, 'Aulas Virtuales');
 
     const aula = new AulaVirtualPage(pgCalificador);
     await aula.irAMisAulas();

@@ -44,6 +44,7 @@ class PanelMisAulas extends StatefulWidget {
     required this.gateway,
     this.aulaGateway,
     this.onNavegarA,
+    this.titulo = 'Mis aulas',
   });
 
   /// De dónde sale el listado de secciones.
@@ -54,6 +55,16 @@ class PanelMisAulas extends StatefulWidget {
 
   /// Permite navegar a otra pestaña del dashboard docente.
   final void Function(String seccion)? onNavegarA;
+
+  /// Cómo se llama esta sección **en el menú de quien la abre**.
+  ///
+  /// Medido el 2026-10-29: el docente la llama «Aulas Virtuales» y el aprendiz
+  /// «Mis aulas», pero el panel escribía «Mis aulas» en el título, en las migas
+  /// y en el botón de vuelta. El resultado era una pantalla que se contradecía
+  /// con el menú que acababa de pulsarse. Se deja por defecto el nombre del
+  /// aprendiz porque es el único que no cambia y así las pruebas existentes
+  /// siguen midiendo lo mismo.
+  final String titulo;
 
   @override
   State<PanelMisAulas> createState() => _PanelMisAulasState();
@@ -107,15 +118,15 @@ class _PanelMisAulasState extends State<PanelMisAulas> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Vuelta al listado. Hace falta de verdad: volver a pulsar «Mis
-          // aulas» en el menú no reinicia este estado —el widget se conserva—,
-          // así que sin este botón el usuario quedaría encerrado en el aula.
+          // Vuelta al listado. Hace falta de verdad: volver a pulsar la sección
+          // en el menú no reinicia este estado —el widget se conserva—, así que
+          // sin este botón el usuario quedaría encerrado en el aula.
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
               onPressed: () => setState(() => _abierta = null),
               icon: const Icon(Icons.arrow_back_rounded, size: 18),
-              label: const Text('Volver a Mis aulas'),
+              label: Text('Volver a ${widget.titulo}'),
             ),
           ),
           Expanded(
@@ -134,7 +145,7 @@ class _PanelMisAulasState extends State<PanelMisAulas> {
     }
 
     return ContenidoSeccion(
-      migas: const ['Inicio', 'Académico', 'Mis aulas'],
+      migas: ['Inicio', 'Académico', widget.titulo],
       child: EstadoPanel(
         cargando: _cargando,
         error: _error,
@@ -165,7 +176,7 @@ class _PanelMisAulasState extends State<PanelMisAulas> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TituloSeccion(
-          'Mis aulas',
+          widget.titulo,
           subtitulo:
               '${plural(mis.aulas.length, 'sección', 'secciones')} en este período.',
           acciones: [

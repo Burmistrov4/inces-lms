@@ -545,12 +545,18 @@ class _AulaVirtualDashboardScreenState
         onTap: _cargandoTablon ? null : _crearAnuncio,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          // Wrap permite que el botón baje de línea en pantallas estrechas
-          // sin necesidad de LayoutBuilder. Evita el desbordamiento de 10px.
+          // **Wrap, no `LayoutBuilder` condicional.** Medido el 2026-10-29: el
+          // `Row` de una sola línea desbordaba ~10 px a 360 dp. Con `Wrap` el
+          // botón baja de línea solo cuando no cabe, sin umbrales que adivinar.
+          //
+          // Y el texto va en `Flexible` —no en `Expanded`— porque un `Expanded`
+          // dentro de un `Row` con `mainAxisSize.min` obliga a la fila a ocupar
+          // **todo** el ancho y empujaba el botón a una segunda línea incluso a
+          // 1440 px, donde sobra sitio.
           child: Wrap(
             spacing: 12,
             runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.start,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -558,14 +564,19 @@ class _AulaVirtualDashboardScreenState
                   CircleAvatar(
                     radius: 18,
                     backgroundColor: theme.colorScheme.primaryContainer,
-                    child: const Icon(
+                    // **`onPrimaryContainer`, no `Colors.white`.** Medido el
+                    // 2026-10-29: `primaryContainer` es el tono pálido que
+                    // genera `ColorScheme.fromSeed`, así que un icono blanco
+                    // encima quedaba casi invisible (≈1,3:1). El color de rol
+                    // es el que garantiza contraste en claro y en oscuro.
+                    child: Icon(
                       Icons.campaign_outlined,
                       size: 20,
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimaryContainer,
                     ),
                   ),
                   const SizedBox(width: 14),
-                  Expanded(
+                  Flexible(
                     child: Text(
                       'Anuncia algo a tu sección...',
                       style: theme.textTheme.bodyMedium?.copyWith(

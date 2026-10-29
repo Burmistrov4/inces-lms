@@ -112,7 +112,7 @@ test.describe('Baseline de performance por rol (sólo lectura)', () => {
     emitirResultado('administrador', etapas, red, recursos);
   });
 
-  test('docente: arranque, login y apertura de Mis Aulas', async ({ page }) => {
+  test('docente: arranque, login y apertura de Aulas Virtuales', async ({ page }) => {
     test.skip(DOCENTE === '' || DOCENTE_PASSWORD === '', 'Faltan credenciales E2E de docente.');
     test.skip(SECCION === '', 'Falta E2E_SECCION.');
     const red = instrumentarRed(page);
@@ -123,7 +123,7 @@ test.describe('Baseline de performance por rol (sólo lectura)', () => {
     etapas.arranqueFlutter = Date.now() - t;
 
     t = Date.now();
-    await login.entrar(DOCENTE, DOCENTE_PASSWORD, 'Mis aulas');
+    await login.entrar(DOCENTE, DOCENTE_PASSWORD, 'Aulas Virtuales');
     etapas.loginHastaPanel = Date.now() - t;
 
     const aula = new AulaVirtualPage(page);

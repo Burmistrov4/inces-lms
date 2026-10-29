@@ -1,6 +1,88 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — 2026-10-27 03:50 -04:00
+## Fotografía operativa vigente — 2026-10-29 02:10 -04:00
+
+> **Sustituye a la foto del 2026-10-27.** Se actualiza al cerrar el **Lote 5**
+> (Aulas Virtuales del admin, scroll del tablón) y **reparar la regresión que ese
+> lote introdujo** en el Aula Virtual del docente. Detalle, causa y evidencia:
+> [`docs/historial/reportes/LOTE_5_CIERRE_2026-10-29.md`](docs/historial/reportes/LOTE_5_CIERRE_2026-10-29.md).
+
+### Lo que cambió respecto a la foto anterior
+
+1. **El bloqueo `CreateFile failed 231` no se reproduce.** Medido el 2026-10-29:
+   `flutter test`, `flutter analyze` y `flutter build web` corren en este equipo.
+   Todo lo que aquí decía «BLOCKED» pasa a histórico con su fecha; **la
+   verificación del frente ya no depende sólo de CI**.
+2. **Aula Virtual del docente, reparada.** El menú decía «Aulas Virtuales» y la
+   rama del `switch` seguía en `case 'Mis aulas'`: el panel caía en el `default`
+   y mostraba «Esta sección está pendiente de construir». Seis pruebas lo
+   cazaron; ninguna prueba de panel podía verlo (el panel estaba bien, faltaba la
+   puerta). Se añade además un alias de navegación para que un renombrado futuro
+   no deje un botón mudo.
+3. **Panel nuevo del admin** `CpanelAulasVirtualesPanel`: lista las secciones con
+   su aula y las abre en modo docente. El admin **sí** puede publicar, porque
+   `m6_dicta_seccion()` incluye `is_admin()`.
+4. **Matriz E2E resincronizada**: la lista del admin tenía 3 nombres muertos
+   (`Programas Académicos`, `Secciones del Período`, `Guardias Docentes`) y le
+   faltaban 2; la señal de login del docente era «Mis aulas» y `LoginPage.entrar`
+   **lanza** si no aparece, así que el rol docente entero se perdía.
+5. **Versión**: `pubspec.yaml` en **1.5.5+7**, `AppConfig.version` en **1.5.5** y
+   `CHANGELOG.md` en 1.5.5. La «discrepancia abierta» de la foto anterior queda
+   cerrada **de verdad**: la constante de la interfaz seguía en `1.5.1` y ahora hay
+   una prueba (`test/version_coherente_test.dart`) que compara los tres sitios.
+6. **Dos hallazgos de la revisión de cierre**: la versión visible (arriba) y el
+   mensaje del cuadrante que mandaba a «Secciones del Período», un apartado que ya
+   no existe. Ambos corregidos.
+
+### Deuda funcional abierta (P1)
+
+`CpanelSeccionesPanel` (676 líneas, con pruebas propias) **no lo instancia nadie**
+desde que D11 retiró su entrada del menú, y `crearSeccion` no tiene otro llamador:
+**hoy no hay forma de crear una sección desde la interfaz**. D11 pedía «desde
+Programas se llega a las secciones en un clic» y esa mitad no está hecha. Es R-22
+otra vez —el panel está probado, pero es inalcanzable—. Ficha: `docs/BACKLOG_PENDIENTES.md` C10.
+
+Cifras **medidas el 2026-10-29**, no deducidas:
+
+| Métrica | Valor | Cómo se mide |
+|---|---|---|
+| Migraciones | **61** en disco; **61 aplicadas**, 0 deriva | `ls supabase/migrations/*.sql` · `apply-migrations.mjs --check` (2026-10-28, CHANGELOG 1.5.4) |
+| Ficheros Dart | **249** | `find lib test -name "*.dart"` (149 en `lib/` + 100 en `test/`) |
+| Ficheros de test Dart | **84** (+16 dobles en `test/support/`) | `find test -name "*_test.dart"` |
+| Analizador propio | **249 archivos · 0 errores, 0 avisos, 0 infos** | `node devops/analizar-dart.mjs` · exit 0 |
+| Analizador real | **No issues found!** (38,1 s) | `flutter analyze` · exit 0 |
+| Suite Flutter | **1060/1060** | `flutter test` · exit 0 |
+| Backend Fastify | **34 suites · 721/721** | `cd backend && npm run verify` · exit 0 |
+| Specs E2E | **24 archivos, 11 en regresión por defecto** | `ls e2e/tests/*.spec.ts` − `_*.spec.ts` − 2 opt-in (`playwright.config.ts:217`) |
+| Matriz responsiva | **192 capturas · 0 desbordes · 0 page errors · 0 no navegables · 4/4 roles** (9 min 12 s) | `E2E_MATRIZ=1 playwright test matriz_responsive` (bundle fresco + backend dual-stack) |
+| Galería de capturas | **198 imágenes en 4 grupos** | `node C:/tmp/gen_galeria.mjs` → `docs/assets/matriz/index.html` |
+| Tablas / Vistas / RLS | 28 / 9 sentencias sobre 7 nombres / 68 | `grep -rhiE` sobre `supabase/migrations/` |
+
+### Estado de Git y de CI
+
+- **9 commits locales antes de este cierre, sin publicar.** `origin/main` está en
+  `7cbda5e` (2026-10-28): CI **nunca vio** el Rediseño aplicado, los Lotes 1–5 ni
+  esta reparación.
+- **CI en `origin/main`** (`gh run list`, 2026-10-29): Flutter CI ✅ · Web bundle
+  ✅ · **E2E ❌** (job «Exportación CSV en navegador real», la *flaky* del login) ·
+  `cleanstack-ci.yml` ❌ en 0 s (el archivo está **vacío**).
+
+### Pendiente que no es código
+
+- **Push y despliegue** de los commits locales (autorización del propietario). La
+  matriz ya está medida; lo que falta es que CI la vuelva a ver desde `origin`.
+- **Estabilizar `export_csv`** en CI; **vaciar o borrar `cleanstack-ci.yml`** (0 bytes).
+- SMTP real en Render (`SMTP_USER` + `SMTP_PASS`): sin eso no sale correo.
+- Verificación en navegador de «Invitar docente» y de la promoción de administradores.
+- Cámara del QR en dispositivo físico.
+- Medir `trustProxy` y las vistas sin `security_invoker` contra producción.
+- **Decisión viva:** la Especificación maestra (TAREA 9) ordena renombrar «Aula
+  Virtual» a «Campus»; el 2026-10-27 se anuló por instrucción directa y el código
+  dice «Aula Virtual». Hay que marcar la tarea como anulada **o** ejecutarla.
+
+---
+
+## Fotografía operativa anterior — cierre del Rediseño 1.5, 2026-10-27 03:50 -04:00
 
 > **Sustituye a la foto del 2026-10-26**. Se actualiza tras la culminación completa
 > del **Rediseño 1.5** (Tareas 1 a 11 de `docs/ESPECIFICACION_MAESTRA_REDISENO_1_5_2026-10-25.md`)
@@ -54,6 +136,9 @@ hallazgos quedan **sin corregir a propósito**, con la razón escrita.
 documenta hasta 1.3.1. Discrepancia abierta: o se sube la versión o se explica por
 qué quedó atrás. No se resuelve aquí porque cambiar la versión es una decisión de
 release.
+
+> **Resuelta el 2026-10-29:** `pubspec.yaml` va en **1.5.5+7** y el CHANGELOG en
+> 1.5.5. Se deja la nota original porque describe el estado de aquella foto.
 
 ---
 

@@ -17,6 +17,18 @@
 >   excepción; es la barra. No se declara «listo» sin ellos.
 > - **Capturas de cada pantalla rediseñada en 3 posiciones de scroll** (inicial,
 >   medio, final) + juicio de intuitividad. Sin eso, la tarea no está terminada.
+>
+> ⚠️ **Estado del Rediseño 1.5 al 2026-10-29:** las 11 tareas están implementadas
+> **salvo la TAREA 9**, que ordena renombrar «Aula Virtual» a «Campus» y quedó
+> **anulada el 2026-10-27 por instrucción directa del propietario** (el nombre
+> vigente es «Aula Virtual»; `grep -rn "Campus" lib/` da 0). No la ejecutes: o se
+> marca formalmente como anulada en la especificación, o la decide Lorenzo.
+> El resto de la maestra sigue vigente; el estado medido está en
+> [`ESTADO_DEL_SISTEMA.md`](ESTADO_DEL_SISTEMA.md) (foto 2026-10-29) y el último
+> cierre, con su evidencia, en
+> [`docs/historial/reportes/LOTE_5_CIERRE_2026-10-29.md`](docs/historial/reportes/LOTE_5_CIERRE_2026-10-29.md).
+> El bloqueo `CreateFile failed 231` **no se reproduce** desde el 2026-10-29:
+> `flutter test`, `flutter analyze` y `flutter build web` corren en local.
 
 ## Misión
 
