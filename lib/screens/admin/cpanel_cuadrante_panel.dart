@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../core/errors/app_exception.dart';
 import '../../core/gateways/cuadrante_gateway.dart';
 import '../../core/reglas_cuadrante.dart';
 import '../../models/cuadrante.dart';
+import '../../models/seccion.dart';
 import '../../repositories/cuadrante_repository.dart';
 import '../../repositories/curriculo_repository.dart';
 import '../../repositories/secciones_repository.dart';
@@ -222,12 +223,18 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
         docentes: _docentes,
         secciones: _seccionesDisponibles,
         periodo: _lapso ?? '',
+        // El diálogo puede crear el grupo que falta (curso + materia) sin
+        // sacar al administrador de esta pantalla.
+        seccionesRepo: _seccionesRepo,
+        curriculoRepo: _curriculoRepo,
         diaInicial: diaInicial,
         bloqueInicial: bloqueInicial,
       ),
     );
     if (guardado != true || !mounted) return;
     await _cargarRejilla();
+    // Si se creó un grupo dentro del diálogo, el catálogo tiene que verlo.
+    await _cargarSeccionesCatalogo();
   }
 
   Future<void> _abrirEdicion(ClaseCuadrante clase) async {
@@ -642,6 +649,8 @@ class _DialogoClase extends StatefulWidget {
     required this.docentes,
     required this.secciones,
     required this.periodo,
+    this.seccionesRepo,
+    this.curriculoRepo,
     this.diaInicial,
     this.bloqueInicial,
   });
@@ -652,6 +661,8 @@ class _DialogoClase extends StatefulWidget {
   final List<DocenteResumen> docentes;
   final Map<String, String> secciones;
   final String periodo;
+  final SeccionesRepository? seccionesRepo;
+  final CurriculoRepository? curriculoRepo;
   final int? diaInicial;
   final int? bloqueInicial;
 
@@ -667,6 +678,11 @@ class _DialogoClaseState extends State<_DialogoClase> {
   late int _bloque = widget.clase?.bloque ?? widget.bloqueInicial ?? 1;
   late bool _activa = widget.clase?.activa ?? true;
 
+  /// Copia local del catálogo: si el diálogo crea un grupo, tiene que aparecer
+  /// en el desplegable **sin cerrar y volver a abrir**. La lista del padre es
+  /// inmutable desde aquí, y recargarla obligaría a perder lo ya elegido.
+  late final Map<String, String> _secciones = Map.of(widget.secciones);
+
   bool _guardando = false;
   String? _error;
 
@@ -676,7 +692,7 @@ class _DialogoClaseState extends State<_DialogoClase> {
     if (_guardando) return;
 
     if (!_esEdicion && _seccionId == null) {
-      setState(() => _error = 'Elige la sección a la que pertenece la clase.');
+      setState(() => _error = 'Elige el curso y la materia de la clase.');
       return;
     }
 
@@ -722,6 +738,27 @@ class _DialogoClaseState extends State<_DialogoClase> {
           'la clase a otro hueco, o libera el que ocupa.';
     }
     return fallo.message;
+  }
+
+  /// Abre el creador de grupos y, si crea uno, lo deja **elegido** en el
+  /// desplegable sin cerrar este diálogo ni perder lo que ya estaba puesto.
+  Future<void> _crearGrupo() async {
+    final creado = await showDialog<_GrupoCreado>(
+      context: context,
+      builder: (_) => _DialogoNuevoGrupo(
+        periodo: widget.periodo,
+        seccionesRepo: widget.seccionesRepo,
+        curriculoRepo: widget.curriculoRepo,
+      ),
+    );
+
+    if (creado == null || !mounted) return;
+
+    setState(() {
+      _secciones[creado.id] = creado.etiqueta;
+      _seccionId = creado.id;
+      _error = null;
+    });
   }
 
   List<DocenteResumen> get _docentesLimpios =>
@@ -940,13 +977,13 @@ class _DialogoClaseState extends State<_DialogoClase> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (!_esEdicion)
+              if (!_esEdicion) ...[
                 _Desplegable<String>(
-                  etiqueta: 'Sección',
+                  etiqueta: 'Curso · materia (grupo)',
                   ancho: double.infinity,
                   valor: _seccionId,
                   opciones: [
-                    for (final entrada in widget.secciones.entries)
+                    for (final entrada in _secciones.entries)
                       DropdownMenuItem(
                         value: entrada.key,
                         child: Text(
@@ -957,6 +994,19 @@ class _DialogoClaseState extends State<_DialogoClase> {
                   ],
                   onChanged: (v) => setState(() => _seccionId = v),
                 ),
+                // **La puerta que faltaba.** Antes había que salir a otro
+                // módulo a crear la «sección» y volver; el panel nunca decía
+                // dónde. Ahora el grupo se crea aquí mismo eligiendo curso y
+                // materia.
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _guardando ? null : _crearGrupo,
+                    icon: const Icon(Icons.add_circle_outline, size: 16),
+                    label: const Text('Falta el curso o la materia: crearlo aquí'),
+                  ),
+                ),
+              ],
               if (!_esEdicion) const SizedBox(height: 12),
               _Desplegable<String?>(
                 etiqueta: 'Espacio (opcional)',
@@ -1339,6 +1389,252 @@ class _DialogoEditarHorasBloquesState extends State<DialogoEditarHorasBloques> {
         FilledButton(
           onPressed: _guardar,
           child: const Text('Guardar horarios'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Lo que devuelve [_DialogoNuevoGrupo] al crear un grupo.
+class _GrupoCreado {
+  const _GrupoCreado({required this.id, required this.etiqueta});
+
+  final String id;
+  final String etiqueta;
+}
+
+/// Crea el «grupo» (la sección) que falta, **sin salir del cuadrante**.
+///
+/// **Por qué existe.** Medido el 2026-10-29 con el propietario: para asignar una
+/// clase había que elegir una «sección» que antes había que crear en otro
+/// módulo —y que desde D11 ya no tiene entrada en el menú—, mientras el
+/// desplegable sólo mostraba el nombre del curso. La queja textual fue «no se
+/// sabe qué curso se va a dar». Aquí se elige **curso + materia**, que es lo que
+/// un horario necesita de verdad, y el sistema resuelve el grupo por debajo con
+/// un nombre automático. «Sección» deja de ser algo que el administrador tenga
+/// que gestionar: pasa a ser un detalle interno.
+class _DialogoNuevoGrupo extends StatefulWidget {
+  const _DialogoNuevoGrupo({
+    required this.periodo,
+    this.seccionesRepo,
+    this.curriculoRepo,
+  });
+
+  final String periodo;
+  final SeccionesRepository? seccionesRepo;
+  final CurriculoRepository? curriculoRepo;
+
+  @override
+  State<_DialogoNuevoGrupo> createState() => _DialogoNuevoGrupoState();
+}
+
+class _DialogoNuevoGrupoState extends State<_DialogoNuevoGrupo> {
+  late final SeccionesRepository _secRepo =
+      widget.seccionesRepo ?? SeccionesRepository();
+  late final CurriculoRepository _curRepo =
+      widget.curriculoRepo ?? CurriculoRepository();
+  final TextEditingController _nombreCtrl = TextEditingController(text: 'ÚNICA');
+
+  Map<String, String> _programas = const {};
+  Map<String, String> _materias = const {};
+  String? _programaId;
+  String? _materiaId;
+  bool _cargandoProgramas = true;
+  bool _cargandoMaterias = false;
+  bool _guardando = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarProgramas();
+  }
+
+  @override
+  void dispose() {
+    _nombreCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _cargarProgramas() async {
+    final res = await _curRepo.listarProgramas(limite: 100);
+    if (!mounted) return;
+    res.when(
+      success: (pagina) => setState(() {
+        _programas = {for (final p in pagina.programas) p.id: p.nombre};
+        _cargandoProgramas = false;
+      }),
+      failure: (fallo) => setState(() {
+        _cargandoProgramas = false;
+        _error = 'No pudimos cargar los cursos: ${fallo.message}';
+      }),
+    );
+  }
+
+  /// Las materias salen del **pensum del curso**: es lo que de verdad se dicta.
+  Future<void> _cargarMaterias(String programaId) async {
+    setState(() {
+      _programaId = programaId;
+      _materiaId = null;
+      _materias = const {};
+      _cargandoMaterias = true;
+      _error = null;
+    });
+
+    final res = await _curRepo.detallePrograma(programaId);
+    if (!mounted) return;
+
+    res.when(
+      success: (detalle) => setState(() {
+        _materias = {
+          for (final grupo in detalle.pensum)
+            for (final materia in grupo.materias) materia.materiaId: materia.nombre,
+        };
+        _cargandoMaterias = false;
+      }),
+      failure: (fallo) => setState(() {
+        _cargandoMaterias = false;
+        _error = 'No pudimos leer el pensum: ${fallo.message}';
+      }),
+    );
+  }
+
+  Future<void> _crear() async {
+    if (_guardando) return;
+    if (_programaId == null || _materiaId == null) {
+      setState(() => _error = 'Elige el curso y la materia.');
+      return;
+    }
+
+    final nombre = _nombreCtrl.text.trim().isEmpty
+        ? 'ÚNICA'
+        : _nombreCtrl.text.trim().toUpperCase();
+
+    setState(() {
+      _guardando = true;
+      _error = null;
+    });
+
+    final res = await _secRepo.crearSeccion(
+      Seccion.crear(
+        programaId: _programaId!,
+        materiaId: _materiaId!,
+        periodo: widget.periodo,
+        nombre: nombre,
+      ),
+    );
+
+    if (!mounted) return;
+
+    res.when(
+      success: (seccion) => Navigator.of(context).pop(
+        _GrupoCreado(
+          id: seccion.id,
+          etiqueta: '${_programas[_programaId] ?? 'Curso'} · Secc. $nombre '
+              '(${_materias[_materiaId]})',
+        ),
+      ),
+      failure: (fallo) => setState(() {
+        _guardando = false;
+        _error = fallo.message;
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Crear curso · materia'),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 460),
+        child: _cargandoProgramas
+            ? const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Esto crea el grupo que falta para el período '
+                      '«${widget.periodo}». No tienes que ir a otro módulo.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 16),
+                    _Desplegable<String>(
+                      etiqueta: 'Curso',
+                      ancho: double.infinity,
+                      valor: _programaId,
+                      opciones: [
+                        for (final entrada in _programas.entries)
+                          DropdownMenuItem(
+                            value: entrada.key,
+                            child: Text(entrada.value,
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) _cargarMaterias(v);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _Desplegable<String>(
+                      etiqueta: _cargandoMaterias
+                          ? 'Materia (cargando pensum…)'
+                          : 'Materia',
+                      ancho: double.infinity,
+                      valor: _materiaId,
+                      opciones: [
+                        for (final entrada in _materias.entries)
+                          DropdownMenuItem(
+                            value: entrada.key,
+                            child: Text(entrada.value,
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                      ],
+                      onChanged: (v) => setState(() => _materiaId = v),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _nombreCtrl,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre del grupo',
+                        helperText: 'Por defecto «ÚNICA». Cámbialo si habrá '
+                            'varios grupos del mismo curso y materia.',
+                      ),
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        _error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _guardando ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _guardando || _programaId == null || _materiaId == null
+              ? null
+              : _crear,
+          child: _guardando
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Crear y usar'),
         ),
       ],
     );

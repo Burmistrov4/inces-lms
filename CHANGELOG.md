@@ -45,6 +45,23 @@ son el mismo cambio de modelo: hoy la sección es la unidad que liga programa + 
 + período, y de ella cuelgan horarios e inscripciones. Fichas en
 `docs/BACKLOG_PENDIENTES.md` (C10 y el plan de unificación).
 
+## [1.6.0] — añadido la misma noche: «sección» deja de pedirse
+### Crear el grupo desde el cuadrante, sin salir de la pantalla
+
+- **«Asignar clase» ya no te manda a otro módulo.** El desplegable pasa de
+  «Sección» a **«Curso · materia (grupo)»** y debajo hay un botón
+  *«Falta el curso o la materia: crearlo aquí»* que abre un formulario mínimo
+  (**curso → materia del pensum → nombre**, por defecto «ÚNICA»), crea el grupo y
+  lo deja **elegido** en el diálogo, sin perder lo que ya estaba puesto.
+- **Verificado en producción** con sesión real: el diálogo abre desde
+  `inces-lms.pages.dev` (`campo=1 boton=1 dialogo=1`, Playwright).
+- El mensaje del cuadrante ya no manda a «Secciones del Período» (apartado retirado
+  en D11) y la barra de paginación desaparece cuando hay una sola página.
+- **Diseño del resto escrito**: `docs/DISENO_CICLO_PERIODO_2026-10-29.md` (qué pasa y
+  qué debería pasar al cerrar un período) y
+  `docs/PLAN_SIMPLIFICACION_SECCIONES_2026-10-29.md` (fases 2–5 para que «sección»
+  desaparezca de la cara visible).
+
 ## [1.5.5] - 2026-10-29
 ### Lote 5 — Aulas Virtuales del admin, scroll del tablón y **el daño que el renombrado hizo** (reparado)
 
