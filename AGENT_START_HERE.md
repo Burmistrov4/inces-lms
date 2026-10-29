@@ -1,7 +1,9 @@
 # AGENT START HERE — INCES LMS
 
-> **INDICE DE DOCUMENTACION:** [`docs/README.md`](docs/README.md) — por donde empezar.
-> **PENDIENTES:** [`docs/BACKLOG_PENDIENTES.md`](docs/BACKLOG_PENDIENTES.md).
+> **ENTRADA PRINCIPAL (nueva, 2026-10-29):** [`docs/MAESTRO/00_INDICE_MAESTRO.md`](docs/MAESTRO/00_INDICE_MAESTRO.md) — punto de entrada único: estado, pendientes y plan delegable. **Empieza por aquí.**
+> **INDICE COMPLETO:** [`docs/README.md`](docs/README.md).
+> **PENDIENTES (consolidado):** [`docs/MAESTRO/02_PENDIENTES_Y_ERRORES.md`](docs/MAESTRO/02_PENDIENTES_Y_ERRORES.md).
+> **PLAN DE TRABAJO:** [`docs/MAESTRO/04_PLAN_MAESTRO_DELEGABLE.md`](docs/MAESTRO/04_PLAN_MAESTRO_DELEGABLE.md) (paquetes P0–P4).
 > **CONTINUIDAD:** [`docs/handover/REPORTE_CONTINUIDAD_2026-10-22.md`](docs/handover/REPORTE_CONTINUIDAD_2026-10-22.md).
 
 > ## ⚡ TRABAJO VIGENTE — REDISEÑO 1.5 (2026-10-25)
@@ -27,21 +29,26 @@
 > [`ESTADO_DEL_SISTEMA.md`](ESTADO_DEL_SISTEMA.md) (foto 2026-10-29) y el último
 > cierre, con su evidencia, en
 > [`docs/historial/reportes/LOTE_5_CIERRE_2026-10-29.md`](docs/historial/reportes/LOTE_5_CIERRE_2026-10-29.md).
-> El bloqueo `CreateFile failed 231` **no se reproduce** desde el 2026-10-29:
-> `flutter test`, `flutter analyze` y `flutter build web` corren en local.
+> ⚠️ **Verificación de Flutter/Dart en local:** el bloqueo `CreateFile failed 231`
+> (`ERROR_PIPE_BUSY`) **sigue vigente en este sandbox** — `flutter test`,
+> `flutter analyze` y `flutter build web` mueren al lanzar su subproceso hijo
+> (también `dart analyze`, que lanza el analysis server). El verificador real es
+> **CI**; en local usa `node devops/analizar-dart.mjs` para el análisis de tipos y
+> deja que el pipeline confirme la suite. Comandos y excepciones:
+> [`docs/MAESTRO/04_PLAN_MAESTRO_DELEGABLE.md` §0](docs/MAESTRO/04_PLAN_MAESTRO_DELEGABLE.md).
 
 ## Misión
 
 Tomar el estado real del repositorio y avanzar hasta cerrar lo que se pueda cerrar con evidencia. No depender del historial conversacional ni de un resumen de otra sesión: **el disco manda**.
 
-Este archivo es una ruta de trabajo, no un mandato de proyecto. Si te pidieron algo concreto, hazlo; si te pidieron «cerrar todo», usa como alcance [PLAN_MAESTRO.md](docs/historial/planes/PLAN_MAESTRO.md) y [TODO_CIERRE_INTEGRAL_INCES_LMS.md](docs/historial/planes/TODO_CIERRE_INTEGRAL_INCES_LMS.md).
+Este archivo es una ruta de trabajo, no un mandato de proyecto. Si te pidieron algo concreto, hazlo; si te pidieron «cerrar todo» o retomar el trabajo, usa como alcance [`docs/MAESTRO/04_PLAN_MAESTRO_DELEGABLE.md`](docs/MAESTRO/04_PLAN_MAESTRO_DELEGABLE.md) (paquetes P0–P4 con aceptación y verificación). El antiguo `PLAN_MAESTRO.md` / `TODO_CIERRE_INTEGRAL_INCES_LMS.md` quedaron como historia en `docs/historial/planes/`.
 
 ## Ruta obligatoria — nueve pasos, en este orden
 
 Para una tarea sencilla, los pasos 1–5 son lectura corta: **no hace falta leer todo lo que hay enlazado abajo**.
 
 1. **Reglas y restricciones del repositorio.** Lee §2 de [docs/ESTRUCTURA_DOCUMENTAL.md](docs/ESTRUCTURA_DOCUMENTAL.md) (precedencia) y las reglas no negociables de [docs/PROCEDIMIENTO_DESPLIEGUE_PRODUCCION.md](docs/PROCEDIMIENTO_DESPLIEGUE_PRODUCCION.md) §2. Sin `git reset --hard`, sin `git clean -fd`, sin borrar datos, sin publicar secretos, sin commit/push/despliegue sin autorización.
-2. **Índice documental central.** [docs/README.md](docs/README.md): qué existe y para quién. Si necesitas un contrato, un runbook o una auditoría, sal de ahí.
+2. **Entrada de documentación.** Lee primero [`docs/MAESTRO/00_INDICE_MAESTRO.md`](docs/MAESTRO/00_INDICE_MAESTRO.md): consolida en 5 archivos el estado completado, los pendientes (con fuente verificable), los planes y el plan maestro delegable. Para el detalle, el índice completo está en [docs/README.md](docs/README.md): qué existe y para quién. Si necesitas un contrato, un runbook o una auditoría, sal de ahí.
 3. **Estado del sistema y handover vigente.** La sección superior de [ESTADO_DEL_SISTEMA.md](ESTADO_DEL_SISTEMA.md) y la auditoría fechada más reciente (`docs/handover/`). Las entradas antiguas de ese archivo son historia, no fotografía.
 4. **`git status` antes de tocar nada.** `git status --short`, `git rev-parse HEAD`, `git log -1 --oneline`. Puede haber otro agente editando los mismos documentos: **relee justo antes de editar** y prefiere ediciones aditivas y acotadas. Comprueba también procesos y puertos en uso, y si la base está al día: `node supabase/apply-migrations.mjs --check`.
 5. **Investiga el código y reproduce el problema.** «No está» se mide, no se deduce. Si no puedes reproducirlo, ese hecho es el primer hallazgo, no una excusa para seguir.

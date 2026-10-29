@@ -5,15 +5,27 @@
 
 ---
 
+## 0. ENTRADA PRINCIPAL (nueva, 2026-10-29)
+
+> **Empieza por [`docs/MAESTRO/00_INDICE_MAESTRO.md`](MAESTRO/00_INDICE_MAESTRO.md).**
+> Consolida todo en 5 archivos: estado completado, pendientes/errores (con fuente
+> verificable), planes/objetivos y **un plan maestro delegable (P0–P4)** con cómo
+> verificar. Es el punto de entrada único para retomar el trabajo sin leer los ~80
+> `.md` acumulados.
+
 ## 1. POR DONDE EMPEZAR (en este orden)
 
 | # | Documento | Para que |
 |---|---|---|
-| 1 | [`handover/REPORTE_CONTINUIDAD_2026-10-22.md`](handover/REPORTE_CONTINUIDAD_2026-10-22.md) | **Empieza aqui.** Estado verificado, comandos exactos, trampas medidas del entorno y por donde seguir. |
-| 2 | [`BACKLOG_PENDIENTES.md`](BACKLOG_PENDIENTES.md) | Que falta, en orden logico, con evidencia. |
-| 3 | [`REQUISITOS_NO_FUNCIONALES_UX.md`](REQUISITOS_NO_FUNCIONALES_UX.md) | Usabilidad, retroalimentacion, tiempos de respuesta (ISO 25010 + Nielsen). |
-| 4 | [`AI_AGENT_PROTOCOLO.md`](AI_AGENT_PROTOCOLO.md) | Bloqueos del entorno, protocolo de operacion, uso eficiente de tokens. |
-| 5 | [`../ESTADO_DEL_SISTEMA.md`](../ESTADO_DEL_SISTEMA.md) | **Fuente de verdad** del estado del sistema. Gana sobre cualquier otro documento. |
+| 1 | [`MAESTRO/00_INDICE_MAESTRO.md`](MAESTRO/00_INDICE_MAESTRO.md) | **Entrada unica.** Indice, como usarlo y reglas de oro. |
+| 2 | [`MAESTRO/01_COMPLETADO.md`](MAESTRO/01_COMPLETADO.md) | Que esta hecho y verificado (fases, modulos, infra). |
+| 3 | [`MAESTRO/02_PENDIENTES_Y_ERRORES.md`](MAESTRO/02_PENDIENTES_Y_ERRORES.md) | **El unico .md de pendientes**: leftovers de todos los agentes, con fuente. |
+| 4 | [`MAESTRO/04_PLAN_MAESTRO_DELEGABLE.md`](MAESTRO/04_PLAN_MAESTRO_DELEGABLE.md) | **Plan de trabajo** para el proximo agente (P0–P4, aceptacion, verificacion). |
+| 5 | [`handover/REPORTE_CONTINUIDAD_2026-10-22.md`](handover/REPORTE_CONTINUIDAD_2026-10-22.md) | Estado verificado, comandos exactos, trampas medidas del entorno. |
+| 6 | [`BACKLOG_PENDIENTES.md`](BACKLOG_PENDIENTES.md) | Que falta, en orden logico, con evidencia (detalle del `02`). |
+| 7 | [`REQUISITOS_NO_FUNCIONALES_UX.md`](REQUISITOS_NO_FUNCIONALES_UX.md) | Usabilidad, retroalimentacion, tiempos de respuesta (ISO 25010 + Nielsen). |
+| 8 | [`AI_AGENT_PROTOCOLO.md`](AI_AGENT_PROTOCOLO.md) | Bloqueos del entorno, protocolo de operacion, uso eficiente de tokens. |
+| 9 | [`../ESTADO_DEL_SISTEMA.md`](../ESTADO_DEL_SISTEMA.md) | **Fuente de verdad** del estado del sistema. Gana sobre cualquier otro documento. |
 
 ---
 
@@ -21,6 +33,7 @@
 
 | Documento | Que es |
 |---|---|
+| `MAESTRO/` | **Consolidado 2026-10-29**: entrada principal (ver §0/§1). Sustituye la necesidad de leer el resto para retomar el trabajo. |
 | `ESPECIFICACION_MAESTRA_REDISENO_1_5_2026-10-25.md` | **Mandato del Rediseño 1.5** (11 tareas, decisiones D1–D11). Ojo: su TAREA 9 («Campus») fue **anulada** el 2026-10-27; ver `ESTADO_DEL_SISTEMA.md`. |
 | `ARQUITECTURA_Y_ESPECIFICACION_SISTEMA_SDD.md` | Arquitectura y especificacion (SDD). |
 | `PROCEDIMIENTO_DESPLIEGUE_PRODUCCION.md` | Como desplegar (Render + Cloudflare Pages). |

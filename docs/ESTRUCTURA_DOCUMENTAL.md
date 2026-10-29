@@ -29,9 +29,9 @@ Cuando dos documentos se contradigan, se aplica este orden. **La jerarquía no a
 |---|---|---|
 | Entrada humana | README.md | Presentación y puesta en marcha; no es bitácora. |
 | Entrada de agentes | AGENT_START_HERE.md | Lectura mínima y actuación segura. |
-| Índice | docs/README.md | Mapa, precedencia y enlaces. |
+| Índice | docs/MAESTRO/00_INDICE_MAESTRO.md, luego docs/README.md | Punto de entrada único (estado + pendientes + plan) y mapa completo. |
 | Estado real | ESTADO_DEL_SISTEMA.md | Fotografía vigente; entradas antiguas quedan como historial. |
-| Alcance | PLAN_MAESTRO.md, PLAN_CIERRE_100_FUNCIONAL_2026.md, docs/historial/planes/TODO_CIERRE_INTEGRAL_INCES_LMS.md | Objetivos, aceptación y cola operativa, sin duplicar funciones. |
+| Alcance | **docs/MAESTRO/04_PLAN_MAESTRO_DELEGABLE.md** (paquetes P0–P4) y docs/MAESTRO/03_PLANES_Y_OBJETIVOS.md | Objetivos, aceptación y cola operativa, sin duplicar funciones. Los `PLAN_MAESTRO.md` / `PLAN_CIERRE_100_FUNCIONAL_2026.md` / `TODO_CIERRE_INTEGRAL_INCES_LMS.md` de `docs/historial/planes/` quedan como historia. |
 | Gates y protocolo | docs/PROJECT_PHASE_GATES.md, docs/AI_AGENT_OPERATING_PROTOCOL.md | Criterios de calidad y reglas de trabajo. |
 | Arquitectura/contratos | Documentos de arquitectura, módulos, SQL/API y diseño | Validar contra código, esquema y permisos reales. |
 | Runbooks | Despliegue, arranque local, DevOps, E2E y R2 | Comandos reproducibles; secretos sólo en archivos locales protegidos. |
