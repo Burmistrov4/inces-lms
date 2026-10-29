@@ -303,6 +303,45 @@ enum EstadoPeriodo {
   }
 }
 
+/// Estado de la **ventana de inscripción** del período.
+///
+/// Es un eje distinto del de [EstadoPeriodo] y por eso es su propio enum: un
+/// período puede estar [EstadoPeriodo.activo] (se está dictando) y tener las
+/// inscripciones [vencido] (ya no entra gente nueva). Ese es el caso normal a
+/// mitad de ciclo, y con un solo enum sería imposible decir las dos cosas.
+///
+/// **No se llama `EstadoInscripcion`** aunque sea lo natural: ese nombre ya lo
+/// usa el estado de una matrícula (`ENROLLED`/`WAITLISTED`/`DROPPED`). Uno habla
+/// de la persona; este habla del calendario.
+enum EstadoVentanaInscripcion {
+  /// Hoy se puede inscribir, o el centro no puso fechas.
+  abierto,
+
+  /// Hay fecha de apertura y todavía no llegó.
+  proximo,
+
+  /// La fecha límite pasó.
+  vencido,
+
+  /// El período se cerró: no se inscribe aunque las fechas digan otra cosa.
+  cerrado;
+
+  String get etiqueta {
+    switch (this) {
+      case EstadoVentanaInscripcion.abierto:
+        return 'Inscripciones abiertas';
+      case EstadoVentanaInscripcion.proximo:
+        return 'Inscripciones próximas';
+      case EstadoVentanaInscripcion.vencido:
+        return 'Inscripciones cerradas';
+      case EstadoVentanaInscripcion.cerrado:
+        return 'Período cerrado';
+    }
+  }
+
+  bool get permiteInscribirse => this == EstadoVentanaInscripcion.abierto;
+}
+
 class Periodo {
   const Periodo({
     required this.id,
@@ -310,6 +349,8 @@ class Periodo {
     this.nombre,
     this.fechaInicio,
     this.fechaFin,
+    this.inscripcionInicio,
+    this.inscripcionFin,
     required this.activo,
     required this.vigente,
     this.cerradoEn,
@@ -328,6 +369,11 @@ class Periodo {
   final String? fechaInicio;
   final String? fechaFin;
 
+  /// Ventana en la que el estudiante puede inscribirse. `null` en las dos = el
+  /// centro no puso fechas y la inscripción no está restringida.
+  final String? inscripcionInicio;
+  final String? inscripcionFin;
+
   final bool activo;
   final bool vigente;
   final DateTime? cerradoEn;
@@ -340,6 +386,50 @@ class Periodo {
 
   /// ¿Tiene fechas cargadas? Si no, la pantalla dice «sin fechas cargadas».
   bool get tieneFechas => fechaInicio != null || fechaFin != null;
+
+  /// ¿Tiene ventana de inscripción cargada?
+  bool get tieneVentanaInscripcion =>
+      inscripcionInicio != null || inscripcionFin != null;
+
+  /// La ventana de inscripción, calculada con la misma regla que la base
+  /// (`estado_inscripcion()`), que a su vez es la misma que
+  /// `estadoDeVentanaInscripcion()` del backend.
+  ///
+  /// El orden importa: **cerrado gana a cualquier fecha**. Si el período está
+  /// cerrado no se inscribe aunque la ventana diga que sí, y ese es el error que
+  /// no se puede permitir.
+  EstadoVentanaInscripcion get estadoInscripcion {
+    if (cerradoEn != null) return EstadoVentanaInscripcion.cerrado;
+    if (!tieneVentanaInscripcion) return EstadoVentanaInscripcion.abierto;
+
+    final hoy = DateTime.now().toIso8601String().substring(0, 10);
+    final inicio = inscripcionInicio;
+    final fin = inscripcionFin;
+
+    if (inicio != null && hoy.compareTo(inicio) < 0) {
+      return EstadoVentanaInscripcion.proximo;
+    }
+    if (fin != null && hoy.compareTo(fin) > 0) {
+      return EstadoVentanaInscripcion.vencido;
+    }
+    return EstadoVentanaInscripcion.abierto;
+  }
+
+  /// «Del 15/09 al 30/09», o el aviso de que no hay ventana.
+  String get ventanaLegible {
+    if (!tieneVentanaInscripcion) return 'Sin ventana de inscripción';
+    String corto(String iso) {
+      final partes = iso.split('-');
+      if (partes.length != 3) return iso;
+      return '${partes[2]}/${partes[1]}';
+    }
+
+    final inicio = inscripcionInicio;
+    final fin = inscripcionFin;
+    if (inicio != null && fin != null) return '${corto(inicio)} → ${corto(fin)}';
+    if (inicio != null) return 'Desde ${corto(inicio)}';
+    return 'Hasta ${corto(fin!)}';
+  }
 
   /// Estado institucional derivado del ciclo de vida del lapso (Bloque E).
   EstadoPeriodo get estado {
@@ -361,6 +451,8 @@ class Periodo {
       nombre: json['nombre'] as String?,
       fechaInicio: inicio ?? (cod == 'SA26-2' ? '2026-09-15' : null),
       fechaFin: fin ?? (cod == 'SA26-2' ? '2027-01-30' : null),
+      inscripcionInicio: json['inscripcionInicio'] as String?,
+      inscripcionFin: json['inscripcionFin'] as String?,
       activo: json['activo'] as bool? ?? false,
       vigente: json['vigente'] as bool? ?? false,
       cerradoEn: DateTime.tryParse(json['cerradoEn']?.toString() ?? ''),

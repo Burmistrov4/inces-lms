@@ -616,6 +616,9 @@ export interface EntradaCrearPeriodo {
   nombre: string | null;
   fechaInicio: string | null;
   fechaFin: string | null;
+  /** Ventana en la que el estudiante puede inscribirse. `null` = sin límite. */
+  inscripcionInicio?: string | null;
+  inscripcionFin?: string | null;
   heredarDeCodigo?: string | null;
 }
 
@@ -630,8 +633,15 @@ export interface CambiosPeriodo {
   nombre?: string | null;
   fechaInicio?: string | null;
   fechaFin?: string | null;
+  inscripcionInicio?: string | null;
+  inscripcionFin?: string | null;
   activo?: boolean;
   cerrado?: boolean | null;
+  /**
+   * Cerrar el período vigente sin sucesor se rechaza salvo con esto en `true`.
+   * Ver `esquemaActualizarPeriodo`.
+   */
+  forzar?: boolean;
   motivo?: string | null;
 }
 
@@ -886,6 +896,35 @@ export interface PuertaSecciones {
   crear(entrada: EntradaCrearSeccion): Promise<Seccion>;
   /** `nombre`, `cupoMaximo` y `activa`. Nunca borra: archiva. */
   actualizar(id: string, cambios: CambiosSeccion): Promise<Seccion>;
+
+  /**
+   * Devuelve el grupo (sección) de una materia en un período, **creándolo si no
+   * existe**.
+   *
+   * **Por qué existe.** «Sección» es el nombre interno de la fila que liga
+   * programa + materia + período, y de ella cuelgan horarios, inscripciones y
+   * aulas. El administrador no tiene por qué saber que existe: lo que sabe es
+   * que va a dictar «Soldadura por Arco» los martes. Obligarle a crear la fila
+   * antes de poder poner el horario es el detalle de implementación que se
+   * escapó a la interfaz, y la causa de la mitad de las quejas del propietario
+   * («¿por qué tengo que crear una sección para poner el horario PNA?»).
+   *
+   * Con esto, la interfaz pide **curso + materia** y el grupo aparece solo.
+   */
+  resolverGrupo(entrada: EntradaResolverGrupo): Promise<GrupoResuelto>;
+}
+
+/** Materia de un programa en un período: lo que el usuario sí sabe nombrar. */
+export interface EntradaResolverGrupo {
+  programaId: string;
+  materiaId: string;
+  periodo: string;
+}
+
+export interface GrupoResuelto {
+  seccion: Seccion;
+  /** `true` si esta llamada lo acaba de crear. Sirve para poder decirlo. */
+  creada: boolean;
 }
 
 export interface OpcionesListadoSecciones {

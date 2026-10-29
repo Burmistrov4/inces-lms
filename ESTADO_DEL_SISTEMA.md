@@ -1,6 +1,69 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — 2026-10-29 02:10 -04:00
+## Fotografía operativa vigente — 2026-10-29 (tarde) · v1.7.0 · **NO DESPLEGADO**
+
+> **Código completo y verificado en local; la nube sigue en 1.6.0.** La migración
+> `202610290001_ciclo_periodo.sql` **no está aplicada** porque este entorno no
+> tiene `SUPABASE_ACCESS_TOKEN`. El backend nuevo **no se puede publicar antes**:
+> `COLUMNAS_PERIODO` selecciona dos columnas que aún no existen en la nube y todas
+> las rutas de período devolverían `42703`. Orden y comandos en
+> [`docs/DISENO_CICLO_PERIODO_2026-10-29.md`](docs/DISENO_CICLO_PERIODO_2026-10-29.md) §6.
+
+### Lo que cambió (detalle y porqué en el CHANGELOG 1.7.0)
+
+1. **Cerrar un período ahora cierra algo.** Trigger `exigir_periodo_no_cerrado`
+   en `sections`, `schedule_slots` y `teacher_duties` (sólo INSERT). Antes se podía
+   crear dentro de un período cerrado aunque la interfaz lo presentara como
+   archivado.
+2. **Regla del sucesor.** Cerrar el período **vigente** sin otro abierto devuelve
+   `409 PERIODO_VIGENTE_SIN_SUCESOR`; `forzar: true` cierra y **suelta
+   `periodo_activo`**. El diálogo ofrece «Cerrar y activar el siguiente».
+3. **Ventana de inscripción** (`inscripcion_inicio`/`inscripcion_fin` en
+   `academic_periods`, `estado_inscripcion()` en la base,
+   `estadoDeVentanaInscripcion()` en el dominio): `ABIERTO · PROXIMO · VENCIDO ·
+   CERRADO`. La RPC del estudiante rechaza fuera de ventana **diciendo cuándo**;
+   el administrador conserva `reincorporar`.
+4. **`POST /admin/grupos/resolver`**: el grupo (sección) se crea solo a partir de
+   curso + materia + período. El Horario PNA ya no pide sección.
+5. **Menos espacio robado**: migas de pan ocultas por debajo de 700 px y subtítulo
+   de `TituloSeccion` plegado en un `Tooltip` por debajo de 640 px.
+6. **Un umbral mal calibrado, corregido de paso**: el panel de Guardias decidía
+   «móvil o escritorio» sólo por altura (≥700). Al quitar 28 px de migas, un
+   360×740 cruzó el umbral y desbordó 10 px. Ahora exige además ancho ≥600.
+
+### Verificación medida hoy
+
+| Control | Resultado | Comando |
+|---|---|---|
+| Analizador propio | **249 archivos · 0/0/0** | `node devops/analizar-dart.mjs` · exit 0 |
+| `flutter analyze` | **No issues found!** | exit 0 |
+| Suite Flutter | **1061/1061** | `flutter test` · exit 0 |
+| Backend | **34 archivos · 732/732** (con las 4 pruebas nuevas del resolutor: 736) | `cd backend && npm run verify` · exit 0 |
+| Migración en la nube | **NO APLICADA** (falta `SUPABASE_ACCESS_TOKEN`) | `apply-migrations.mjs --check` → pide token |
+
+⚠️ **Hallazgo de entorno, importante para futuras sesiones:** `flutter test`
+falla **en los 84 archivos** con `Unable to connect to flutter_tester process:
+WebSocketException: Invalid WebSocket upgrade request` cuando el entorno tiene
+`HTTP_PROXY`/`HTTPS_PROXY` con `NO_PROXY` vacío. No es el proyecto. Se corre con:
+
+```bash
+env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
+    NO_PROXY=127.0.0.1,localhost flutter test
+```
+
+### Deuda que este lote NO cierra (y es la siguiente)
+
+- **Unificar «Cursos y PNA» + «Inscripciones y Cupos»** (fase 3 de
+  `docs/PLAN_SIMPLIFICACION_SECCIONES_2026-10-29.md`). Es la queja con más detalle
+  del propietario y sigue abierta: un curso en una pestaña, seis en la otra.
+- **Landing por curso** con cupos y «próxima apertura» (fase 4).
+- **Expediente del aprendiz** y constancia de lectura de entregas: no existe.
+- **`admin_dashboard.dart:242`** sigue con `SA26-2` escrito a mano en la cabecera.
+- Los **6 E2E en rojo** y `cleanstack-ci.yml` (0 bytes) siguen igual.
+
+---
+
+## Fotografía anterior — 2026-10-29 02:10 -04:00 (v1.6.0, desplegada)
 
 > **Sustituye a la foto del 2026-10-27.** Se actualiza al cerrar el **Lote 5**
 > (Aulas Virtuales del admin, scroll del tablón) y **reparar la regresión que ese

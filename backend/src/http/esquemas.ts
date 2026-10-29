@@ -623,13 +623,26 @@ export const esquemaCrearPeriodo = z
       .optional(),
     fechaInicio: fechaIso.optional(),
     fechaFin: fechaIso.optional(),
+    // La ventana de inscripción es independiente de las fechas de dictado: el
+    // centro abre inscripciones semanas antes de que empiecen las clases y las
+    // cierra cuando arranca el período. Por eso son dos campos propios y no se
+    // derivan de `fechaInicio`.
+    inscripcionInicio: fechaIso.optional(),
+    inscripcionFin: fechaIso.optional(),
     heredarDeCodigo: codigoPeriodo.optional(),
   })
   .strict()
   .refine((valor) => rangoDeFechasValido(valor.fechaInicio, valor.fechaFin), {
     path: ['fechaFin'],
     message: 'La fecha de fin debe ser posterior a la de inicio.',
-  });
+  })
+  .refine(
+    (valor) => rangoDeFechasValido(valor.inscripcionInicio, valor.inscripcionFin),
+    {
+      path: ['inscripcionFin'],
+      message: 'La inscripción no puede cerrar antes de abrir.',
+    },
+  );
 
 /**
  * Cambios de un lapso. `codigo` no está, por la misma razón que en `programs`.
@@ -648,8 +661,19 @@ export const esquemaActualizarPeriodo = z
     nombre: z.string().trim().min(1).max(120).nullable().optional(),
     fechaInicio: fechaIso.nullable().optional(),
     fechaFin: fechaIso.nullable().optional(),
+    // `null` explícito = borrar la ventana (inscripción siempre abierta).
+    inscripcionInicio: fechaIso.nullable().optional(),
+    inscripcionFin: fechaIso.nullable().optional(),
     activo: z.boolean().optional(),
     cerrado: z.boolean().nullable().optional(),
+    /**
+     * Cerrar el período **vigente** sin haber declarado otro se rechaza con un
+     * 409, porque deja el centro sin período en curso y `periodo_activo`
+     * apuntando a algo que ya no se dicta. `forzar` existe para el caso
+     * legítimo —el centro cierra definitivamente— y entonces la API además
+     * limpia `periodo_activo`, que es la parte que antes quedaba rota.
+     */
+    forzar: z.boolean().optional(),
     motivo: z.string().trim().min(3).max(500).optional(),
   })
   .strict()
@@ -659,7 +683,14 @@ export const esquemaActualizarPeriodo = z
   .refine((valor) => rangoDeFechasValido(valor.fechaInicio, valor.fechaFin), {
     path: ['fechaFin'],
     message: 'La fecha de fin debe ser posterior a la de inicio.',
-  });
+  })
+  .refine(
+    (valor) => rangoDeFechasValido(valor.inscripcionInicio, valor.inscripcionFin),
+    {
+      path: ['inscripcionFin'],
+      message: 'La inscripción no puede cerrar antes de abrir.',
+    },
+  );
 
 // --- Guardias ---------------------------------------------------------------
 
@@ -865,6 +896,21 @@ export const esquemaActualizarSeccion = z
   .refine((valor) => Object.keys(valor).length > 0, {
     message: 'Indica al menos un cambio (nombre, cupoMaximo o activa).',
   });
+
+/**
+ * Cuerpo de `POST /api/v1/admin/grupos/resolver`.
+ *
+ * **No lleva `nombre`.** El nombre del grupo es interno y lo pone el sistema
+ * (`A`, `B`, …); pedirlo era justo lo que hacía que el administrador tuviera que
+ * entender «sección» para poder poner un horario.
+ */
+export const esquemaResolverGrupo = z
+  .object({
+    programaId: z.string().uuid({ message: 'El programa debe ser un UUID válido.' }),
+    materiaId: z.string().uuid({ message: 'La materia debe ser un UUID válido.' }),
+    periodo: codigoPeriodo,
+  })
+  .strict();
 
 /**
  * Filtros del catálogo de ofertas y del panel de ocupación.

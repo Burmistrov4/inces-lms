@@ -2197,6 +2197,45 @@
         },
         "additionalProperties": false
       },
+      "RespuestaGrupoResuelto": {
+        "type": "object",
+        "properties": {
+          "seccion": {
+            "$ref": "#/components/schemas/Seccion"
+          },
+          "creada": {
+            "type": "boolean",
+            "description": "`true` si esta llamada creó el grupo; `false` si ya existía."
+          }
+        },
+        "required": [
+          "seccion",
+          "creada"
+        ]
+      },
+      "CuerpoResolverGrupo": {
+        "type": "object",
+        "properties": {
+          "programaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "materiaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodo": {
+            "type": "string",
+            "description": "Código de un lapso ya registrado."
+          }
+        },
+        "required": [
+          "programaId",
+          "materiaId",
+          "periodo"
+        ],
+        "additionalProperties": false
+      },
       "OcupacionSeccion": {
         "type": "object",
         "properties": {
@@ -7711,6 +7750,102 @@
           },
           "409": {
             "description": "El nombre nuevo choca con otra sección del mismo lapso y materia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El servicio o la base de datos no están disponibles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/grupos/resolver": {
+      "post": {
+        "tags": [
+          "Secciones"
+        ],
+        "summary": "Devuelve el grupo de una materia, creándolo si no existe",
+        "description": "La ruta que quita «sección» de la cara visible: la interfaz pide curso + materia + período —lo que el administrador sabe nombrar— y esta ruta resuelve la fila que liga los tres. El nombre del grupo es interno y automático (`A`, `B`, …). Responde **201 si lo creó** y **200 si ya existía**, para que la pantalla pueda decirlo sin adivinarlo. Es `POST` y no `GET` porque puede escribir: un `GET` que crea filas se duplica con cualquier reintento.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuerpoResolverGrupo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "El grupo ya existía.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaGrupoResuelto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "El grupo se creó en esta llamada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaGrupoResuelto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Programa, materia o período inexistente, o código de período inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta la sesión o el token no es válido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "La sesión es válida pero el rol no alcanza, o la cuenta está inactiva.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No queda nombre libre para un grupo nuevo de esa materia (GRUPO_SIN_NOMBRE).",
             "content": {
               "application/json": {
                 "schema": {

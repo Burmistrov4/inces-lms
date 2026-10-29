@@ -30,4 +30,19 @@ class SeccionesRepository {
   Future<Result<Seccion>> actualizarSeccion(
           String id, CambiosSeccion cambios) =>
       Result.guard(() => _gateway.actualizarSeccion(id, cambios));
+
+  /// El grupo de una materia en un período, creándolo si falta.
+  ///
+  /// Es la llamada que permite pedirle al administrador «curso + materia» en vez
+  /// de «sección». Devuelve también si lo creó, para poder decirlo.
+  Future<Result<({Seccion seccion, bool creada})>> resolverGrupo({
+    required String programaId,
+    required String materiaId,
+    required String periodo,
+  }) =>
+      Result.guard(() => _gateway.resolverGrupo(
+            programaId: programaId,
+            materiaId: materiaId,
+            periodo: periodo,
+          ));
 }

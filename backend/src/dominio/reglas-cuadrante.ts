@@ -11,7 +11,12 @@
  * decisión tomada antes de abrir una transacción, para dar un mensaje que nombre
  * el problema en vez de un error de restricción genérico.
  */
-import type { EstadoPeriodo, Turno, UnidadDuracion } from './tipos.js';
+import type {
+  EstadoPeriodo,
+  EstadoVentanaInscripcion,
+  Turno,
+  UnidadDuracion,
+} from './tipos.js';
 
 /**
  * Día máximo admitido: 6 = sábado.
@@ -143,7 +148,49 @@ export function rangoDeFechasValido(
   return fin > inicio;
 }
 
-export type { EstadoPeriodo, UnidadDuracion };
+export type { EstadoPeriodo, EstadoVentanaInscripcion, UnidadDuracion };
+
+/**
+ * Estado de la ventana de inscripción de un lapso.
+ *
+ * Es la traducción al backend de `public.estado_inscripcion(text)` de la
+ * migración `202610290001_ciclo_periodo.sql`. Las dos existen por la misma razón
+ * que `turnoDeBloque` y `turno_de_bloque()`: la base decide cuando el dato viene
+ * de la base, y el dominio decide cuando el dato se acaba de recibir por HTTP o
+ * lo está mirando una prueba con dobles en memoria. Tenerlas separadas es
+ * tolerable; tenerlas **desacordes** no, y por eso las dos se prueban con la
+ * misma tabla de casos.
+ *
+ * Un período cerrado gana a cualquier fecha: si `closed_at` está puesto, no se
+ * inscribe aunque la ventana diga que sí. Es el orden que evita el peor error
+ * posible —dejar entrar gente a un ciclo que ya terminó—.
+ */
+export function estadoDeVentanaInscripcion(
+  periodo: {
+    cerradoEn?: string | null;
+    inscripcionInicio?: string | null;
+    inscripcionFin?: string | null;
+  },
+  hoy: string = new Date().toISOString().slice(0, 10),
+): EstadoVentanaInscripcion {
+  if (periodo.cerradoEn) return 'CERRADO';
+
+  const inicio = periodo.inscripcionInicio ?? null;
+  const fin = periodo.inscripcionFin ?? null;
+
+  // Sin ventana cargada no se inventa una restricción: el centro no la puso, y
+  // bloquear por defecto dejaría a todo el mundo fuera sin que nadie sepa por qué.
+  if (inicio === null && fin === null) return 'ABIERTO';
+
+  if (inicio !== null && hoy < inicio) return 'PROXIMO';
+  if (fin !== null && hoy > fin) return 'VENCIDO';
+  return 'ABIERTO';
+}
+
+/** Si el estado permite inscribirse hoy. */
+export function inscripcionPermitida(estado: EstadoVentanaInscripcion): boolean {
+  return estado === 'ABIERTO';
+}
 
 /**
  * Calcula el estado institucional derivado de un lapso académico.

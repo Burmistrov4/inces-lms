@@ -86,4 +86,37 @@ class BackendSeccionesGateway implements SeccionesGateway {
     );
     return Seccion.fromJson(respuesta);
   }
+
+  @override
+  Future<({Seccion seccion, bool creada})> resolverGrupo({
+    required String programaId,
+    required String materiaId,
+    required String periodo,
+  }) async {
+    final respuesta = await _api.post(
+      '/api/v1/admin/grupos/resolver',
+      cuerpo: {
+        'programaId': programaId,
+        'materiaId': materiaId,
+        'periodo': periodo,
+      },
+      token: _tokenSesion,
+    );
+
+    // La respuesta viene envuelta: `{ seccion, creada }`. Se desenvuelve aquí
+    // y no con `Seccion.fromJson(respuesta)` porque eso leería `id` del sobre y
+    // reventaría con un cast: el grupo se creó y la pantalla diría «error».
+    final crudo = respuesta['seccion'];
+    final seccionJson = crudo is Map
+        ? crudo.cast<String, dynamic>()
+        : respuesta;
+
+    // El catálogo cacheado ya no sabe de este grupo.
+    cacheDeLecturas.invalidarPorPrefijo('secciones');
+
+    return (
+      seccion: Seccion.fromJson(seccionJson),
+      creada: respuesta['creada'] as bool? ?? false,
+    );
+  }
 }

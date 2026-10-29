@@ -5,6 +5,7 @@ import {
   esquemaCrearSeccion,
   esquemaIdSeccion,
   esquemaListadoSecciones,
+  esquemaResolverGrupo,
 } from '../esquemas.js';
 import { exigirAdmin, reposDe } from '../plugins/autenticacion.js';
 
@@ -79,6 +80,27 @@ export function rutasSecciones(app: FastifyInstance): void {
         const seccion = await reposDe(request).secciones.actualizar(id, cambios);
 
         return { seccion };
+      });
+
+      /**
+       * Devuelve —o crea— el grupo de una materia en un período.
+       *
+       * **Es la pieza que quita «sección» de la cara visible.** La interfaz pide
+       * curso + materia + período, que es lo que el administrador sabe nombrar, y
+       * esta ruta resuelve la fila que liga los tres. Responde 200 si el grupo ya
+       * existía y 201 si lo acaba de crear, para que la pantalla pueda decir cuál
+       * de las dos cosas pasó sin adivinarlo.
+       *
+       * No es un `GET` porque **puede escribir**: un `GET` que crea filas rompe
+       * la promesa de que leer no cambia nada, y cualquier reintento de un proxy
+       * o de un navegador acabaría creando grupos de más.
+       */
+      admin.post('/grupos/resolver', async (request, reply) => {
+        const entrada = esquemaResolverGrupo.parse(request.body);
+
+        const { seccion, creada } = await reposDe(request).secciones.resolverGrupo(entrada);
+
+        return reply.status(creada ? 201 : 200).send({ seccion, creada });
       });
     },
     { prefix: '/api/v1/admin' },

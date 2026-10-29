@@ -166,6 +166,8 @@ export function rutasCuadrante(app: FastifyInstance, deps: DependenciasRutas): v
           nombre: entrada.nombre ?? null,
           fechaInicio: entrada.fechaInicio ?? null,
           fechaFin: entrada.fechaFin ?? null,
+          inscripcionInicio: entrada.inscripcionInicio ?? null,
+          inscripcionFin: entrada.inscripcionFin ?? null,
           heredarDeCodigo: entrada.heredarDeCodigo ?? null,
         });
 

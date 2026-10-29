@@ -9,6 +9,7 @@ import {
   esChoqueDeAgenda,
   esFechaISO,
   estadoDePeriodo,
+  estadoDeVentanaInscripcion,
   rangoDeFechasValido,
   sumarDuracion,
   turnoDeBloque,
@@ -586,5 +587,77 @@ describe('validación de los tres horarios distintos (D4)', () => {
         validarHorarioPNA({ materiaId: 'mat-pna', docenteId: '' }),
       ).toThrow('El horario PNA exige asignar un docente.');
     });
+  });
+});
+
+/**
+ * La ventana de inscripción del período.
+ *
+ * Estos casos son la tabla de verdad de `estado_inscripcion()` en la base. Si
+ * las dos se desvían, el estudiante ve «abiertas» en la portada y la RPC le
+ * responde «cerradas»: la peor combinación posible, porque parece un fallo.
+ */
+describe('estadoDeVentanaInscripcion', () => {
+  const HOY = '2026-10-29';
+
+  it('sin ventana cargada está abierta: no se inventa una restricción', () => {
+    expect(estadoDeVentanaInscripcion({}, HOY)).toBe('ABIERTO');
+    expect(
+      estadoDeVentanaInscripcion(
+        { inscripcionInicio: null, inscripcionFin: null },
+        HOY,
+      ),
+    ).toBe('ABIERTO');
+  });
+
+  it('antes de la apertura está próximo', () => {
+    expect(
+      estadoDeVentanaInscripcion(
+        { inscripcionInicio: '2026-11-01', inscripcionFin: '2026-11-15' },
+        HOY,
+      ),
+    ).toBe('PROXIMO');
+  });
+
+  it('dentro de la ventana está abierta, con los dos extremos incluidos', () => {
+    expect(
+      estadoDeVentanaInscripcion(
+        { inscripcionInicio: HOY, inscripcionFin: HOY },
+        HOY,
+      ),
+    ).toBe('ABIERTO');
+  });
+
+  it('pasada la fecha límite está vencida', () => {
+    expect(
+      estadoDeVentanaInscripcion(
+        { inscripcionInicio: '2026-09-01', inscripcionFin: '2026-10-01' },
+        HOY,
+      ),
+    ).toBe('VENCIDO');
+  });
+
+  it('un período cerrado gana a cualquier fecha', () => {
+    // Es el orden que evita el peor error: dejar entrar gente a un ciclo que ya
+    // terminó porque la ventana seguía «abierta».
+    expect(
+      estadoDeVentanaInscripcion(
+        {
+          cerradoEn: '2026-10-20T10:00:00.000Z',
+          inscripcionInicio: '2026-09-01',
+          inscripcionFin: '2026-12-31',
+        },
+        HOY,
+      ),
+    ).toBe('CERRADO');
+  });
+
+  it('sólo con fecha de fin, se puede inscribir hasta ella', () => {
+    expect(
+      estadoDeVentanaInscripcion({ inscripcionFin: '2026-11-30' }, HOY),
+    ).toBe('ABIERTO');
+    expect(
+      estadoDeVentanaInscripcion({ inscripcionFin: '2026-10-01' }, HOY),
+    ).toBe('VENCIDO');
   });
 });

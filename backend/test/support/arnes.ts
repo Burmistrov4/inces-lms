@@ -37,7 +37,12 @@ import {
   validarClave,
 } from '../../src/dominio/almacenamiento.js';
 import { agruparPensum, pensumEditable } from '../../src/dominio/reglas-curriculo.js';
-import { diaLegible, estadoDePeriodo, turnoDeBloque } from '../../src/dominio/reglas-cuadrante.js';
+import {
+  diaLegible,
+  estadoDePeriodo,
+  estadoDeVentanaInscripcion,
+  turnoDeBloque,
+} from '../../src/dominio/reglas-cuadrante.js';
 import type { EnvioCorreo } from '../../src/infra/correo.js';
 import type {
   Aula,
@@ -465,6 +470,9 @@ export const PERIODO_2026_1: Periodo = {
   nombre: 'Lapso 2026-1',
   fechaInicio: null,
   fechaFin: null,
+  inscripcionInicio: null,
+  inscripcionFin: null,
+  estadoInscripcion: 'ABIERTO',
   activo: true,
   vigente: false,
   creadoEn: '2026-09-15T10:00:00.000Z',
@@ -478,6 +486,9 @@ export const PERIODO_2026_2: Periodo = {
   nombre: 'Lapso 2026-2',
   fechaInicio: '2026-09-21',
   fechaFin: '2027-02-13',
+  inscripcionInicio: null,
+  inscripcionFin: null,
+  estadoInscripcion: 'ABIERTO',
   activo: true,
   vigente: false,
   creadoEn: '2026-09-15T10:00:00.000Z',
@@ -2479,10 +2490,18 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
         nombre: entrada.nombre,
         fechaInicio: entrada.fechaInicio,
         fechaFin: entrada.fechaFin,
-        // Nace cerrado y no vigente: es el `default false` de la columna, y el
-        // trigger `exigir_periodo_registrado` garantiza que el vigente ya existe,
-        // así que un lapso nuevo no puede serlo.
-        activo: false,
+        inscripcionInicio: entrada.inscripcionInicio ?? null,
+        inscripcionFin: entrada.inscripcionFin ?? null,
+        estadoInscripcion: estadoDeVentanaInscripcion({
+          inscripcionInicio: entrada.inscripcionInicio ?? null,
+          inscripcionFin: entrada.inscripcionFin ?? null,
+        }),
+        // **Nace ACTIVO, no en borrador.** El doble decía `false` y el
+        // repositorio real inserta `is_active: true` desde el 2026-10-29
+        // (commit c8c438c). Esa divergencia dejaba en verde una prueba que
+        // afirmaba lo contrario de lo que hace el producto: el «período
+        // recién creado que da 400 al usarlo» que reportó el propietario.
+        activo: true,
         vigente: false,
         creadoEn: ahora,
         actualizadoEn: ahora,
@@ -2533,6 +2552,23 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
         throw ErrorApi.noEncontrado('PERIODO_INEXISTENTE', 'Ese lapso no existe.');
       }
 
+      const esVigente = actual.codigo === estado.periodoCodigoVigente;
+
+      // **La regla del sucesor, igual que en el repositorio real.** El doble
+      // tiene que poder fallar por el mismo motivo que falla la nube; si no,
+      // una prueba de esta regla mediría el doble y no el producto.
+      if (cambios.cerrado === true && esVigente && cambios.forzar !== true) {
+        const haySucesor = estado.periodos.some(
+          (p) => p.codigo !== actual.codigo && p.activo && !p.cerradoEn,
+        );
+        if (!haySucesor) {
+          throw ErrorApi.conflicto(
+            'PERIODO_VIGENTE_SIN_SUCESOR',
+            `«${actual.codigo}» es el período vigente y no hay otro abierto al que pasar.`,
+          );
+        }
+      }
+
       const cerradoEn =
         cambios.cerrado === true
           ? new Date().toISOString()
@@ -2546,6 +2582,11 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
         cerradoEn,
         actualizadoEn: new Date().toISOString(),
       };
+
+      // Cerrar apaga el período (es lo que hace el `is_active = false` del
+      // repositorio real y lo que dispara el archivado de sus secciones).
+      if (cambios.cerrado === true) actualizado.activo = false;
+
       actualizado.vigente = actualizado.codigo === estado.periodoCodigoVigente;
       actualizado.estado = estadoDePeriodo({
         activo: actualizado.activo,
@@ -2553,6 +2594,17 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
         fechaFin: actualizado.fechaFin,
         cerradoEn: actualizado.cerradoEn,
       });
+      actualizado.estadoInscripcion = estadoDeVentanaInscripcion({
+        cerradoEn: actualizado.cerradoEn,
+        inscripcionInicio: actualizado.inscripcionInicio,
+        inscripcionFin: actualizado.inscripcionFin,
+      });
+
+      // Cierre forzado del vigente: se suelta el parámetro, como en la nube.
+      if (cambios.cerrado === true && esVigente) {
+        estado.periodoCodigoVigente = null;
+        actualizado.vigente = false;
+      }
 
       estado.periodos = estado.periodos.map((p) => (p.id === id ? actualizado : p));
       return actualizado;
@@ -3011,6 +3063,67 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       if (cambios.activa !== undefined) actual.activa = cambios.activa;
 
       return aSeccionFalsa(actual);
+    },
+
+    /**
+     * El grupo de (programa, materia, período), creándolo si falta.
+     *
+     * Replica la regla del repositorio real: primero busca uno activo, y si no
+     * hay, crea con la primera letra libre. Sin esto, una prueba de «el PNA no
+     * pide sección» mediría el arnés y no el producto.
+     */
+    async resolverGrupo(entrada) {
+      revisar('secciones.resolverGrupo');
+
+      if (!estado.programas.some((p) => p.id === entrada.programaId)) {
+        throw referenciaInvalida();
+      }
+      if (!estado.materias.some((m) => m.id === entrada.materiaId)) {
+        throw referenciaInvalida();
+      }
+      if (!estado.periodos.some((p) => p.codigo === entrada.periodo)) {
+        throw referenciaInvalida();
+      }
+
+      const buscar = (): SeccionFalsa | undefined =>
+        estado.secciones.find(
+          (s) =>
+            s.programaId === entrada.programaId &&
+            s.materiaId === entrada.materiaId &&
+            s.periodo === entrada.periodo &&
+            (s.activa ?? true),
+        );
+
+      const existente = buscar();
+      if (existente) return { seccion: aSeccionFalsa(existente), creada: false };
+
+      for (let i = 0; i < 26; i++) {
+        const nombre = String.fromCharCode(65 + i);
+        const ocupado = estado.secciones.some(
+          (s) =>
+            s.periodo === entrada.periodo &&
+            s.materiaId === entrada.materiaId &&
+            s.nombre === nombre,
+        );
+        if (ocupado) continue;
+
+        const nueva: SeccionFalsa = {
+          id: nuevoId('cccccccc', ++secuenciaSeccion),
+          programaId: entrada.programaId,
+          materiaId: entrada.materiaId,
+          periodo: entrada.periodo,
+          nombre,
+          cupoMaximo: null,
+          activa: true,
+        };
+        estado.secciones = [...estado.secciones, nueva];
+        return { seccion: aSeccionFalsa(nueva), creada: true };
+      }
+
+      throw ErrorApi.conflicto(
+        'GRUPO_SIN_NOMBRE',
+        'No queda nombre libre para un grupo nuevo de esta materia en este período.',
+      );
     },
   };
 

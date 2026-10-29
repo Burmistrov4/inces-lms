@@ -205,6 +205,26 @@ export const ESTADOS_PERIODO: readonly EstadoPeriodo[] = [
 ];
 
 /**
+ * Estado de la **ventana de inscripción** de un período.
+ *
+ * Es un eje distinto del de `EstadoPeriodo` y por eso es su propio tipo: un
+ * período puede estar `ACTIVO` (se está dictando) y tener las inscripciones
+ * `VENCIDO` (ya no se admite gente nueva), que es justo el caso normal a mitad
+ * de ciclo. Mezclarlos en un solo enum haría imposible decir las dos cosas.
+ *
+ * **No se llama `EstadoInscripcion`** aunque sea lo natural: ese nombre ya está
+ * tomado por el estado de una matrícula (`ENROLLED`/`WAITLISTED`/`DROPPED`), y
+ * dos tipos con el mismo nombre en el mismo módulo se pisan al importar. Uno
+ * habla de la persona; este habla del calendario.
+ *
+ * - `ABIERTO`  — hoy se puede inscribir (o el centro no puso fechas).
+ * - `PROXIMO`  — hay fecha de apertura y todavía no llegó.
+ * - `VENCIDO`  — la fecha límite pasó.
+ * - `CERRADO`  — el período se cerró; no se inscribe aunque las fechas digan otra cosa.
+ */
+export type EstadoVentanaInscripcion = 'ABIERTO' | 'PROXIMO' | 'VENCIDO' | 'CERRADO';
+
+/**
  * Un programa de la oferta formativa.
  *
  * Los nombres van en español, aunque la base los tenga en inglés (`code`,
@@ -384,6 +404,11 @@ export interface Periodo {
   nombre: string | null;
   fechaInicio: string | null;
   fechaFin: string | null;
+  /** Ventana de inscripción. `null` en los dos = sin restricción. */
+  inscripcionInicio: string | null;
+  inscripcionFin: string | null;
+  /** Derivado de la ventana y de `cerradoEn`. Ver `EstadoVentanaInscripcion`. */
+  estadoInscripcion: EstadoVentanaInscripcion;
   activo: boolean;
   vigente: boolean;
   cerradoEn?: string | null;

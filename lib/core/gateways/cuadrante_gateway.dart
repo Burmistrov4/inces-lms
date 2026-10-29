@@ -147,6 +147,8 @@ class EntradaCrearPeriodo {
     this.nombre,
     this.fechaInicio,
     this.fechaFin,
+    this.inscripcionInicio,
+    this.inscripcionFin,
     this.heredarDeCodigo,
   });
 
@@ -157,6 +159,12 @@ class EntradaCrearPeriodo {
   /// zona horaria.
   final String? fechaInicio;
   final String? fechaFin;
+
+  /// Ventana en la que el estudiante puede inscribirse. Independiente de
+  /// [fechaInicio]: las inscripciones se abren antes de que empiecen las clases.
+  final String? inscripcionInicio;
+  final String? inscripcionFin;
+
   final String? heredarDeCodigo;
 
   Map<String, dynamic> toJson() => {
@@ -164,6 +172,8 @@ class EntradaCrearPeriodo {
         if (nombre != null) 'nombre': nombre,
         if (fechaInicio != null) 'fechaInicio': fechaInicio,
         if (fechaFin != null) 'fechaFin': fechaFin,
+        if (inscripcionInicio != null) 'inscripcionInicio': inscripcionInicio,
+        if (inscripcionFin != null) 'inscripcionFin': inscripcionFin,
         if (heredarDeCodigo != null) 'heredarDeCodigo': heredarDeCodigo,
       };
 }
@@ -174,17 +184,29 @@ class CambiosPeriodo {
     this.nombre,
     this.fechaInicio,
     this.fechaFin,
+    this.inscripcionInicio,
+    this.inscripcionFin,
     this.activo,
     this.cerrado,
+    this.forzar = false,
     this.motivo,
     this.borrarFechas = false,
+    this.borrarVentana = false,
   });
 
   final String? nombre;
   final String? fechaInicio;
   final String? fechaFin;
+  final String? inscripcionInicio;
+  final String? inscripcionFin;
   final bool? activo;
   final bool? cerrado;
+
+  /// Cerrar el período **vigente** sin sucesor se rechaza con 409. `forzar`
+  /// existe para el cierre definitivo del centro, y entonces la API suelta
+  /// `periodo_activo` para no dejar un período fantasma.
+  final bool forzar;
+
   final String? motivo;
 
   /// Manda las fechas como `null`, que es como se borran.
@@ -194,22 +216,36 @@ class CambiosPeriodo {
   /// es «bórralo». Sin él no habría forma de deshacer una fecha mal cargada.
   final bool borrarFechas;
 
+  /// Lo mismo, para la ventana de inscripción.
+  final bool borrarVentana;
+
   bool get vacio =>
       nombre == null &&
       fechaInicio == null &&
       fechaFin == null &&
+      inscripcionInicio == null &&
+      inscripcionFin == null &&
       activo == null &&
       cerrado == null &&
+      !forzar &&
       motivo == null &&
-      !borrarFechas;
+      !borrarFechas &&
+      !borrarVentana;
 
   Map<String, dynamic> toJson() => {
         if (nombre != null) 'nombre': nombre,
         if (borrarFechas) ...{'fechaInicio': null, 'fechaFin': null},
         if (!borrarFechas && fechaInicio != null) 'fechaInicio': fechaInicio,
         if (!borrarFechas && fechaFin != null) 'fechaFin': fechaFin,
+        if (borrarVentana)
+          ...{'inscripcionInicio': null, 'inscripcionFin': null},
+        if (!borrarVentana && inscripcionInicio != null)
+          'inscripcionInicio': inscripcionInicio,
+        if (!borrarVentana && inscripcionFin != null)
+          'inscripcionFin': inscripcionFin,
         if (activo != null) 'activo': activo,
         if (cerrado != null) 'cerrado': cerrado,
+        if (forzar) 'forzar': true,
         if (motivo != null) 'motivo': motivo,
       };
 }

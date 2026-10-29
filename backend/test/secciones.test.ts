@@ -447,3 +447,126 @@ describe('actualizar una sección', () => {
     }
   });
 });
+
+/**
+ * `POST /api/v1/admin/grupos/resolver` — el grupo automático.
+ *
+ * Es la ruta que permite pedirle al administrador «curso + materia» en vez de
+ * «sección». Los cuatro casos que importan: crea cuando falta, devuelve el
+ * mismo cuando ya existe (sin duplicar), distingue 201 de 200 para que la
+ * pantalla pueda decirlo, y valida las referencias.
+ */
+describe('POST /api/v1/admin/grupos/resolver', () => {
+  it('crea el grupo la primera vez y lo reutiliza la segunda', async () => {
+    const arnes = crearArnés({ secciones: [] });
+    app = arnes.app;
+
+    const primera = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/grupos/resolver',
+      headers: conToken(TOKEN_ADMIN),
+      payload: {
+        programaId: ID_PROGRAMA_SISTEMAS,
+        materiaId: ID_MATERIA_ALGORITMICA,
+        periodo: '2026-1',
+      },
+    });
+
+    expect(primera.statusCode).toBe(201);
+    const creada = primera.json() as {
+      seccion: { id: string; nombre: string };
+      creada: boolean;
+    };
+    expect(creada.creada).toBe(true);
+    // El nombre es interno y automático: nadie tuvo que elegirlo.
+    expect(creada.seccion.nombre).toBe('A');
+
+    const segunda = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/grupos/resolver',
+      headers: conToken(TOKEN_ADMIN),
+      payload: {
+        programaId: ID_PROGRAMA_SISTEMAS,
+        materiaId: ID_MATERIA_ALGORITMICA,
+        periodo: '2026-1',
+      },
+    });
+
+    expect(segunda.statusCode).toBe(200);
+    const reutilizada = segunda.json() as {
+      seccion: { id: string };
+      creada: boolean;
+    };
+    expect(reutilizada.creada).toBe(false);
+    expect(reutilizada.seccion.id).toBe(creada.seccion.id);
+
+    // Y no dejó un grupo huérfano por el camino.
+    expect(arnes.estado.secciones).toHaveLength(1);
+  });
+
+  it('dos materias distintas del mismo período no comparten grupo', async () => {
+    const arnes = crearArnés({ secciones: [] });
+    app = arnes.app;
+
+    for (const materiaId of [ID_MATERIA_ALGORITMICA, ID_MATERIA_BASEDATOS]) {
+      const respuesta = await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/grupos/resolver',
+        headers: conToken(TOKEN_ADMIN),
+        payload: { programaId: ID_PROGRAMA_SISTEMAS, materiaId, periodo: '2026-1' },
+      });
+      expect(respuesta.statusCode).toBe(201);
+    }
+
+    expect(arnes.estado.secciones).toHaveLength(2);
+    // Mismo período y distinta materia: los dos pueden llamarse «A» sin chocar.
+    expect(arnes.estado.secciones.map((s) => s.nombre)).toEqual(['A', 'A']);
+  });
+
+  it('exige sesión de administrador', async () => {
+    const arnes = crearArnés();
+    app = arnes.app;
+
+    const sinToken = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/grupos/resolver',
+      payload: {
+        programaId: ID_PROGRAMA_SISTEMAS,
+        materiaId: ID_MATERIA_ALGORITMICA,
+        periodo: '2026-1',
+      },
+    });
+    expect(sinToken.statusCode).toBe(401);
+
+    const comoAlumno = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/grupos/resolver',
+      headers: conToken(TOKEN_ALUMNO),
+      payload: {
+        programaId: ID_PROGRAMA_SISTEMAS,
+        materiaId: ID_MATERIA_ALGORITMICA,
+        periodo: '2026-1',
+      },
+    });
+    expect(comoAlumno.statusCode).toBe(403);
+  });
+
+  it('una referencia inexistente es 400, no un grupo a medias', async () => {
+    const arnes = crearArnés({ secciones: [] });
+    app = arnes.app;
+
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/grupos/resolver',
+      headers: conToken(TOKEN_ADMIN),
+      payload: {
+        programaId: ID_PROGRAMA_SISTEMAS,
+        materiaId: ID_SECCION_SA, // no es una materia
+        periodo: '2026-1',
+      },
+    });
+
+    expect(respuesta.statusCode).toBe(400);
+    expect(arnes.estado.secciones).toHaveLength(0);
+  });
+});

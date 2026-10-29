@@ -22,6 +22,14 @@ import 'package:inces_lms_app/widgets/comunes.dart';
 ///
 /// Medido antes del arreglo: `A RenderFlex overflowed by 175 pixels on the
 /// right` (y 1174 px hacia abajo en el panel que lo contenía).
+///
+/// **Cambio de contrato del 2026-10-29.** En pantalla estrecha el subtítulo ya
+/// no se dibuja: se pliega en un icono de información con `Tooltip`. Medido
+/// sobre la captura real de 390×844 de «Cursos y PNA», el subtítulo ocupaba
+/// **tres líneas (~50 px)** antes del contenido, y el panel arrancaba con el
+/// 53 % de la pantalla gastado en cabecera, migas, título y filtros. Las
+/// pruebas de abajo fijan el contrato nuevo: **no se pierde información**
+/// (sigue en el tooltip) pero deja de costar altura.
 void main() {
   const movil = Size(375, 812);
   const escritorio = Size(1440, 900);
@@ -68,22 +76,46 @@ void main() {
   }
 
   group('TituloSeccion · acciones en pantalla estrecha', () {
-    testWidgets('a 375 px no desborda', (tester) async {
+    testWidgets('a 375 px no desborda y el subtítulo se pliega', (tester) async {
       await montar(tester, movil);
-      // El texto se lee entero: si el título hubiera colapsado a ancho cero,
-      // el subtítulo seguiría existiendo pero la cabecera mediría miles de
-      // píxeles. Por eso también se comprueba la altura.
-      expect(find.text(subtituloLargo), findsOneWidget);
+
       expect(tester.takeException(), isNull,
           reason: 'TituloSeccion desborda a 375 px');
 
+      // El subtítulo deja de ocupar tres líneas...
+      expect(
+        find.text(subtituloLargo),
+        findsNothing,
+        reason: 'en estrecho el subtítulo no debe dibujarse como texto',
+      );
+
+      // ...pero la explicación NO se pierde: vive en el tooltip del icono.
+      final icono = find.byIcon(Icons.info_outline_rounded);
+      expect(icono, findsOneWidget);
+
+      final tooltip = tester.widget<Tooltip>(
+        find.ancestor(of: icono, matching: find.byType(Tooltip)),
+      );
+      expect(
+        tooltip.message,
+        subtituloLargo,
+        reason: 'plegar el subtítulo no puede borrarlo: sigue a un toque',
+      );
+
+      // Y la cabecera vuelve a ser una franja, no media pantalla.
       final alto = tester.getSize(find.byType(TituloSeccion)).height;
       expect(
         alto,
-        lessThan(movil.height),
-        reason: 'la cabecera mide $alto px, más que la pantalla: el Expanded '
-            'del título se quedó sin ancho y el subtítulo envolvió sin límite',
+        lessThan(160),
+        reason: 'la cabecera mide $alto px: el subtítulo volvió a ocupar '
+            'espacio o el título se quedó sin ancho',
       );
+    });
+
+    testWidgets('a 1440 px el subtítulo se lee entero', (tester) async {
+      await montar(tester, escritorio);
+      expect(tester.takeException(), isNull);
+      expect(find.text(subtituloLargo), findsOneWidget);
     });
 
     testWidgets('a 1440 px no desborda y sigue en una sola fila',

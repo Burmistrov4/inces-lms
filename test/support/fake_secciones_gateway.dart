@@ -85,6 +85,40 @@ class FakeSeccionesGateway implements SeccionesGateway {
     return actualizadaDevuelta;
   }
 
+  // --- Grupo automático ------------------------------------------------------
+
+  Object? errorAlResolverGrupo;
+
+  /// Lo que devuelve `resolverGrupo` cuando no hay error.
+  Seccion grupoDevuelto = const Seccion(
+    id: 'sec-grupo',
+    programaId: 'prog-1',
+    materiaId: 'mat-1',
+    periodo: 'SA26-2',
+    nombre: 'A',
+    cupoMaximo: null,
+    activa: true,
+  );
+
+  bool grupoCreado = true;
+  String? ultimoProgramaResuelto;
+  String? ultimaMateriaResuelta;
+  String? ultimoPeriodoResuelto;
+
+  @override
+  Future<({Seccion seccion, bool creada})> resolverGrupo({
+    required String programaId,
+    required String materiaId,
+    required String periodo,
+  }) async {
+    llamadas.add('resolverGrupo:$programaId/$materiaId/$periodo');
+    ultimoProgramaResuelto = programaId;
+    ultimaMateriaResuelta = materiaId;
+    ultimoPeriodoResuelto = periodo;
+    _lanzarSi(errorAlResolverGrupo);
+    return (seccion: grupoDevuelto, creada: grupoCreado);
+  }
+
   void _lanzarSi(Object? error) {
     if (error != null) throw error;
   }

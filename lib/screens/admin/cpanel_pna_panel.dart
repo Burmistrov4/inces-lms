@@ -4,6 +4,7 @@ import '../../core/errors/app_exception.dart';
 import '../../core/gateways/cuadrante_gateway.dart';
 import '../../core/reglas_cuadrante.dart';
 import '../../models/cuadrante.dart';
+import '../../models/pensum.dart';
 import '../../repositories/cuadrante_repository.dart';
 import '../../repositories/curriculo_repository.dart';
 import '../../repositories/secciones_repository.dart';
@@ -44,6 +45,17 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
   List<Aula> _aulas = const [];
   List<DocenteResumen> _docentes = const [];
   Map<String, String> _seccionesPnaCatalogo = const {};
+
+  /// El programa PNA y su pensum.
+  ///
+  /// **Por qué hacen falta.** El diálogo pedía «Programa / Sección PNA», es
+  /// decir, obligaba a tener creada una sección antes de poder poner un horario
+  /// —la queja literal del propietario: «en el horario PNA no sé por qué hay que
+  /// crear esa sección para establecer el horario»—. Con el pensum cargado, la
+  /// pantalla puede pedir **la materia**, que es lo que el facilitador sí sabe, y
+  /// el grupo lo resuelve el backend (`POST /admin/grupos/resolver`).
+  String? _programaPnaId;
+  List<MateriaEnPensum> _materiasPna = const [];
 
   bool _cargando = true;
   String? _error;
@@ -120,6 +132,24 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
         }
       }
 
+      // --- El programa PNA y su pensum -------------------------------------
+      // Se busca por nombre y por código: `esProgramaPNA` acepta las dos cosas,
+      // y el centro ha tenido el código como `CUR-INT-01` desde el principio.
+      if (resProg.isSuccess) {
+        final pna = resProg.valueOrNull!.programas
+            .where((p) => esProgramaPNA(p.nombre) || esProgramaPNA(p.codigo))
+            .firstOrNull;
+        if (pna != null) {
+          _programaPnaId = pna.id;
+          final detalle = await _curriculoRepo.detallePrograma(pna.id);
+          if (detalle.isSuccess) {
+            _materiasPna = [
+              for (final grupo in detalle.valueOrNull!.pensum) ...grupo.materias,
+            ];
+          }
+        }
+      }
+
       final resMat = await _curriculoRepo.listarMaterias(limite: 200);
       final matMap = <String, String>{};
       if (resMat.isSuccess) {
@@ -192,9 +222,12 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
       context: context,
       builder: (_) => _DialogoMateriaPNA(
         repo: _repo,
+        seccionesRepo: _seccionesRepo,
         aulas: _aulas,
         docentes: _docentes,
         secciones: _seccionesPnaDisponibles,
+        programaPnaId: _programaPnaId,
+        materiasPna: _materiasPna,
         periodo: _lapso ?? '',
         diaInicial: diaInicial,
         bloqueInicial: bloqueInicial,
@@ -209,10 +242,12 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
       context: context,
       builder: (_) => _DialogoMateriaPNA(
         repo: _repo,
+        seccionesRepo: _seccionesRepo,
         clase: clase,
         aulas: _aulas,
         docentes: _docentes,
         secciones: const {},
+        materiasPna: const [],
         periodo: _lapso ?? '',
       ),
     );
@@ -467,23 +502,44 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
 }
 
 /// Diálogo modal para asignar o editar una materia en el Horario PNA.
+///
+/// ## Ya no pide «sección»
+///
+/// Pedía un «Programa / Sección PNA», y eso obligaba a tener creada la sección
+/// antes de poder programar una clase: el administrador veía un desplegable con
+/// «Soldadura» a secas sin saber qué se iba a dictar, y tenía que ir a otro
+/// módulo a inventarse un grupo. Ahora pide **la materia del pensum** —lo que de
+/// verdad se dicta— y el grupo se resuelve en el backend, que lo crea si falta.
+///
+/// El desplegable de secciones **sigue existiendo como respaldo** cuando el
+/// pensum no se pudo cargar (sin red, o un centro sin pensum cargado): es
+/// preferible un formulario incómodo a uno que no deja guardar.
 class _DialogoMateriaPNA extends StatefulWidget {
   const _DialogoMateriaPNA({
     required this.repo,
+    required this.seccionesRepo,
     this.clase,
     required this.aulas,
     required this.docentes,
     required this.secciones,
+    this.programaPnaId,
+    this.materiasPna = const [],
     required this.periodo,
     this.diaInicial,
     this.bloqueInicial,
   });
 
   final CuadranteRepository repo;
+  final SeccionesRepository seccionesRepo;
   final ClaseCuadrante? clase;
   final List<Aula> aulas;
   final List<DocenteResumen> docentes;
   final Map<String, String> secciones;
+
+  /// Programa PNA y su pensum. Si faltan, se cae al desplegable de secciones.
+  final String? programaPnaId;
+  final List<MateriaEnPensum> materiasPna;
+
   final String periodo;
   final int? diaInicial;
   final int? bloqueInicial;
@@ -495,6 +551,10 @@ class _DialogoMateriaPNA extends StatefulWidget {
 class _DialogoMateriaPNAState extends State<_DialogoMateriaPNA> {
   late String? _seccionId =
       widget.clase?.seccionId ?? widget.secciones.keys.firstOrNull;
+
+  /// La materia que se va a dictar. Sólo se pide al crear.
+  String? _materiaId;
+
   late String? _aulaId = widget.clase?.aulaId;
   late String? _docenteId = widget.clase?.docenteId;
   late int _dia = widget.clase?.dia ?? widget.diaInicial ?? 1;
@@ -506,11 +566,23 @@ class _DialogoMateriaPNAState extends State<_DialogoMateriaPNA> {
 
   bool get _esEdicion => widget.clase != null;
 
+  /// ¿Se puede pedir la materia en vez de la sección?
+  bool get _resuelveGrupo =>
+      !_esEdicion &&
+      widget.programaPnaId != null &&
+      widget.materiasPna.isNotEmpty;
+
   Future<void> _guardar() async {
     if (_guardando) return;
 
     // Validación dura D4 para PNA:
-    if (!_esEdicion && (_seccionId == null || _seccionId!.trim().isEmpty)) {
+    if (_resuelveGrupo && (_materiaId == null || _materiaId!.isEmpty)) {
+      setState(() => _error = 'Elige la materia que se va a dictar.');
+      return;
+    }
+    if (!_esEdicion &&
+        !_resuelveGrupo &&
+        (_seccionId == null || _seccionId!.trim().isEmpty)) {
       setState(
         () => _error = 'Elige o registra una sección para la materia PNA.',
       );
@@ -525,6 +597,31 @@ class _DialogoMateriaPNAState extends State<_DialogoMateriaPNA> {
       _guardando = true;
       _error = null;
     });
+
+    // --- El grupo, antes que la clase ------------------------------------
+    //
+    // Se resuelve primero porque una clase sin grupo no existe: la clase cuelga
+    // de `section_id`. Si esto falla, no se crea nada y se dice por qué.
+    if (_resuelveGrupo) {
+      final resolucion = await widget.seccionesRepo.resolverGrupo(
+        programaId: widget.programaPnaId!,
+        materiaId: _materiaId!,
+        periodo: widget.periodo,
+      );
+
+      if (!mounted) return;
+
+      final fallo = resolucion.errorOrNull;
+      final grupo = resolucion.valueOrNull;
+      if (fallo != null || grupo == null) {
+        setState(() {
+          _guardando = false;
+          _error = fallo?.message ?? 'No se pudo preparar el grupo de la materia.';
+        });
+        return;
+      }
+      _seccionId = grupo.seccion.id;
+    }
 
     final resultado = _esEdicion
         ? await widget.repo.actualizarClase(
@@ -583,7 +680,28 @@ class _DialogoMateriaPNAState extends State<_DialogoMateriaPNA> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (!_esEdicion && widget.secciones.isNotEmpty)
+              // **Lo que se dicta, no dónde se guarda.** La materia sale del
+              // pensum del PNA; el grupo lo crea el backend. El desplegable de
+              // secciones queda sólo como respaldo si el pensum no cargó.
+              if (_resuelveGrupo) ...[
+                _DesplegablePna<String>(
+                  etiqueta: 'Materia PNA (Obligatorio)',
+                  ancho: double.infinity,
+                  valor: _materiaId,
+                  opciones: [
+                    for (final materia in widget.materiasPna)
+                      DropdownMenuItem(
+                        value: materia.materiaId,
+                        child: Text(
+                          materia.nombre,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() => _materiaId = v),
+                ),
+                const SizedBox(height: 12),
+              ] else if (!_esEdicion && widget.secciones.isNotEmpty) ...[
                 _DesplegablePna<String>(
                   etiqueta: 'Programa / Sección PNA',
                   ancho: double.infinity,
@@ -600,8 +718,8 @@ class _DialogoMateriaPNAState extends State<_DialogoMateriaPNA> {
                   ],
                   onChanged: (v) => setState(() => _seccionId = v),
                 ),
-              if (!_esEdicion && widget.secciones.isNotEmpty)
                 const SizedBox(height: 12),
+              ],
               // Facilitador (OBLIGATORIO)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

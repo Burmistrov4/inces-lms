@@ -21,6 +21,7 @@ import {
   MODULOS_POR_DEFECTO,
   PERFIL_DOCENTE_2,
   PERFILES_POR_DEFECTO,
+  PERIODO_2026_1,
   TOKEN_ADMIN,
   TOKEN_ALUMNO,
   TOKEN_DOCENTE,
@@ -390,7 +391,7 @@ describe('GET /api/v1/admin/periodos', () => {
 });
 
 describe('POST /api/v1/admin/periodos', () => {
-  it('crea un lapso cerrado y no vigente, y lo devuelve con 201', async () => {
+  it('crea un lapso activo y no vigente, y lo devuelve con 201', async () => {
     const arnés = crearArnés();
     app = arnés.app;
 
@@ -411,10 +412,59 @@ describe('POST /api/v1/admin/periodos', () => {
       periodo: { codigo: string; activo: boolean; vigente: boolean };
     };
     expect(cuerpo.periodo.codigo).toBe('2027-1');
-    // Nace cerrado: el vigente ya existe, y abrir un lapso es una decisión
-    // aparte de declararlo vigente.
-    expect(cuerpo.periodo.activo).toBe(false);
+    // **Nace activo.** Esta prueba afirmaba `false` y estaba en verde porque el
+    // doble del arnés también decía `false`; el repositorio real inserta
+    // `is_active: true` desde el 2026-10-29. La consecuencia práctica de la
+    // divergencia era el error que reportó el propietario: un período recién
+    // creado quedaba en «Borrador», su fila ofrecía «Hacer vigente» y la API
+    // respondía 400. Registrar un período es querer usarlo.
+    expect(cuerpo.periodo.activo).toBe(true);
+    // Y no es vigente: abrir un lapso y declararlo en curso son dos decisiones.
     expect(cuerpo.periodo.vigente).toBe(false);
+  });
+
+  it('guarda la ventana de inscripción y deriva su estado', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/periodos',
+      headers: conToken(TOKEN_ADMIN),
+      payload: {
+        codigo: '2027-3',
+        nombre: 'Lapso 2027-3',
+        inscripcionInicio: '2027-01-10',
+        inscripcionFin: '2027-01-31',
+      },
+    });
+
+    expect(respuesta.statusCode).toBe(201);
+    const cuerpo = respuesta.json() as {
+      periodo: { inscripcionInicio: string; inscripcionFin: string; estadoInscripcion: string };
+    };
+    expect(cuerpo.periodo.inscripcionInicio).toBe('2027-01-10');
+    expect(cuerpo.periodo.inscripcionFin).toBe('2027-01-31');
+    // La ventana está en el futuro: todavía no se puede inscribir.
+    expect(cuerpo.periodo.estadoInscripcion).toBe('PROXIMO');
+  });
+
+  it('rechaza una ventana de inscripción invertida', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/periodos',
+      headers: conToken(TOKEN_ADMIN),
+      payload: {
+        codigo: '2027-4',
+        inscripcionInicio: '2027-02-10',
+        inscripcionFin: '2027-02-01',
+      },
+    });
+
+    expect(respuesta.statusCode).toBe(400);
   });
 
   it('crea un período heredando el horario del anterior', async () => {
@@ -590,6 +640,68 @@ describe('PATCH /api/v1/admin/periodos/:id', () => {
     const cuerpo = respuesta.json() as { periodo: { cerradoEn: string | null; estado: string } };
     expect(cuerpo.periodo.cerradoEn).toBeNull();
     expect(cuerpo.periodo.estado).not.toBe('CERRADO');
+  });
+
+  it('cerrar el vigente habiendo sucesor abierto: se permite', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    // 2026-1 es el vigente y 2026-2 está abierto: el centro tiene a dónde pasar.
+    const respuesta = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/periodos/${ID_PERIODO_2026_1}`,
+      headers: conToken(TOKEN_ADMIN),
+      payload: { cerrado: true },
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    const cuerpo = respuesta.json() as { periodo: { estado: string; activo: boolean } };
+    expect(cuerpo.periodo.estado).toBe('CERRADO');
+    // Cerrar también apaga: es lo que dispara el archivado de sus secciones.
+    expect(cuerpo.periodo.activo).toBe(false);
+  });
+
+  it('cerrar el vigente SIN sucesor da 409 y no lo cierra', async () => {
+    // Un centro con un solo período: cerrarlo dejaría el sistema sin período en
+    // curso y `periodo_activo` apuntando a algo que ya no se dicta.
+    const arnés = crearArnés({
+      periodos: [{ ...PERIODO_2026_1 }],
+      periodoCodigoVigente: PERIODO_2026_1.codigo,
+    });
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/periodos/${ID_PERIODO_2026_1}`,
+      headers: conToken(TOKEN_ADMIN),
+      payload: { cerrado: true },
+    });
+
+    expect(respuesta.statusCode).toBe(409);
+    expect(respuesta.json()).toMatchObject({
+      error: { codigo: 'PERIODO_VIGENTE_SIN_SUCESOR' },
+    });
+    // Y no quedó cerrado a medias.
+    expect(arnés.estado.periodos[0]?.cerradoEn ?? null).toBeNull();
+  });
+
+  it('con forzar: true cierra el vigente y suelta periodo_activo', async () => {
+    const arnés = crearArnés({
+      periodos: [{ ...PERIODO_2026_1 }],
+      periodoCodigoVigente: PERIODO_2026_1.codigo,
+    });
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/periodos/${ID_PERIODO_2026_1}`,
+      headers: conToken(TOKEN_ADMIN),
+      payload: { cerrado: true, forzar: true, motivo: 'Cierre definitivo del centro' },
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    // Nadie queda marcado como vigente: no hay período fantasma al que apuntar.
+    expect(arnés.estado.periodoCodigoVigente).toBeNull();
   });
 });
 

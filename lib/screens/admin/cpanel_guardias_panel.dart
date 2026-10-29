@@ -371,7 +371,17 @@ class _CpanelGuardiasPanelState extends State<CpanelGuardiasPanel> {
           ),
         );
 
-        if (c.maxHeight >= 700) {
+        // **El ancho también cuenta, y no es un detalle.** Medido el
+        // 2026-10-29: el umbral de 700 px de alto se calibró cuando
+        // `ContenidoSeccion` reservaba ~28 px de migas de pan. Al ocultarlas en
+        // pantalla estrecha, un móvil de 360×740 pasó a medir 720 px de alto y
+        // **cruzó el umbral**: entró en la rama de escritorio (cabecera fija +
+        // matriz con `Expanded`) y desbordó 10 px por abajo. La condición
+        // correcta no es «hay altura» sino «hay altura **y** no es un teléfono»:
+        // 360×900 seguiría siendo un móvil aunque sobre altura.
+        final esAngosto = c.maxWidth < 600;
+
+        if (!esAngosto && c.maxHeight >= 700) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [contenidoFijo, cuerpo],

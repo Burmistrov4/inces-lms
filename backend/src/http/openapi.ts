@@ -1252,6 +1252,33 @@ const RespuestaSecciones = z
 
 const RespuestaSeccion = z.object({ seccion: Seccion }).openapi('RespuestaSeccion');
 
+/**
+ * Respuesta de `POST /admin/grupos/resolver`.
+ *
+ * `creada` distingue las dos cosas que pueden pasar y que la pantalla necesita
+ * decir: «ya estaba» o «lo acabo de crear». Sin ese booleano habría que
+ * deducirlo comparando fechas, que es peor.
+ */
+const RespuestaGrupoResuelto = z
+  .object({
+    seccion: Seccion,
+    creada: z.boolean().openapi({
+      description: '`true` si esta llamada creó el grupo; `false` si ya existía.',
+    }),
+  })
+  .openapi('RespuestaGrupoResuelto');
+
+const CuerpoResolverGrupo = z
+  .object({
+    programaId: z.string().uuid(),
+    materiaId: z.string().uuid(),
+    periodo: z.string().openapi({
+      description: 'Código de un lapso ya registrado.',
+    }),
+  })
+  .strict()
+  .openapi('CuerpoResolverGrupo');
+
 const RespuestaOcupacion = z
   .object({
     secciones: z.array(OcupacionSeccion),
@@ -3125,6 +3152,37 @@ export function construirRegistro(): OpenAPIRegistry {
       403: RESPUESTAS_ERROR[403],
       404: error('La sección no existe (SECCION_INEXISTENTE).'),
       409: error('El nombre nuevo choca con otra sección del mismo lapso y materia.'),
+      503: RESPUESTAS_ERROR[503],
+    },
+  });
+
+  registro.registerPath({
+    ...seccionesTag,
+    method: 'post',
+    path: '/api/v1/admin/grupos/resolver',
+    summary: 'Devuelve el grupo de una materia, creándolo si no existe',
+    description:
+      'La ruta que quita «sección» de la cara visible: la interfaz pide curso + materia + período —lo que el administrador sabe nombrar— y esta ruta resuelve la fila que liga los tres. El nombre del grupo es interno y automático (`A`, `B`, …). Responde **201 si lo creó** y **200 si ya existía**, para que la pantalla pueda decirlo sin adivinarlo. Es `POST` y no `GET` porque puede escribir: un `GET` que crea filas se duplica con cualquier reintento.',
+    security: [{ bearerAuth: [] }],
+    request: {
+      body: {
+        required: true,
+        content: { 'application/json': { schema: CuerpoResolverGrupo } },
+      },
+    },
+    responses: {
+      200: {
+        description: 'El grupo ya existía.',
+        content: { 'application/json': { schema: RespuestaGrupoResuelto } },
+      },
+      201: {
+        description: 'El grupo se creó en esta llamada.',
+        content: { 'application/json': { schema: RespuestaGrupoResuelto } },
+      },
+      400: error('Programa, materia o período inexistente, o código de período inválido.'),
+      401: RESPUESTAS_ERROR[401],
+      403: RESPUESTAS_ERROR[403],
+      409: error('No queda nombre libre para un grupo nuevo de esa materia (GRUPO_SIN_NOMBRE).'),
       503: RESPUESTAS_ERROR[503],
     },
   });

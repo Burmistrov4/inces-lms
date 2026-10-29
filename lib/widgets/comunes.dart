@@ -327,11 +327,28 @@ class _InsigniaPeriodo extends StatelessWidget {
 ///
 /// El último elemento nunca es pulsable: es la página actual, y ofrecer un
 /// enlace a donde ya se está no aporta nada.
+///
+/// ## Por qué desaparece en pantalla estrecha
+///
+/// Medido el 2026-10-29 sobre la captura real de 390×844 de «Cursos y PNA»:
+/// entre el encabezado, las migas (~28 px), el título con su subtítulo de tres
+/// líneas (~150 px), las pestañas, el buscador y la barra de paginación se iban
+/// **~448 px de 844 (53 %)** antes de que apareciera el primer curso. El
+/// propietario lo describió como «redundancia por todos lados», y tiene razón:
+/// en el móvil las migas **no añaden información** —el menú ya marca dónde
+/// estás y el título lo repite— y cuestan una franja entera de la pantalla.
+///
+/// En escritorio sí se quedan: ahí sobran píxeles y la ruta ayuda a volver.
+/// El corte es 700 px, el mismo que usa `ContenidoSeccion` para decidir sus
+/// márgenes, para no crear un segundo umbral que se desvíe del primero.
 class MigasDePan extends StatelessWidget {
   const MigasDePan({super.key, required this.partes});
 
   /// De la raíz a la página actual. El último es el actual.
   final List<String> partes;
+
+  /// Ancho a partir del cual la ruta se dibuja. Por debajo, no ocupa nada.
+  static const double anchoMinimoParaMostrarse = 700;
 
   @override
   Widget build(BuildContext context) {
@@ -339,8 +356,19 @@ class MigasDePan extends StatelessWidget {
 
     if (partes.isEmpty) return const SizedBox.shrink();
 
+    return LayoutBuilder(
+      builder: (context, restricciones) {
+        if (restricciones.maxWidth < anchoMinimoParaMostrarse) {
+          return const SizedBox.shrink();
+        }
+        return _ruta(theme);
+      },
+    );
+  }
+
+  Widget _ruta(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Wrap(
         spacing: 6,
         runSpacing: 4,
@@ -989,6 +1017,20 @@ class EstadoPanel extends StatelessWidget {
 }
 
 /// Título de sección dentro de un panel.
+///
+/// ## El subtítulo en pantalla estrecha
+///
+/// El subtítulo es una frase explicativa («Períodos de formación técnica del
+/// centro. El período «Vigente» es donde se dictan las clases actualmente…»).
+/// En escritorio informa; en el móvil, medido el 2026-10-29, ocupaba **tres
+/// líneas (~50 px)** antes del contenido y empujaba el botón de acción a otra
+/// fila. En un panel que ya arranca con 53 % de la pantalla gastado, eso es
+/// espacio robado al dato.
+///
+/// Por debajo de 640 px el subtítulo pasa a un icono de información con
+/// `Tooltip`: la explicación **no se pierde** —sigue disponible a un toque— pero
+/// deja de costar altura. Es la misma decisión que el encabezado tomó con el
+/// correo: en compacto, lo que no es dato se pliega.
 class TituloSeccion extends StatelessWidget {
   const TituloSeccion(this.texto, {super.key, this.subtitulo, this.acciones});
 
@@ -996,57 +1038,41 @@ class TituloSeccion extends StatelessWidget {
   final String? subtitulo;
   final List<Widget>? acciones;
 
+  /// Por debajo de este ancho el subtítulo se pliega en un icono.
+  static const double anchoMinimoParaSubtituloVisible = 640;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final titulo = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          texto.toUpperCase(),
-          style: theme.textTheme.labelSmall?.copyWith(
-            letterSpacing: 1.1,
-            fontWeight: FontWeight.w700,
-            color: theme.colorScheme.primary,
-          ),
-        ),
-        if (subtitulo != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            subtitulo!,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ],
-    );
+    return LayoutBuilder(
+      builder: (context, restricciones) {
+        final esAngosto =
+            restricciones.maxWidth < anchoMinimoParaSubtituloVisible;
+        final titulo = _encabezado(theme, esAngosto);
 
-    final botones = acciones;
-    if (botones == null || botones.isEmpty) {
-      return Padding(padding: const EdgeInsets.only(bottom: 12), child: titulo);
-    }
+        final botones = acciones;
+        if (botones == null || botones.isEmpty) {
+          return Padding(padding: const EdgeInsets.only(bottom: 8), child: titulo);
+        }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: LayoutBuilder(
-        builder: (context, restricciones) {
-          // Título y acciones en la misma fila **sólo si caben**. Antes se
-          // metían siempre, y a 375 px las acciones se comían el ancho: la
-          // `Row` desbordaba y —peor, porque no se ve— el `Expanded` del
-          // título se quedaba con ancho cero, así que el subtítulo envolvía
-          // una letra por línea y la cabecera acababa **más alta que la
-          // pantalla**. El desborde horizontal tapaba al vertical.
-          const anchoMinimoParaFila = 640.0;
+        // Título y acciones en la misma fila **sólo si caben**. Antes se
+        // metían siempre, y a 375 px las acciones se comían el ancho: la
+        // `Row` desbordaba y —peor, porque no se ve— el `Expanded` del
+        // título se quedaba con ancho cero, así que el subtítulo envolvía
+        // una letra por línea y la cabecera acababa **más alta que la
+        // pantalla**. El desborde horizontal tapaba al vertical.
+        const anchoMinimoParaFila = 640.0;
 
-          if (restricciones.maxWidth >= anchoMinimoParaFila) {
-            // Las acciones van en un `Wrap` ACOTADO (`Flexible`), no sueltas en
-            // la `Row`: con 5 acciones (Guardias: Horarios, Aulas, Matriz/Lista,
-            // Asignar guardia) la fila desbordaba 15 px a 840 —medido el
-            // 2026-10-22—. `Flexible` les da un ancho máximo y el `Wrap` las
-            // pasa a otra línea cuando no caben, sin desbordar.
-            return Row(
+        if (restricciones.maxWidth >= anchoMinimoParaFila) {
+          // Las acciones van en un `Wrap` ACOTADO (`Flexible`), no sueltas en
+          // la `Row`: con 5 acciones (Guardias: Horarios, Aulas, Matriz/Lista,
+          // Asignar guardia) la fila desbordaba 15 px a 840 —medido el
+          // 2026-10-22—. `Flexible` les da un ancho máximo y el `Wrap` las
+          // pasa a otra línea cuando no caben, sin desbordar.
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(child: titulo),
@@ -1062,20 +1088,79 @@ class TituloSeccion extends StatelessWidget {
                   ),
                 ),
               ],
-            );
-          }
+            ),
+          );
+        }
 
-          // En estrecho se apilan, y los botones envuelven entre sí.
-          return Column(
+        // En estrecho se apilan, y los botones envuelven entre sí.
+        //
+        // `mainAxisSize.min` **no es cosmético**: sin él la `Column` se estira
+        // hasta la altura que le den, y una cabecera que se declara de 74 px
+        // medía 780 (todo el alto disponible). Eso rompe cualquier medición de
+        // «cuánto ocupa la cabecera» y, peor, deja al título empujando al
+        // contenido en los paneles que reparten espacio con `Expanded`.
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               titulo,
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Wrap(spacing: 10, runSpacing: 8, children: botones),
             ],
-          );
-        },
+          ),
+        );
+      },
+    );
+  }
+
+  /// El rótulo, con el subtítulo visible o plegado según el ancho.
+  Widget _encabezado(ThemeData theme, bool esAngosto) {
+    final rotulo = Text(
+      texto.toUpperCase(),
+      style: theme.textTheme.labelSmall?.copyWith(
+        letterSpacing: 1.1,
+        fontWeight: FontWeight.w700,
+        color: theme.colorScheme.primary,
       ),
+    );
+
+    final explicacion = subtitulo;
+    if (explicacion == null) return rotulo;
+
+    if (esAngosto) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Flexible(child: rotulo),
+          const SizedBox(width: 6),
+          Tooltip(
+            message: explicacion,
+            // En táctil no hay hover: el icono se abre al tocarlo.
+            triggerMode: TooltipTriggerMode.tap,
+            child: Icon(
+              Icons.info_outline_rounded,
+              size: 15,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        rotulo,
+        const SizedBox(height: 4),
+        Text(
+          explicacion,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }

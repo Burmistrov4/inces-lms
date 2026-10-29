@@ -49,11 +49,28 @@ El administrador nunca ve la palabra «sección».
 
 | # | Fase | Qué cambia | Riesgo |
 |---|---|---|---|
-| 1 | **Crear grupo al vuelo** | hecho hoy | bajo |
-| 2 | **Cuadrante y PNA por curso** | el desplegable agrupa por curso y muestra «curso · materia»; el alta ya no pide sección | medio |
+| 1 | **Crear grupo al vuelo** | hecho (cuadrante) | bajo |
+| 1b | **Grupo resuelto por el backend** | **hecho 2026-10-29** · `POST /admin/grupos/resolver`; el Horario PNA ya pide materia, no sección | bajo |
+| 2 | **Cuadrante y PNA por curso** | cuadrante hecho; PNA hecho por la vía del grupo automático | medio |
 | 3 | **Un solo módulo «Cursos»** | «Inscripciones y Cupos» se absorbe: cada curso muestra cupo, ocupados, ventana de inscripción, inscritos y acciones | medio |
-| 4 | **Landing por curso** | disponibilidad y «próxima apertura» leídas de `programs` + su grupo | bajo |
+| 4 | **Landing por curso** | disponibilidad y «próxima apertura» leídas del período vigente y de su ventana | bajo |
 | 5 | **Borrar `CpanelSeccionesPanel`** (676 líneas) | cuando archivar/editar cupo viva en la tarjeta del curso | bajo |
+
+### Estado al cerrar el 2026-10-29
+
+- **Fase 1b hecha**: `resolverGrupo` en el puerto, el repositorio y la ruta, con
+  prueba de contrato en `backend/test/secciones.test.ts` y doble en el arnés.
+  El diálogo de Horario PNA pide **«Materia PNA (Obligatorio)»**; el desplegable
+  de secciones queda como respaldo si el pensum no carga.
+- **Fase 3 pendiente y es la siguiente.** Lo que falta, en concreto:
+  1. `GET /api/v1/admin/cursos/resumen` → por programa: `seccionId` del grupo
+     vigente, `cupo`, `ocupados`, `inscritos`, `estadoInscripcion` del período.
+  2. La tarjeta de `CpanelProgramasPanel` pinta esa franja y abre los diálogos
+     que ya existen (`cpanel_inscripciones_cola_dialog`, `..._inscritos_dialog`).
+  3. Retirar «Inscripciones y Cupos» del menú y borrar el panel de 795 líneas
+     junto con sus pruebas.
+- **Fase 4** depende de la 3: la landing necesita la misma lectura agregada.
+
 
 ## 5. Lo que **no** hay que hacer
 

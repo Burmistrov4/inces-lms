@@ -155,64 +155,40 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
     );
   }
 
+  /// Abre el diálogo correcto: cerrar o reabrir.
   Future<void> _cambiarCierre(Periodo periodo) async {
-    final estaCerrado = periodo.estado == EstadoPeriodo.cerrado;
-    final accion = estaCerrado ? 'reabrir' : 'cerrar';
+    if (periodo.estado == EstadoPeriodo.cerrado) {
+      await _reabrirPeriodo(periodo);
+    } else {
+      await _cerrarPeriodo(periodo);
+    }
+  }
+
+  /// Reabrir: devuelve el período a la lista de trabajo.
+  ///
+  /// No pide nada más porque no hay nada que pueda salir mal: la API limpia
+  /// `closed_at` y sus grupos se reactivan a mano desde «Cursos».
+  Future<void> _reabrirPeriodo(Periodo periodo) async {
     final motivoCtrl = TextEditingController();
 
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(estaCerrado ? 'Reabrir Período' : 'Cerrar Período'),
+        title: const Text('Reabrir período'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              estaCerrado
-                  ? '¿Deseas reabrir el período «${periodo.etiqueta}»? Volverá a admitir planificaciones y modificaciones.'
-                  : '¿Deseas cerrar el período «${periodo.etiqueta}»? Quedará archivado en el historial de períodos.',
+              '¿Deseas reabrir «${periodo.etiqueta}»? Volverá a admitir grupos, '
+              'clases y guardias nuevas.',
             ),
-            // **Aviso que faltaba.** Medido el 2026-10-29: cerrar el período
-            // vigente está permitido por la API, y deja `periodo_activo`
-            // nombrando un período cerrado: el cuadrante, los horarios y el aula
-            // siguen apuntando a él aunque el centro ya no lo esté dictando. No
-            // se bloquea —el administrador puede querer hacerlo— pero deja de
-            // ser una acción silenciosa.
-            if (periodo.vigente && !estaCerrado) ...[
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .errorContainer
-                      .withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.warning_amber_rounded, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Este es el período VIGENTE. Si lo cierras, el centro '
-                        'quedará sin período en curso: declara antes otro como '
-                        'vigente para que horarios y aulas no apunten a uno cerrado.',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
             const SizedBox(height: 16),
             TextField(
               controller: motivoCtrl,
               decoration: const InputDecoration(
                 labelText: 'Motivo (opcional para auditoría)',
-                hintText: 'Ej. Culminación de clases / Ajuste institucional',
+                hintText: 'Ej. Corrección de notas del lapso',
               ),
             ),
           ],
@@ -224,7 +200,7 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(estaCerrado ? 'Reabrir' : 'Cerrar período'),
+            child: const Text('Reabrir'),
           ),
         ],
       ),
@@ -236,8 +212,206 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
     final resultado = await _repo.actualizarPeriodo(
       periodo.id,
       CambiosPeriodo(
-        cerrado: !estaCerrado,
+        cerrado: false,
         motivo: motivoCtrl.text.trim().isNotEmpty ? motivoCtrl.text.trim() : null,
+      ),
+    );
+    if (!mounted) return;
+    setState(() => _guardandoId = null);
+
+    resultado.when(
+      success: (_) {
+        _cargar();
+        mostrarAviso(context, 'Período reabierto.', exito: true);
+      },
+      failure: (fallo) =>
+          mostrarAviso(context, 'No se pudo reabrir: ${fallo.message}', error: true),
+    );
+  }
+
+  /// Cerrar: congela el período y, si es el vigente, exige un sucesor.
+  ///
+  /// **Por qué exige sucesor.** Medido el 2026-10-29: la API permitía cerrar el
+  /// período vigente y dejaba `periodo_activo` apuntándole. El cuadrante, los
+  /// horarios y el aula seguían tomando por defecto un período que el centro ya
+  /// no dictaba, y nada lo decía. Ahora el backend responde
+  /// `409 PERIODO_VIGENTE_SIN_SUCESOR` y esta pantalla ofrece el camino bueno:
+  /// **elegir el siguiente y cerrar en un solo gesto**, que es el orden que el
+  /// centro sigue de verdad.
+  Future<void> _cerrarPeriodo(Periodo periodo) async {
+    // Candidatos a sucesor: abiertos, sin cerrar y distintos del que se cierra.
+    // Un borrador no sirve: la API rechaza declararlo vigente (400).
+    final sucesores = _periodos
+        .where(
+          (p) =>
+              p.id != periodo.id &&
+              p.estado != EstadoPeriodo.cerrado &&
+              p.activo,
+        )
+        .toList();
+
+    final motivoCtrl = TextEditingController();
+    var sucesorId = sucesores.isNotEmpty ? sucesores.first.id : null;
+
+    final decision = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setEstado) => AlertDialog(
+          title: const Text('Cerrar período'),
+          content: SizedBox(
+            width: anchoDialogoSeguro(ctx, 460),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Vas a cerrar «${periodo.etiqueta}». Esto es lo que pasa:'),
+                  const SizedBox(height: 10),
+                  const _PuntoDeCierre(
+                    icono: Icons.lock_outline,
+                    texto:
+                        'No se podrán crear grupos, clases ni guardias nuevas en '
+                        'este período.',
+                  ),
+                  const _PuntoDeCierre(
+                    icono: Icons.inventory_2_outlined,
+                    texto:
+                        'Sus grupos se archivan: dejan de aparecer en los '
+                        'desplegables de trabajo.',
+                  ),
+                  const _PuntoDeCierre(
+                    icono: Icons.visibility_outlined,
+                    texto:
+                        'Todo lo que existe —horarios, notas, asistencias e '
+                        'inscripciones— sigue consultable en el historial.',
+                  ),
+                  if (periodo.vigente) ...[
+                    const SizedBox(height: 14),
+                    if (sucesores.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(ctx)
+                              .colorScheme
+                              .errorContainer
+                              .withValues(alpha: 0.45),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.warning_amber_rounded, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Este es el período VIGENTE y no hay otro abierto '
+                                'al que pasar. Si lo cierras, el centro queda sin '
+                                'período en curso. Lo correcto es registrar el '
+                                'siguiente primero.',
+                                style: Theme.of(ctx).textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else ...[
+                      Text(
+                        'Este es el período VIGENTE. Elige cuál queda en curso '
+                        'desde ahora:',
+                        style: Theme.of(ctx).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        initialValue: sucesorId,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Período siguiente',
+                          isDense: true,
+                        ),
+                        items: [
+                          for (final p in sucesores)
+                            DropdownMenuItem(value: p.id, child: Text(p.etiqueta)),
+                        ],
+                        onChanged: (valor) => setEstado(() => sucesorId = valor),
+                      ),
+                    ],
+                  ],
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: motivoCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Motivo (opcional para auditoría)',
+                      hintText: 'Ej. Culminación de clases del lapso',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(null),
+              child: const Text('Cancelar'),
+            ),
+            if (periodo.vigente && sucesores.isEmpty)
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop('forzado'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(ctx).colorScheme.error,
+                ),
+                child: const Text('Cerrar de todos modos'),
+              )
+            else
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop('cerrar'),
+                child: Text(
+                  periodo.vigente && sucesores.isNotEmpty
+                      ? 'Cerrar y activar el siguiente'
+                      : 'Cerrar período',
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    if (decision == null || !mounted) return;
+
+    final motivo =
+        motivoCtrl.text.trim().isNotEmpty ? motivoCtrl.text.trim() : null;
+
+    setState(() => _guardandoId = periodo.id);
+
+    // Primero se declara el sucesor y después se cierra: en ese orden, si algo
+    // falla el período sigue abierto y el centro sigue teniendo período en
+    // curso. Al revés quedaría el hueco que esta regla evita.
+    //
+    // Se copia a una local porque `sucesorId` se reasigna dentro del
+    // `StatefulBuilder` del diálogo, y una variable capturada por una clausura
+    // no se promueve a no-nula aunque se acabe de comprobar.
+    final idSucesor = sucesorId;
+    if (decision == 'cerrar' && idSucesor != null) {
+      final eleccion = await _repo.marcarVigente(idSucesor);
+      if (!mounted) return;
+      final falloEleccion = eleccion.errorOrNull;
+      if (falloEleccion != null) {
+        setState(() => _guardandoId = null);
+        mostrarAviso(
+          context,
+          'No se pudo activar el período siguiente: ${falloEleccion.message}. '
+          'No se cerró nada.',
+          error: true,
+        );
+        return;
+      }
+    }
+
+    final resultado = await _repo.actualizarPeriodo(
+      periodo.id,
+      CambiosPeriodo(
+        cerrado: true,
+        forzar: decision == 'forzado',
+        motivo: motivo,
       ),
     );
 
@@ -249,13 +423,15 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
         _cargar();
         mostrarAviso(
           context,
-          'Período ${estaCerrado ? 'reabierto' : 'cerrado'} correctamente.',
+          decision == 'cerrar'
+              ? 'Período cerrado. El período elegido es el vigente desde ahora.'
+              : 'Período cerrado.',
           exito: true,
         );
       },
       failure: (fallo) => mostrarAviso(
         context,
-        'Error al $accion el período: ${fallo.message}',
+        'No se pudo cerrar el período: ${fallo.message}',
         error: true,
       ),
     );
@@ -471,6 +647,14 @@ class _FilaLapso extends StatelessWidget {
                             const Etiqueta(texto: 'Vigente', destacada: true),
                           _InsigniaEstadoPeriodo(estado: periodo.estado),
                           Etiqueta(texto: _rangoDeFechas(periodo)),
+                          // **La ventana de inscripción, a la vista.** Es la
+                          // pregunta que el administrador no podía responder
+                          // mirando esta pantalla: «¿puede entrar gente nueva
+                          // todavía, y hasta cuándo?».
+                          Etiqueta(
+                            texto: _textoVentana(periodo),
+                            color: _colorVentana(periodo.estadoInscripcion),
+                          ),
                         ],
                       ),
                     ],
@@ -589,6 +773,50 @@ class _FilaLapso extends StatelessWidget {
     if (inicio != null) return 'Desde $inicio';
     return 'Hasta $fin';
   }
+
+  /// `2026-11-30` → `30/11`. Sin año a propósito: la ventana siempre es del
+  /// período que se está mirando, y cuatro dígitos más no caben en la fila.
+  static String _corto(String iso) {
+    final partes = iso.split('-');
+    if (partes.length != 3) return iso;
+    return '${partes[2]}/${partes[1]}';
+  }
+
+  /// La ventana en una frase, con la fecha que importa según el estado.
+  static String _textoVentana(Periodo periodo) {
+    switch (periodo.estadoInscripcion) {
+      case EstadoVentanaInscripcion.abierto:
+        final fin = periodo.inscripcionFin;
+        return fin == null
+            ? 'Inscripción abierta'
+            : 'Inscripción hasta ${_corto(fin)}';
+      case EstadoVentanaInscripcion.proximo:
+        final inicio = periodo.inscripcionInicio;
+        return inicio == null
+            ? 'Inscripción próxima'
+            : 'Inscripción desde ${_corto(inicio)}';
+      case EstadoVentanaInscripcion.vencido:
+        final fin = periodo.inscripcionFin;
+        return fin == null
+            ? 'Inscripción cerrada'
+            : 'Inscripción cerró ${_corto(fin)}';
+      case EstadoVentanaInscripcion.cerrado:
+        return 'Sin inscripciones';
+    }
+  }
+
+  static Color _colorVentana(EstadoVentanaInscripcion estado) {
+    switch (estado) {
+      case EstadoVentanaInscripcion.abierto:
+        return Colors.green;
+      case EstadoVentanaInscripcion.proximo:
+        return Colors.blue;
+      case EstadoVentanaInscripcion.vencido:
+        return Colors.orange;
+      case EstadoVentanaInscripcion.cerrado:
+        return Colors.purple;
+    }
+  }
 }
 
 /// Formulario de alta y edición de un lapso.
@@ -617,6 +845,10 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
   late String? _inicio = widget.existente?.fechaInicio;
   late String? _fin = widget.existente?.fechaFin;
 
+  /// Ventana de inscripción: independiente de las fechas de dictado.
+  late String? _inscripcionInicio = widget.existente?.inscripcionInicio;
+  late String? _inscripcionFin = widget.existente?.inscripcionFin;
+
   late bool _activo = widget.existente?.activo ?? true;
   late bool _heredarHorario = widget.periodoOrigenPorDefecto != null;
   late final String? _periodoOrigen = widget.periodoOrigenPorDefecto;
@@ -635,8 +867,13 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
   }
 
 
-  Future<void> _elegirFecha({required bool esInicio}) async {
-    final actual = esInicio ? _inicio : _fin;
+  Future<void> _elegirFecha({
+    required bool esInicio,
+    bool deInscripcion = false,
+  }) async {
+    final actual = deInscripcion
+        ? (esInicio ? _inscripcionInicio : _inscripcionFin)
+        : (esInicio ? _inicio : _fin);
     final inicial = (actual != null && esFechaISO(actual))
         ? DateTime.parse(actual)
         : DateTime.now();
@@ -646,7 +883,9 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
       initialDate: inicial,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
-      helpText: esInicio ? 'Fecha de inicio' : 'Fecha de fin',
+      helpText: deInscripcion
+          ? (esInicio ? 'Las inscripciones abren' : 'Las inscripciones cierran')
+          : (esInicio ? 'Fecha de inicio' : 'Fecha de fin'),
     );
 
     if (elegida == null || !mounted) return;
@@ -658,7 +897,13 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
         '${elegida.day.toString().padLeft(2, '0')}';
 
     setState(() {
-      if (esInicio) {
+      if (deInscripcion) {
+        if (esInicio) {
+          _inscripcionInicio = texto;
+        } else {
+          _inscripcionFin = texto;
+        }
+      } else if (esInicio) {
         _inicio = texto;
       } else {
         _fin = texto;
@@ -681,6 +926,8 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
               nombre: _nombreCtrl.text,
               fechaInicio: _inicio,
               fechaFin: _fin,
+              inscripcionInicio: _inscripcionInicio,
+              inscripcionFin: _inscripcionFin,
               activo: _activo,
               motivo: _motivoCtrl.text.trim().isNotEmpty
                   ? _motivoCtrl.text.trim()
@@ -688,6 +935,7 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
               // Si se quitaron las dos fechas, hay que mandarlas nulas de forma
               // explícita: «ausente» significa «no lo toques».
               borrarFechas: _inicio == null && _fin == null,
+              borrarVentana: _inscripcionInicio == null && _inscripcionFin == null,
             ),
           )
         : await widget.repo.crearPeriodo(
@@ -696,6 +944,8 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
               nombre: _nombreCtrl.text,
               fechaInicio: _inicio,
               fechaFin: _fin,
+              inscripcionInicio: _inscripcionInicio,
+              inscripcionFin: _inscripcionFin,
               heredarDeCodigo: (_heredarHorario && _periodoOrigen != null)
                   ? _periodoOrigen
                   : null,
@@ -863,6 +1113,53 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
               ),
+
+              // --- Ventana de inscripción ------------------------------------
+              //
+              // Va aparte de las fechas de dictado porque son cosas distintas:
+              // las inscripciones abren semanas antes y cierran cuando empieza
+              // el ciclo. Sin esta ventana, el estudiante no tiene forma de
+              // saber si todavía puede entrar ni cuándo abre el siguiente.
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Icon(
+                    Icons.how_to_reg_outlined,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Inscripciones',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Cuándo puede inscribirse un estudiante en este período. Es lo '
+                'que la portada le muestra. Si dejas las dos vacías, la '
+                'inscripción no está restringida.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              _campoDeFecha(
+                etiqueta: 'Las inscripciones abren',
+                valor: _inscripcionInicio,
+                onElegir: () =>
+                    _elegirFecha(esInicio: true, deInscripcion: true),
+                onLimpiar: () => setState(() => _inscripcionInicio = null),
+              ),
+              const SizedBox(height: 10),
+              _campoDeFecha(
+                etiqueta: 'Las inscripciones cierran',
+                valor: _inscripcionFin,
+                onElegir: () =>
+                    _elegirFecha(esInicio: false, deInscripcion: true),
+                onLimpiar: () => setState(() => _inscripcionFin = null),
+              ),
               if (_esEdicion) ...[
                 const SizedBox(height: 12),
                 TextField(
@@ -944,6 +1241,36 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
             visualDensity: VisualDensity.compact,
           ),
       ],
+    );
+  }
+}
+
+/// Una línea de «esto es lo que va a pasar» dentro del diálogo de cierre.
+///
+/// Existe porque cerrar un período es la acción con más consecuencias del
+/// módulo y la que menos se entiende: el propietario preguntó literalmente qué
+/// debería suceder. Una lista corta y concreta responde eso mejor que un párrafo.
+class _PuntoDeCierre extends StatelessWidget {
+  const _PuntoDeCierre({required this.icono, required this.texto});
+
+  final IconData icono;
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icono, size: 15, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(texto, style: theme.textTheme.bodySmall),
+          ),
+        ],
+      ),
     );
   }
 }

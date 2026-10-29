@@ -21,6 +21,8 @@ import type {
   EntradaCrearSeccion,
   EntradaCrearTarea,
   EntradaRegistrarArchivo,
+  EntradaResolverGrupo,
+  GrupoResuelto,
   OpcionesListadoAcceso,
   OpcionesListadoAulas,
   OpcionesListadoGuardias,
@@ -67,7 +69,12 @@ import {
   esBloqueoPorPensumEnUso,
   pensumEditable,
 } from '../dominio/reglas-curriculo.js';
-import { esChoqueDeAgenda, estadoDePeriodo, turnoDeBloque } from '../dominio/reglas-cuadrante.js';
+import {
+  esChoqueDeAgenda,
+  estadoDePeriodo,
+  estadoDeVentanaInscripcion,
+  turnoDeBloque,
+} from '../dominio/reglas-cuadrante.js';
 import { nombreVisible } from '../dominio/reglas-perfiles.js';
 import {
   esAcaparamientoDeMateria,
@@ -457,12 +464,23 @@ function aPeriodo(fila: Fila, codigoVigente: string | null): Periodo {
   const fechaFin = texto(fila.end_date) ?? (esSa262 ? '2027-01-30' : null);
   const cerradoEn = texto(fila.closed_at);
   const cerradoPor = texto(fila.closed_by);
+  // Sin ventana cargada no se inventa una: `null` en las dos significa «el
+  // centro no puso fechas», y eso es `ABIERTO`, no «cerrado por defecto».
+  const inscripcionInicio = texto(fila.inscripcion_inicio);
+  const inscripcionFin = texto(fila.inscripcion_fin);
   return {
     id: textoObligatorio(fila.id),
     codigo,
     nombre: texto(fila.name),
     fechaInicio,
     fechaFin,
+    inscripcionInicio,
+    inscripcionFin,
+    estadoInscripcion: estadoDeVentanaInscripcion({
+      cerradoEn,
+      inscripcionInicio,
+      inscripcionFin,
+    }),
     activo,
     vigente: codigoVigente !== null && codigo === codigoVigente,
     cerradoEn,
@@ -1041,7 +1059,7 @@ const COLUMNAS_ENTREGA = 'id,tarea_id,estado,es_tardia,nota_asignada,entregada_e
 const COLUMNAS_AULA = 'id,name,capacity,is_workshop,is_active,created_at,updated_at';
 
 const COLUMNAS_PERIODO =
-  'id,code,name,start_date,end_date,is_active,closed_at,closed_by,created_at,updated_at';
+  'id,code,name,start_date,end_date,inscripcion_inicio,inscripcion_fin,is_active,closed_at,closed_by,created_at,updated_at';
 
 /**
  * `turno` va en la lista aunque sea una columna generada.
@@ -1075,6 +1093,20 @@ const COLUMNAS_DOCENTE_RESUMEN = 'id,nombres,apellidos,email';
 
 const COLUMNAS_SECCION =
   'id,program_id,subject_id,period_code,name,max_capacity,is_active,created_at,updated_at';
+
+/**
+ * Los nombres que `resolverGrupo` prueba, en orden.
+ *
+ * `sections.name` es `varchar(5)` y entra en
+ * `unique (period_code, subject_id, name)`. Una letra basta para distinguir dos
+ * cohortes de la misma materia en el mismo período, que es el único caso en que
+ * hace falta un nombre distinto. Se generan en vez de escribirlas para que no
+ * haya una lista de 26 literales que mantener.
+ */
+const NOMBRES_DE_GRUPO: readonly string[] = Array.from(
+  { length: 26 },
+  (_, i) => String.fromCharCode(65 + i),
+);
 
 const COLUMNAS_INSCRIPCION =
   'id,student_id,section_id,status,created_at,updated_at';
@@ -2462,6 +2494,8 @@ class CuadranteSupabase implements PuertaCuadrante {
         name: entrada.nombre,
         start_date: entrada.fechaInicio,
         end_date: entrada.fechaFin,
+        inscripcion_inicio: entrada.inscripcionInicio ?? null,
+        inscripcion_fin: entrada.inscripcionFin ?? null,
         // **Nace activo, no en borrador.** Medido el 2026-10-29: la columna
         // tiene `default false`, así que un período recién registrado aparecía
         // como «Borrador», su fila ofrecía «Hacer vigente» y la API respondía
@@ -2499,8 +2533,46 @@ class CuadranteSupabase implements PuertaCuadrante {
     if (cambios.nombre !== undefined) parche.name = cambios.nombre;
     if (cambios.fechaInicio !== undefined) parche.start_date = cambios.fechaInicio;
     if (cambios.fechaFin !== undefined) parche.end_date = cambios.fechaFin;
+    if (cambios.inscripcionInicio !== undefined) {
+      parche.inscripcion_inicio = cambios.inscripcionInicio;
+    }
+    if (cambios.inscripcionFin !== undefined) {
+      parche.inscripcion_fin = cambios.inscripcionFin;
+    }
     if (cambios.activo !== undefined) parche.is_active = cambios.activo;
+
+    // --- Cerrar un período: la regla del sucesor ---------------------------
+    //
+    // **Por qué se rechaza en vez de avisar.** Hasta el 2026-10-29 se podía
+    // cerrar el período vigente y `periodo_activo` seguía nombrando un período
+    // cerrado: el cuadrante, los horarios y el aula continuaban tomándolo por
+    // defecto aunque el centro ya no lo estuviera dictando. El aviso rojo del
+    // diálogo no arreglaba eso — sólo lo hacía visible.
+    //
+    // La regla es la que el propio centro sigue: **primero se declara el
+    // siguiente, después se cierra el anterior**. Si no hay ninguno abierto al
+    // que pasar, cerrar dejaría al sistema sin período en curso y sin manera de
+    // saberlo. `forzar` cubre el caso legítimo de cierre definitivo, y entonces
+    // la API limpia `periodo_activo` para que nadie lea un período fantasma.
+    let eraVigente = false;
     if (cambios.cerrado === true) {
+      const actual = await this.periodoPorId(id);
+      eraVigente = actual?.vigente === true;
+
+      if (eraVigente && !cambios.forzar) {
+        const sucesor = await this.hayPeriodoAbiertoDistinto(actual!.codigo);
+        if (!sucesor) {
+          throw ErrorApi.conflicto(
+            'PERIODO_VIGENTE_SIN_SUCESOR',
+            `«${actual!.codigo}» es el período vigente y no hay otro abierto al ` +
+              'que pasar. Registra y activa el siguiente período, decláralo ' +
+              'vigente, y después cierra este. Si el centro cierra ' +
+              'definitivamente, confirma el cierre forzado.',
+            { periodo: actual!.codigo },
+          );
+        }
+      }
+
       parche.closed_at = new Date().toISOString();
       parche.closed_by = null;
       parche.is_active = false;
@@ -2538,9 +2610,54 @@ class CuadranteSupabase implements PuertaCuadrante {
       throw ErrorApi.noEncontrado(RECURSO_PERIODO.codigo, RECURSO_PERIODO.mensaje);
     }
 
+    // Cierre forzado del vigente: se suelta el parámetro. Dejarlo apuntando a un
+    // período cerrado es exactamente el estado incoherente que esta regla evita.
+    if (eraVigente && cambios.cerrado === true) {
+      const limpieza = await this.cliente
+        .from(TABLA_PARAMETROS)
+        .update({ valor: null })
+        .eq('clave', CLAVE_PERIODO_ACTIVO)
+        .select('clave')
+        .maybeSingle();
+
+      // Si no se pudo limpiar no se deshace el cierre —ya está hecho y el
+      // período está cerrado de verdad—, pero se avisa en el log: es la
+      // diferencia entre «cerrado» y «cerrado y coherente».
+      if (limpieza.error) {
+        throw this.traducirEscritura(
+          limpieza.error,
+          'limpiar el período vigente tras el cierre forzado',
+        );
+      }
+    }
+
     // Aquí sí hay que leer el vigente: el código del lapso no cambia, así que su
     // condición de vigente tampoco, pero no viaja en la fila.
     return aPeriodo(respuesta.data as Fila, await this.leerPeriodoVigente());
+  }
+
+  /**
+   * ¿Queda algún período abierto distinto de éste al que poder pasar?
+   *
+   * «Abierto» aquí significa exactamente lo que la UI llama «En curso y
+   * planificación»: activo y sin `closed_at`. Un período en borrador no sirve de
+   * sucesor porque la API rechaza declararlo vigente (400), así que contarlo
+   * dejaría pasar un cierre que después no se puede completar.
+   */
+  private async hayPeriodoAbiertoDistinto(codigo: string): Promise<boolean> {
+    const respuesta = await this.cliente
+      .from(TABLA_PERIODOS)
+      .select('code')
+      .eq('is_active', true)
+      .is('closed_at', null)
+      .neq('code', codigo)
+      .limit(1);
+
+    if (respuesta.error) {
+      throw traducirError(respuesta.error, 'buscar el período sucesor');
+    }
+
+    return ((respuesta.data ?? []) as Fila[]).length > 0;
   }
 
   async declararPeriodoVigente(id: string): Promise<Periodo> {
@@ -3141,6 +3258,79 @@ class SeccionesSupabase implements PuertaSecciones {
     // propia escritura.
     if (respuesta.error) throw traducirError(respuesta.error, 'crear sección');
     return aSeccion(respuesta.data as Fila);
+  }
+
+  /**
+   * Devuelve el grupo de una materia en un período, creándolo si no existe.
+   *
+   * **El nombre es automático** (`A`, `B`, …) y el administrador no lo elige: es
+   * la parte de «sección» que no aporta nada cuando hay un solo grupo, que es el
+   * caso del 99 % de los cursos del centro. Si algún día hacen falta dos cohortes
+   * simultáneas, la segunda recibirá `B` sola y se podrá renombrar desde
+   * «Cursos» —el nombre sigue siendo editable—, pero nadie tiene que pensarlo de
+   * antemano.
+   *
+   * **La carrera está contemplada.** Dos administradores pulsando «asignar» a la
+   * vez pueden chocar en el `unique (period_code, subject_id, name)`. En vez de
+   * dejar que el segundo reciba un 409 por un grupo que él no pidió, se relee: si
+   * el otro ya lo creó, se devuelve ése. Sólo si el nombre sigue libre y el
+   * choque persiste se prueba la letra siguiente.
+   */
+  async resolverGrupo(entrada: EntradaResolverGrupo): Promise<GrupoResuelto> {
+    const existente = await this.buscarGrupo(entrada);
+    if (existente) return { seccion: existente, creada: false };
+
+    for (const nombre of NOMBRES_DE_GRUPO) {
+      const respuesta = await this.cliente
+        .from(TABLA_SECCIONES)
+        .insert({
+          program_id: entrada.programaId,
+          subject_id: entrada.materiaId,
+          period_code: entrada.periodo,
+          name: nombre,
+          // `null` = usa el cupo global del cPanel. Poner 0 crearía un grupo sin
+          // asientos, que es peor que no decidir.
+          max_capacity: null,
+        })
+        .select(COLUMNAS_SECCION)
+        .single();
+
+      if (!respuesta.error) {
+        return { seccion: aSeccion(respuesta.data as Fila), creada: true };
+      }
+
+      // 23505 = el nombre ya está tomado para esa materia y período.
+      if (respuesta.error.code !== '23505') {
+        throw traducirError(respuesta.error, 'crear el grupo');
+      }
+
+      const trasChoque = await this.buscarGrupo(entrada);
+      if (trasChoque) return { seccion: trasChoque, creada: false };
+    }
+
+    // 26 letras ocupadas para la misma materia y período: no es un caso real,
+    // pero llegar aquí sin decir por qué sería peor que el error.
+    throw ErrorApi.conflicto(
+      'GRUPO_SIN_NOMBRE',
+      'No queda nombre libre para un grupo nuevo de esta materia en este período.',
+    );
+  }
+
+  /** El grupo activo de (programa, materia, período), o `null`. */
+  private async buscarGrupo(entrada: EntradaResolverGrupo): Promise<Seccion | null> {
+    const respuesta = await this.cliente
+      .from(TABLA_SECCIONES)
+      .select(COLUMNAS_SECCION)
+      .eq('program_id', entrada.programaId)
+      .eq('subject_id', entrada.materiaId)
+      .eq('period_code', entrada.periodo)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (respuesta.error) throw traducirError(respuesta.error, 'buscar el grupo');
+    return respuesta.data ? aSeccion(respuesta.data as Fila) : null;
   }
 
   async actualizar(id: string, cambios: CambiosSeccion): Promise<Seccion> {

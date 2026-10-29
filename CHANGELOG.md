@@ -2,6 +2,107 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.7.0] - 2026-10-29
+### El período tiene ciclo de vida, el PNA deja de pedir sección y la interfaz deja de gastar media pantalla
+
+> **Estado: código completo y verificado en local; NO desplegado.** La migración
+> `202610290001_ciclo_periodo.sql` **no se ha aplicado a la nube** porque este
+> entorno no tiene `SUPABASE_ACCESS_TOKEN`. Sin ella, el backend nuevo no puede
+> leer las columnas que necesita: publicar antes rompería el módulo de período en
+> producción. Orden obligatorio: **aplicar la migración → push → desplegar web**.
+> Comando exacto en `docs/DISENO_CICLO_PERIODO_2026-10-29.md` §6.
+
+**Lo que se pidió, en palabras del propietario:** «erradica las secciones, deja
+período y hazlo más simple y funcional posible», y «honestamente desconozco qué
+debería suceder cuando se cierra un período».
+
+#### 1. Cerrar un período ahora cierra algo (migración `202610290001`)
+
+Hasta hoy, cerrar escribía `closed_at` y archivaba las secciones, pero **se podía
+seguir creando grupos, clases y guardias dentro** y `periodo_activo` seguía
+apuntándole. El candado de la interfaz no cerraba nada por debajo.
+
+- **Trigger `exigir_periodo_no_cerrado`** en `sections`, `schedule_slots` y
+  `teacher_duties`: un período cerrado no admite nada nuevo (`23514`). **Sólo
+  INSERT**: editar y archivar lo que existe sigue permitido, porque cerrar es
+  congelar, no secuestrar el historial.
+- **Regla del sucesor**: cerrar el período **vigente** sin otro abierto devuelve
+  `409 PERIODO_VIGENTE_SIN_SUCESOR` en vez de dejar al centro sin período en
+  curso. `forzar: true` cubre el cierre definitivo y entonces la API **suelta
+  `periodo_activo`**, que era la parte que quedaba incoherente.
+- **El diálogo ofrece el camino bueno**: elegir el período siguiente y
+  «Cerrar y activar el siguiente» en un gesto. Primero se declara el sucesor y
+  después se cierra, en ese orden, para que un fallo no deje el hueco.
+
+#### 2. Ventana de inscripción: el estudiante sabe si puede entrar
+
+`academic_periods.inscripcion_inicio` / `inscripcion_fin` (nuevas), con
+`estado_inscripcion()` en la base y `estadoDeVentanaInscripcion()` en el dominio:
+`ABIERTO` · `PROXIMO` · `VENCIDO` · `CERRADO`. **Cerrado gana a cualquier fecha.**
+
+- La RPC `solicitar_inscripcion` rechaza fuera de ventana con un mensaje que dice
+  **cuándo** abre o cuándo cerró, no un «no puedes» a secas.
+- La administración **no** queda atrapada: `reincorporar_inscripcion` sigue
+  permitiendo admitir a alguien fuera de plazo, porque esa es una decisión suya.
+- La fila del período muestra la ventana en una insignia con color por estado.
+
+#### 3. «Sección» fuera del Horario PNA (el grupo se crea solo)
+
+- **Ruta nueva `POST /api/v1/admin/grupos/resolver`**: dado programa + materia +
+  período devuelve el grupo, **creándolo si no existe** (nombre automático `A`,
+  `B`, …). Responde 201 si lo creó y 200 si ya estaba.
+- El diálogo de Horario PNA pide **«Materia PNA»**, no «Programa / Sección». El
+  desplegable de secciones queda sólo como respaldo si el pensum no carga.
+- Es `POST` y no `GET` a propósito: un `GET` que crea filas se duplica con
+  cualquier reintento.
+
+#### 4. Menos espacio robado en pantalla estrecha
+
+Medido en la captura real de 390×844: **~448 px de 844 (53 %)** antes del primer
+dato, entre encabezado, migas, título con subtítulo de tres líneas, pestañas,
+buscador y paginación.
+
+- **`MigasDePan` desaparece por debajo de 700 px.** En el móvil no añadían
+  información —el menú ya marca dónde estás y el título lo repite— y costaban
+  ~28 px fijos.
+- **`TituloSeccion` pliega el subtítulo en un icono de información** por debajo de
+  640 px. La explicación no se pierde: sigue en el `Tooltip`, a un toque. Ahorra
+  las tres líneas (~50 px) y devuelve el botón de acción a la misma fila.
+- El contrato nuevo está fijado en `test/titulo_seccion_responsive_test.dart`,
+  que antes exigía ver el subtítulo a 375 px.
+
+#### Verificación de este lote
+
+| Control | Resultado |
+|---|---|
+| `node devops/analizar-dart.mjs` | 249 archivos · **0 errores, 0 avisos, 0 infos** |
+| `flutter analyze` | **No issues found!** (112,6 s) |
+| `cd backend && npm run verify` | **34 archivos · 732/732** · exit 0 |
+| `flutter test` | ver nota del entorno abajo |
+
+**Nota de entorno (nueva, medida hoy):** `flutter test` fallaba **en los 84
+archivos** con `Unable to connect to flutter_tester process: WebSocketException:
+Invalid WebSocket upgrade request`. No era el proyecto: hay un **proxy HTTP en el
+entorno** (`HTTP_PROXY`/`HTTPS_PROXY` con `NO_PROXY` vacío) que rompe el handshake
+del WebSocket local de `flutter_tester`. Con
+`env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy NO_PROXY=127.0.0.1,localhost flutter test`
+la suite corre. Queda anotado porque el síntoma parece un fallo de código y no lo
+es.
+
+#### Lo que este lote NO trae (y es lo siguiente)
+
+- **Unificar «Cursos y PNA» con «Inscripciones y Cupos».** Sigue siendo el
+  defecto que el propietario describió con más detalle («un solo curso en una
+  pestaña, seis en la otra»). Requiere un endpoint de resumen por curso y retirar
+  el panel de ocupación del menú. Diseño en
+  `docs/PLAN_SIMPLIFICACION_SECCIONES_2026-10-29.md` §4 (fase 3).
+- **Landing por curso** con cupos y «próxima apertura» (fase 4).
+- **Expediente del aprendiz** y constancia de lectura de entregas: no existe.
+- **La cabecera del cPanel sigue con `SA26-2` escrito a mano**
+  (`admin_dashboard.dart:242`). Es una mentira después de cerrar un período, y se
+  deja anotada como deuda con su porqué: leerlo exige una petición que hoy
+  retrasaría el arranque del panel y rompería las pruebas que lo montan sin red.
+
 ## [1.6.0] - 2026-10-29
 ### El período se puede usar, cerrar y archivar — y la versión que se ve ya es la real
 
