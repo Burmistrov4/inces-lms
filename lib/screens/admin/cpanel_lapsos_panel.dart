@@ -120,6 +120,41 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
     );
   }
 
+  /// Activa un período que nació en borrador.
+  ///
+  /// **Por qué existe.** Medido el 2026-10-29: un período recién registrado nace
+  /// con `is_active = false` (valor por defecto de la tabla), así que queda en
+  /// «Borrador» y la fila ofrecía **«Hacer vigente»**. Al pulsarlo, la API
+  /// responde **400** porque no se puede declarar vigente un período que no está
+  /// activo. El resultado era exactamente lo que reportó el propietario: «intento
+  /// usarlo y me da error». Ahora el borrador ofrece «Activar», que es el paso
+  /// que de verdad falta, y «Hacer vigente» sólo aparece cuando ya se puede.
+  Future<void> _activarPeriodo(Periodo periodo) async {
+    if (_guardandoId != null) return;
+
+    setState(() => _guardandoId = periodo.id);
+
+    final resultado = await _repo.actualizarPeriodo(
+      periodo.id,
+      const CambiosPeriodo(activo: true),
+    );
+
+    if (!mounted) return;
+    setState(() => _guardandoId = null);
+
+    resultado.when(
+      success: (_) {
+        mostrarAviso(
+          context,
+          'Período «${periodo.etiqueta}» activado. Ahora puedes declararlo vigente.',
+          exito: true,
+        );
+        _cargar();
+      },
+      failure: (fallo) => mostrarAviso(context, fallo.message, error: true),
+    );
+  }
+
   Future<void> _cambiarCierre(Periodo periodo) async {
     final estaCerrado = periodo.estado == EstadoPeriodo.cerrado;
     final accion = estaCerrado ? 'reabrir' : 'cerrar';
@@ -138,6 +173,40 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
                   ? '¿Deseas reabrir el período «${periodo.etiqueta}»? Volverá a admitir planificaciones y modificaciones.'
                   : '¿Deseas cerrar el período «${periodo.etiqueta}»? Quedará archivado en el historial de períodos.',
             ),
+            // **Aviso que faltaba.** Medido el 2026-10-29: cerrar el período
+            // vigente está permitido por la API, y deja `periodo_activo`
+            // nombrando un período cerrado: el cuadrante, los horarios y el aula
+            // siguen apuntando a él aunque el centro ya no lo esté dictando. No
+            // se bloquea —el administrador puede querer hacerlo— pero deja de
+            // ser una acción silenciosa.
+            if (periodo.vigente && !estaCerrado) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .errorContainer
+                      .withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Este es el período VIGENTE. Si lo cierras, el centro '
+                        'quedará sin período en curso: declara antes otro como '
+                        'vigente para que horarios y aulas no apunten a uno cerrado.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             TextField(
               controller: motivoCtrl,
@@ -316,6 +385,7 @@ class _CpanelLapsosPanelState extends State<CpanelLapsosPanel> {
                 guardando: _guardandoId == listaMostrar[indice].id,
                 onEditar: () => _abrirFormulario(existente: listaMostrar[indice]),
                 onMarcarVigente: () => _marcarVigente(listaMostrar[indice]),
+                onActivar: () => _activarPeriodo(listaMostrar[indice]),
                 onCambiarCierre: () => _cambiarCierre(listaMostrar[indice]),
               ),
             ),
@@ -332,6 +402,7 @@ class _FilaLapso extends StatelessWidget {
     required this.guardando,
     required this.onEditar,
     required this.onMarcarVigente,
+    required this.onActivar,
     required this.onCambiarCierre,
   });
 
@@ -339,6 +410,7 @@ class _FilaLapso extends StatelessWidget {
   final bool guardando;
   final VoidCallback onEditar;
   final VoidCallback onMarcarVigente;
+  final VoidCallback onActivar;
   final VoidCallback onCambiarCierre;
 
   @override
@@ -420,14 +492,25 @@ class _FilaLapso extends StatelessWidget {
                   ]
                 : <Widget>[
                     if (!periodo.vigente && !estaCerrado)
-                      TextButton.icon(
-                        onPressed: onMarcarVigente,
-                        icon: const Icon(Icons.flag_outlined, size: 16),
-                        label: const Text('Hacer vigente'),
-                        style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
+                      // Un borrador no puede ser vigente: la API lo rechaza con
+                      // 400. Se le ofrece el paso que sí existe.
+                      periodo.estado == EstadoPeriodo.borrador
+                          ? TextButton.icon(
+                              onPressed: onActivar,
+                              icon: const Icon(Icons.play_circle_outline, size: 16),
+                              label: const Text('Activar'),
+                              style: TextButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            )
+                          : TextButton.icon(
+                              onPressed: onMarcarVigente,
+                              icon: const Icon(Icons.flag_outlined, size: 16),
+                              label: const Text('Hacer vigente'),
+                              style: TextButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
                     if (estaCerrado)
                       TextButton.icon(
                         onPressed: onCambiarCierre,

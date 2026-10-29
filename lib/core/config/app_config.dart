@@ -1,22 +1,22 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 
 class AppConfig {
-  /// Versión visible en la interfaz (menú, pie y portada).
+  /// VersiÃ³n visible en la interfaz (menÃº, pie y portada).
   ///
   /// **Tiene que coincidir con `pubspec.yaml`.** Medido el 2026-10-29: el
-  /// `pubspec` iba por 1.5.5+7 y esta constante seguía en 1.5.1, así que la app
-  /// mostraba «v1.5.1» en el menú, en el pie y en la portada mientras el
-  /// CHANGELOG documentaba 1.5.5. Es la misma discrepancia que ya se corrigió
-  /// una vez haciendo que los paneles lean `AppConfig.version` — la constante
-  /// era la única fuente y se quedó atrás.
+  /// `pubspec` iba por 1.5.5+7 y esta constante seguÃ­a en 1.5.1, asÃ­ que la app
+  /// mostraba Â«v1.5.1Â» en el menÃº, en el pie y en la portada mientras el
+  /// CHANGELOG documentaba 1.5.5. Es la misma discrepancia que ya se corrigiÃ³
+  /// una vez haciendo que los paneles lean `AppConfig.version` â€” la constante
+  /// era la Ãºnica fuente y se quedÃ³ atrÃ¡s.
   ///
-  /// No se deriva del `pubspec` en tiempo de ejecución porque leer el paquete
-  /// exigiría `package_info_plus` (y una llamada de plataforma en cada arranque
+  /// No se deriva del `pubspec` en tiempo de ejecuciÃ³n porque leer el paquete
+  /// exigirÃ­a `package_info_plus` (y una llamada de plataforma en cada arranque
   /// web). En su lugar, `test/version_coherente_test.dart` compara las dos y
   /// falla si se separan.
-  static const String version = '1.5.5';
+  static const String version = '1.6.0';
   static const String versionLabel =
-      'INCES LMS v$version · CFS Rafael Urdaneta · Prod 2026';
+      'INCES LMS v$version Â· CFS Rafael Urdaneta Â· Prod 2026';
 
   static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   static const String supabaseAnonKey =
@@ -27,13 +27,13 @@ class AppConfig {
   /// URL base de la API Fastify.
   ///
   /// Si se ejecuta en navegador Web (`kIsWeb`) y la app fue abierta desde
-  /// una dirección de red privada LAN (RFC 1918: 192.168.x.x, 10.x.x.x, 172.16-31.x.x),
-  /// y la variable de compilación apunta a localhost o está vacía, se resuelve
-  /// dinámicamente al host de la LAN en el puerto 3001.
+  /// una direcciÃ³n de red privada LAN (RFC 1918: 192.168.x.x, 10.x.x.x, 172.16-31.x.x),
+  /// y la variable de compilaciÃ³n apunta a localhost o estÃ¡ vacÃ­a, se resuelve
+  /// dinÃ¡micamente al host de la LAN en el puerto 3001.
   ///
-  /// En dominios de producción (p. ej. Cloudflare Pages o dominios públicos),
-  /// localhost, o compilaciones con URL explícita no-localhost, respeta
-  /// la configuración configurada sin alteraciones.
+  /// En dominios de producciÃ³n (p. ej. Cloudflare Pages o dominios pÃºblicos),
+  /// localhost, o compilaciones con URL explÃ­cita no-localhost, respeta
+  /// la configuraciÃ³n configurada sin alteraciones.
   static String get apiBaseUrl {
     final configurada = _rawApiBaseUrl.trim();
     if (!kIsWeb) return configurada;
@@ -76,12 +76,12 @@ class AppConfig {
     return false;
   }
 
-  /// Devuelve un mensaje descriptivo si falta o está mal la configuración de
-  /// compilación, o `null` si todo está en orden.
+  /// Devuelve un mensaje descriptivo si falta o estÃ¡ mal la configuraciÃ³n de
+  /// compilaciÃ³n, o `null` si todo estÃ¡ en orden.
   ///
-  /// No se limita a comprobar que no esté vacío: una URL que aún lleva la
-  /// plantilla (`https://<project-ref>.supabase.co`) es no-vacía pero igual de
-  /// inútil, y antes pasaba desapercibida hasta que el login fallaba sin dar
+  /// No se limita a comprobar que no estÃ© vacÃ­o: una URL que aÃºn lleva la
+  /// plantilla (`https://<project-ref>.supabase.co`) es no-vacÃ­a pero igual de
+  /// inÃºtil, y antes pasaba desapercibida hasta que el login fallaba sin dar
   /// pistas. Mejor fallar fuerte y temprano, con la causa nombrada.
   static String? problemaConfiguracion() {
     if (supabaseUrl.isEmpty) {
@@ -99,10 +99,10 @@ class AppConfig {
     return null;
   }
 
-  /// Lanza [StateError] con un mensaje claro si la configuración de compilación
-  /// no está completa. Lo llama [main] antes de iniciar sesión; el error se
-  /// captura allí y se muestra una pantalla de fallo legible en lugar de una
-  /// excepción sin tratar en la consola.
+  /// Lanza [StateError] con un mensaje claro si la configuraciÃ³n de compilaciÃ³n
+  /// no estÃ¡ completa. Lo llama [main] antes de iniciar sesiÃ³n; el error se
+  /// captura allÃ­ y se muestra una pantalla de fallo legible en lugar de una
+  /// excepciÃ³n sin tratar en la consola.
   static void validate() {
     final problema = problemaConfiguracion();
     if (problema != null) throw StateError(problema);

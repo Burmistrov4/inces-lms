@@ -533,8 +533,16 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        _paginacion(),
+        // **La barra de páginas sólo cuando hay más de una.** Medido el
+        // 2026-10-29 en la captura de 390 px: con 6 cursos en una sola página, la
+        // fila «1–6 de 6» y sus dos flechas ocupaban ~44 px fijos **sin ofrecer
+        // nada** —ninguno de los dos botones se podía pulsar— y se sumaban al
+        // encabezado y a los filtros hasta dejar el primer curso casi fuera de
+        // pantalla. Cuando hay una sola página, la barra no informa: estorba.
+        if (_hayAnterior || _haySiguiente) ...[
+          const SizedBox(height: 12),
+          _paginacion(),
+        ],
       ],
     );
   }

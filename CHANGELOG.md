@@ -2,6 +2,49 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.6.0] - 2026-10-29
+### El período se puede usar, cerrar y archivar — y la versión que se ve ya es la real
+
+**Por qué 1.6.0 y no 1.5.5.** El Rediseño 1.5 está completo y el producto cambió de
+comportamiento (período, horarios MTP/PNA, cupos, archivar, cédula); 1.5.5 era un
+parche de un lote. La versión visible deja de ir por detrás: `pubspec.yaml` `1.6.0+8`,
+`AppConfig.version` `1.6.0` y esta entrada, los tres iguales y **con guardia**
+(`test/version_coherente_test.dart` falla si se separan).
+
+**Cerrar un período: verificado en producción, no deducido.** Con un período temporal
+en la nube (creado, con sección, cerrado y borrado después):
+
+| Paso | Resultado medido |
+|---|---|
+| `POST /admin/periodos` | 201 · período creado |
+| `POST /admin/secciones` | 201 · sección activa en ese período |
+| `PATCH {activo:false}` sobre un período **inactivo** | 200, pero **no hace nada**: `is_active` ya era `false`, el trigger no dispara y la sección sigue activa |
+| `PATCH {cerrado:true}` sobre un período **activo** | 200 · `closed_at` escrito · **la sección queda archivada** (`archived_at`) |
+| `PUT /periodos/{id}/vigente` sobre un período cerrado | **400** (no se puede hacer vigente uno cerrado) |
+
+De ahí salieron tres arreglos:
+
+- **Un período nuevo nace activo.** Tenía `default false`: aparecía como «Borrador»,
+  su fila ofrecía «Hacer vigente» y la API respondía **400** — el «intento usarlo y
+  me da error» del propietario. `crearPeriodo` ahora inserta `is_active: true`.
+- **El borrador ofrece «Activar», no «Hacer vigente».** Es el paso que de verdad
+  falta, y deja de ofrecer una acción que la API rechaza.
+- **Cerrar el período vigente avisa.** La API lo permite y deja
+  `system_settings.periodo_activo` nombrando un período cerrado: el cuadrante y los
+  horarios siguen apuntando a él. No se bloquea (puede ser deliberado), pero el
+  diálogo lo dice en rojo antes de confirmar.
+
+**Despliegue del día:** commit `5f2ad6e` + `aba70e5`; Pages `bb7c8f86`
+(`inces-lms.pages.dev`); `/salud` 200. Verificado con sesión real: el docente entra y
+llega a «Aulas Virtuales».
+
+**Lo que este cambio NO incluye, y es lo siguiente** (requiere decisión de producto):
+unificar «Inscripciones y Cupos» con «Cursos y PNA», mostrar disponibilidad y ventana
+de inscripción en la landing por curso, y retirar «secciones» de la interfaz. Las tres
+son el mismo cambio de modelo: hoy la sección es la unidad que liga programa + materia
++ período, y de ella cuelgan horarios e inscripciones. Fichas en
+`docs/BACKLOG_PENDIENTES.md` (C10 y el plan de unificación).
+
 ## [1.5.5] - 2026-10-29
 ### Lote 5 — Aulas Virtuales del admin, scroll del tablón y **el daño que el renombrado hizo** (reparado)
 

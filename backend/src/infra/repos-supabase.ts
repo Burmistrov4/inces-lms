@@ -2462,6 +2462,14 @@ class CuadranteSupabase implements PuertaCuadrante {
         name: entrada.nombre,
         start_date: entrada.fechaInicio,
         end_date: entrada.fechaFin,
+        // **Nace activo, no en borrador.** Medido el 2026-10-29: la columna
+        // tiene `default false`, así que un período recién registrado aparecía
+        // como «Borrador», su fila ofrecía «Hacer vigente» y la API respondía
+        // 400 (un período inactivo no puede ser el vigente). El administrador
+        // vivía ese 400 como «no me deja usar el período que acabo de crear».
+        // Registrar un período es querer usarlo; el borrador no aporta nada
+        // aquí y la desactivación sigue disponible en el diálogo de edición.
+        is_active: true,
       })
       .select(COLUMNAS_PERIODO)
       .single();

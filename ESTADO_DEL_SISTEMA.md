@@ -26,13 +26,22 @@
    (`Programas Académicos`, `Secciones del Período`, `Guardias Docentes`) y le
    faltaban 2; la señal de login del docente era «Mis aulas» y `LoginPage.entrar`
    **lanza** si no aparece, así que el rol docente entero se perdía.
-5. **Versión**: `pubspec.yaml` en **1.5.5+7**, `AppConfig.version` en **1.5.5** y
-   `CHANGELOG.md` en 1.5.5. La «discrepancia abierta» de la foto anterior queda
+5. **Versión**: `pubspec.yaml` en **1.6.0+8**, `AppConfig.version` en **1.6.0** y
+   `CHANGELOG.md` en 1.6.0. La «discrepancia abierta» de la foto anterior queda
    cerrada **de verdad**: la constante de la interfaz seguía en `1.5.1` y ahora hay
    una prueba (`test/version_coherente_test.dart`) que compara los tres sitios.
 6. **Dos hallazgos de la revisión de cierre**: la versión visible (arriba) y el
    mensaje del cuadrante que mandaba a «Secciones del Período», un apartado que ya
    no existe. Ambos corregidos.
+7. **Cerrar un período: verificado en producción** (período temporal creado,
+   cerrado y borrado). `PATCH {cerrado:true}` escribe `closed_at` y **archiva sus
+   secciones**; `PATCH {activo:false}` sobre un período ya inactivo no hace nada.
+   De ahí: un período nuevo **nace activo** (antes nacía en borrador y su «Hacer
+   vigente» devolvía 400), el borrador ofrece «Activar», y cerrar el **vigente**
+   avisa en rojo de que el centro queda sin período en curso.
+8. **Barra de paginación oculta cuando hay una sola página** (`Cursos y PNA`):
+   medido en la captura de 390 px, «1–6 de 6» con dos flechas deshabilitadas
+   ocupaba ~44 px fijos sin ofrecer nada.
 
 ### Deuda funcional abierta (P1)
 
@@ -68,7 +77,7 @@ Cifras **medidas el 2026-10-29**, no deducidas:
   **vacío**).
 - **Frontend desplegado:** `wrangler pages deploy` → **`bb7c8f86.inces-lms.pages.dev`**
   (alias **`inces-lms.pages.dev`**), HTTP 200, bundle con la API de producción y
-  **cero** `localhost` (validación §5.1), versión visible **1.5.5**.
+  **cero** `localhost` (validación §5.1), versión visible **1.6.0**.
 - **Backend:** `GET https://inces-lms-api.onrender.com/salud` → 200 `{"estado":"ok"}`.
 - **Verificado en producción con sesión real:** el docente entra y llega a «Aulas
   Virtuales» (Playwright contra `inces-lms.pages.dev`, 1 passed).
