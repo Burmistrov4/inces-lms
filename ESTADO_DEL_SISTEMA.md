@@ -71,7 +71,7 @@ env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
 - ✅ **Los 6 E2E en rojo** se corrigieron el 2026-10-29: la señal de sesión y las
   6 specs/navegaciones apuntan a «Cursos y PNA»; el page object de exportación HACER
   ahora usa «Exportar HACER» dentro de «Cursos y PNA». `cleanstack-ci.yml` (0 bytes)
-  sigue igual.
+  se **borró** el 2026-10-29 (workflow vacío, fallaba en cada push).
 
 ---
 
@@ -187,7 +187,7 @@ arranque de 4,71 MB de `main.dart.js`.
   PNA»), `export_csv` (la *flaky* del login), `aula_virtual` («una tarjeta por
   sección»), `auditoria_completa_sistema` (2) y `refresco_al_volver`. Hay que
   actualizarlas o estabilizarlas: son deuda de pruebas, no del producto.
-- **Vaciar o borrar `cleanstack-ci.yml`** (0 bytes, falla en cada push).
+- ✅ **`cleanstack-ci.yml`** (0 bytes, fallaba en cada push): **BORRADO el 2026-10-29**. Era un workflow vacío sin referencias en código; ensuciaba cada push con una X roja. No se perdió funcionalidad.
 - SMTP real en Render (`SMTP_USER` + `SMTP_PASS`): sin eso no sale correo.
 - Verificación en navegador de «Invitar docente» y de la promoción de administradores.
 - Cámara del QR en dispositivo físico.
