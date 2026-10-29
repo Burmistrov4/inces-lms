@@ -1,10 +1,12 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — 2026-10-29 (tarde) · v1.7.0 · migración aplicada
+## Fotografía operativa vigente — 2026-10-29 (tarde) · v1.7.0 · DESPLEGADO
 
 > Migración `202610290001_ciclo_periodo.sql` **aplicada a la nube**: 62 versiones,
-> **0 pendientes, 0 deriva**. El despliegue del frente y del backend va con este
-> mismo commit.
+> **0 pendientes, 0 deriva**. Backend **desplegado** en Render (`0ff0837`, responde
+> con formato de error estructurado). Frente **desplegado** en Cloudflare Pages
+> (`f32d97ef.inces-lms.pages.dev` / `inces-lms.pages.dev`, HTTP 200). Build:
+> run `40871108977`.
 
 ### Lo que cambió (detalle y porqué en el CHANGELOG 1.7.0)
 
