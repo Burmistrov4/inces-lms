@@ -1,4 +1,4 @@
-﻿# CHANGELOG — INCES LMS
+# CHANGELOG — INCES LMS
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
@@ -42,6 +42,13 @@ Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en
 | Backend | `cd backend && npm run verify` | **34 suites · 721/721** · exit 0 |
 
 > **El bloqueo `CreateFile failed 231` no se reproduce.** `flutter test`, `flutter analyze` y `flutter build` corren en esta máquina el 2026-10-29. La entrada «BLOCKED» de `ESTADO_DEL_SISTEMA.md` queda como histórica, con su fecha.
+
+**Publicado el 2026-10-29** (commit `5f2ad6e`, push `7cbda5e..5f2ad6e`):
+
+- **Frontend:** `wrangler pages deploy` → `bb7c8f86.inces-lms.pages.dev`, alias `inces-lms.pages.dev`. Bundle validado según el procedimiento §5.1: API de producción presente y **cero** `localhost`; versión visible **1.5.5**.
+- **Backend:** `/salud` → 200 en `inces-lms-api.onrender.com`.
+- **Verificado con sesión real en producción:** el docente entra y llega a «Aulas Virtuales».
+- **Una vez deshecho en el acto:** el primer `pages deploy` (`93d6d111`) llevó un bundle compilado con el `.env.json` local (`localhost:3001`). Faltó el override `--dart-define=API_BASE_URL=…` que sí usa `web_bundle.yml`. Se detectó con la comprobación §5.1 **antes** de dar el despliegue por bueno y se rehizo. El override no es opcional.
 
 ## [1.5.4] - 2026-10-28
 ### Lote 3 — Ventana de inscripciones y próxima apertura (parcial: código listo, migración SIN aplicar)

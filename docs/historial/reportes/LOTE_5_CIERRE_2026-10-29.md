@@ -1,12 +1,80 @@
-﻿# Lote 5 — cierre, reparación y handoff
+# Lote 5 — cierre, reparación, despliegue y handoff
 
 **Fecha:** 2026-10-29 · **Rama:** `main` · **Base:** `21cbdaf` (Lote 5)
-**Estado:** Lote 5 **cerrado con la regresión reparada**; suite completa en verde.
+**Estado:** Lote 5 **cerrado con la regresión reparada**, **publicado y desplegado**;
+suite completa en verde. La matriz y el Aula Virtual del docente se verificaron
+**en producción**.
 
 > Este documento **sustituye** a `docs/HISTORICO_RESUMEN_LOTE_5.md` y a
 > `docs/PROMPT_DELEGACION_AGENTE.md`, que se retiraron el mismo día por contener
 > afirmaciones que el árbol desmiente (detalle en §4). Los dos eran locales: no
 > estaban en `origin`, así que no se pierde trazabilidad de nada publicado.
+
+---
+
+## 0. Despliegue a producción (2026-10-29)
+
+| Paso | Resultado |
+|---|---|
+| Commit | `5f2ad6e` · «fix(aula): reparar Aula Virtual del docente, version visible y matriz sincronizada (v1.5.5)» |
+| Push | `7cbda5e..5f2ad6e main -> main` (10 commits que CI nunca había visto) |
+| CI del push | Flutter CI ✅ · Backend CI ✅ · Supabase CI ✅ · **E2E ❌** (los **mismos 6** fallos que ya tenía `main` el 2026-10-28; 17 pasan ahora frente a 15 antes) · `cleanstack-ci` ❌ (archivo vacío) |
+| Bundle | `flutter build web --release --dart-define-from-file=.env.json --dart-define=API_BASE_URL=https://inces-lms-api.onrender.com` → **√ Built**, 48,0 MB en 58 archivos (`main.dart.js` 4,71 MB) |
+| Validación §5.1 | `index.html`/`main.dart.js`/`_headers`/`robots.txt`/`sitemap.xml` presentes · API de producción **1** · `localhost:3001` **0** · version 1.5.5 **6** |
+| Publicación | `wrangler pages deploy` → **`bb7c8f86.inces-lms.pages.dev`** (alias **`inces-lms.pages.dev`**), HTTP 200 |
+| Backend | `GET /salud` → 200 `{"estado":"ok"}` |
+| Verificación real | Playwright contra producción: el **docente entra y llega a «Aulas Virtuales»** (1 passed, 16,9 s) |
+
+> **Error cometido y corregido en el acto:** el primer `wrangler pages deploy`
+> subió un bundle compilado con el `.env.json` local, que apunta a
+> `http://localhost:3001` — el despliegue `93d6d111` estuvo sirviendo una app que
+> no podía hablar con la API. Se detectó **antes de dar nada por bueno** con la
+> comprobación §5.1 que el propio procedimiento exige y que esa primera vez no se
+> ejecutó. El despliegue bueno es `bb7c8f86`. La lección queda escrita: **el
+> override `--dart-define=API_BASE_URL=…` no es opcional**; `.env.json` es de
+> desarrollo.
+
+### Velocidad medida en producción (desde Venezuela, 2026-10-29)
+
+`TTFB ≈ total` en todas las rutas: el tiempo es **del servidor**, no de la
+transferencia (las respuestas pesan 0,4–4,6 KB).
+
+| Rol | Módulo | HTTP | 1.er golpe | Mediana (3 muestras) |
+|---|---|---|---|---|
+| admin | Usuarios y Roles | 200 | 1628 ms | **1625 ms** |
+| admin | Cursos y PNA | 200 | 2062 ms | **1154 ms** |
+| admin | Inscripciones (ocupación) | 200 | 1120 ms | **1126 ms** |
+| admin | Registro de accesos | 200 | 1083 ms | **1197 ms** |
+| admin | Cuadrante | 200 | 1757 ms | **1910 ms** |
+| admin | Período | 200 | 1480 ms | **1526 ms** |
+| docente | Aulas Virtuales (`/mi-horario`) | 200 | 1422 ms | **1151 ms** |
+| docente | Entregas | 200 | 1005 ms | **952 ms** |
+| estudiante | Aulas (`/mi-horario`) | 200 | 1008 ms | **1078 ms** |
+| estudiante | Mis inscripciones | 200 | 1631 ms | **1256 ms** |
+| estudiante | Mis entregas | 200 | 875 ms | **915 ms** |
+
+Contexto medido en la misma sesión: **Supabase directo desde Venezuela 345–550 ms**;
+portada de producción **395 ms**; primer arranque del motor Flutter **5,7 s**;
+login completo del docente (submit → panel) **6,5 s**; cambio de panel ya cargado
+**32 ms**.
+
+**Lectura honesta:** «súper rápido» **no se cumple todavía**. Cada petición cuesta
+~1–2 s porque el backend hace varios viajes a Supabase en serie (región de Render
+vs. `sa-east-1`), y un panel encadena varias. El frente no es el cuello: el panel
+ya montado responde en 32 ms y la caché por sección hace que volver sea instantáneo.
+
+**Palancas, por impacto:**
+
+1. **Región del servicio en Render** (solo el propietario): acercarla a
+   `sa-east-1` recorta cada viaje. Es la palanca grande y no cuesta código.
+2. **Menos viajes por ruta**: `/admin/cuadrante` (1,9 s) y `/admin/usuarios`
+   (1,6 s) son los que más encadenan; agrupar lecturas o servirlas con una RPC
+   baja el tiempo de forma directa.
+3. **`SUPABASE_JWT_SECRET`** en Render (H1): permitiría verificar el JWT en local;
+   hoy el hook pide a GoTrue. Medido: `backend/.env` **no** define esa variable.
+4. **Arranque**: `main.dart.js` de 4,71 MB explicado en 5,7 s de primera carga.
+   Se puede adelgazar (fuentes/iconos ya van con *tree-shaking*) y precargar los
+   orígenes con `preconnect`.
 
 ---
 

@@ -58,20 +58,52 @@ Cifras **medidas el 2026-10-29**, no deducidas:
 | Galería de capturas | **198 imágenes en 4 grupos** | `node C:/tmp/gen_galeria.mjs` → `docs/assets/matriz/index.html` |
 | Tablas / Vistas / RLS | 28 / 9 sentencias sobre 7 nombres / 68 | `grep -rhiE` sobre `supabase/migrations/` |
 
-### Estado de Git y de CI
+### Estado de Git, CI y producción (2026-10-29)
 
-- **9 commits locales antes de este cierre, sin publicar.** `origin/main` está en
-  `7cbda5e` (2026-10-28): CI **nunca vio** el Rediseño aplicado, los Lotes 1–5 ni
-  esta reparación.
-- **CI en `origin/main`** (`gh run list`, 2026-10-29): Flutter CI ✅ · Web bundle
-  ✅ · **E2E ❌** (job «Exportación CSV en navegador real», la *flaky* del login) ·
-  `cleanstack-ci.yml` ❌ en 0 s (el archivo está **vacío**).
+- **Publicado.** `main` está en **`5f2ad6e`** (`7cbda5e..5f2ad6e`): los 10 commits
+  que CI nunca había visto, ya en `origin`.
+- **CI del push:** Flutter CI ✅ · Backend CI ✅ · Supabase CI ✅ · **E2E ❌** con los
+  **mismos 6 fallos** que ya tenía `main` el 2026-10-28 (y **17 pasan** frente a 15
+  de aquella corrida: no se añadió ninguno) · `cleanstack-ci.yml` ❌ en 0 s (archivo
+  **vacío**).
+- **Frontend desplegado:** `wrangler pages deploy` → **`bb7c8f86.inces-lms.pages.dev`**
+  (alias **`inces-lms.pages.dev`**), HTTP 200, bundle con la API de producción y
+  **cero** `localhost` (validación §5.1), versión visible **1.5.5**.
+- **Backend:** `GET https://inces-lms-api.onrender.com/salud` → 200 `{"estado":"ok"}`.
+- **Verificado en producción con sesión real:** el docente entra y llega a «Aulas
+  Virtuales» (Playwright contra `inces-lms.pages.dev`, 1 passed).
+- ⚠️ Un primer despliegue (`93d6d111`) subió un bundle con `localhost:3001` porque
+  se compiló con el `.env.json` de desarrollo y sin el override de §5.1. Se detectó
+  y se corrigió en el acto; el bueno es `bb7c8f86`. **El override
+  `--dart-define=API_BASE_URL=…` no es opcional.**
+
+### Velocidad de producción (medida desde Venezuela, 2026-10-29)
+
+Cada petición cuesta **0,9–2,3 s** y `TTFB ≈ total`: el tiempo es del servidor, no
+de la red (respuestas de 0,4–4,6 KB). Los módulos más lentos: **Cuadrante 1,9 s**,
+**Usuarios y Roles 1,6 s**, **Período 1,5 s**, **Mis inscripciones 1,3 s**. Los más
+rápidos: **Mis entregas 0,9 s**, **Entregas del docente 0,95 s**.
+Contexto: Supabase directo desde Venezuela 345–550 ms · portada 395 ms · primer
+arranque del motor Flutter 5,7 s · login del docente 6,5 s · cambio de panel ya
+cargado **32 ms**.
+
+**No es «súper rápido» todavía.** El cuello está en los viajes del backend a
+Supabase (región de Render frente a `sa-east-1`) y en las rutas que encadenan varias
+lecturas. Palancas ordenadas: (1) acercar la región del servicio en Render —solo el
+propietario—; (2) reducir viajes por ruta en Cuadrante y Usuarios; (3)
+`SUPABASE_JWT_SECRET` en Render para verificar el JWT en local; (4) adelgazar el
+arranque de 4,71 MB de `main.dart.js`.
 
 ### Pendiente que no es código
 
-- **Push y despliegue** de los commits locales (autorización del propietario). La
-  matriz ya está medida; lo que falta es que CI la vuelva a ver desde `origin`.
-- **Estabilizar `export_csv`** en CI; **vaciar o borrar `cleanstack-ci.yml`** (0 bytes).
+- **Región de Render** y **`SUPABASE_JWT_SECRET`**: decisiones/credenciales del
+  propietario, y las dos palancas mayores de velocidad.
+- **6 specs E2E en rojo desde antes de este push:** `live_prod_v124` (espera
+  «v1.2.4»), `admin_cpanel_p0` («Programas Académicos», renombrado a «Cursos y
+  PNA»), `export_csv` (la *flaky* del login), `aula_virtual` («una tarjeta por
+  sección»), `auditoria_completa_sistema` (2) y `refresco_al_volver`. Hay que
+  actualizarlas o estabilizarlas: son deuda de pruebas, no del producto.
+- **Vaciar o borrar `cleanstack-ci.yml`** (0 bytes, falla en cada push).
 - SMTP real en Render (`SMTP_USER` + `SMTP_PASS`): sin eso no sale correo.
 - Verificación en navegador de «Invitar docente» y de la promoción de administradores.
 - Cámara del QR en dispositivo físico.
