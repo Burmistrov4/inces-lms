@@ -84,44 +84,35 @@ el siguiente**. La interfaz debe decirlo, y hoy ya lo advierte.
 |---|---|---|
 | 1 | **Bloquear escrituras en período cerrado** | **HECHO** · migración `202610290001`: trigger `exigir_periodo_no_cerrado` en `sections`, `schedule_slots` y `teacher_duties`. Sólo INSERT: editar lo existente sigue permitido. |
 | 2 | **Exigir sucesor** al cerrar el vigente | **HECHO** · `409 PERIODO_VIGENTE_SIN_SUCESOR`; `forzar: true` cierra y **suelta `periodo_activo`**. El diálogo ofrece «Cerrar y activar el siguiente». |
-| 3 | **Ventana de inscripción visible** | **HECHO** · columnas nuevas en `academic_periods`, `estado_inscripcion()` en la base, `estadoDeVentanaInscripcion()` en el dominio, insignia en la fila del período y rechazo con mensaje en la RPC del estudiante. **Falta** mostrarla en la landing (fase 4 del plan de secciones). |
+| 3 | **Ventana de inscripción aplicada** | **HECHO** · la RPC `solicitar_inscripcion` lee `programs.inscripcion_inicio/fin/proxima_apertura` y rechaza con mensaje que dice cuándo. La ventana ya existía (2026-10-28); **no se duplicó**. |
 | 4 | **Exponer «heredar horario»** | **HECHO** desde 1.6.0 (interruptor en el formulario de alta). |
-| 5 | **Historial legible** | **PARCIAL** · el período cerrado se lista con sus fechas y su estado de inscripción, pero **no** abre un resumen con secciones/inscritos/notas. Es la pieza que falta. |
+| 5 | **Historial legible** | **PARCIAL** · el período cerrado se lista con sus fechas y su estado, pero **no** abre un resumen con secciones/inscritos/notas. Es la pieza que falta. |
 
 ### Corrección a este documento
 
 Decía que `programs.inscripcion_inicio/fin/proxima_apertura` «ya están en la
-base». **No lo estaban**: `grep -rn "inscripcion_inicio\|proxima_apertura"` sobre
-`supabase/`, `backend/src/` y `lib/` devolvía **cero** resultados antes de la
-migración de hoy. La ventana se creó en `academic_periods` —un solo sitio para
-todo el centro— y no por curso, porque abrir inscripciones es un acto único del
-ciclo y el CFS tiene un solo PNA. Extenderlo por curso sería una columna en
-`programs` con esta como respaldo, no un rediseño.
+base». **Es cierto**, pero la primera versión de la migración de hoy lo puso en
+duda y duplicó la ventana en `academic_periods`. La causa del error: un `grep`
+que **murió por SIGTERM** se leyó como «cero resultados». La lección es la de
+siempre —**un comando interrumpido no es una medición**— y el arreglo fue borrar
+el duplicado antes de aplicarlo, no convivir con él.
 
 ## 6. Cómo se despliega esto (orden obligatorio)
 
-La migración **no está aplicada a la nube**: este entorno no tiene
-`SUPABASE_ACCESS_TOKEN`. El backend nuevo **no puede** publicarse antes, porque
-`COLUMNAS_PERIODO` selecciona las dos columnas nuevas y PostgREST devolvería
-`42703` en todas las rutas de período.
+La migración **ya está aplicada** (62 versiones, 0 pendientes, 0 deriva).
 
 ```bash
-# 1. Aplicar la migración (necesita el token de la cuenta de Supabase)
-SUPABASE_ACCESS_TOKEN=sbp_xxx node supabase/apply-migrations.mjs
-node supabase/apply-migrations.mjs --check     # debe decir 0 pendientes, 0 deriva
+# 1. Comprobar (no debería quedar nada)
+SUPABASE_ACCESS_TOKEN=... node supabase/apply-migrations.mjs --check
 
-# 2. Comprobar que la nube tiene las columnas y las funciones
-node supabase/verificar-esquema.mjs
-
-# 3. Publicar (push a main → Render redespliega el backend)
+# 2. Publicar backend (push a main → Render redespliega)
 git push origin main
 
-# 4. Bundle y despliegue del frente
+# 3. Bundle y despliegue del frente
 gh workflow run web_bundle.yml --ref main
 gh run download <run-id> -n web-produccion -D build_web
-npx wrangler pages deploy build_web --project-name=inces-lms --commit-dirty=true \
-  --branch=main
+npx wrangler pages deploy build_web --project-name=inces-lms \
+  --commit-dirty=true --branch=main
 ```
 
-Sin el paso 1, el 3 tumba el módulo de período en producción.
 

@@ -40,7 +40,6 @@ import { agruparPensum, pensumEditable } from '../../src/dominio/reglas-curricul
 import {
   diaLegible,
   estadoDePeriodo,
-  estadoDeVentanaInscripcion,
   turnoDeBloque,
 } from '../../src/dominio/reglas-cuadrante.js';
 import type { EnvioCorreo } from '../../src/infra/correo.js';
@@ -470,9 +469,6 @@ export const PERIODO_2026_1: Periodo = {
   nombre: 'Lapso 2026-1',
   fechaInicio: null,
   fechaFin: null,
-  inscripcionInicio: null,
-  inscripcionFin: null,
-  estadoInscripcion: 'ABIERTO',
   activo: true,
   vigente: false,
   creadoEn: '2026-09-15T10:00:00.000Z',
@@ -486,9 +482,6 @@ export const PERIODO_2026_2: Periodo = {
   nombre: 'Lapso 2026-2',
   fechaInicio: '2026-09-21',
   fechaFin: '2027-02-13',
-  inscripcionInicio: null,
-  inscripcionFin: null,
-  estadoInscripcion: 'ABIERTO',
   activo: true,
   vigente: false,
   creadoEn: '2026-09-15T10:00:00.000Z',
@@ -2490,12 +2483,6 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
         nombre: entrada.nombre,
         fechaInicio: entrada.fechaInicio,
         fechaFin: entrada.fechaFin,
-        inscripcionInicio: entrada.inscripcionInicio ?? null,
-        inscripcionFin: entrada.inscripcionFin ?? null,
-        estadoInscripcion: estadoDeVentanaInscripcion({
-          inscripcionInicio: entrada.inscripcionInicio ?? null,
-          inscripcionFin: entrada.inscripcionFin ?? null,
-        }),
         // **Nace ACTIVO, no en borrador.** El doble decía `false` y el
         // repositorio real inserta `is_active: true` desde el 2026-10-29
         // (commit c8c438c). Esa divergencia dejaba en verde una prueba que
@@ -2593,11 +2580,6 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
         fechaInicio: actualizado.fechaInicio,
         fechaFin: actualizado.fechaFin,
         cerradoEn: actualizado.cerradoEn,
-      });
-      actualizado.estadoInscripcion = estadoDeVentanaInscripcion({
-        cerradoEn: actualizado.cerradoEn,
-        inscripcionInicio: actualizado.inscripcionInicio,
-        inscripcionFin: actualizado.inscripcionFin,
       });
 
       // Cierre forzado del vigente: se suelta el parámetro, como en la nube.

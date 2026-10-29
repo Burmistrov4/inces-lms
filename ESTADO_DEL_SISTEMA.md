@@ -1,13 +1,10 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — 2026-10-29 (tarde) · v1.7.0 · **NO DESPLEGADO**
+## Fotografía operativa vigente — 2026-10-29 (tarde) · v1.7.0 · migración aplicada
 
-> **Código completo y verificado en local; la nube sigue en 1.6.0.** La migración
-> `202610290001_ciclo_periodo.sql` **no está aplicada** porque este entorno no
-> tiene `SUPABASE_ACCESS_TOKEN`. El backend nuevo **no se puede publicar antes**:
-> `COLUMNAS_PERIODO` selecciona dos columnas que aún no existen en la nube y todas
-> las rutas de período devolverían `42703`. Orden y comandos en
-> [`docs/DISENO_CICLO_PERIODO_2026-10-29.md`](docs/DISENO_CICLO_PERIODO_2026-10-29.md) §6.
+> Migración `202610290001_ciclo_periodo.sql` **aplicada a la nube**: 62 versiones,
+> **0 pendientes, 0 deriva**. El despliegue del frente y del backend va con este
+> mismo commit.
 
 ### Lo que cambió (detalle y porqué en el CHANGELOG 1.7.0)
 
@@ -18,18 +15,19 @@
 2. **Regla del sucesor.** Cerrar el período **vigente** sin otro abierto devuelve
    `409 PERIODO_VIGENTE_SIN_SUCESOR`; `forzar: true` cierra y **suelta
    `periodo_activo`**. El diálogo ofrece «Cerrar y activar el siguiente».
-3. **Ventana de inscripción** (`inscripcion_inicio`/`inscripcion_fin` en
-   `academic_periods`, `estado_inscripcion()` en la base,
-   `estadoDeVentanaInscripcion()` en el dominio): `ABIERTO · PROXIMO · VENCIDO ·
-   CERRADO`. La RPC del estudiante rechaza fuera de ventana **diciendo cuándo**;
-   el administrador conserva `reincorporar`.
+3. **La ventana de inscripción del curso se aplica.** `solicitar_inscripcion`
+   ahora lee `programs.inscripcion_inicio/fin/proxima_apertura` (que existían
+   desde el 2026-10-28) y rechaza fuera de plazo diciendo **cuándo** abre o
+   cerró. **No se duplicó la ventana en `academic_periods`**: la primera versión
+   de la migración lo hacía y se descartó antes de aplicarla.
 4. **`POST /admin/grupos/resolver`**: el grupo (sección) se crea solo a partir de
    curso + materia + período. El Horario PNA ya no pide sección.
 5. **Menos espacio robado**: migas de pan ocultas por debajo de 700 px y subtítulo
    de `TituloSeccion` plegado en un `Tooltip` por debajo de 640 px.
-6. **Un umbral mal calibrado, corregido de paso**: el panel de Guardias decidía
-   «móvil o escritorio» sólo por altura (≥700). Al quitar 28 px de migas, un
-   360×740 cruzó el umbral y desbordó 10 px. Ahora exige además ancho ≥600.
+6. **Dos umbrales mal calibrados, corregidos de paso**: el panel de Guardias
+   decidía «móvil o escritorio» sólo por altura (al quitar 28 px de migas, un
+   360×740 cruzó el umbral y desbordó 10 px) y `TituloSeccion` se estiraba a toda
+   la altura disponible por no llevar `mainAxisSize.min`.
 
 ### Verificación medida hoy
 
@@ -38,8 +36,16 @@
 | Analizador propio | **249 archivos · 0/0/0** | `node devops/analizar-dart.mjs` · exit 0 |
 | `flutter analyze` | **No issues found!** | exit 0 |
 | Suite Flutter | **1061/1061** | `flutter test` · exit 0 |
-| Backend | **34 archivos · 732/732** (con las 4 pruebas nuevas del resolutor: 736) | `cd backend && npm run verify` · exit 0 |
-| Migración en la nube | **NO APLICADA** (falta `SUPABASE_ACCESS_TOKEN`) | `apply-migrations.mjs --check` → pide token |
+| Backend | **34 archivos · 728/728** | `cd backend && npm run verify` · exit 0 |
+| Migraciones | **62 aplicadas · 0 pendientes · 0 deriva** | `apply-migrations.mjs --check` |
+| `verificar-esquema.mjs` | **5 comprobaciones fallidas, todas anteriores a hoy** | ver nota |
+
+⚠️ **`verificar-esquema.mjs` tiene 5 expectativas obsoletas** (no es deriva de la
+base, es el verificador que se quedó atrás): espera `habilitar_sistema_bids`
+—borrado por `202610260001`—, las tablas heredadas `password_resets` /
+`planilla_observaciones` / `planilla_versiones`, otro recuento de cursos libres,
+otros límites de M5 y otro estado de módulos. Hay que actualizarlo o retirarlo;
+mientras tanto, un rojo suyo **no** significa que la base esté mal.
 
 ⚠️ **Hallazgo de entorno, importante para futuras sesiones:** `flutter test`
 falla **en los 84 archivos** con `Unable to connect to flutter_tester process:

@@ -616,9 +616,6 @@ export interface EntradaCrearPeriodo {
   nombre: string | null;
   fechaInicio: string | null;
   fechaFin: string | null;
-  /** Ventana en la que el estudiante puede inscribirse. `null` = sin límite. */
-  inscripcionInicio?: string | null;
-  inscripcionFin?: string | null;
   heredarDeCodigo?: string | null;
 }
 
@@ -628,13 +625,16 @@ export interface EntradaCrearPeriodo {
  * `sections.period_code` apunta a él y los documentos impresos lo citan, así que
  * renombrarlo rompería la referencia. Cambiar la nomenclatura (R-06) es crear un
  * lapso nuevo y archivar el viejo, no reescribir el código de uno en uso.
+ *
+ * **No lleva la ventana de inscripción.** Esa vive en `programs`
+ * (`inscripcion_inicio`, `inscripcion_fin`, `proxima_apertura`) desde
+ * `202610280001`: es una fecha del curso, no del ciclo. Duplicarla aquí daría dos
+ * sitios que dicen cuándo se puede inscribir.
  */
 export interface CambiosPeriodo {
   nombre?: string | null;
   fechaInicio?: string | null;
   fechaFin?: string | null;
-  inscripcionInicio?: string | null;
-  inscripcionFin?: string | null;
   activo?: boolean;
   cerrado?: boolean | null;
   /**

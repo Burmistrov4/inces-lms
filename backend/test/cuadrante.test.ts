@@ -423,50 +423,6 @@ describe('POST /api/v1/admin/periodos', () => {
     expect(cuerpo.periodo.vigente).toBe(false);
   });
 
-  it('guarda la ventana de inscripción y deriva su estado', async () => {
-    const arnés = crearArnés();
-    app = arnés.app;
-
-    const respuesta = await app.inject({
-      method: 'POST',
-      url: '/api/v1/admin/periodos',
-      headers: conToken(TOKEN_ADMIN),
-      payload: {
-        codigo: '2027-3',
-        nombre: 'Lapso 2027-3',
-        inscripcionInicio: '2027-01-10',
-        inscripcionFin: '2027-01-31',
-      },
-    });
-
-    expect(respuesta.statusCode).toBe(201);
-    const cuerpo = respuesta.json() as {
-      periodo: { inscripcionInicio: string; inscripcionFin: string; estadoInscripcion: string };
-    };
-    expect(cuerpo.periodo.inscripcionInicio).toBe('2027-01-10');
-    expect(cuerpo.periodo.inscripcionFin).toBe('2027-01-31');
-    // La ventana está en el futuro: todavía no se puede inscribir.
-    expect(cuerpo.periodo.estadoInscripcion).toBe('PROXIMO');
-  });
-
-  it('rechaza una ventana de inscripción invertida', async () => {
-    const arnés = crearArnés();
-    app = arnés.app;
-
-    const respuesta = await app.inject({
-      method: 'POST',
-      url: '/api/v1/admin/periodos',
-      headers: conToken(TOKEN_ADMIN),
-      payload: {
-        codigo: '2027-4',
-        inscripcionInicio: '2027-02-10',
-        inscripcionFin: '2027-02-01',
-      },
-    });
-
-    expect(respuesta.statusCode).toBe(400);
-  });
-
   it('crea un período heredando el horario del anterior', async () => {
     const arnés = crearArnés();
     app = arnés.app;

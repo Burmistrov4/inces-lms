@@ -647,14 +647,6 @@ class _FilaLapso extends StatelessWidget {
                             const Etiqueta(texto: 'Vigente', destacada: true),
                           _InsigniaEstadoPeriodo(estado: periodo.estado),
                           Etiqueta(texto: _rangoDeFechas(periodo)),
-                          // **La ventana de inscripción, a la vista.** Es la
-                          // pregunta que el administrador no podía responder
-                          // mirando esta pantalla: «¿puede entrar gente nueva
-                          // todavía, y hasta cuándo?».
-                          Etiqueta(
-                            texto: _textoVentana(periodo),
-                            color: _colorVentana(periodo.estadoInscripcion),
-                          ),
                         ],
                       ),
                     ],
@@ -773,50 +765,6 @@ class _FilaLapso extends StatelessWidget {
     if (inicio != null) return 'Desde $inicio';
     return 'Hasta $fin';
   }
-
-  /// `2026-11-30` → `30/11`. Sin año a propósito: la ventana siempre es del
-  /// período que se está mirando, y cuatro dígitos más no caben en la fila.
-  static String _corto(String iso) {
-    final partes = iso.split('-');
-    if (partes.length != 3) return iso;
-    return '${partes[2]}/${partes[1]}';
-  }
-
-  /// La ventana en una frase, con la fecha que importa según el estado.
-  static String _textoVentana(Periodo periodo) {
-    switch (periodo.estadoInscripcion) {
-      case EstadoVentanaInscripcion.abierto:
-        final fin = periodo.inscripcionFin;
-        return fin == null
-            ? 'Inscripción abierta'
-            : 'Inscripción hasta ${_corto(fin)}';
-      case EstadoVentanaInscripcion.proximo:
-        final inicio = periodo.inscripcionInicio;
-        return inicio == null
-            ? 'Inscripción próxima'
-            : 'Inscripción desde ${_corto(inicio)}';
-      case EstadoVentanaInscripcion.vencido:
-        final fin = periodo.inscripcionFin;
-        return fin == null
-            ? 'Inscripción cerrada'
-            : 'Inscripción cerró ${_corto(fin)}';
-      case EstadoVentanaInscripcion.cerrado:
-        return 'Sin inscripciones';
-    }
-  }
-
-  static Color _colorVentana(EstadoVentanaInscripcion estado) {
-    switch (estado) {
-      case EstadoVentanaInscripcion.abierto:
-        return Colors.green;
-      case EstadoVentanaInscripcion.proximo:
-        return Colors.blue;
-      case EstadoVentanaInscripcion.vencido:
-        return Colors.orange;
-      case EstadoVentanaInscripcion.cerrado:
-        return Colors.purple;
-    }
-  }
 }
 
 /// Formulario de alta y edición de un lapso.
@@ -845,10 +793,6 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
   late String? _inicio = widget.existente?.fechaInicio;
   late String? _fin = widget.existente?.fechaFin;
 
-  /// Ventana de inscripción: independiente de las fechas de dictado.
-  late String? _inscripcionInicio = widget.existente?.inscripcionInicio;
-  late String? _inscripcionFin = widget.existente?.inscripcionFin;
-
   late bool _activo = widget.existente?.activo ?? true;
   late bool _heredarHorario = widget.periodoOrigenPorDefecto != null;
   late final String? _periodoOrigen = widget.periodoOrigenPorDefecto;
@@ -867,13 +811,8 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
   }
 
 
-  Future<void> _elegirFecha({
-    required bool esInicio,
-    bool deInscripcion = false,
-  }) async {
-    final actual = deInscripcion
-        ? (esInicio ? _inscripcionInicio : _inscripcionFin)
-        : (esInicio ? _inicio : _fin);
+  Future<void> _elegirFecha({required bool esInicio}) async {
+    final actual = esInicio ? _inicio : _fin;
     final inicial = (actual != null && esFechaISO(actual))
         ? DateTime.parse(actual)
         : DateTime.now();
@@ -883,9 +822,7 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
       initialDate: inicial,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
-      helpText: deInscripcion
-          ? (esInicio ? 'Las inscripciones abren' : 'Las inscripciones cierran')
-          : (esInicio ? 'Fecha de inicio' : 'Fecha de fin'),
+      helpText: esInicio ? 'Fecha de inicio' : 'Fecha de fin',
     );
 
     if (elegida == null || !mounted) return;
@@ -897,13 +834,7 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
         '${elegida.day.toString().padLeft(2, '0')}';
 
     setState(() {
-      if (deInscripcion) {
-        if (esInicio) {
-          _inscripcionInicio = texto;
-        } else {
-          _inscripcionFin = texto;
-        }
-      } else if (esInicio) {
+      if (esInicio) {
         _inicio = texto;
       } else {
         _fin = texto;
@@ -926,8 +857,6 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
               nombre: _nombreCtrl.text,
               fechaInicio: _inicio,
               fechaFin: _fin,
-              inscripcionInicio: _inscripcionInicio,
-              inscripcionFin: _inscripcionFin,
               activo: _activo,
               motivo: _motivoCtrl.text.trim().isNotEmpty
                   ? _motivoCtrl.text.trim()
@@ -935,7 +864,6 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
               // Si se quitaron las dos fechas, hay que mandarlas nulas de forma
               // explícita: «ausente» significa «no lo toques».
               borrarFechas: _inicio == null && _fin == null,
-              borrarVentana: _inscripcionInicio == null && _inscripcionFin == null,
             ),
           )
         : await widget.repo.crearPeriodo(
@@ -944,8 +872,6 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
               nombre: _nombreCtrl.text,
               fechaInicio: _inicio,
               fechaFin: _fin,
-              inscripcionInicio: _inscripcionInicio,
-              inscripcionFin: _inscripcionFin,
               heredarDeCodigo: (_heredarHorario && _periodoOrigen != null)
                   ? _periodoOrigen
                   : null,
@@ -1114,52 +1040,6 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
                     ),
               ),
 
-              // --- Ventana de inscripción ------------------------------------
-              //
-              // Va aparte de las fechas de dictado porque son cosas distintas:
-              // las inscripciones abren semanas antes y cierran cuando empieza
-              // el ciclo. Sin esta ventana, el estudiante no tiene forma de
-              // saber si todavía puede entrar ni cuándo abre el siguiente.
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Icon(
-                    Icons.how_to_reg_outlined,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Inscripciones',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Cuándo puede inscribirse un estudiante en este período. Es lo '
-                'que la portada le muestra. Si dejas las dos vacías, la '
-                'inscripción no está restringida.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              _campoDeFecha(
-                etiqueta: 'Las inscripciones abren',
-                valor: _inscripcionInicio,
-                onElegir: () =>
-                    _elegirFecha(esInicio: true, deInscripcion: true),
-                onLimpiar: () => setState(() => _inscripcionInicio = null),
-              ),
-              const SizedBox(height: 10),
-              _campoDeFecha(
-                etiqueta: 'Las inscripciones cierran',
-                valor: _inscripcionFin,
-                onElegir: () =>
-                    _elegirFecha(esInicio: false, deInscripcion: true),
-                onLimpiar: () => setState(() => _inscripcionFin = null),
-              ),
               if (_esEdicion) ...[
                 const SizedBox(height: 12),
                 TextField(

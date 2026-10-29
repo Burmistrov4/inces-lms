@@ -72,7 +72,6 @@ import {
 import {
   esChoqueDeAgenda,
   estadoDePeriodo,
-  estadoDeVentanaInscripcion,
   turnoDeBloque,
 } from '../dominio/reglas-cuadrante.js';
 import { nombreVisible } from '../dominio/reglas-perfiles.js';
@@ -464,23 +463,12 @@ function aPeriodo(fila: Fila, codigoVigente: string | null): Periodo {
   const fechaFin = texto(fila.end_date) ?? (esSa262 ? '2027-01-30' : null);
   const cerradoEn = texto(fila.closed_at);
   const cerradoPor = texto(fila.closed_by);
-  // Sin ventana cargada no se inventa una: `null` en las dos significa «el
-  // centro no puso fechas», y eso es `ABIERTO`, no «cerrado por defecto».
-  const inscripcionInicio = texto(fila.inscripcion_inicio);
-  const inscripcionFin = texto(fila.inscripcion_fin);
   return {
     id: textoObligatorio(fila.id),
     codigo,
     nombre: texto(fila.name),
     fechaInicio,
     fechaFin,
-    inscripcionInicio,
-    inscripcionFin,
-    estadoInscripcion: estadoDeVentanaInscripcion({
-      cerradoEn,
-      inscripcionInicio,
-      inscripcionFin,
-    }),
     activo,
     vigente: codigoVigente !== null && codigo === codigoVigente,
     cerradoEn,
@@ -1059,7 +1047,7 @@ const COLUMNAS_ENTREGA = 'id,tarea_id,estado,es_tardia,nota_asignada,entregada_e
 const COLUMNAS_AULA = 'id,name,capacity,is_workshop,is_active,created_at,updated_at';
 
 const COLUMNAS_PERIODO =
-  'id,code,name,start_date,end_date,inscripcion_inicio,inscripcion_fin,is_active,closed_at,closed_by,created_at,updated_at';
+  'id,code,name,start_date,end_date,is_active,closed_at,closed_by,created_at,updated_at';
 
 /**
  * `turno` va en la lista aunque sea una columna generada.
@@ -2494,8 +2482,6 @@ class CuadranteSupabase implements PuertaCuadrante {
         name: entrada.nombre,
         start_date: entrada.fechaInicio,
         end_date: entrada.fechaFin,
-        inscripcion_inicio: entrada.inscripcionInicio ?? null,
-        inscripcion_fin: entrada.inscripcionFin ?? null,
         // **Nace activo, no en borrador.** Medido el 2026-10-29: la columna
         // tiene `default false`, así que un período recién registrado aparecía
         // como «Borrador», su fila ofrecía «Hacer vigente» y la API respondía
@@ -2533,12 +2519,6 @@ class CuadranteSupabase implements PuertaCuadrante {
     if (cambios.nombre !== undefined) parche.name = cambios.nombre;
     if (cambios.fechaInicio !== undefined) parche.start_date = cambios.fechaInicio;
     if (cambios.fechaFin !== undefined) parche.end_date = cambios.fechaFin;
-    if (cambios.inscripcionInicio !== undefined) {
-      parche.inscripcion_inicio = cambios.inscripcionInicio;
-    }
-    if (cambios.inscripcionFin !== undefined) {
-      parche.inscripcion_fin = cambios.inscripcionFin;
-    }
     if (cambios.activo !== undefined) parche.is_active = cambios.activo;
 
     // --- Cerrar un período: la regla del sucesor ---------------------------

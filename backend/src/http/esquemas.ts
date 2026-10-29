@@ -623,26 +623,13 @@ export const esquemaCrearPeriodo = z
       .optional(),
     fechaInicio: fechaIso.optional(),
     fechaFin: fechaIso.optional(),
-    // La ventana de inscripción es independiente de las fechas de dictado: el
-    // centro abre inscripciones semanas antes de que empiecen las clases y las
-    // cierra cuando arranca el período. Por eso son dos campos propios y no se
-    // derivan de `fechaInicio`.
-    inscripcionInicio: fechaIso.optional(),
-    inscripcionFin: fechaIso.optional(),
     heredarDeCodigo: codigoPeriodo.optional(),
   })
   .strict()
   .refine((valor) => rangoDeFechasValido(valor.fechaInicio, valor.fechaFin), {
     path: ['fechaFin'],
     message: 'La fecha de fin debe ser posterior a la de inicio.',
-  })
-  .refine(
-    (valor) => rangoDeFechasValido(valor.inscripcionInicio, valor.inscripcionFin),
-    {
-      path: ['inscripcionFin'],
-      message: 'La inscripción no puede cerrar antes de abrir.',
-    },
-  );
+  });
 
 /**
  * Cambios de un lapso. `codigo` no está, por la misma razón que en `programs`.
@@ -661,9 +648,6 @@ export const esquemaActualizarPeriodo = z
     nombre: z.string().trim().min(1).max(120).nullable().optional(),
     fechaInicio: fechaIso.nullable().optional(),
     fechaFin: fechaIso.nullable().optional(),
-    // `null` explícito = borrar la ventana (inscripción siempre abierta).
-    inscripcionInicio: fechaIso.nullable().optional(),
-    inscripcionFin: fechaIso.nullable().optional(),
     activo: z.boolean().optional(),
     cerrado: z.boolean().nullable().optional(),
     /**
@@ -683,14 +667,7 @@ export const esquemaActualizarPeriodo = z
   .refine((valor) => rangoDeFechasValido(valor.fechaInicio, valor.fechaFin), {
     path: ['fechaFin'],
     message: 'La fecha de fin debe ser posterior a la de inicio.',
-  })
-  .refine(
-    (valor) => rangoDeFechasValido(valor.inscripcionInicio, valor.inscripcionFin),
-    {
-      path: ['inscripcionFin'],
-      message: 'La inscripción no puede cerrar antes de abrir.',
-    },
-  );
+  });
 
 // --- Guardias ---------------------------------------------------------------
 

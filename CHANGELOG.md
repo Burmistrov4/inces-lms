@@ -3,14 +3,10 @@
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
 ## [1.7.0] - 2026-10-29
-### El período tiene ciclo de vida, el PNA deja de pedir sección y la interfaz deja de gastar media pantalla
+### El período congela de verdad, el PNA deja de pedir sección y la interfaz deja de gastar media pantalla
 
-> **Estado: código completo y verificado en local; NO desplegado.** La migración
-> `202610290001_ciclo_periodo.sql` **no se ha aplicado a la nube** porque este
-> entorno no tiene `SUPABASE_ACCESS_TOKEN`. Sin ella, el backend nuevo no puede
-> leer las columnas que necesita: publicar antes rompería el módulo de período en
-> producción. Orden obligatorio: **aplicar la migración → push → desplegar web**.
-> Comando exacto en `docs/DISENO_CICLO_PERIODO_2026-10-29.md` §6.
+> **Desplegado:** migración `202610290001` aplicada a la nube (62 versiones,
+> 0 pendientes, 0 deriva).
 
 **Lo que se pidió, en palabras del propietario:** «erradica las secciones, deja
 período y hazlo más simple y funcional posible», y «honestamente desconozco qué
@@ -34,17 +30,20 @@ apuntándole. El candado de la interfaz no cerraba nada por debajo.
   «Cerrar y activar el siguiente» en un gesto. Primero se declara el sucesor y
   después se cierra, en ese orden, para que un fallo no deje el hueco.
 
-#### 2. Ventana de inscripción: el estudiante sabe si puede entrar
+#### 2. La ventana de inscripción se aplica (y **no** se duplica)
 
-`academic_periods.inscripcion_inicio` / `inscripcion_fin` (nuevas), con
-`estado_inscripcion()` en la base y `estadoDeVentanaInscripcion()` en el dominio:
-`ABIERTO` · `PROXIMO` · `VENCIDO` · `CERRADO`. **Cerrado gana a cualquier fecha.**
+`programs.inscripcion_inicio/fin/proxima_apertura` existía desde el 2026-10-28 y
+ya estaba cableada hasta la landing. Lo que faltaba era **hacerla valer**: la RPC
+`solicitar_inscripcion` no la miraba.
 
-- La RPC `solicitar_inscripcion` rechaza fuera de ventana con un mensaje que dice
-  **cuándo** abre o cuándo cerró, no un «no puedes» a secas.
+- Ahora rechaza fuera de ventana con un mensaje que dice **cuándo** abre, cuándo
+  cerró y cuál es la próxima apertura, no un «no puedes» a secas.
 - La administración **no** queda atrapada: `reincorporar_inscripcion` sigue
-  permitiendo admitir a alguien fuera de plazo, porque esa es una decisión suya.
-- La fila del período muestra la ventana en una insignia con color por estado.
+  permitiendo admitir a alguien fuera de plazo.
+- **Corrección de un error mío, contada entera:** la primera versión de esta
+  migración añadía `inscripcion_inicio/fin` también a `academic_periods`. Se
+  descartó antes de aplicarla: dos sitios que dicen cuándo se puede inscribir es
+  la redundancia que hay que evitar. La ventana es del **curso**, y punto.
 
 #### 3. «Sección» fuera del Horario PNA (el grupo se crea solo)
 
@@ -68,17 +67,26 @@ buscador y paginación.
 - **`TituloSeccion` pliega el subtítulo en un icono de información** por debajo de
   640 px. La explicación no se pierde: sigue en el `Tooltip`, a un toque. Ahorra
   las tres líneas (~50 px) y devuelve el botón de acción a la misma fila.
-- El contrato nuevo está fijado en `test/titulo_seccion_responsive_test.dart`,
-  que antes exigía ver el subtítulo a 375 px.
+- El contrato nuevo está fijado en `test/titulo_seccion_responsive_test.dart`.
+
+#### 5. Dos bugs latentes que esto destapó
+
+- **Umbral del panel de Guardias**: decidía «móvil o escritorio» **sólo por
+  altura** (`maxHeight >= 700`). Al quitar 28 px de migas, un 360×740 pasó a
+  medir 720 y cruzó el umbral: entró en la rama de escritorio y desbordó 10 px.
+  Ahora exige además `maxWidth >= 600`.
+- **`TituloSeccion` se estiraba a toda la altura disponible** porque su `Column`
+  no llevaba `mainAxisSize.min`. Una cabecera de 74 px medía 780.
 
 #### Verificación de este lote
 
 | Control | Resultado |
 |---|---|
 | `node devops/analizar-dart.mjs` | 249 archivos · **0 errores, 0 avisos, 0 infos** |
-| `flutter analyze` | **No issues found!** (112,6 s) |
-| `cd backend && npm run verify` | **34 archivos · 732/732** · exit 0 |
-| `flutter test` | ver nota del entorno abajo |
+| `flutter analyze` | **No issues found!** |
+| `cd backend && npm run verify` | **34 archivos · 736/736** · exit 0 |
+| `flutter test` | **1061/1061** · exit 0 |
+| `apply-migrations.mjs --check` | **0 pendientes, 0 deriva** (62 versiones) |
 
 **Nota de entorno (nueva, medida hoy):** `flutter test` fallaba **en los 84
 archivos** con `Unable to connect to flutter_tester process: WebSocketException:
@@ -99,9 +107,7 @@ es.
 - **Landing por curso** con cupos y «próxima apertura» (fase 4).
 - **Expediente del aprendiz** y constancia de lectura de entregas: no existe.
 - **La cabecera del cPanel sigue con `SA26-2` escrito a mano**
-  (`admin_dashboard.dart:242`). Es una mentira después de cerrar un período, y se
-  deja anotada como deuda con su porqué: leerlo exige una petición que hoy
-  retrasaría el arranque del panel y rompería las pruebas que lo montan sin red.
+  (`admin_dashboard.dart:242`). Es una mentira después de cerrar un período.
 
 ## [1.6.0] - 2026-10-29
 ### El período se puede usar, cerrar y archivar — y la versión que se ve ya es la real

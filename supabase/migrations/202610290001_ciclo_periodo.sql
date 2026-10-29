@@ -1,72 +1,38 @@
 -- ============================================================================
---  CICLO DE VIDA DEL PERÍODO — ventana de inscripción y congelación real
+--  CICLO DE VIDA DEL PERÍODO — congelación real al cerrar
 --  Fecha: 2026-10-29
 --
 --  POR QUÉ EXISTE
 --
---  El propietario preguntó, con razón: «¿qué debería suceder cuando se cierra un
---  período, cómo afecta, y cómo lo gestiona un administrador?». La respuesta
---  medida el 2026-10-29 era que cerrar sólo escribía `closed_at` y archivaba las
+--  El propietario preguntó: «¿qué debería suceder cuando se cierra un período,
+--  cómo afecta, y cómo lo gestiona un administrador?». La respuesta medida el
+--  2026-10-29 era que cerrar sólo escribía `closed_at` y archivaba las
 --  secciones: **se podía seguir creando clases, guardias y grupos dentro de un
---  período cerrado**, y `periodo_activo` seguía apuntándole. Es decir, el
---  candado de la interfaz no cerraba nada por debajo.
+--  período cerrado**, y `periodo_activo` seguía apuntándole. El candado de la
+--  interfaz no cerraba nada por debajo.
 --
---  Este archivo hace dos cosas, y ninguna cambia el modelo de datos:
+--  QUÉ HACE
 --
---   1. **Ventana de inscripción.** Dos columnas en `academic_periods`. Es un
---      dato que hoy no existe en ninguna parte, y sin él el estudiante no puede
---      saber si todavía puede inscribirse ni cuándo abre el siguiente ciclo.
---      Va en el PERÍODO y no en cada curso a propósito: abrir inscripciones es
---      un acto único del centro («del 15 al 30 de septiembre»), y el CFS tiene
---      un solo PNA. Pedir seis fechas para seis cursos es exactamente el tipo de
---      formulario que hace que nadie lo llene.
---
---   2. **Congelación.** Un período cerrado no admite grupos, clases ni guardias
+--   1. **Congela.** Un período cerrado no admite grupos, clases ni guardias
 --      nuevos. Lo que ya existe sigue visible y consultable: cerrar es
 --      congelar, no borrar. Reabrir (que ya existe) lo descongela.
+--   2. **Aplica la ventana de inscripción del CURSO** al estudiante.
 --
---  LO QUE **NO** HACE
+--  QUÉ **NO** HACE, Y ES DELIBERADO
 --
---  · No bloquea las inscripciones en la base. El administrador puede
---    «reincorporar» a un aprendiz fuera de plazo, y esa es una decisión suya
---    (ver `POST /admin/inscripciones/reincorporar`). La ventana se aplica en la
---    ruta del estudiante, donde no hay nada que overridear.
+--  · **No añade columnas de fechas.** La ventana de inscripción ya existe desde
+--    `202610280001_ventana_inscripciones_programas.sql`, en `programs`
+--    (`inscripcion_inicio`, `inscripcion_fin`, `proxima_apertura`), y ya está
+--    cableada hasta la landing. Este archivo la **usa**; no crea una segunda.
+--    (La primera versión de esta migración la duplicaba en `academic_periods`.
+--    Se descartó: dos sitios que dicen cuándo se puede inscribir es exactamente
+--    la redundancia que hay que evitar.)
 --  · No archiva las aulas virtuales (decisión D8: no ocultar contenido docente).
 --  · No borra inscripciones, notas ni asistencias. Son historial.
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
---  1. La ventana de inscripción del período
--- ----------------------------------------------------------------------------
-
-alter table public.academic_periods
-  add column if not exists inscripcion_inicio date,
-  add column if not exists inscripcion_fin    date;
-
-comment on column public.academic_periods.inscripcion_inicio is
-  'Primer día en que el estudiante puede inscribirse en este período. NULL = sin restricción de apertura.';
-comment on column public.academic_periods.inscripcion_fin is
-  'Último día (inclusive) para inscribirse. NULL = sin fecha límite. Es lo que la landing y «Mis inscripciones» enseñan como «Inscripciones cerradas».';
-
--- Una ventana invertida es un error de tecleo, no una decisión: si empieza
--- después de terminar, no hay ningún día en que se pueda inscribir y el
--- estudiante vería «cerradas» para siempre sin que nadie sepa por qué.
-alter table public.academic_periods
-  drop constraint if exists periodos_ventana_inscripcion_coherente;
-alter table public.academic_periods
-  add constraint periodos_ventana_inscripcion_coherente
-  check (
-    inscripcion_inicio is null
-    or inscripcion_fin is null
-    or inscripcion_inicio <= inscripcion_fin
-  );
-
--- Las columnas nuevas se escriben por el mismo camino que las demás: la tabla ya
--- tiene `grant select, insert, update` a `authenticated`, así que no hace falta
--- un grant por columna. Se deja escrito para que nadie lo "arregle" añadiéndolo.
-
--- ----------------------------------------------------------------------------
---  2. ¿Está cerrado este período?
+--  1. ¿Está cerrado este período?
 -- ----------------------------------------------------------------------------
 --
 -- `security definer` por una razón concreta: la función se usa desde triggers de
@@ -76,7 +42,7 @@ alter table public.academic_periods
 -- guardián que se abre cuando no puede leer.
 --
 -- No se concede EXECUTE a nadie: la llaman los triggers, y un trigger ejecuta su
--- función como el dueño. Exponerla como RPC no aporta nada (ver D27: una función
+-- función como el dueño. Exponerla como RPC no aporta nada (D27: una función
 -- concedida de más es un oráculo).
 
 create or replace function public.periodo_cerrado(p_code text)
@@ -101,7 +67,7 @@ comment on function public.periodo_cerrado(text) is
   'TRUE si el período tiene closed_at. Lo usan los triggers de congelación; no es un oráculo de existencia.';
 
 -- ----------------------------------------------------------------------------
---  3. Congelación: nada nuevo dentro de un período cerrado
+--  2. Congelación: nada nuevo dentro de un período cerrado
 -- ----------------------------------------------------------------------------
 --
 -- Tres tablas, un solo guardián. `schedule_slots` no guarda el período (lo
@@ -161,59 +127,31 @@ before insert on public.teacher_duties
 for each row execute function public.exigir_periodo_no_cerrado();
 
 -- ----------------------------------------------------------------------------
---  4. Estado de inscripción, calculado en la base
--- ----------------------------------------------------------------------------
---
--- La landing y «Mis inscripciones» necesitan responder «¿puedo inscribirme
--- todavía?» sin replicar la regla de fechas en Dart. Se expone como función
--- `stable` y se lee por PostgREST con el cliente del llamante: no expone nada
--- que la fila del período no exponga ya (las fechas son públicas a propósito,
--- es información para el aspirante).
---
--- `security invoker` a propósito: sólo lee columnas que `anon` ya puede leer.
-
-create or replace function public.estado_inscripcion(p_code text)
-returns text
-language sql
-stable
-set search_path = public
-as $$
-  select case
-    when p.closed_at is not null then 'CERRADO'
-    when p.inscripcion_inicio is null and p.inscripcion_fin is null then 'ABIERTO'
-    when p.inscripcion_inicio is not null and current_date < p.inscripcion_inicio then 'PROXIMO'
-    when p.inscripcion_fin is not null and current_date > p.inscripcion_fin then 'VENCIDO'
-    else 'ABIERTO'
-  end
-  from public.academic_periods p
-  where p.code = p_code;
-$$;
-
-comment on function public.estado_inscripcion(text) is
-  'ABIERTO | PROXIMO | VENCIDO | CERRADO para la ventana de inscripción de un período. Sin ventana cargada, ABIERTO.';
-
--- ----------------------------------------------------------------------------
---  5. La ventana se aplica al estudiante, no al administrador
+--  3. La ventana de inscripción del CURSO se aplica al estudiante
 -- ----------------------------------------------------------------------------
 --
 -- Se reemplaza `solicitar_inscripcion` (la RPC que usa el estudiante para
 -- inscribirse a sí misma) añadiendo **una sola** comprobación al principio.
 --
--- **Por qué aquí y no en la API.** Es una regla de calendario que se decide con
--- datos de la base (la sección → su período → su ventana). Ponerla en la ruta
--- costaría un viaje de red más en cada solicitud y dejaría la puerta abierta a
--- cualquiera que llame a la RPC directamente con la clave publishable, que viaja
+-- **De dónde salen las fechas.** De `programs`, que es donde ya viven desde el
+-- 2026-10-28. Se llega por `sections.program_id`, que es el curso al que
+-- pertenece el grupo. No hay una segunda copia de la ventana: si el
+-- administrador cambia la fecha en «Cursos y PNA», cambia aquí.
+--
+-- **Por qué aquí y no en la API.** Es una regla que se decide con datos de la
+-- base (sección → programa → ventana, y sección → período → cerrado). Ponerla en
+-- la ruta costaría un viaje de red más en cada solicitud y dejaría la puerta
+-- abierta a quien llame a la RPC directamente con la clave publishable, que viaja
 -- al cliente (ADR-003).
 --
--- **Por qué no en `reincorporar_inscripcion`.** Porque ahí el que actúa es el
+-- **Por qué no en `reincorporar_inscripcion`.** Ahí el que actúa es el
 -- administrador y puede tener una razón legítima para admitir a alguien fuera de
--- plazo. La ventana ordena la inscripción pública; no secuestra la decisión de
--- la dirección del centro.
+-- plazo. La ventana ordena la inscripción pública; no secuestra la decisión de la
+-- dirección del centro.
 --
 -- El resto del cuerpo es **idéntico** al de `202609190001_mod4_inscripciones.sql`.
 -- Se copia entero porque `create or replace` no permite parchear: o se reescribe
--- la función completa, o no se toca. Cualquier cambio futuro en la lógica de
--- cupos tiene que hacerse aquí a partir de esta versión.
+-- la función completa, o no se toca.
 
 create or replace function public.solicitar_inscripcion(p_section_id uuid)
 returns text
@@ -224,11 +162,13 @@ as $$
 declare
   v_actor     uuid := auth.uid();
   v_activa    boolean;
+  v_programa  uuid;
+  v_periodo   text;
   v_existente text;
   v_nuevo     text;
-  v_periodo   text;
   v_ini       date;
   v_fin       date;
+  v_prox      date;
   v_cerrado   timestamptz;
 begin
   if v_actor is null then
@@ -236,7 +176,8 @@ begin
       using errcode = '42501';
   end if;
 
-  select s.is_active into v_activa
+  select s.is_active, s.program_id, s.period_code
+    into v_activa, v_programa, v_periodo
   from public.sections s
   where s.id = p_section_id;
 
@@ -250,17 +191,20 @@ begin
       using errcode = '23514';
   end if;
 
-  -- --- LA VENTANA DE INSCRIPCIÓN (nuevo) -----------------------------------
+  -- --- La ventana de inscripción del curso (nuevo) --------------------------
   --
   -- Tres motivos distintos, tres mensajes distintos. «No puedes inscribirte» a
   -- secas obliga al estudiante a adivinar si el problema es suyo o del centro, y
-  -- es exactamente la duda que el propietario planteó: «no saben cuándo empieza
+  -- es exactamente la duda que planteó el propietario: «no saben cuándo empieza
   -- un curso si ya cerraron las inscripciones».
-  select p.code, p.inscripcion_inicio, p.inscripcion_fin, p.closed_at
-    into v_periodo, v_ini, v_fin, v_cerrado
-  from public.sections s
-  join public.academic_periods p on p.code = s.period_code
-  where s.id = p_section_id;
+  select p.inscripcion_inicio, p.inscripcion_fin, p.proxima_apertura
+    into v_ini, v_fin, v_prox
+  from public.programs p
+  where p.id = v_programa;
+
+  select ap.closed_at into v_cerrado
+  from public.academic_periods ap
+  where ap.code = v_periodo;
 
   if v_cerrado is not null then
     raise exception
@@ -271,15 +215,19 @@ begin
 
   if v_ini is not null and current_date < v_ini then
     raise exception
-      'Las inscripciones del período % abren el %.', v_periodo, to_char(v_ini, 'DD/MM/YYYY')
+      'Las inscripciones de este curso abren el %.', to_char(v_ini, 'DD/MM/YYYY')
       using errcode = '23514';
   end if;
 
   if v_fin is not null and current_date > v_fin then
     raise exception
-      'Las inscripciones del período % cerraron el %.', v_periodo, to_char(v_fin, 'DD/MM/YYYY')
+      'Las inscripciones de este curso cerraron el %.', to_char(v_fin, 'DD/MM/YYYY')
       using errcode = '23514',
-            hint = 'La próxima apertura se anuncia en la portada del centro.';
+            hint = case
+                     when v_prox is not null
+                       then 'La próxima apertura es el ' || to_char(v_prox, 'DD/MM/YYYY') || '.'
+                     else 'La próxima apertura se anuncia en la portada del centro.'
+                   end;
   end if;
   -- -------------------------------------------------------------------------
 
@@ -326,4 +274,4 @@ end;
 $$;
 
 comment on function public.solicitar_inscripcion(uuid) is
-  'Inscribe al llamante en una sección: ENROLLED si hay cupo, WAITLISTED si no. Rechaza fuera de la ventana de inscripción del período (202610290001).';
+  'Inscribe al llamante en una sección: ENROLLED si hay cupo, WAITLISTED si no. Rechaza fuera de la ventana de inscripción del CURSO y en período cerrado (202610290001).';
