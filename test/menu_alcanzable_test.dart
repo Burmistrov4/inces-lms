@@ -48,12 +48,14 @@ import 'package:inces_lms_app/widgets/andamiaje.dart';
 /// archivo, no una estimación: `items` es el total del menú y `ramas` las
 /// secciones que de verdad tienen panel.
 const Map<String, ({int items, int ramas})> _dashboards = {
-  // **17 y 17, medido el 2026-10-29.** El suelo decía 14 mientras el menú ya
-  // tenía 17 secciones: un suelo por debajo del estado real deja de avisar
-  // cuando alguien pierde tres secciones de golpe, que es justo lo que el suelo
-  // existe para impedir. Se sube al número medido y se corrige el comentario,
-  // que también mentía.
-  'admin_dashboard.dart': (items: 17, ramas: 17),
+  // **16 y 16, medido el 2026-10-29.** El suelo anterior decía 17 porque el menú
+  // del cPanel tenía 17 secciones. En la Fase 3 del plan de secciones se absorbió
+  // «Inscripciones y Cupos» dentro de «Cursos y PNA» (el panel de 795 líneas se
+  // borró y su lógica de reincorporación vive ahora en `reincorporar_dialog.dart`
+  // + `CpanelProgramasPanel`), así que el menú bajó a 16 ítems / 16 ramas. El
+  // suelo se baja al número real: un suelo por encima del estado real provocaría
+  // justo el verde hueco que el suelo existe para impedir.
+  'admin_dashboard.dart': (items: 16, ramas: 16),
   'docente_dashboard.dart': (items: 5, ramas: 5),
   'aspirante_dashboard.dart': (items: 8, ramas: 8),
 };

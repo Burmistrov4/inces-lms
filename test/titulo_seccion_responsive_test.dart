@@ -53,7 +53,7 @@ void main() {
           body: Padding(
             padding: const EdgeInsets.all(16),
             child: TituloSeccion(
-              'Inscripciones y Cupos',
+              'Cursos y PNA',
               subtitulo: subtituloLargo,
               acciones: [
                 OutlinedButton.icon(
@@ -127,7 +127,7 @@ void main() {
       // ambas cosas debe estar a la misma altura (±). Si alguien "arreglara"
       // el móvil apilando **siempre**, esto lo delataría como regresión de
       // escritorio.
-      final arribaTitulo = tester.getTopLeft(find.text('INSCRIPCIONES Y CUPOS')).dy;
+      final arribaTitulo = tester.getTopLeft(find.text('CURSOS Y PNA')).dy;
       final arribaBoton = tester.getTopLeft(find.text('Reincorporar')).dy;
       expect(
         (arribaTitulo - arribaBoton).abs(),
