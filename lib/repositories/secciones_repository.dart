@@ -24,6 +24,43 @@ class SeccionesRepository {
             desplazamiento: desplazamiento,
           ));
 
+  /// El tope que acepta el backend en `limite` (`esquemaListadoSecciones`, `.max(100)`).
+  static const int limiteMaximoPorPagina = 100;
+
+  /// **Todas** las secciones, paginando con el máximo permitido.
+  ///
+  /// Existe por un defecto medido el 2026-10-29: el cuadrante y el horario PNA
+  /// pedían `limite: 150`, el backend rechaza todo lo que pase de 100 con un
+  /// `400`, y la rejilla se quedaba en esqueletos **sin decir por qué**. Pedir
+  /// «muchas de una vez» no es una opción: el límite es contrato, y una cifra
+  /// mágica por encima se rompe en silencio el día que alguien la ajusta.
+  ///
+  /// `topePaginas` no es una regla de negocio: es un cortafuegos para que una
+  /// respuesta que diga «hay más» y no avance no deje la pantalla girando.
+  Future<Result<List<Seccion>>> listarTodasLasSecciones({
+    bool soloActivas = false,
+    int topePaginas = 20,
+  }) {
+    return Result.guard(() async {
+      final acumulado = <Seccion>[];
+      var desplazamiento = 0;
+      for (var pagina = 0; pagina < topePaginas; pagina++) {
+        final trozo = await _gateway.listarSecciones(
+          soloActivas: soloActivas,
+          limite: limiteMaximoPorPagina,
+          desplazamiento: desplazamiento,
+        );
+        acumulado.addAll(trozo.secciones);
+        desplazamiento += trozo.secciones.length;
+        // Cortes: una página incompleta es el final; y si el servidor declaró un
+        // total, se para al alcanzarlo aunque la página viniera llena.
+        if (trozo.secciones.length < limiteMaximoPorPagina) break;
+        if (trozo.total > 0 && acumulado.length >= trozo.total) break;
+      }
+      return acumulado;
+    });
+  }
+
   Future<Result<Seccion>> crearSeccion(Seccion borrador) =>
       Result.guard(() => _gateway.crearSeccion(borrador));
 

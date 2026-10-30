@@ -52,6 +52,13 @@ class FakeSeccionesGateway implements SeccionesGateway {
   String? ultimaIdActualizada;
   CambiosSeccion? ultimosCambios;
 
+  /// Si se define, decide la página a partir del desplazamiento pedido.
+  ///
+  /// Existe para probar el paginado de `SeccionesRepository.listarTodasLasSecciones`:
+  /// con una página fija no se puede demostrar ni que se sigue pidiendo ni que se
+  /// para. Sin él, el doble devuelve siempre [paginaDevuelta].
+  PaginaSecciones Function(int desplazamiento, int limite)? paginaSegunDesplazamiento;
+
   void limpiarLlamadas() => llamadas.clear();
 
   @override
@@ -65,7 +72,7 @@ class FakeSeccionesGateway implements SeccionesGateway {
     ultimoLimite = limite;
     ultimoDesplazamiento = desplazamiento;
     _lanzarSi(errorAlListar);
-    return paginaDevuelta;
+    return paginaSegunDesplazamiento?.call(desplazamiento, limite) ?? paginaDevuelta;
   }
 
   @override

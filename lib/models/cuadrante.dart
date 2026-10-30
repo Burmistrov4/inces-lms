@@ -124,6 +124,29 @@ final Map<int, String> horasDeBloque = {
 /// Devuelve la franja horaria formal de un bloque académico (ej. «07:30 - 08:15»).
 String horaLegibleDeBloque(int bloque) => horasDeBloque[bloque] ?? '';
 
+/// La misma franja, con el meridiano escrito: «01:00 - 01:45 p. m.».
+///
+/// `horasDeBloque` guarda el rango en reloj de 12 horas y **sin** meridiano, que
+/// es correcto como dato pero ambiguo en un horario: las 01:00 existen dos veces
+/// al día. Leído en la rejilla a 820 px el 2026-10-29, el bloque 7 decía
+/// «Tarde 01:00 - 01:45» y había que deducir que era la una de la tarde.
+///
+/// **Se resuelve en la presentación y no en el dato** a propósito: el mismo mapa
+/// alimenta el formulario «Horas de bloques», así que escribir el meridiano
+/// dentro del valor haría que el administrador lo guardara y, al reeditarlo,
+/// apareciera dos veces.
+String horaConMeridianoDeBloque(int bloque) {
+  final rango = horaLegibleDeBloque(bloque);
+  if (rango.isEmpty) return rango;
+  // Si el administrador ya escribió el meridiano (o la franja se guardó con él),
+  // no se añade otro.
+  if (RegExp(r'[ap]\.?\s?m\.?$', caseSensitive: false).hasMatch(rango)) {
+    return rango;
+  }
+  final meridiano = turnoDeBloque(bloque) == Turno.manana ? 'a. m.' : 'p. m.';
+  return '$rango $meridiano';
+}
+
 /// Actualiza el rango horario de un bloque académico.
 void actualizarHoraDeBloque(int bloque, String rango) {
   if (bloque >= 1 && bloque <= 12 && rango.trim().isNotEmpty) {

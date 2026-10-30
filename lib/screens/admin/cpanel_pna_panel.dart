@@ -158,13 +158,12 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
         }
       }
 
-      final resSec = await _seccionesRepo.listarSecciones(
+      final resSec = await _seccionesRepo.listarTodasLasSecciones(
         soloActivas: true,
-        limite: 150,
       );
       if (resSec.isSuccess) {
         final mapa = <String, String>{};
-        for (final s in resSec.valueOrNull!.secciones) {
+        for (final s in resSec.valueOrNull!) {
           if (_lapso != null && s.periodo != _lapso) continue;
           final progNombre = progMap[s.programaId] ?? s.programaId;
           final esPna =

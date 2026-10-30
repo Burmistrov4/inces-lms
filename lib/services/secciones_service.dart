@@ -35,7 +35,13 @@ class BackendSeccionesGateway implements SeccionesGateway {
         '/api/v1/admin/secciones',
         token: _tokenSesion,
         parametros: {
-          if (soloActivas) 'soloActivas': 'true',
+          // **El nombre es `activa`, no `soloActivas`.** Medido el 2026-10-29:
+          // `esquemaListadoSecciones` declara `activa: 'true' | 'false'`, y Zod
+          // descarta en silencio las claves que no conoce, así que el filtro
+          // viajaba con un nombre que nadie leía y el panel recibía también las
+          // secciones archivadas. `activa=false` significa «sólo inactivas», de
+          // modo que el filtro sólo se envía cuando se quiere.
+          if (soloActivas) 'activa': 'true',
           'limite': '$limite',
           'desplazamiento': '$desplazamiento',
         },

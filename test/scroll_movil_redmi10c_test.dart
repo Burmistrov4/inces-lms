@@ -189,31 +189,30 @@ void main() {
       // La rejilla semanal existe (no el modo «por día»).
       expect(find.byType(CuadranteGrid), findsOneWidget);
 
-      // Arrastra hacia arriba sobre la rejilla: el contenido vertical debe
-      // desplazarse. Se mide la posición de un chip de la mañana antes y
-      // después.
+      // **La forma cambió a este ancho y la prueba cambia con ella.** Desde el
+      // 2026-10-29, a 360 px la rejilla no pinta la tabla de 956 px: pinta la
+      // lista de bloques del día (ver `CuadranteGrid.cabeComoTabla`). Lo que se
+      // sigue comprobando es lo mismo que reportó el usuario —que **desliza con
+      // el dedo**—, ahora midiendo que el bloque 12, que arranca fuera de
+      // pantalla, llega a verse.
       final rejilla = find.byType(CuadranteGrid);
       final centro = tester.getCenter(rejilla);
-      // Posición vertical de un chip de la última fila (bloque 12, tarde):
-      // sólo visible si la rejilla desliza.
-      final chipTarde = find.text('Soldadura por Arco').last;
-      final antes = tester.getRect(chipTarde).top;
+      final bloque12 = find.text('B12');
 
-      for (var i = 0; i < 6; i++) {
+      for (var i = 0; i < 8; i++) {
+        if (bloque12.evaluate().isNotEmpty) break;
         await tester.dragFrom(centro, const Offset(0, -350));
         await tester.pumpAndSettle();
-        if (tester.getRect(chipTarde).top < antes - 150) break;
       }
       await sinExcepcionesDeLayout(tester, 'arrastre vertical');
 
-      final despues = tester.getRect(chipTarde).top;
       expect(
-        despues,
-        lessThan(antes - 100),
+        bloque12,
+        findsOneWidget,
         reason:
-            'La rejilla debe desplazarse verticalmente con el dedo; '
-            'si su contenido no se mueve, el «no desliza» del Redmi 10C '
-            'está reproducido aquí.',
+            'La rejilla debe desplazarse verticalmente con el dedo hasta el '
+            'final del día; si su contenido no se mueve, el «no desliza» del '
+            'Redmi 10C está reproducido aquí.',
       );
     });
   });
@@ -299,20 +298,21 @@ void main() {
 
       final rejilla = find.byType(CuadranteGrid);
       final centro = tester.getCenter(rejilla);
-      final chipTarde = find.text('Seguridad Industrial PNA').last;
-      final antes = tester.getRect(chipTarde).top;
+      // Mismo cambio de forma que en el cuadrante: a este ancho se pinta la
+      // lista de bloques del día, así que se mide que el final del día llegue a
+      // verse al arrastrar.
+      final bloque12 = find.text('B12');
 
-      for (var i = 0; i < 6; i++) {
+      for (var i = 0; i < 8; i++) {
+        if (bloque12.evaluate().isNotEmpty) break;
         await tester.dragFrom(centro, const Offset(0, -350));
         await tester.pumpAndSettle();
-        if (tester.getRect(chipTarde).top < antes - 150) break;
       }
       await sinExcepcionesDeLayout(tester, 'arrastre vertical');
 
-      final despues = tester.getRect(chipTarde).top;
       expect(
-        despues,
-        lessThan(antes - 100),
+        bloque12,
+        findsOneWidget,
         reason: 'La rejilla PNA debe desplazarse verticalmente con el dedo.',
       );
     });

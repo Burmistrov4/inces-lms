@@ -43,6 +43,29 @@ class CuadranteGrid extends StatelessWidget {
 
   static String clave(int dia, int bloque) => '$dia-$bloque';
 
+  /// Ancho de la columna de bloques («B1 / 7:00») de la tabla.
+  static const double anchoGutter = 116;
+
+  /// Ancho mínimo con el que una columna de día se lee sin apretarse.
+  static const double anchoMinimoDia = 140;
+
+  /// Tope de ancho de columna: más ancho desperdicia y desalinea la lectura.
+  static const double anchoMaximoDia = 168;
+
+  /// ¿La semana cabe como tabla con [anchoDisponible] y [dias] columnas?
+  ///
+  /// Es la pregunta que decide la FORMA, y por eso vive aquí y no duplicada en
+  /// cada panel: si el panel pinta controles de desplazamiento horizontal, tiene
+  /// que saber si hay tabla que desplazar. Medido el 2026-10-29: a 390 px la
+  /// tabla necesita 116 + 6·140 = 956 px, así que arrastrar era la única forma
+  /// de ver el jueves y el resto —«el cuadrante no se puede usar en el teléfono»
+  /// (N2)—. Un día suelto tampoco cuenta como tabla: una columna sola se lee
+  /// peor que la lista de bloques.
+  static bool cabeComoTabla(double anchoDisponible, int dias) {
+    if (dias <= 1) return false;
+    return (anchoDisponible - anchoGutter) / dias >= anchoMinimoDia;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -98,19 +121,30 @@ class CuadranteGrid extends StatelessWidget {
     // de columna adaptativo, que cabe sin scroll horizontal.
     return LayoutBuilder(
       builder: (context, restricciones) {
-        // Lista vertical si la pantalla es estrecha O si se filtro a un solo
-        // dia: una columna suelta se lee peor que la lista de bloques.
-        if (dias.length == 1) {
+        final anchoDia = ((restricciones.maxWidth - anchoGutter) / dias.length)
+            .clamp(anchoMinimoDia, anchoMaximoDia)
+            .toDouble();
+
+        // **La forma la decide el ancho, no la plataforma.** Por debajo del
+        // mínimo legible se pinta selector de día + lista de bloques (lo que
+        // cabe en un teléfono); a partir de ahí, la tabla con columnas
+        // adaptativas, que ya no necesita arrastrar.
+        //
+        // Antes sólo se cambiaba de forma si se había filtrado a un día, así que
+        // con «Todo» seleccionado en un 390 el usuario recibía una tabla de
+        // 956 px dentro de una pantalla de 390: se veían lunes y martes y el
+        // resto quedaba a dos arrastres —lo que el usuario describió como «hay
+        // que usar la computadora»—.
+        if (!cabeComoTabla(restricciones.maxWidth, dias.length)) {
           return _CuadrantePorDia(
             celdas: celdas,
             dias: dias,
             onCeldaTap: onCeldaTap,
-            mostrarSelectorDias: mostrarSelectorDias && diaFiltro == null,
+            // Si el panel ya pinta su `SelectorDeDias`, dos filas de fichas
+            // idénticas confunden más que ayudan.
+            mostrarSelectorDias: mostrarSelectorDias && dias.length > 1,
           );
         }
-        final anchoDia = ((restricciones.maxWidth - 116) / dias.length)
-            .clamp(140.0, 168.0)
-            .toDouble();
         return Scrollbar(
           controller: horizontalController,
           thumbVisibility: dias.length > 3,
@@ -122,7 +156,7 @@ class CuadranteGrid extends StatelessWidget {
                 border: TableBorder.all(color: borde, width: 1),
                 defaultColumnWidth: FixedColumnWidth(anchoDia),
                 columnWidths: const {
-                  0: FixedColumnWidth(116),
+                  0: FixedColumnWidth(anchoGutter),
                 },
                 children: hijos,
               ),
@@ -171,7 +205,7 @@ class _CeldaGutter extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final turno = turnoDeBloque(bloque);
-    final hora = horaLegibleDeBloque(bloque);
+    final hora = horaConMeridianoDeBloque(bloque);
     final esManana = turno == Turno.manana;
     final colorTurno = esManana ? theme.colorScheme.primary : theme.colorScheme.tertiary;
 
@@ -202,25 +236,38 @@ class _CeldaGutter extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              Text(
-                turno.etiqueta,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  color: colorTurno,
+              Flexible(
+                child: Text(
+                  turno.etiqueta,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color: colorTurno,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 3),
-          Text(
-            hora,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: theme.colorScheme.onSurface,
-              letterSpacing: -0.2,
+          // La franja horaria se encoge si no cabe, en vez de desbordar.
+          // Medido el 2026-10-29: al añadir el meridiano («01:00 - 01:45 p. m.»)
+          // la columna de bloques del modo lista desbordaba 3,2 px a 360 y el
+          // `Row` de arriba se pintaba con la franja amarilla de error.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              hora,
+              maxLines: 1,
+              softWrap: false,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurface,
+                letterSpacing: -0.2,
+              ),
             ),
           ),
         ],
@@ -644,7 +691,7 @@ class _CuadrantePorDiaState extends State<_CuadrantePorDia> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 96,
+            width: CuadranteGrid.anchoGutter,
             child: _CeldaGutter(bloque: bloque),
           ),
           Expanded(

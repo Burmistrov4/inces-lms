@@ -162,10 +162,10 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
         }
       }
 
-      final resSec = await _seccionesRepo.listarSecciones(soloActivas: true, limite: 150);
+      final resSec = await _seccionesRepo.listarTodasLasSecciones(soloActivas: true);
       if (resSec.isSuccess) {
         final mapa = <String, String>{};
-        for (final s in resSec.valueOrNull!.secciones) {
+        for (final s in resSec.valueOrNull!) {
           if (_lapso != null && s.periodo != _lapso) continue;
           final progNombre = progMap[s.programaId] ?? s.programaId;
           final matNombre = matMap[s.materiaId];
@@ -463,7 +463,13 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
       if (dia != null && entrada.value.isNotEmpty) diasConContenido.add(dia);
     }
 
-    return Column(
+    return LayoutBuilder(
+      builder: (context, restricciones) {
+        // Los botones «Anterior/Siguiente» desplazan la TABLA en horizontal.
+        // Cuando la rejilla se pinta como lista por día —pantalla estrecha— no
+        // hay nada que desplazar: quedarían dos botones que no hacen nada.
+        final hayTabla = CuadranteGrid.cabeComoTabla(restricciones.maxWidth, diaMaximo);
+        return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Wrap(
@@ -477,7 +483,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
               onCambio: (dia) => setState(() => _diaFiltro = dia),
               diasConContenido: diasConContenido,
             ),
-            if (_diaFiltro == null)
+            if (_diaFiltro == null && hayTabla)
               Wrap(
                 spacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
@@ -552,6 +558,8 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
           ),
         ),
       ],
+        );
+      },
     );
   }
 
