@@ -1006,18 +1006,18 @@ class _DialogoLapsoState extends State<_DialogoLapso> {
                       label: const Text('3 meses (Trimestre)'),
                       avatar: const Icon(Icons.bolt_rounded, size: 14),
                       visualDensity: VisualDensity.compact,
-                      onPressed: () => setState(() => _fin = sumarDuracion(_inicio!, 3, 'MESES')),
+                      onPressed: () => setState(() => _fin = sumarDuracion(_fin ?? _inicio!, 3, 'MESES')),
                     ),
                     ActionChip(
                       label: const Text('6 meses (Semestre)'),
                       avatar: const Icon(Icons.school_outlined, size: 14),
                       visualDensity: VisualDensity.compact,
-                      onPressed: () => setState(() => _fin = sumarDuracion(_inicio!, 6, 'MESES')),
+                      onPressed: () => setState(() => _fin = sumarDuracion(_fin ?? _inicio!, 6, 'MESES')),
                     ),
                     ActionChip(
                       label: const Text('+12 semanas'),
                       visualDensity: VisualDensity.compact,
-                      onPressed: () => setState(() => _fin = sumarDuracion(_inicio!, 12, 'SEMANAS')),
+                      onPressed: () => setState(() => _fin = sumarDuracion(_fin ?? _inicio!, 12, 'SEMANAS')),
                     ),
                     ActionChip(
                       label: const Text('+1 mes'),

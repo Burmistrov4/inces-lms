@@ -307,14 +307,30 @@ class BackendCuadranteGateway implements CuadranteGateway {
       );
 
       return Periodo.fromJson(_objeto(respuesta, 'periodo'));
-    } catch (_) {
-      final client = SupabaseService.instance.client;
-      final Map<String, dynamic> parche = {};
-      if (cambios.cerrado != null) {
-        parche['closed_at'] = cambios.cerrado! ? DateTime.now().toIso8601String() : null;
-        parche['is_active'] = !cambios.cerrado!;
-      }
-      if (cambios.nombre != null) parche['name'] = cambios.nombre;
+    } catch (fallo) {
+          // **Por qué no se silencia el error de la API.** Antes, cualquier fallo
+          // —un 400 de regla de negocio, un 500, un cuerpo inesperado— caía en la
+          // ruta directa a Supabase, y si esa segunda escritura también fallaba el
+          // administrador leía «No pudimos guardar la información. Inténtalo de
+          // nuevo.» sin saber qué pasó (reportado el 2026-10-30 al cerrar un
+          // período). Además esa ruta puede dejar efectos a medias: escribía
+          // `closed_at` sin comprobar el sucesor, que es justo lo que la API evita.
+          //
+          // Si la API respondió con código de error, manda la API: se propaga su
+          // mensaje. Sólo se usa la ruta directa cuando la API **no está**, que es
+          // el caso de un despliegue de la web contra un backend caído.
+          if (fallo is AppException) rethrow;
+
+          final client = SupabaseService.instance.client;
+                // Se rehace el parche completo: la rama directa tiene que comportarse
+                // igual que la API o el «modo sin backend» miente sobre lo que guardó.
+                final Map<String, dynamic> parche = {};
+                if (cambios.cerrado != null) {
+                  parche['closed_at'] =
+                      cambios.cerrado! ? DateTime.now().toIso8601String() : null;
+                  parche['is_active'] = !cambios.cerrado!;
+                }
+                if (cambios.nombre != null) parche['name'] = cambios.nombre;
       if (cambios.fechaInicio != null) parche['start_date'] = cambios.fechaInicio;
       if (cambios.fechaFin != null) parche['end_date'] = cambios.fechaFin;
 

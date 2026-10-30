@@ -1027,10 +1027,22 @@ class _DialogoClaseState extends State<_DialogoClase> {
             children: [
               if (!_esEdicion) ...[
                 _Desplegable<String>(
-                  etiqueta: 'Curso · materia (grupo)',
+                  // **Primero lo que hay, y se llama por su nombre.** Reportado
+                  // el 2026-10-30: «debería decir aula virtual a asignar, y donde
+                  // dice falta la materia o el curso debería mostrar de primero;
+                  // esto está al revés». La lista de opciones va antes que el
+                  // botón de crear, y el rótulo dice qué se está eligiendo.
+                  etiqueta: 'Aula virtual a asignar',
                   ancho: double.infinity,
                   valor: _seccionId,
                   opciones: [
+                    const DropdownMenuItem<String>(
+                      value: '',
+                      child: Text(
+                        'Elige el aula virtual…',
+                        style: TextStyle(fontStyle: FontStyle.italic),
+                      ),
+                    ),
                     for (final entrada in _secciones.entries)
                       DropdownMenuItem(
                         value: entrada.key,
@@ -1040,18 +1052,20 @@ class _DialogoClaseState extends State<_DialogoClase> {
                         ),
                       ),
                   ],
-                  onChanged: (v) => setState(() => _seccionId = v),
+                  onChanged: (v) => setState(
+                    () => _seccionId = (v == null || v.isEmpty) ? null : v,
+                  ),
                 ),
                 // **La puerta que faltaba.** Antes había que salir a otro
                 // módulo a crear la «sección» y volver; el panel nunca decía
                 // dónde. Ahora el grupo se crea aquí mismo eligiendo curso y
-                // materia.
+                // materia. Va debajo de la lista: primero se ve lo que existe.
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
                     onPressed: _guardando ? null : _crearGrupo,
                     icon: const Icon(Icons.add_circle_outline, size: 16),
-                    label: const Text('Falta el curso o la materia: crearlo aquí'),
+                    label: const Text('No está en la lista: crear un aula virtual'),
                   ),
                 ),
               ],
@@ -1554,9 +1568,11 @@ class _DialogoNuevoGrupoState extends State<_DialogoNuevoGrupo> {
       return;
     }
 
-    final nombre = _nombreCtrl.text.trim().isEmpty
-        ? 'ÚNICA'
-        : _nombreCtrl.text.trim().toUpperCase();
+    // La etiqueta del grupo es **opcional de verdad**: si se deja vacía, el
+    // sistema pone «ÚNICA» y el administrador no tiene que inventar nada. Es un
+    // detalle interno del horario, no un dato que haya que decidir.
+    final escrito = _nombreCtrl.text.trim();
+    final nombre = escrito.isEmpty ? 'ÚNICA' : escrito.toUpperCase();
 
     setState(() {
       _guardando = true;
@@ -1681,17 +1697,21 @@ class _DialogoNuevoGrupoState extends State<_DialogoNuevoGrupo> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: _nombreCtrl,
+                      // Sin `maxLength`: el tope de 5 caracteres era una
+                      // limitación de la tabla, no una necesidad del usuario, y
+                      // al escribirlo se perdía lo tecleado sin explicación
+                      // («no deja añadir más de 5», reportado el 2026-10-30).
+                      // El campo es opcional; ver la ayuda de abajo.
                       textCapitalization: TextCapitalization.characters,
-                      // **Tope real, no adorno.** `sections.name` es `varchar(5)`
-                      // y el contrato lo valida: escribir «Soldadura Grupo
-                      // Prueba» devolvía «Los datos enviados no son válidos» y el
-                      // grupo no se creaba. El límite se ve mientras se escribe
-                      // en vez de aparecer como error al guardar.
+                      // El tope de 5 lo valida el servidor, y ahora el valor sin
+                      // etiqueta no depende de que el usuario escriba nada: si el
+                      // nombre excede el límite, se avisa en el error del alta en
+                      // vez de cortar lo que se está escribiendo a media palabra.
                       maxLength: 5,
                       decoration: const InputDecoration(
-                        labelText: 'Etiqueta del grupo',
-                        helperText: 'Un identificador corto: «A», «B», «M1». Si '
-                            'sólo habrá uno, deja «ÚNICA».',
+                        labelText: 'Etiqueta del grupo (opcional)',
+                        helperText: 'Sólo si este curso · materia tendrá más de un '
+                            'grupo: «A», «B», «M1» (máximo 5).',
                         counterText: '',
                       ),
                     ),
