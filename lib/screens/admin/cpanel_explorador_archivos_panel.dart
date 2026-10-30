@@ -10,6 +10,7 @@ import '../../models/archivo.dart';
 import '../../repositories/archivos_repository.dart';
 import '../../services/selector_archivos_navegador.dart';
 import '../../services/supabase_service.dart';
+import '../../repositories/modulo_repository.dart';
 import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/guardia_toque.dart';
@@ -240,17 +241,62 @@ class _CpanelExploradorArchivosPanelState
   String? _ultimoSeleccionadoId;
   bool _descargandoZip = false;
 
-  /// **El límite de subida real son 10 MB, medido contra la base el 2026-10-25.**
+  /// Tope de subida, **leído de `system_settings.m5_max_bytes`**.
   ///
-  /// `system_settings.m5_max_bytes` = 10485760 bytes. Los textos de este panel
-  /// decían «25 MB» en seis sitios, así que el administrador subía un archivo de
-  /// 20 MB convencido por la interfaz y recibía rechazo. Corregido a 10 MB.
-  ///
-  /// **Sigue siendo un número escrito a mano.** El límite es configurable desde
-  /// «Configuración del Centro» (parámetro `m5_max_bytes`), así que si alguien lo
-  /// cambia, estos textos vuelven a mentir. Lo correcto es que el panel lo lea
-  /// del servidor; queda anotado como deuda en el informe de deriva.
+  /// Antes era un literal de 10 MB con una nota admitiendo la deuda: «si alguien
+  /// lo cambia en Configuración del Centro, estos textos vuelven a mentir». Lo
+  /// preguntó el dueño el 2026-10-30 —«¿acaso la limitación de 10 MB no se
+  /// ajusta al parámetro m5_max_bytes?»— y la respuesta era que no: coincidían
+  /// por casualidad. Ahora el valor por defecto es el de la semilla y el real
+  /// llega del servidor; si la consulta falla, se queda el de la semilla y el
+  /// texto dice «hasta N MB» en vez de prometer otra cosa.
+  static const int _limiteBytesPorDefecto = 10485760;
+  int _limiteBytes = _limiteBytesPorDefecto;
+  int _maxArchivosPorEntidad = 10;
+
+  /// Cuota visible de la nube del centro. **No** es el tope por archivo: es el
+  /// total del espacio contratado, y por eso sigue siendo una constante aparte
+  /// de `m5_max_bytes`.
   static const double _cuotaTotalGb = 10.0;
+
+  /// El tope en la unidad que se lee de un vistazo: «10 MB» o «1,5 GB».
+  String get _limiteTexto {
+    final mb = _limiteBytes / (1024 * 1024);
+    if (mb >= 1024) {
+      final gb = mb / 1024;
+      return '${gb.toStringAsFixed(gb.truncateToDouble() == gb ? 0 : 1)} GB';
+    }
+    return '${mb.toStringAsFixed(mb.truncateToDouble() == mb ? 0 : 1)} MB';
+  }
+
+  late final ModuloRepository _moduloRepo = ModuloRepository();
+
+  /// Lee los dos parámetros de M5 que la interfaz menciona.
+  ///
+  /// `m5_max_archivos_por_entidad` existe para que un aula no acumule cientos de
+  /// adjuntos: es el tope por sección/entidad, no por archivo. El panel lo
+  /// enseñaba mezclado con el de tamaño, y el dueño preguntó para qué servía.
+  Future<void> _cargarLimites() async {
+    final resultado = await _moduloRepo.obtenerSettings();
+    if (!mounted) return;
+    resultado.when(
+      success: (ajustes) {
+        for (final ajuste in ajustes) {
+          final valor = ajuste.valor;
+          if (valor is! num) continue;
+          if (ajuste.clave == 'm5_max_bytes' && valor.toInt() > 0) {
+            setState(() => _limiteBytes = valor.toInt());
+          } else if (ajuste.clave == 'm5_max_archivos_por_entidad' &&
+              valor.toInt() > 0) {
+            setState(() => _maxArchivosPorEntidad = valor.toInt());
+          }
+        }
+      },
+      failure: (_) {
+        // Con la semilla el texto sigue siendo cierto en el caso normal.
+      },
+    );
+  }
 
   /// Cuota REALMENTE usada, calculada de los archivos de la unidad.
   ///
@@ -270,6 +316,7 @@ class _CpanelExploradorArchivosPanelState
     super.initState();
     _inicializarDatos();
     _hidratarDesdeServidor();
+    _cargarLimites();
     _busquedaController.addListener(() {
       setState(() {
         _filtroBusqueda = _busquedaController.text.trim().toLowerCase();
@@ -477,11 +524,12 @@ class _CpanelExploradorArchivosPanelState
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Reglas de carga en la nube del centro:\n\n'
-              '• Archivos admitidos: PDF, Word, Excel, presentaciones e imágenes optimizadas (hasta 10 MB por archivo).\n'
-              '• Videos y contenido pesado (> 10 MB): Deben alojarse en Google Drive y vincularse con la opción «Vincular Google Drive» para no agotar la cuota del centro.',
-              style: TextStyle(fontSize: 13.5, height: 1.45),
+              '• Archivos admitidos: PDF, Word, Excel, presentaciones e imágenes optimizadas (hasta $_limiteTexto por archivo).\n'
+              '• Tope de adjuntos por aula o sección: $_maxArchivosPorEntidad archivos.\n'
+              '• Videos y contenido pesado (> $_limiteTexto): deben alojarse en Google Drive y vincularse con «Vincular Google Drive» para no agotar la cuota del centro.',
+              style: const TextStyle(fontSize: 13.5, height: 1.45),
             ),
           ],
         ),
@@ -1488,13 +1536,13 @@ class _CpanelExploradorArchivosPanelState
               if (val == 'politica') _mostrarPoliticaSubida();
             },
             itemBuilder: (ctx) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'archivo',
                 child: Row(
                   children: [
-                    Icon(Icons.upload_file_outlined, size: 18),
-                    SizedBox(width: 10),
-                    Text('Subir documento (<10MB)'),
+                    const Icon(Icons.upload_file_outlined, size: 18),
+                    const SizedBox(width: 10),
+                    Text('Subir documento (<$_limiteTexto)'),
                   ],
                 ),
               ),
@@ -1741,8 +1789,8 @@ class _CpanelExploradorArchivosPanelState
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        '• Documentos y Pensum (< 10 MB): Se almacenan directamente en la nube del centro con descargas de alta velocidad.\n'
-                        '• Videos y Clases Grabadas (> 10 MB): Se enlazan vía Google Drive sin consumir la cuota de 10 GB del centro.\n'
+                        '• Documentos y Pensum (< $_limiteTexto): se almacenan directamente en la nube del centro con descargas de alta velocidad.\n'
+                        '• Videos y Clases Grabadas (> $_limiteTexto): se enlazan vía Google Drive sin consumir la cuota de 10 GB del centro.\n'
                         '• Asignación a Aulas: Puedes vincular cualquier archivo a un aula o taller (ej. Soldadura Básica) para que sus docentes y aprendices lo tengan a mano.',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
