@@ -1169,7 +1169,7 @@ const Seccion = z
     }),
     nombre: z.string().openapi({
       description:
-        'Identificador corto dentro del lapso ("SA", "SC"), de hasta 5 caracteres. El nombre largo de la materia vive en `subjects.name`.',
+        'Identificador corto dentro del lapso ("SA", "SOLD-B"), de hasta 24 caracteres. El nombre largo de la materia vive en `subjects.name`.',
     }),
     cupoMaximo: z.number().int().nullable().openapi({
       description:
@@ -1365,8 +1365,8 @@ const CuerpoCrearSeccion = z
     periodo: z.string().openapi({
       description: 'Código de un lapso ya registrado. Debe existir: la FK es `on delete restrict`.',
     }),
-    nombre: z.string().max(5).openapi({
-      description: 'Identificador corto ("SA"). Único por lapso y materia.',
+    nombre: z.string().max(24).openapi({
+      description: 'Identificador corto ("SA", "SOLD-B"). Único por lapso y materia. 24 caracteres desde 202610300001.',
     }),
     cupoMaximo: z.number().int().min(0).nullable().optional().openapi({
       description: 'Ausente o `null` = usar el cupo global. `0` = sección sin cupo.',
@@ -1377,7 +1377,7 @@ const CuerpoCrearSeccion = z
 
 const CuerpoActualizarSeccion = z
   .object({
-    nombre: z.string().max(5).optional(),
+    nombre: z.string().max(24).optional(),
     cupoMaximo: z.number().int().min(0).nullable().optional(),
     activa: z.boolean().optional().openapi({
       description: 'Archivar es esto: no hay borrado.',

@@ -921,9 +921,10 @@ export interface EntradaResolverGrupo {
   periodo: string;
 
   /**
-   * Etiqueta opcional del grupo (1–5 caracteres: `A`, `B`, `M1`…).
+   * Etiqueta opcional del grupo (1–24 caracteres: `A`, `SOLD-B`, `GRUPO 2`…).
    *
-   * **El tope no es capricho**: `sections.name` es `varchar(5)` y forma parte de
+   * **El tope no es capricho**: `sections.name` es `varchar(24)` (era `varchar(5)`
+   * hasta la migración 202610300001) y forma parte de
    * `unique (period_code, subject_id, name)`. El diálogo pedía «Nombre del grupo»
    * como texto libre y mandaba «Soldadura Grupo Prueba»; el contrato `.strict()`
    * lo rechazaba con «Los datos enviados no son válidos» y el administrador no

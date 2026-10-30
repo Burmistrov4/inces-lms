@@ -614,7 +614,7 @@ class _DialogoEditarSeccionState extends State<_DialogoEditarSeccion> {
                   validator: (v) {
                     final s = v?.trim() ?? '';
                     if (s.isEmpty) return 'Obligatorio.';
-                    if (s.length > 5) return 'Máximo 5 caracteres.';
+                    if (s.length > 24) return 'Máximo 24 caracteres.';
                     return null;
                   },
                 ),

@@ -1703,15 +1703,15 @@ class _DialogoNuevoGrupoState extends State<_DialogoNuevoGrupo> {
                       // («no deja añadir más de 5», reportado el 2026-10-30).
                       // El campo es opcional; ver la ayuda de abajo.
                       textCapitalization: TextCapitalization.characters,
-                      // El tope de 5 lo valida el servidor, y ahora el valor sin
-                      // etiqueta no depende de que el usuario escriba nada: si el
-                      // nombre excede el límite, se avisa en el error del alta en
-                      // vez de cortar lo que se está escribiendo a media palabra.
-                      maxLength: 5,
+                      // **24, no 5.** La columna era `varchar(5)` y ese tope se
+                      // veía en la interfaz como «no deja añadir más de 5», dos
+                      // días seguidos. La migración 202610300001 la ensanchó a
+                      // 24; el campo la sigue, y el servidor valida lo mismo.
+                      maxLength: 24,
                       decoration: const InputDecoration(
                         labelText: 'Etiqueta del grupo (opcional)',
                         helperText: 'Sólo si este curso · materia tendrá más de un '
-                            'grupo: «A», «B», «M1» (máximo 5).',
+                            'grupo: «A», «SOLD-B», «GRUPO 2».',
                         counterText: '',
                       ),
                     ),

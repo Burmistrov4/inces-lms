@@ -249,7 +249,11 @@ describe('crear una sección', () => {
     expect(respuesta.json().seccion.cupoMaximo).toBe(0);
   });
 
-  it('rechaza un nombre de más de 5 caracteres', async () => {
+  // El tope era 5 porque `sections.name` era `varchar(5)`, y el administrador lo
+  // vivió como un fallo («no me deja añadir más de 5»). La migración
+  // 202610300001 la ensanchó a 24. Estas dos pruebas fijan la frontera nueva:
+  // «SOLD-B» entra, 25 caracteres no.
+  it('acepta un nombre de grupo de 24 caracteres como «SOLD-B»', async () => {
     const arnes = crearArnés();
     app = arnes.app;
 
@@ -257,7 +261,22 @@ describe('crear una sección', () => {
       method: 'POST',
       url: '/api/v1/admin/secciones',
       headers: conToken(TOKEN_ADMIN),
-      payload: { ...NUEVA, nombre: 'SECCION-LARGA' },
+      payload: { ...NUEVA, nombre: 'SOLD-B' },
+    });
+
+    expect(respuesta.statusCode).toBe(201);
+    expect(respuesta.json().seccion.nombre).toBe('SOLD-B');
+  });
+
+  it('rechaza un nombre de más de 24 caracteres', async () => {
+    const arnes = crearArnés();
+    app = arnes.app;
+
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/secciones',
+      headers: conToken(TOKEN_ADMIN),
+      payload: { ...NUEVA, nombre: 'A'.repeat(25) },
     });
 
     expect(respuesta.statusCode).toBe(400);

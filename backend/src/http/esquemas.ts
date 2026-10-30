@@ -790,20 +790,28 @@ export const esquemaIdSeccion = idDeRecurso('sección');
 export const esquemaIdEstudiante = idDeRecurso('estudiante');
 
 /**
- * Nombre de una sección (`varchar(5)` en la base).
+ * Nombre de una sección (`varchar(24)` en la base desde 202610300001).
  *
- * Los cinco caracteres no son un descuido del esquema: el nombre de una sección
- * es un **identificador corto** dentro del lapso ('SA', 'SC'), no una descripción.
- * El nombre largo de la materia vive en `subjects.name`, y la interfaz compone
- * los dos. Se replica el límite aquí para que el error diga qué pasó en vez de
- * dejar que Postgres lo trunque o lo rechace con un `22001` que el traductor no
- * reconoce y saldría como un `500`.
+ * El límite no es un descuido del esquema: el nombre de una sección es un
+ * **identificador corto** dentro del lapso ('SA', 'SOLD-B', 'GRUPO 2'), no una
+ * descripción. El nombre largo de la materia vive en `subjects.name`, y la
+ * interfaz compone los dos. Se replica el límite aquí para que el error diga qué
+ * pasó en vez de dejar que Postgres lo trunque o lo rechace con un `22001` que el
+ * traductor no reconoce y saldría como un `500`.
+ *
+ * Eran cinco caracteres y se reportó dos días seguidos como un fallo («no me deja
+ * añadir más de 5»). No era un fallo, era el ancho de la columna; se amplió a 24
+ * porque un grupo real se llama «SOLD-B», no «SA».
  */
 const nombreSeccion = z
   .string()
   .trim()
   .min(1, 'El nombre de la sección no puede estar vacío.')
-  .max(5, 'El nombre de la sección no puede pasar de 5 caracteres (es un identificador corto, como "SA").');
+  .max(24, 'El nombre del grupo no puede pasar de 24 caracteres.')
+  // Un grupo real se llama «SOLD-B» o «GRUPO 2», no «M1»: espacios y
+  // guiones son legítimos. Lo que no entra es puntuación que después rompe
+  // la exportación a HACER (comas, puntos y coma, tabuladores).
+  .regex(/^[\p{L}\p{N} -]+$/u, 'Usa letras, números, espacios o guiones.');
 
 /**
  * Cupo de una sección.
@@ -886,14 +894,16 @@ export const esquemaResolverGrupo = z
     programaId: z.string().uuid({ message: 'El programa debe ser un UUID válido.' }),
     materiaId: z.string().uuid({ message: 'La materia debe ser un UUID válido.' }),
     periodo: codigoPeriodo,
-    // `sections.name` es `varchar(5)`: aceptar más aquí solo movería el fallo
-    // del 400 al 22001 de Postgres, que el usuario no puede leer.
+    // `sections.name` es `varchar(24)` desde la migración 202610300001. El
+    // límite sigue existiendo —y se dice el número— porque el nombre se pinta
+    // en una celda del cuadrante: aceptar más aquí sólo movería el fallo del
+    // 400 al 22001 de Postgres, que el usuario no puede leer.
     nombre: z
       .string()
       .trim()
       .min(1, 'El nombre del grupo no puede estar vacío.')
-      .max(5, 'El nombre del grupo admite hasta 5 caracteres.')
-      .regex(/^[\p{L}\p{N}]+$/u, 'Usa letras o números (por ejemplo A, B o M1).')
+      .max(24, 'El nombre del grupo admite hasta 24 caracteres.')
+      .regex(/^[\p{L}\p{N} -]+$/u, 'Usa letras, números, espacios o guiones (por ejemplo A, SOLD-B o GRUPO 2).')
       .optional(),
   })
   .strict();

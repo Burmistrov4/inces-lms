@@ -2070,7 +2070,7 @@
           },
           "nombre": {
             "type": "string",
-            "description": "Identificador corto dentro del lapso (\"SA\", \"SC\"), de hasta 5 caracteres. El nombre largo de la materia vive en `subjects.name`."
+            "description": "Identificador corto dentro del lapso (\"SA\", \"SOLD-B\"), de hasta 24 caracteres. El nombre largo de la materia vive en `subjects.name`."
           },
           "cupoMaximo": {
             "type": [
@@ -2156,8 +2156,8 @@
           },
           "nombre": {
             "type": "string",
-            "maxLength": 5,
-            "description": "Identificador corto (\"SA\"). Único por lapso y materia."
+            "maxLength": 24,
+            "description": "Identificador corto (\"SA\", \"SOLD-B\"). Único por lapso y materia. 24 caracteres desde 202610300001."
           },
           "cupoMaximo": {
             "type": [
@@ -2181,7 +2181,7 @@
         "properties": {
           "nombre": {
             "type": "string",
-            "maxLength": 5
+            "maxLength": 24
           },
           "cupoMaximo": {
             "type": [

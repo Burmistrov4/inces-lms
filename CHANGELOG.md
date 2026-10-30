@@ -2,6 +2,51 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.7.5] - 2026-10-30
+### El período se puede cerrar, los chips suman y asignar clase pide lo que necesita
+
+#### 1. «No se pudo cerrar el período: No pudimos guardar la información»
+
+El servicio atrapaba **cualquier** fallo de la API y reintentaba escribiendo
+directo a Supabase; si ese segundo intento también fallaba, el mensaje genérico
+tapaba la causa real. Peor: esa ruta escribe `closed_at` **sin comprobar el
+sucesor**, que es justo lo que la API evita. Ahora, si la API respondió con
+error, manda la API y se lee su motivo; la ruta directa queda sólo para cuando la
+API no está.
+
+Medido contra la API real: `PATCH /admin/periodos/{id}` con `{cerrado:true}` →
+**200**, estado `CERRADO`.
+
+#### 2. Los chips de duración no sumaban
+
+«+3 meses», «+6 meses» y «+12 semanas» fijaban la fecha de fin **desde la de
+inicio**, así que pulsar dos veces dejaba el mismo número. Ahora suman sobre el
+fin actual, igual que «+1 mes», que ya lo hacía bien. Lo mismo en el asistente de
+currículo y en el panel de programas.
+
+#### 3. Asignar clase
+
+- El desplegable se llama **«Aula virtual a asignar»** y empieza en «Elige el aula
+  virtual…».
+- **La lista va primero y el botón de crear va debajo**: estaba al revés.
+- La etiqueta del grupo es **opcional de verdad** (vacía → «ÚNICA»).
+
+#### 4. El nombre del grupo deja de topar en 5
+
+Migración `202610300001_ampliar_nombre_grupo`: `sections.name` pasa de
+`varchar(5)` a `varchar(24)`, con restricción de no vacío. Las tres vistas que
+leían la columna (`v_cuadrante_clases`, `v_exportacion_hacer`,
+`v_ocupacion_secciones`) se guardan y se recrean **idénticas** dentro de la
+migración, porque Postgres no deja cambiar el tipo mientras dependan de ella.
+
+#### Verificación
+
+- `npm run verify` **729/729** (34 archivos) · `flutter test` completo ·
+  analizador 251 archivos 0/0/0.
+- Migración aplicada: 63 versiones en el libro mayor, 0 pendientes.
+- Base: `sections.name` = `character varying(24)`, restricción
+  `sections_nombre_no_vacio` presente, las tres vistas con sus permisos.
+
 ## [1.7.4] - 2026-10-30
 ### Crear el grupo ya no deja al administrador sin salida, logo real y celda que se ve
 
