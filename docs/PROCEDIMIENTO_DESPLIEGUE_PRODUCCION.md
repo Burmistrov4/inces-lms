@@ -230,6 +230,14 @@ autenticado, el token está mal, le faltan permisos o la variable no se cargó.
 
 ### 6.2 Publicar producción
 
+> **Sube la versión antes de publicar, siempre.** Medido el 2026-10-30: se
+> publicaron tres bundles distintos con la misma etiqueta `1.7.1`, y el dueño del
+> producto miró la página, vio el mismo número y concluyó —con razón— que no había
+> cambiado nada. El número es la única señal que el usuario tiene desde fuera:
+> `pubspec.yaml`, `AppConfig.version` y la cabecera nueva del `CHANGELOG.md` se
+> mueven **juntos** antes de cada `wrangler pages deploy`, y
+> `test/version_coherente_test.dart` es lo que impide que se separen.
+
 Solo después de validar el artefacto de la sección 5:
 
     npx --yes wrangler pages deploy '.\build\web' --project-name=inces-lms --branch=main

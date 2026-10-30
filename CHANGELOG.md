@@ -2,6 +2,51 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.7.2] - 2026-10-30
+### El móvil vuelve a deslizar, la cabecera deja de mentir y el tope de archivos sale del parámetro
+
+> **Desplegado:** Cloudflare Pages `8cd8c992` (`inces-lms.pages.dev`), API de
+> producción. Backend sin cambios.
+
+**La versión salta a 1.7.2 por un error de proceso.** 1.7.1 se subió una vez y
+después se publicaron **dos tandas más sin volver a subirla**, así que tres
+bundles distintos llevaban la misma etiqueta y el dueño —con razón— miró la
+página y creyó que no había cambiado nada. Un número de versión que no cambia
+con lo que se publica no sirve como señal: sube en cada despliegue o sobra.
+
+#### 1. El móvil no deslizaba en cuatro paneles
+
+Reportado en un Redmi 10C: «no puedes deslizar ni para arriba ni para abajo» en
+Cuadrante de Horarios, Horario PNA, Cursos y PNA y Espacios y Aulas — mientras
+Guardias Docentes era el único utilizable. La asimetría era la pista: Guardias
+ya envolvía el panel entero en un scroll en pantalla angosta; los otros cuatro
+usaban `Column + Expanded`, que entrega al contenido el alto que sobre. Con la
+cabecera llena (título, selector, cuatro botones, guía y fichas de día) sobraba
+**cero**, y no había nada que arrastrar. Se copió el patrón que ya funcionaba.
+
+#### 2. La cabecera
+
+- El escudo «I» salía dos veces en escritorio (barra lateral + cabecera). Ahora
+  sólo aparece cuando hay cajón.
+- El período estaba **hardcodeado** en `admin_dashboard`, así que nunca cambiaba.
+  Ahora se lee de la base.
+- La insignia no decía estado: **verde = vigente, ámbar = archivado**, con los
+  tonos del tema (medidos por contraste).
+- «Horario Ordinario» pasa a «Cuadrante de Horarios», el nombre del menú.
+
+#### 3. El tope de subida leía un literal
+
+Los textos de Archivos del Centro decían «hasta 10 MB» con el 10 escrito a mano;
+coincidía con `system_settings.m5_max_bytes` por casualidad. Ahora se lee del
+parámetro. Y se hace visible `m5_max_archivos_por_entidad`: es el tope de
+adjuntos **por aula o sección**, no por archivo.
+
+#### Verificación
+
+- `flutter test` **1054/1054** · `node devops/analizar-dart.mjs` 251 archivos 0/0/0.
+- Sonda en navegador real: 360×800 con el horario visible y desplazable; 1440 sin
+  logo duplicado y con el período en verde.
+
 ## [1.7.1] - 2026-10-29
 ### El cuadrante vuelve a cargar: el `400` del catálogo y la tabla que no cabía
 
