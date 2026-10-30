@@ -1741,7 +1741,8 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                       label: const Text('2 Semanas'),
                       onPressed: () {
                         setState(() {
-                          _duracionValorCtrl.text = '2';
+                          // Suma sobre lo que ya hay: pulsar dos veces «+3 Meses» deben ser 6.
+                          _duracionValorCtrl.text = '${(int.tryParse(_duracionValorCtrl.text) ?? 0) + 2}';
                           _duracionUnidad = 'SEMANAS';
                         });
                       },
@@ -1751,7 +1752,8 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                       label: const Text('4 Semanas'),
                       onPressed: () {
                         setState(() {
-                          _duracionValorCtrl.text = '4';
+                          // Suma sobre lo que ya hay: pulsar dos veces «+3 Meses» deben ser 6.
+                          _duracionValorCtrl.text = '${(int.tryParse(_duracionValorCtrl.text) ?? 0) + 4}';
                           _duracionUnidad = 'SEMANAS';
                         });
                       },
@@ -1761,7 +1763,8 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                       label: const Text('1 Mes'),
                       onPressed: () {
                         setState(() {
-                          _duracionValorCtrl.text = '1';
+                          // Suma sobre lo que ya hay: pulsar dos veces «+3 Meses» deben ser 6.
+                          _duracionValorCtrl.text = '${(int.tryParse(_duracionValorCtrl.text) ?? 0) + 1}';
                           _duracionUnidad = 'MESES';
                         });
                       },
@@ -1771,7 +1774,8 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                       label: const Text('2 Meses'),
                       onPressed: () {
                         setState(() {
-                          _duracionValorCtrl.text = '2';
+                          // Suma sobre lo que ya hay: pulsar dos veces «+3 Meses» deben ser 6.
+                          _duracionValorCtrl.text = '${(int.tryParse(_duracionValorCtrl.text) ?? 0) + 2}';
                           _duracionUnidad = 'MESES';
                         });
                       },
@@ -1781,7 +1785,8 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                       label: const Text('3 Meses'),
                       onPressed: () {
                         setState(() {
-                          _duracionValorCtrl.text = '3';
+                          // Suma sobre lo que ya hay: pulsar dos veces «+3 Meses» deben ser 6.
+                          _duracionValorCtrl.text = '${(int.tryParse(_duracionValorCtrl.text) ?? 0) + 3}';
                           _duracionUnidad = 'MESES';
                         });
                       },
@@ -1791,7 +1796,8 @@ class _DialogoEditarProgramaState extends State<_DialogoEditarPrograma> {
                       label: const Text('6 Meses'),
                       onPressed: () {
                         setState(() {
-                          _duracionValorCtrl.text = '6';
+                          // Suma sobre lo que ya hay: pulsar dos veces «+3 Meses» deben ser 6.
+                          _duracionValorCtrl.text = '${(int.tryParse(_duracionValorCtrl.text) ?? 0) + 6}';
                           _duracionUnidad = 'MESES';
                         });
                       },

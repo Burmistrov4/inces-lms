@@ -712,7 +712,7 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                             label: const Text('1 Mes'),
                             onPressed: () {
                               setState(() {
-                                _duracionValor = 1;
+                                _duracionValor = (_duracionValor ?? 0) + 1;
                                 _duracionUnidad = 'MESES';
                               });
                             },
@@ -722,7 +722,7 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                             label: const Text('2 Meses'),
                             onPressed: () {
                               setState(() {
-                                _duracionValor = 2;
+                                _duracionValor = (_duracionValor ?? 0) + 2;
                                 _duracionUnidad = 'MESES';
                               });
                             },
@@ -732,7 +732,7 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                             label: const Text('4 Semanas'),
                             onPressed: () {
                               setState(() {
-                                _duracionValor = 4;
+                                _duracionValor = (_duracionValor ?? 0) + 4;
                                 _duracionUnidad = 'SEMANAS';
                               });
                             },
@@ -742,7 +742,7 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                             label: const Text('6 Meses'),
                             onPressed: () {
                               setState(() {
-                                _duracionValor = 6;
+                                _duracionValor = (_duracionValor ?? 0) + 6;
                                 _duracionUnidad = 'MESES';
                               });
                             },
@@ -787,7 +787,10 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                       SizedBox(
                         width: 140,
                         child: TextFormField(
-                          key: ValueKey('cupo-$_cupo'),
+                          // Sin `key` derivada de `_cupo`: cada tecla cambiaba la
+                          // clave, el campo se reconstruía y **perdía el foco** —
+                          // reportado el 2026-10-30 como «tecleo una sola vez y se
+                          // quita; tengo que volver a hacer clic».
                           initialValue: _cupo.toString(),
                           keyboardType: TextInputType.number,
                           inputFormatters: [
@@ -799,10 +802,16 @@ class _AsistenteCurriculoScreenState extends State<AsistenteCurriculoScreen> {
                             isDense: true,
                           ),
                           onChanged: (val) {
-                            final n = int.tryParse(val.trim());
-                            setState(
-                              () => _cupo = (n != null && n >= 0) ? n : 25,
-                            );
+                            // Vaciar el campo no debe imponer un cupo: sólo se
+                            // registra lo que el administrador escribe. Antes, un
+                            // valor no numérico (o el campo vacío) forzaba 25, y
+                            // eso se veía como que el número «se borraba solo».
+                            final texto = val.trim();
+                            if (texto.isEmpty) return;
+                            final n = int.tryParse(texto);
+                            if (n != null && n >= 0 && n != _cupo) {
+                              setState(() => _cupo = n);
+                            }
                           },
                         ),
                       ),

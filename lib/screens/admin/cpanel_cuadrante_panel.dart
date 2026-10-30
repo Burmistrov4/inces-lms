@@ -133,7 +133,12 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
         _cargando = false;
         _clases = rejilla.clases;
         _guardias = rejilla.guardias;
-        _aulas = rejilla.aulas;
+        // **Sólo espacios vivos.** El servidor devuelve también los archivados, y
+        // aparecían en el desplegable de «Espacio» —«Soldadura SA», archivada, era
+        // la primera opción y se podía elegir—. Una clase no se programa en un
+        // espacio archivado, así que aquí no se ofrece. Si no queda ninguno, el
+        // aviso de «registra los espacios del centro» vuelve a tener sentido.
+        _aulas = rejilla.aulas.where((a) => a.activa).toList(growable: false);
         _docentes = rejilla.docentes;
       }),
       failure: (fallo) => setState(() {
