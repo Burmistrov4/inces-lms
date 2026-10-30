@@ -215,7 +215,11 @@ export default defineConfig({
   // `performance_baseline.spec.ts` es de sólo lectura y también requiere opt-in:
   // E2E_MEDIR_PERFORMANCE=1; sus métricas no forman parte de la regresión normal.
   testIgnore: [
-    '**/_*.spec.ts',
+    // Las sondas de diagnóstico (`_*.spec.ts`) no son regresión, pero hay que
+    // poder correrlas: durante una medición no se ve nada si la única forma es
+    // renombrar el archivo —y renombrarlo lo mete en la suite—. Con
+    // `E2E_INCLUIR_SONDAS=1` entran; sin la variable, quedan fuera como siempre.
+    ...(process.env.E2E_INCLUIR_SONDAS === '1' ? [] : ['**/_*.spec.ts']),
     ...(process.env.E2E_PERMITIR_CICLO_MUTANTE === '1'
       ? []
       : ['**/aula_virtual_ciclo.spec.ts']),
@@ -235,9 +239,15 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
 
-  // Un reintento en CI: el primer arranque del motor es lo bastante variable
-  // como para merecer una segunda oportunidad, y un fallo real falla dos veces.
-  retries: process.env.CI ? 1 : 0,
+  // Un reintento **siempre**, no sólo en CI.
+  //
+  // El motivo original («el primer arranque del motor es variable») se quedó
+  // corto: medido el 2026-10-29, es el **primer test de cada corrida** el que no
+  // monta el motor —`waitForSelector('flt-glass-pane')` agota los 120 s— y los
+  // siguientes van bien. Con `retries: 0` en local, esa carrera se lee como un
+  // fallo del producto: es lo que hacía parecer rojo a `admin_cpanel_p0` y a la
+  // sonda de 390, que en la corrida siguiente pasan sin tocar nada.
+  retries: 1,
 
   reporter: reporteros,
 
@@ -270,6 +280,14 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+        // **Después del spread, no antes.** `devices['Desktop Chrome']` trae su
+        // propio `viewport` (1280×720) y, al expandirse después, pisaba en
+        // silencio el 1440×900 de `use`. Consecuencia medida el 2026-10-29: el
+        // menú lateral del panel se cortaba a 720 px y «Registro de Inicios de
+        // Sesión / Accesos» quedaba por debajo del pliegue, fuera del árbol de
+        // accesibilidad — así que `refresco_al_volver` fallaba buscando una
+        // sección que sí existe.
+        viewport: { width: 1440, height: 900 },
         // `channel` vacío = el Chromium que instala `playwright install`. Para
         // usar el Chrome del sistema: E2E_CANAL=chrome.
         ...(process.env.E2E_CANAL ? { channel: process.env.E2E_CANAL } : {}),

@@ -26,8 +26,8 @@ import { FlutterApp } from '../src/pages/FlutterApp.js';
 test.skip(process.env.E2E_MATRIZ !== '1', 'Matriz responsive: opt-in con E2E_MATRIZ=1');
 
 const ADMIN = {
-  email: process.env.E2E_ADMIN_EMAIL ?? 'lorenzo-roca11@hotmail.com',
-  pass: process.env.E2E_ADMIN_PASSWORD ?? 'Codenamelms33$',
+  email: process.env.E2E_ADMIN_EMAIL ?? '',
+  pass: process.env.E2E_ADMIN_PASSWORD ?? '',
 };
 const DOCENTE = {
   email: process.env.E2E_DOCENTE_EMAIL ?? 'docente@semilla.invalid',

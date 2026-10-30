@@ -1,7 +1,27 @@
 import { expect, test } from '@playwright/test';
 import { LoginPage } from '../src/pages/LoginPage.js';
 
-const BRAIN_DIR = 'C:/Users/Loro/.gemini/antigravity/brain/fc938256-e2cd-45cb-99ec-a6d5c97a5f0e';
+/**
+ * Auditoría visual de punta a punta: recorre **producción** (`inces-lms.pages.dev`)
+ * y guarda capturas. **No es regresión** —no afirma casi nada y lo que afirma
+ * depende de la base real— así que desde el 2026-10-29 es **opt-in** con
+ * `E2E_AUDITORIA=1`.
+ *
+ * Tres defectos se corrigieron aquí el 2026-10-29:
+ *   · la contraseña del administrador estaba en claro en el archivo;
+ *   · las capturas iban a un directorio absoluto de otra herramienta
+ *     (`C:/Users/Loro/.gemini/…`), inexistente en CI y en cualquier otra máquina;
+ *   · por estar en la suite normal, cada corrida abría sesión de administrador
+ *     en producción y fallaba por rutas, no por el producto.
+ */
+const ADMIN = process.env.E2E_ADMIN_EMAIL ?? '';
+const CLAVE = process.env.E2E_ADMIN_PASSWORD ?? '';
+const BRAIN_DIR = process.env.E2E_SALIDA_AUDITORIA ?? 'informe/auditoria';
+
+test.skip(
+  process.env.E2E_AUDITORIA !== '1',
+  'Auditoría visual contra producción: opt-in con E2E_AUDITORIA=1',
+);
 
 test.use({ serviceWorkers: 'block' });
 
@@ -49,12 +69,12 @@ test('1. Flujo Público y Responsive (Landing, Oferta, Móvil, Inscripción, Log
   });
 
   test('2. Panel Administrativo Integral y Módulos Institucionales', async ({ page }) => {
+    test.skip(ADMIN === '' || CLAVE === '', 'Faltan credenciales E2E de admin.');
     await page.setViewportSize({ width: 1440, height: 900 });
     const login = new LoginPage(page);
 
-    console.log('[AUDITORÍA ADMIN] Iniciando sesión institucional...');
     await login.abrir();
-    await login.entrar('lorenzo-roca11@hotmail.com', 'Codenamelms33$');
+    await login.entrar(ADMIN, CLAVE);
     await page.waitForTimeout(5000);
 
     // G. Centro de Mando / Resumen con Walkthrough

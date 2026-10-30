@@ -3,8 +3,12 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { LoginPage, SENAL_DE_SESION, SENAL_DE_SESION_ALUMNO } from '../src/pages/LoginPage.js';
 
-const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'lorenzo-roca11@hotmail.com';
-const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'Codenamelms33$';
+// Las credenciales NO se escriben aquí: se leen del entorno (`.env.e2e` en
+// local, secretos del repositorio en CI). Tenían un valor por defecto en claro
+// hasta el 2026-10-29, así que quedaron en el historial de git; sin entorno, la
+// suite se salta en vez de usar una contraseña incrustada.
+const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? '';
+const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? '';
 const DOCENTE_EMAIL = process.env.E2E_DOCENTE_EMAIL ?? 'docente@semilla.invalid';
 const DOCENTE_PASSWORD = process.env.E2E_DOCENTE_PASSWORD ?? 'SemillaInces26!';
 const ALUMNO_EMAIL = process.env.E2E_ALUMNO_EMAIL ?? 'estudiante1@semilla.invalid';
