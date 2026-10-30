@@ -2,6 +2,51 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.7.1] - 2026-10-29
+### El cuadrante vuelve a cargar: el `400` del catálogo y la tabla que no cabía
+
+> **Desplegado:** bundle en Cloudflare Pages (`81eef35a.inces-lms.pages.dev`),
+> servido por `inces-lms.pages.dev` con la API de producción. Backend sin cambios.
+
+Tres defectos medidos en navegador real, no deducidos:
+
+#### 1. El cuadrante y el horario PNA no cargaban nunca
+
+Pedían el catálogo de secciones con `limite: 150`. El contrato admite **100**
+(`esquemaListadoSecciones` → `.max(100)`), así que el backend respondía `400` y
+la rejilla se quedaba **en esqueletos para siempre, sin un solo mensaje**: la
+llamada va dentro de un `try` que no informa. Ahora se **pagina** con el máximo
+del contrato (`SeccionesRepository.listarTodasLasSecciones`) en vez de usar una
+cifra mágica que se rompe en silencio.
+
+De paso: el filtro viajaba como `soloActivas` y la API espera **`activa`**. Zod
+descarta la clave desconocida, así que el panel mostraba también las secciones
+archivadas **como si fueran vigentes**. Corregido; el panel ahora dice la verdad
+(y hoy la verdad es que no hay ninguna sección activa en el centro).
+
+#### 2. N2 — el cuadrante en el teléfono
+
+Con «Todo» seleccionado se servía una tabla de 116 + 6·140 = **956 px dentro de
+un 390**. Ahora la forma la decide el ancho (`CuadranteGrid.cabeComoTabla`): si
+las columnas no caben con un mínimo legible, se pinta selector de día + lista de
+bloques, y los botones «Anterior/Siguiente» —que mueven la tabla— desaparecen
+cuando no hay tabla que mover.
+
+#### 3. La hora de la tarde decía «01:00»
+
+La rejilla mostraba «Tarde 01:00 - 01:45» sin meridiano. Ahora
+`horaConMeridianoDeBloque` escribe «a. m.» / «p. m.» **en la presentación y no en
+el dato**, porque el mismo mapa alimenta el formulario «Horas de bloques».
+
+#### Verificación
+
+- `flutter test` **1054/1054** · `node devops/analizar-dart.mjs` 251 archivos 0/0/0.
+- Sonda en navegador real a 390 / 820 / 1440: **0 desbordes**, y
+  `/admin/secciones?activa=true&limite=100` → `200` (antes `400`).
+- `cd backend && npm run verify` **728/728** (sin cambios de backend).
+- CI: Flutter ✅ · Supabase ✅ · E2E 27 pasan / 2 fallan, y esas 2 fallan **por
+  datos** (no hay ninguna sección activa), no por el código.
+
 ## [1.7.0] - 2026-10-29
 ### El período congela de verdad, el PNA deja de pedir sección y la interfaz deja de gastar media pantalla
 
