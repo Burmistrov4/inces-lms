@@ -108,6 +108,14 @@ const esperadas = [
   'm6_anuncios',
   'm6_entregas',
   'm6_tareas',
+  // Las tres del ciclo de planilla y de la recuperación interna. Salían como
+  // «sobrantes» porque la lista se escribió antes de `202610060001` (versiones y
+  // observaciones de la planilla) y de `202610090002` (`password_resets`). Un
+  // sobrante inventado entrena a ignorar el control, que es peor que el control
+  // que falta: las tres son nuestras, tienen RLS y por eso se esperan aquí.
+  'password_resets',
+  'planilla_observaciones',
+  'planilla_versiones',
   'profiles',
   'program_subjects',
   'programs',
@@ -302,54 +310,36 @@ comprobar(
   'm0_cpanel arranca habilitado',
   modulos.some((m) => m.clave === 'm0_cpanel' && m.habilitado === true),
 );
-// La semilla ORIGINAL (202609120002) encendía sólo dos módulos, pero las
-// migraciones posteriores encienden `m2_curriculo`, `m3_cuadrante`,
-// `m4_inscripciones` (202609200002), `m5_archivos` (202609210002),
-// `m6_aula_virtual` (202609220003) y `m7_asistencia` (202609260002) a propósito:
-// están construidos y verificados de extremo a extremo. Exigir «sólo dos» quedaría
-// obsoleto y marcaría como fallo un estado correcto. Se fija el estado real, que
-// se vuelve a medir cada vez que este script corre.
+// El estado de los interruptores NO se fija aquí. Igual que los límites de M5,
+// es lo que el administrador enciende y apaga desde el panel: congelarlo en una
+// lista convertía cada decisión legítima del centro en un rojo del verificador,
+// que es la forma más rápida de que nadie mire el verificador.
 //
-// Ojo al leer el reparto, porque es fácil atribuirlo mal:
-// `202609210001_mod5_archivos.sql` **no** enciende esta bandera —crea la tabla,
-// las RPC y los parámetros, y lo dice de forma explícita en su cabecera—. Quien
-// la enciende es `202609210002_mod5_habilitar_modulo.sql`. Es la misma división
-// que hizo M4: `202609200001` construye y `202609200002` enciende. Una versión
-// anterior de este comentario afirmaba lo contrario y contradecía a la aserción
-// que tiene justo debajo.
-//
-// `m7_asistencia` (2026-09-26) es la última que se sumó, y la que rompió este
-// control cuando el script se corrió contra una nube al día: la lista de
-// habilitados y el total de filas seguían congelados en M6. Es exactamente la
-// deriva que este script existe para cazar, sólo que aquí el desviado era él.
+// Lo que sí son invariantes son dos:
+//   1. `m0_cpanel` encendido — el trigger `system_modules_proteger_critico` ya lo
+//      impide, y esto lo comprueba desde fuera.
+//   2. Ningún módulo SIN flujo completo encendido. `m8_pasantias` es OFF por
+//      mandato explícito (no se habilita sin flujo + E2E) y `m7_calificaciones`
+//      no tiene implementación: sólo existe el icono en el panel de módulos. Si
+//      aparecen encendidos, el administrador ve un interruptor que promete algo
+//      que el producto no hace.
 const habilitados = modulos
   .filter((m) => m.habilitado)
   .map((m) => m.clave)
   .sort();
+const SIN_FLUJO = ['m7_calificaciones', 'm8_pasantias'];
+const sinFlujoEncendidos = SIN_FLUJO.filter((c) => habilitados.includes(c));
 comprobar(
-  'm0…m7 habilitados; apagados sólo m7_calificaciones y m8_pasantias',
-  JSON.stringify(habilitados) ===
-    JSON.stringify([
-      'm0_cpanel',
-      'm1_onboarding',
-      'm2_curriculo',
-      'm3_cuadrante',
-      'm4_inscripciones',
-      'm5_archivos',
-      'm6_aula_virtual',
-      'm7_asistencia',
-    ]) &&
-    // La lista de APAGADOS es explícita, no un `m[7-8]_` por expresión regular.
-    // El placeholder histórico `m6_asistencia` se retira en la migración
-    // `202610080001`; la asistencia funcional vive en `m7_asistencia`. Este control
-    // valida el catálogo definitivo, sin exigir el placeholder ya retirado.
-    JSON.stringify(
-      modulos
-        .filter((m) => !m.habilitado)
-        .map((m) => m.clave)
-        .sort(),
-    ) === JSON.stringify(['m7_calificaciones', 'm8_pasantias']),
-  `habilitados: ${habilitados.join(', ')}`,
+  'm0_cpanel está encendido (el cPanel no puede apagarse)',
+  habilitados.includes('m0_cpanel'),
+  habilitados.join(', '),
+);
+comprobar(
+  'ningún módulo sin flujo completo está encendido (m7_calificaciones, m8_pasantias)',
+  sinFlujoEncendidos.length === 0,
+  sinFlujoEncendidos.length === 0
+    ? 'ambos apagados'
+    : `ENCENDIDOS: ${sinFlujoEncendidos.join(', ')}`,
 );
 const ajustes = await consultar('select count(*)::int as n from public.system_settings;');
 comprobar('parámetros sembrados', ajustes[0].n > 0, `${ajustes[0].n} filas`);
@@ -357,13 +347,33 @@ comprobar('parámetros sembrados', ajustes[0].n > 0, `${ajustes[0].n} filas`);
 // la consulta va directo a la fuente de verdad. El cruce que hacía es el mismo:
 // si `programs` tiene los 5 cursos libres migrados desde Fase 0, la absorción
 // conservó los datos.
+// El recuento de cursos libres ya no es 5 y no debe serlo: el centro da de alta
+// cursos desde el panel (`SEM-SOL-CL`, «Soldadura Básica», entró el 2026-10-01).
+// Fijar el total convertía cada alta legítima en un rojo del verificador — el
+// mismo error que el «17 tablas» de la cabecera y que D11. Lo invariante es que
+// los cinco de la semilla de Fase 0 sigan ahí y activos: si uno desaparece, la
+// absorción de la vista `cursos` perdió datos.
+const CURSOS_SEMILLA = [
+  'CUR-EST-01',
+  'CUR-HER-01',
+  'CUR-HIG-01',
+  'CUR-INT-01',
+  'CUR-ORA-01',
+];
 const cursos = await consultar(
-  "select count(*)::int as n from public.programs where type = 'CURSO_LIBRE';",
+  "select code, is_active from public.programs where type = 'CURSO_LIBRE' order by code;",
 );
+const codigosCurso = cursos.map((c) => c.code);
+const semillaPerdida = CURSOS_SEMILLA.filter((c) => !codigosCurso.includes(c));
+const semillaInactiva = cursos.filter((c) => CURSOS_SEMILLA.includes(c.code) && !c.is_active);
 comprobar(
-  'cursos libres sembrados (directo de programs, ya sin la vista de D12)',
-  cursos[0].n === 5,
-  `${cursos[0].n} filas`,
+  'los 5 cursos libres de la semilla siguen sembrados y activos',
+  semillaPerdida.length === 0 && semillaInactiva.length === 0,
+  semillaPerdida.length > 0
+    ? `FALTAN: ${semillaPerdida.join(', ')}`
+    : semillaInactiva.length > 0
+      ? `INACTIVOS: ${semillaInactiva.map((c) => c.code).join(', ')}`
+      : `${cursos.length} cursos libres en total`,
 );
 
 console.log('\n  5. Libro mayor de migraciones (D10)\n');
@@ -664,13 +674,21 @@ comprobar(
   capNullable[0]?.is_nullable ?? 'AUSENTE',
 );
 
+// `habilitar_sistema_bids` ya NO existe: lo retiró `202610260001`, junto con
+// `bid_ttl_horas` y las RPC del sistema de bids, que nunca tuvo consumidor en el
+// cliente. La comprobación es INVERSA —igual que la de la vista `cursos`—
+// porque una positiva no cazaría su reaparición: si alguien volviera a sembrar
+// el parámetro, el panel ofrecería un interruptor que no enciende nada.
 const bidsSeed = await consultar(
-  "select tipo, es_publico from public.system_settings where clave = 'habilitar_sistema_bids';",
+  "select clave from public.system_settings " +
+    "where clave in ('habilitar_sistema_bids', 'bid_ttl_horas');",
 );
 comprobar(
-  'habilitar_sistema_bids está sembrado (boolean, privado)',
-  bidsSeed.length === 1 && bidsSeed[0].tipo === 'boolean' && bidsSeed[0].es_publico === false,
-  bidsSeed.length === 1 ? `tipo=${bidsSeed[0].tipo}, publico=${bidsSeed[0].es_publico}` : 'AUSENTE',
+  'los parámetros del sistema de bids están retirados',
+  bidsSeed.length === 0,
+  bidsSeed.length === 0
+    ? 'retirados'
+    : `SIGUEN AHÍ: ${bidsSeed.map((s) => s.clave).join(', ')}`,
 );
 
 // Las RPC de M4 son `security definer` por diseño: se saltan la RLS de
@@ -890,16 +908,26 @@ comprobar(
 // La semilla de límites (decisión 2): valores por defecto que el administrador
 // cambia desde el panel sin desplegar. Privados: son operativos, no del
 // formulario público.
+//
+// El VALOR no se fija aquí. Es exactamente lo que el panel existe para cambiar:
+// cuando alguien subió el tope a 30 archivos por entidad, este control se puso
+// rojo por un ajuste legítimo y enseñaba a ignorarlo. Lo que sí es invariante es
+// la FORMA: las dos claves sembradas, de tipo `number`, privadas, con valor
+// positivo, y `m5_max_bytes` en el orden de los megabytes.
 const limitesM5 = await consultar(
   "select clave, valor, tipo, es_publico from public.system_settings " +
     "where clave in ('m5_max_bytes','m5_max_archivos_por_entidad') order by clave;",
 );
+const topeBytes = limitesM5.find((s) => s.clave === 'm5_max_bytes');
+const topeArchivos = limitesM5.find((s) => s.clave === 'm5_max_archivos_por_entidad');
 comprobar(
-  'la semilla de límites de M5 está completa (10 MB y 10 archivos, number, privados)',
+  'los límites de M5 están sembrados (number, privados y positivos)',
   limitesM5.length === 2 &&
-    limitesM5.every((s) => s.tipo === 'number' && s.es_publico === false) &&
-    limitesM5.find((s) => s.clave === 'm5_max_bytes')?.valor === 10485760 &&
-    limitesM5.find((s) => s.clave === 'm5_max_archivos_por_entidad')?.valor === 10,
+    limitesM5.every(
+      (s) => s.tipo === 'number' && s.es_publico === false && Number(s.valor) > 0,
+    ) &&
+    Number(topeBytes?.valor) >= 1048576 &&
+    Number(topeArchivos?.valor) >= 1,
   limitesM5.map((s) => `${s.clave}=${JSON.stringify(s.valor)}`).join(', ') || 'AUSENTE',
 );
 

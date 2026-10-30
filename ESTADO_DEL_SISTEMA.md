@@ -1,6 +1,80 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — 2026-10-29 (tarde) · v1.7.0 · DESPLEGADO
+## Fotografía operativa vigente — 2026-10-29 (noche) · v1.7.0 + correcciones · **sin desplegar**
+
+> Trabajo de la sesión de la noche. **Nada de esto está en producción todavía**: el
+> frente desplegado (`inces-lms.pages.dev`) sigue siendo el del mediodía, y como se
+> explica abajo **arrastra un defecto que deja el cuadrante inservible**.
+
+### Lo que cambió, y por qué
+
+1. **El cuadrante no cargaba. No era el responsive: era un `400`.**
+   `CpanelCuadrantePanel` y `CpanelPnaPanel` pedían el catálogo de secciones con
+   `limite: 150`; el contrato admite **100** (`esquemaListadoSecciones` →
+   `.max(100)`), así que el backend devolvía `400` y la rejilla se quedaba en
+   esqueletos **para siempre, sin un solo mensaje**. Medido en navegador real con
+   la red instrumentada. Además el filtro viajaba como `soloActivas` y la API
+   espera **`activa`**: Zod descarta la clave desconocida, así que también entraban
+   las secciones archivadas. Ahora se pide `activa=true` y se **pagina** con el
+   máximo del contrato (`SeccionesRepository.listarTodasLasSecciones`), no con una
+   cifra mágica. Medido: `?soloActivas=true&limite=150` → **400**;
+   `?activa=true&limite=100` → **200**.
+2. **N2 — el cuadrante en el teléfono.** La forma la decide el **ancho**, no la
+   plataforma: si la tabla no cabe con columnas legibles (`cabeComoTabla`), se
+   pinta selector de día + lista de bloques. Antes, con «Todo» seleccionado en un
+   390 se servía una tabla de 956 px (116 + 6·140). Verificado con capturas
+   reales a 390/820/1440: **0 avisos de desborde**.
+3. **V4 — filtro por día: ya existía** en el cuadrante y en el horario PNA. Lo que
+   faltaba era que «Todo» fuera usable en pantalla estrecha.
+4. **La hora de la tarde decía «01:00».** La rejilla mostraba «Tarde 01:00 - 01:45»
+   sin meridiano. Ahora `horaConMeridianoDeBloque` lo escribe en la presentación y
+   **no en el dato**, porque el mismo mapa alimenta el formulario «Horas de
+   bloques» y guardarlo ahí lo duplicaría al reeditar.
+5. **`verificar-esquema.mjs`: 5 rojos → 1.** Los 4 retirados eran expectativas
+   muertas (tablas propias listadas como «sobrantes», `habilitar_sistema_bids`
+   retirado, recuento de cursos fijado en 5 con 6 reales, tope de M5 comparado por
+   valor exacto). El rojo que queda **es deriva real**: `m7_calificaciones` y
+   `m8_pasantias` están encendidos sin implementación detrás.
+6. **Seguridad: la contraseña del administrador estaba en 5 specs** (`live_prod_v124`,
+   `live_modulos`, `auditoria_completa_sistema`, `captura_dashboards_roles`,
+   `matriz_responsive`) y en el historial de git desde `a174718`. Retirada del
+   código; **pendiente rotarla**.
+7. **E2E: dos defectos de arnés.** `devices['Desktop Chrome']` se expandía después
+   del `viewport` y lo pisaba con 1280×720, dejando el menú cortado y secciones
+   fuera del árbol de accesibilidad; y las tres specs que sólo navegaban y sacaban
+   capturas a `C:/Users/Loro/.gemini/…` pasan a **opt-in** (`E2E_LIVE`,
+   `E2E_AUDITORIA`). Las sondas `_*.spec.ts` ahora se pueden correr con
+   `E2E_INCLUIR_SONDAS=1`.
+
+### Verificación medida hoy
+
+| Control | Resultado | Comando |
+|---|---|---|
+| Analizador propio | **251 archivos · 0/0/0** | `node devops/analizar-dart.mjs` · exit 0 |
+| Suite Flutter | **1054/1054** | `env -u HTTP_PROXY … NO_PROXY=127.0.0.1,localhost flutter test` · exit 0 |
+| Backend | **34 archivos · 728/728** | `cd backend && npm run verify` · exit 0 |
+| `verificar-esquema.mjs` | **147 OK · 1 fallo (deriva de módulos)** | `node supabase/verificar-esquema.mjs` · exit 1 |
+| Bundle web | **compila** | `flutter build web --release --no-tree-shake-icons --dart-define-from-file=.env.json` · exit 0 |
+| Sonda navegador real (390/820/1440) | **3/3 · 0 desbordes** · `activa=true&limite=100` → 200 | `E2E_INCLUIR_SONDAS=1 npx playwright test tests/_sonda_movil_cuadrante.spec.ts` |
+
+⚠️ **Corrección de entorno, importante:** `flutter test` y `flutter build web` **sí
+corren en este equipo**. Lo que falla es el subproceso hijo: el build se cuelga en
+el *tree-shaking* de iconos (`--no-tree-shake-icons` lo resuelve) y los tests por el
+proxy (`env -u HTTP_PROXY … NO_PROXY=…`). Detalle en `docs/MAESTRO/04` §0.
+
+### Deuda que este lote NO cierra
+
+- **`m8_pasantias` / `m7_calificaciones` encendidos** en la nube sin código: decisión
+  de Lorenzo (¿apagarlos?).
+- **Rotar la contraseña del administrador** (expuesta en el historial de git).
+- **3 specs E2E con causa diagnosticada y sin arreglar**: `admin_cpanel_p0` y
+  `export_csv` no montan el motor en 120 s; `aula_virtual` no ve la señal de alumno
+  «Mi inscripción». `refresco_al_volver` tiene la causa arreglada (el viewport) pero
+  **sin re-ejecutar**.
+- **Frontend sin desplegar**: hasta que se suba este bundle, producción sigue con el
+  `400` del catálogo de secciones y el cuadrante roto para todos.
+
+## Fotografía anterior — 2026-10-29 (tarde) · v1.7.0 · DESPLEGADO
 
 > Migración `202610290001_ciclo_periodo.sql` **aplicada a la nube**: 62 versiones,
 > **0 pendientes, 0 deriva**. Backend **desplegado** en Render (`0ff0837`, responde

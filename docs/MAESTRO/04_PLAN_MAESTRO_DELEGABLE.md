@@ -13,29 +13,55 @@
 
 ## 0. Cómo verificar en este equipo (obligatorio leer)
 
-`flutter test` / `flutter build web` **no arrancan** en la máquina local (tuberías
-nombradas / `ERROR_PIPE_BUSY`, y el proxy del sandbox rompe el health check de
-Playwright). **CI es el verificador.** Comandos locales válidos:
+> **CORREGIDO EL 2026-10-29 (noche), medido en esta máquina.** La versión anterior
+> de esta sección decía que `flutter test` y `flutter build web` «no arrancan».
+> Es **cierto a medias** y la mitad que falta cuesta horas: el CLI arranca bien, y
+> lo que falla es el **subproceso hijo** que ambos lanzan. Con estas dos variantes
+> corren los dos, y entonces el verificador de Flutter **deja de ser sólo CI**:
+>
+> ```bash
+> # flutter test — el fallo era el proxy del entorno (NO_PROXY vacío):
+> env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
+>     NO_PROXY=127.0.0.1,localhost flutter test
+>
+> # flutter build web — se cuelga en el tree-shaking de iconos (spawnea un hijo).
+> # Con --no-tree-shake-icons compila entero (~12-13 min) y sale exit 0:
+> flutter build web --release --no-tree-shake-icons \
+>     --dart-define-from-file=.env.json
+> ```
+>
+> El bundle pesa ~1,5 MB más por los iconos sin podar; para medir en navegador
+> real sobra. **Sin ese flag, el build se queda en «Compiling…» para siempre** y
+> `main.dart.js` no se actualiza — parece que el proyecto no compila, y sí compila.
+>
+> Si una prueba local muere con `CreateFile failed 231` / `ERROR_PIPE_BUSY`, sigue
+> siendo el sandbox y no el proyecto: sube el cambio y deja que CI lo confirme.
 
 ```bash
-# Frontend (análisis estático,等同 a flutter analyze pero sin subproceso hijo)
-node devops/analizar-dart.mjs            # 249 archivos · 0/0/0 esperado
+# Frontend (análisis estático, equivalente a flutter analyze sin subproceso hijo)
+node devops/analizar-dart.mjs            # 250 archivos · 0/0/0 esperado
 
 # Backend
 cd backend && npm run verify             # 728/728 esperado
 cd backend && npm run typecheck
-cd backend && npm run openapi            # regenera openapi.json (D6)
+cd backend && npm run openapi            # regenera openapi.json (contrato D6)
 
 # Esquema en la nube (fuera del repo, contra Supabase)
 node supabase/apply-migrations.mjs --check
-node supabase/verificar-esquema.mjs      # OJO: 5 expectativas obsoletas (ver P0.1)
+node supabase/verificar-esquema.mjs      # 147 OK · 1 rojo = deriva real de módulos (B13)
 
 # E2E (Playwright) — requiere backend en 3001 + NO_PROXY
 NO_PROXY=localhost,127.0.0.1 playwright test        # en e2e/
+# Sondas de diagnóstico (`tests/_*.spec.ts`), que la suite ignora por defecto:
+E2E_INCLUIR_SONDAS=1 NO_PROXY=localhost,127.0.0.1,::1 \
+  npx playwright test tests/_sonda_movil_cuadrante.spec.ts
 ```
 
-> Si una prueba local muere con `CreateFile failed 231` / `ERROR_PIPE_BUSY`, **no es
-> el proyecto: es el sandbox**. Sube el cambio y deja que CI lo confirme.
+> **Para medir en navegador real, entra en tamaño de escritorio y redimensiona
+> después.** Medido el 2026-10-29: a 390 px la señal de sesión «Cursos y PNA» no
+> aparece porque el rótulo de la barra inferior se parte en dos líneas, así que
+> `LoginPage.entrar` se queda esperando un texto que nunca llega **aunque el
+> acceso funcione**. Es lo que ya hacía `matriz_responsive` con su constante `NAV`.
 
 ---
 
