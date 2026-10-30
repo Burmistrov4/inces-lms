@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../providers/tema_provider.dart';
 import '../core/refresco_secciones.dart';
 import '../repositories/modulo_repository.dart';
+import '../repositories/cuadrante_repository.dart';
+import '../models/cuadrante.dart';
 import '../services/auth_service.dart';
 import '../theme/inces_theme.dart';
 import '../widgets/andamiaje.dart';
@@ -72,6 +74,50 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
 
   late final ModuloRepository _modulosRepo =
       widget.modulos ?? ModuloRepository();
+
+  /// Fuente del período vigente que se pinta en la cabecera.
+  ///
+  /// Antes estaba escrito a mano (`static const _periodoActivo = 'SA26-2'`) y
+  /// por eso la cabecera **nunca** cambiaba de período: reportado el
+  /// 2026-10-30 («el nombre del periodo no se cambia acorde al actual»). Se lee
+  /// una vez, de la misma ruta que usa el cuadrante, y si falla se cae al
+  /// literal de siempre para no dejar la cabecera vacía.
+  late final CuadranteRepository _periodosRepo = CuadranteRepository();
+
+  String? _periodoCodigo;
+  bool _periodoEsVigente = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarPeriodoVigente();
+  }
+
+  Future<void> _cargarPeriodoVigente() async {
+    final resultado = await _periodosRepo.listarPeriodos();
+    if (!mounted) return;
+    resultado.when(
+      success: (periodos) {
+        Periodo? elegido;
+        for (final p in periodos) {
+          if (p.vigente) {
+            elegido = p;
+            break;
+          }
+        }
+        if (elegido == null && periodos.isNotEmpty) elegido = periodos.first;
+        if (elegido == null) return;
+        setState(() {
+          _periodoCodigo = elegido!.codigo;
+          _periodoEsVigente = elegido.vigente;
+        });
+      },
+      failure: (_) {
+        // Sin dato, la cabecera muestra el código de siempre y en verde: una
+        // insignia vacía o en ámbar comunicaría un estado que no conocemos.
+      },
+    );
+  }
 
   @override
   ModuloRepository get repositorioDeModulos => _modulosRepo;
@@ -285,7 +331,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       },
       rolEtiqueta: 'Administrador Maestro',
       correoUsuario: _auth.emailActual,
-      periodoActivo: _periodoActivo,
+      periodoActivo: _periodoCodigo ?? _periodoActivo,
+      periodoVigente: _periodoEsVigente,
       onCerrarSesion: _cerrarSesion,
       temaActual: tema?.modo,
       onCambiarTema: tema?.cambiar,

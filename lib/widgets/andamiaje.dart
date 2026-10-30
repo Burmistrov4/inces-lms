@@ -110,6 +110,7 @@ class AndamiajeApp extends StatefulWidget {
     this.nombreUsuario,
     this.correoUsuario,
     this.periodoActivo,
+    this.periodoVigente = true,
     this.accionesEncabezado = const [],
     this.onCerrarSesion,
     this.temaActual,
@@ -125,6 +126,10 @@ class AndamiajeApp extends StatefulWidget {
   final String? nombreUsuario;
   final String? correoUsuario;
   final String? periodoActivo;
+
+  /// Estado del período de la insignia: verde = vigente, ámbar = archivado.
+  final bool periodoVigente;
+
   final List<Widget> accionesEncabezado;
   final VoidCallback? onCerrarSesion;
 
@@ -256,6 +261,7 @@ class _AndamiajeAppState extends State<AndamiajeApp> {
                   nombreUsuario: widget.nombreUsuario,
                   correoUsuario: widget.correoUsuario,
                   periodoActivo: widget.periodoActivo,
+                  periodoVigente: widget.periodoVigente,
                   acciones: widget.accionesEncabezado,
                   // Este `context` pertenece al estado que está por encima
                   // del `Scaffold`; `Scaffold.of(context)` no puede encontrarlo

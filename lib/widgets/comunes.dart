@@ -25,6 +25,7 @@ class EncabezadoInstitucional extends StatelessWidget {
     this.nombreUsuario,
     this.correoUsuario,
     this.periodoActivo,
+    this.periodoVigente = true,
     this.acciones = const [],
     this.onAbrirMenu,
   });
@@ -36,6 +37,15 @@ class EncabezadoInstitucional extends StatelessWidget {
   /// Período académico activo (`SA26-2`). Si es `null`, no se muestra la
   /// insignia: es preferible a mostrar un guion que no significa nada.
   final String? periodoActivo;
+
+  /// Si ese período es el **vigente** (`system_settings.periodo_activo`) o no.
+  ///
+  /// Se pinta: verde = vigente (es con el que se trabaja), ámbar = archivado
+  /// (está ahí para consulta o para cerrar asuntos). Sin esto, la insignia era
+  /// un código sin estado y el administrador no podía saber en cuál estaba
+  /// parado — reportado el 2026-10-30: «no aparece un color para indicar si
+  /// está vigente o archivado».
+  final bool periodoVigente;
 
   final List<Widget> acciones;
 
@@ -117,7 +127,10 @@ class EncabezadoInstitucional extends StatelessWidget {
                                 ),
                                 if (periodoActivo != null) ...[
                                   const SizedBox(width: 6),
-                                  _InsigniaPeriodo(periodo: periodoActivo!),
+                                  _InsigniaPeriodo(
+                                    periodo: periodoActivo!,
+                                    vigente: periodoVigente,
+                                  ),
                                 ],
                               ],
                             ),
@@ -140,8 +153,14 @@ class EncabezadoInstitucional extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                   ],
-                  const _EscudoInces(),
-                  const SizedBox(width: 12),
+                  // **El escudo sólo cuando no hay barra lateral visible.** Con
+                  // menú permanente, la marca ya está arriba a la izquierda y
+                  // repetir la «I» en la cabecera era ruido: reportado el
+                  // 2026-10-30 como «un logo genérico repetido dos veces».
+                  if (onAbrirMenu != null) ...[
+                    const _EscudoInces(),
+                    const SizedBox(width: 12),
+                  ],
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,7 +182,10 @@ class EncabezadoInstitucional extends StatelessWidget {
                           children: [
                             _InsigniaRol(etiqueta: rolEtiqueta),
                             if (periodoActivo != null)
-                              _InsigniaPeriodo(periodo: periodoActivo!),
+                              _InsigniaPeriodo(
+                                periodo: periodoActivo!,
+                                vigente: periodoVigente,
+                              ),
                             if (correoUsuario != null)
                               Text(
                                 correoUsuario!,
@@ -279,37 +301,59 @@ class _InsigniaRol extends StatelessWidget {
 }
 
 class _InsigniaPeriodo extends StatelessWidget {
-  const _InsigniaPeriodo({required this.periodo});
+  const _InsigniaPeriodo({required this.periodo, this.vigente = true});
 
   final String periodo;
+  final bool vigente;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // Verde = el período con el que se trabaja; ámbar = archivado (consulta o
+    // cierre de asuntos). No se usan los colores de error: un período archivado
+    // no es un fallo, es el estado normal de un lapso que terminó.
+    //
+    // Los tonos salen de `PaletaInces`, que ya los elige por brillo y los tiene
+    // medidos para contraste: un hexadecimal suelto aquí rompería esa garantía
+    // —y de hecho `theme_literales_test.dart` lo rechaza, que es lo que pasó al
+    // escribirlo la primera vez—.
+    final paleta = PaletaInces.de(context);
+    final color = vigente ? paleta.exito : paleta.advertencia;
+    final fondo = color.withValues(alpha: 0.12);
 
     return Tooltip(
-      message: 'Período académico activo',
+      message: vigente
+          ? 'Período vigente: es el que se está dictando'
+          : 'Período archivado: se puede consultar, no se planifica en él',
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration: BoxDecoration(
-          border: Border.all(color: theme.colorScheme.outline),
+          color: fondo,
+          border: Border.all(color: color.withValues(alpha: 0.45)),
           borderRadius: BorderRadius.circular(5),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // El punto es el que se lee de un vistazo; el icono de calendario
+            // decía «aquí hay un período» pero no en qué estado.
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 5),
             Icon(
               Icons.calendar_today_outlined,
-              size: 11,
-              color: theme.colorScheme.onSurfaceVariant,
+              size: 10,
+              color: color,
             ),
             const SizedBox(width: 4),
             Text(
               periodo,
               style: GoogleFonts.inter(
                 fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+                color: color,
               ),
             ),
           ],

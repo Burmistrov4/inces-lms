@@ -196,29 +196,37 @@ class _CpanelAulasPanelState extends State<CpanelAulasPanel>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _cabecera(),
-        const SizedBox(height: 12),
-        _filtros(),
-        const SizedBox(height: 16),
-        // `Expanded` y no un `ListView` suelto: `ContenidoSeccion` entrega una
-        // altura **acotada**, así que aquí se reparte en lugar de crecer. Es el
-        // contrato de layout del cPanel, y montar el panel en un `Scaffold`
-        // pelado lo escondería.
-        Expanded(
-          child: EstadoPanel(
-            cargando: _cargando,
-            error: _error,
-            onReintentar: _cargar,
-            // Este panel **sí** tiene barra de busqueda y filtros, así que el
-            // esqueleto los pinta: coincide con lo que va a aparecer.
-            esqueleto: const EsqueletoLista(conBarraFiltros: true),
-            child: _lista(),
-          ),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, restricciones) {
+        // Mismo patrón que Guardias: en el teléfono desliza el panel entero, y
+        // la lista ocupa el alto de su contenido en vez de pelearse por el que
+        // queda tras la cabecera y los filtros.
+        final compacto =
+            restricciones.maxWidth < 600 || restricciones.maxHeight < 700;
+
+        final cuerpo = EstadoPanel(
+          cargando: _cargando,
+          error: _error,
+          onReintentar: _cargar,
+          // Este panel **sí** tiene barra de busqueda y filtros, así que el
+          // esqueleto los pinta: coincide con lo que va a aparecer.
+          esqueleto: const EsqueletoLista(conBarraFiltros: true),
+          child: _lista(compacto: compacto),
+        );
+
+        final contenido = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _cabecera(),
+            const SizedBox(height: 12),
+            _filtros(),
+            const SizedBox(height: 16),
+            if (compacto) cuerpo else Expanded(child: cuerpo),
+          ],
+        );
+
+        return compacto ? SingleChildScrollView(child: contenido) : contenido;
+      },
     );
   }
 
@@ -317,7 +325,7 @@ class _CpanelAulasPanelState extends State<CpanelAulasPanel>
     );
   }
 
-  Widget _lista() {
+  Widget _lista({bool compacto = false}) {
     if (_aulas.isEmpty) {
       final filtrando =
           _tipo != null || _activa != null || _busquedaCtrl.text.trim().isNotEmpty;
@@ -341,21 +349,28 @@ class _CpanelAulasPanelState extends State<CpanelAulasPanel>
       );
     }
 
+    // La lista sirve a las dos formas: con scroll propio (escritorio) o con
+    // altura de su contenido dentro del scroll del panel (teléfono).
+    Widget filas({required bool encogible}) => ListView.separated(
+          shrinkWrap: encogible,
+          physics: encogible ? const NeverScrollableScrollPhysics() : null,
+          padding: EdgeInsets.zero,
+          itemCount: _aulas.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          itemBuilder: (context, indice) => _FilaEspacio(
+            aula: _aulas[indice],
+            guardando: _guardandoId == _aulas[indice].id,
+            onEditar: () => _abrirFormulario(existente: _aulas[indice]),
+            onAlternar: () => _alternarActiva(_aulas[indice]),
+          ),
+        );
+
     return Column(
       children: [
-        Expanded(
-          child: ListView.separated(
-            padding: EdgeInsets.zero,
-            itemCount: _aulas.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemBuilder: (context, indice) => _FilaEspacio(
-              aula: _aulas[indice],
-              guardando: _guardandoId == _aulas[indice].id,
-              onEditar: () => _abrirFormulario(existente: _aulas[indice]),
-              onAlternar: () => _alternarActiva(_aulas[indice]),
-            ),
-          ),
-        ),
+        if (compacto)
+          filas(encogible: true)
+        else
+          Expanded(child: filas(encogible: false)),
         // El pie sólo aparece cuando hay más de una página: con nueve espacios
         // —el catálogo entero del centro— unos botones muertos serían ruido.
         if (_hayAnterior || _haySiguiente) ...[

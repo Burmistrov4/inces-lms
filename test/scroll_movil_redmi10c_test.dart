@@ -208,7 +208,10 @@ void main() {
 
       expect(
         bloque12,
-        findsOneWidget,
+        // `findsWidgets` y no `findsOneWidget`: en modo compacto la lista pinta
+        // los seis días seguidos, así que B12 existe una vez por día. Lo que la
+        // prueba afirma es que se llega al final del día arrastrando.
+        findsWidgets,
         reason:
             'La rejilla debe desplazarse verticalmente con el dedo hasta el '
             'final del día; si su contenido no se mueve, el «no desliza» del '
@@ -312,7 +315,7 @@ void main() {
 
       expect(
         bloque12,
-        findsOneWidget,
+        findsWidgets,
         reason: 'La rejilla PNA debe desplazarse verticalmente con el dedo.',
       );
     });

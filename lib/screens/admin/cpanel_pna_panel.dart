@@ -258,7 +258,21 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
   Widget build(BuildContext context) {
     final razon = _razonParaNoAsignar();
 
-    return Column(
+    return LayoutBuilder(
+      builder: (context, restricciones) {
+        // Mismo patrón que Guardias y que el Horario Ordinario: en el teléfono
+        // desliza el panel entero, no una rejilla que se quedó sin altura.
+        final compacto =
+            restricciones.maxWidth < 600 || restricciones.maxHeight < 700;
+
+        final cuerpo = EstadoPanel(
+          cargando: _cargando,
+          error: _error,
+          onReintentar: _cargarPeriodos,
+          child: _cuerpo(compacto: compacto),
+        );
+
+        final contenido = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _cabecera(razon),
@@ -292,15 +306,14 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
           ],
         ),
         const SizedBox(height: 8),
-        Expanded(
-          child: EstadoPanel(
-            cargando: _cargando,
-            error: _error,
-            onReintentar: _cargarPeriodos,
-            child: _cuerpo(),
-          ),
-        ),
+        if (compacto) cuerpo else Expanded(child: cuerpo),
       ],
+        );
+
+        return compacto
+            ? SingleChildScrollView(child: contenido)
+            : contenido;
+      },
     );
   }
 
@@ -382,7 +395,7 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
     );
   }
 
-  Widget _cuerpo() {
+  Widget _cuerpo({bool compacto = false}) {
     if (_periodos.isEmpty) {
       return const PanelVacio(
         titulo: 'Todavía no hay períodos registrados',
@@ -402,10 +415,10 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
       );
     }
 
-    return _rejilla(pnaClases);
+    return _rejilla(pnaClases, compacto: compacto);
   }
 
-  Widget _rejilla(List<ClaseCuadrante> pnaClases) {
+  Widget _rejilla(List<ClaseCuadrante> pnaClases, {bool compacto = false}) {
     final celdas = <String, List<Widget>>{};
     for (final entrada in agruparClases(
       pnaClases,
@@ -468,17 +481,29 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
             ],
           ),
         ),
-        Expanded(
-          child: CuadranteGrid(
+        if (compacto)
+          CuadranteGrid(
             celdas: celdas,
             diaFiltro: _diaFiltro,
             mostrarSelectorDias: false,
+            compacto: true,
             onCeldaTap: _razonParaNoAsignar() == null
                 ? (dia, bloque) =>
                       _abrirCreacion(diaInicial: dia, bloqueInicial: bloque)
                 : null,
+          )
+        else
+          Expanded(
+            child: CuadranteGrid(
+              celdas: celdas,
+              diaFiltro: _diaFiltro,
+              mostrarSelectorDias: false,
+              onCeldaTap: _razonParaNoAsignar() == null
+                  ? (dia, bloque) =>
+                        _abrirCreacion(diaInicial: dia, bloqueInicial: bloque)
+                  : null,
+            ),
           ),
-        ),
       ],
     );
   }

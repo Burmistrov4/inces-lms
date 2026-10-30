@@ -331,7 +331,25 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return LayoutBuilder(
+      builder: (context, restricciones) {
+        // En el teléfono desliza el panel entero (ver `CuadranteGrid.compacto` y
+        // Guardias, que ya lo hacía). Sin esto, cabecera + filtros + franja de
+        // resumen se comen la pantalla y la lista se queda sin altura.
+        final compacto =
+            restricciones.maxWidth < 600 || restricciones.maxHeight < 700;
+
+        final cuerpo = EstadoPanel(
+          cargando: _cargando,
+          error: _error,
+          onReintentar: _cargar,
+          // Este panel **sí** tiene barra de busqueda y filtros, así que el
+          // esqueleto los pinta: coincide con lo que va a aparecer.
+          esqueleto: const EsqueletoLista(conBarraFiltros: true),
+          child: _lista(compacto: compacto),
+        );
+
+        final contenido = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TituloSeccion(
@@ -372,18 +390,14 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
           _FranjaResumen(resumen: _resumenPorPrograma.values.toList()),
           const SizedBox(height: 10),
         ],
-        Expanded(
-          child: EstadoPanel(
-            cargando: _cargando,
-            error: _error,
-            onReintentar: _cargar,
-            // Este panel **sí** tiene barra de busqueda y filtros, así que el
-            // esqueleto los pinta: coincide con lo que va a aparecer.
-            esqueleto: const EsqueletoLista(conBarraFiltros: true),
-            child: _lista(),
-          ),
-        ),
+        if (compacto) cuerpo else Expanded(child: cuerpo),
       ],
+        );
+
+        return compacto
+            ? SingleChildScrollView(child: contenido)
+            : contenido;
+      },
     );
   }
 
@@ -529,7 +543,7 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
     );
   }
 
-  Widget _lista() {
+  Widget _lista({bool compacto = false}) {
     if (_programas.isEmpty) {
       // Desplazable y no un `Expanded` a secas: el estado vacío tiene su propia
       // altura y estirarlo hasta llenar la sección dejaría una tarjeta enorme
@@ -551,29 +565,33 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
       );
     }
 
+    final lista = ListView.separated(
+      // En compacto la lista va dentro del scroll del panel: sin `shrinkWrap`
+      // quedaría pidiendo altura infinita, y con él toma la de su contenido.
+      shrinkWrap: compacto,
+      physics: compacto ? const NeverScrollableScrollPhysics() : null,
+      itemCount: _programas.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (context, i) => _TarjetaPrograma(
+        programa: _programas[i],
+        resumen: _resumenPorPrograma[_programas[i].id],
+        repoInscripciones: _repoInscripciones,
+        exportacion: _exportacion,
+        planilla: _planillaAdmin,
+        onAccion: () => _cargar(silencioso: true),
+        guardando: _guardandoId == _programas[i].id,
+        abriendoPensum: _abriendoPensumId == _programas[i].id,
+        onVer: () => _verDetalle(_programas[i]),
+        onEditarPrograma: () => _editarPrograma(_programas[i]),
+        onEditarPensum: () => _editarPensum(_programas[i]),
+        onAlternarActivo: () => _alternarActivo(_programas[i]),
+      ),
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: ListView.separated(
-            itemCount: _programas.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, i) => _TarjetaPrograma(
-              programa: _programas[i],
-              resumen: _resumenPorPrograma[_programas[i].id],
-              repoInscripciones: _repoInscripciones,
-              exportacion: _exportacion,
-              planilla: _planillaAdmin,
-              onAccion: () => _cargar(silencioso: true),
-              guardando: _guardandoId == _programas[i].id,
-              abriendoPensum: _abriendoPensumId == _programas[i].id,
-              onVer: () => _verDetalle(_programas[i]),
-              onEditarPrograma: () => _editarPrograma(_programas[i]),
-              onEditarPensum: () => _editarPensum(_programas[i]),
-              onAlternarActivo: () => _alternarActivo(_programas[i]),
-            ),
-          ),
-        ),
+        if (compacto) lista else Expanded(child: lista),
         // **La barra de páginas sólo cuando hay más de una.** Medido el
         // 2026-10-29 en la captura de 390 px: con 6 cursos en una sola página, la
         // fila «1–6 de 6» y sus dos flechas ocupaban ~44 px fijos **sin ofrecer

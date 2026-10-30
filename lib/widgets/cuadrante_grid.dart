@@ -22,7 +22,20 @@ class CuadranteGrid extends StatelessWidget {
     this.diaFiltro,
     this.mostrarSelectorDias = true,
     this.horizontalController,
+    this.compacto = false,
   });
+
+  /// **Modo panel-deslizante.** Si es `true`, la rejilla se pinta con altura
+  /// natural (sin `Expanded` ni `ListView` propio) para que **el panel completo**
+  /// sea el que desliza.
+  ///
+  /// Existe porque en un teléfono la cabecera del panel —título, selector de
+  /// período, botones, guía y fichas de día— se come la pantalla entera: con un
+  /// panel rígido (`Column` + `Expanded`) la rejilla recibe altura cero y no hay
+  /// nada que arrastrar. Medido en Redmi 10C el 2026-10-30: «no puedes deslizar
+  /// ni para arriba ni para abajo». El patrón ya estaba resuelto en Guardias
+  /// Docentes, que por eso es el único panel que sí funcionaba en el móvil.
+  final bool compacto;
 
   /// Contenido de cada celda, por clave `'$dia-$bloque'`.
   final Map<String, List<Widget>> celdas;
@@ -143,6 +156,7 @@ class CuadranteGrid extends StatelessWidget {
             // Si el panel ya pinta su `SelectorDeDias`, dos filas de fichas
             // idénticas confunden más que ayudan.
             mostrarSelectorDias: mostrarSelectorDias && dias.length > 1,
+            compacto: compacto,
           );
         }
         return Scrollbar(
@@ -553,6 +567,7 @@ class _CuadrantePorDia extends StatefulWidget {
     required this.dias,
     this.onCeldaTap,
     this.mostrarSelectorDias = true,
+    this.compacto = false,
   });
 
   /// Contenido de cada celda, por clave '$dia-$bloque'.
@@ -564,6 +579,9 @@ class _CuadrantePorDia extends StatefulWidget {
   final void Function(int dia, int bloque)? onCeldaTap;
 
   final bool mostrarSelectorDias;
+
+  /// Altura natural en vez de lista con scroll propio (ver `CuadranteGrid.compacto`).
+  final bool compacto;
 
   @override
   State<_CuadrantePorDia> createState() => _CuadrantePorDiaState();
@@ -607,6 +625,41 @@ class _CuadrantePorDiaState extends State<_CuadrantePorDia> {
     // desplegamos todos los días secuencialmente con un separador claro.
     final mostrarTodosSecuenciales = !widget.mostrarSelectorDias && widget.dias.length > 1;
 
+    // Las filas se construyen aparte porque sirven a las dos formas: `ListView`
+    // (scroll propio) o `Column` de altura natural (`compacto`).
+    final filas = <Widget>[
+      if (mostrarTodosSecuenciales)
+        for (final dia in widget.dias) ...[
+          Container(
+            margin: const EdgeInsets.only(top: 10, bottom: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: borde),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.calendar_today_outlined, size: 14, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  diasDeLaSemana[dia],
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (var bloque = 1; bloque <= bloqueMaximo; bloque++)
+            _filaBloque(theme, borde, dia, bloque),
+        ]
+      else
+        for (var bloque = 1; bloque <= bloqueMaximo; bloque++)
+          _filaBloque(theme, borde, widget.dias.length == 1 ? widget.dias.first : _dia, bloque),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -635,43 +688,17 @@ class _CuadrantePorDiaState extends State<_CuadrantePorDia> {
           ),
           const SizedBox(height: 10),
         ],
-        // Bloques en lista vertical.
-        Expanded(
-          child: ListView(
-            children: [
-              if (mostrarTodosSecuenciales)
-                for (final dia in widget.dias) ...[
-                  Container(
-                    margin: const EdgeInsets.only(top: 10, bottom: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: borde),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.calendar_today_outlined, size: 14, color: theme.colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          diasDeLaSemana[dia],
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  for (var bloque = 1; bloque <= bloqueMaximo; bloque++)
-                    _filaBloque(theme, borde, dia, bloque),
-                ]
-              else
-                for (var bloque = 1; bloque <= bloqueMaximo; bloque++)
-                  _filaBloque(theme, borde, widget.dias.length == 1 ? widget.dias.first : _dia, bloque),
-            ],
+        // Bloques: lista con scroll propio, o columna de altura natural cuando
+        // el panel entero es el que desliza (`compacto`).
+        if (widget.compacto)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: filas,
+          )
+        else
+          Expanded(
+            child: ListView(children: filas),
           ),
-        ),
       ],
     );
   }

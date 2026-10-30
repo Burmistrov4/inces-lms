@@ -266,7 +266,26 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
   Widget build(BuildContext context) {
     final razon = _razonParaNoAsignar();
 
-    return Column(
+    return LayoutBuilder(
+      builder: (context, restricciones) {
+        // **Un solo scroll en el móvil.** Medido en Redmi 10C el 2026-10-30: la
+        // cabecera (título, selector de período, cuatro botones, guía y fichas
+        // de día) llenaba la pantalla y, con el panel rígido, la rejilla recibía
+        // altura cero — «no puedes deslizar ni para arriba ni para abajo».
+        // Guardias Docentes ya resolvía esto así y es el único panel que el
+        // usuario describe como utilizable en el teléfono; se copia el patrón,
+        // no se inventa otro.
+        final compacto =
+            restricciones.maxWidth < 600 || restricciones.maxHeight < 700;
+
+        final cuerpo = EstadoPanel(
+          cargando: _cargando,
+          error: _error,
+          onReintentar: _cargarPeriodos,
+          child: _cuerpo(compacto: compacto),
+        );
+
+        final contenido = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _cabecera(razon),
@@ -297,15 +316,14 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
           ],
         ),
         const SizedBox(height: 8),
-        Expanded(
-          child: EstadoPanel(
-            cargando: _cargando,
-            error: _error,
-            onReintentar: _cargarPeriodos,
-            child: _cuerpo(),
-          ),
-        ),
+        if (compacto) cuerpo else Expanded(child: cuerpo),
       ],
+        );
+
+        return compacto
+            ? SingleChildScrollView(child: contenido)
+            : contenido;
+      },
     );
   }
 
@@ -317,7 +335,12 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
     );
 
     return TituloSeccion(
-      'Horario Ordinario',
+      // **Un solo nombre.** El menú dice «Cuadrante de Horarios» y el panel
+      // decía «Horario Ordinario»: dos etiquetas para la misma pantalla, y el
+      // usuario tuvo que preguntar cuál era. Se queda la del menú, que es la que
+      // el personal ve y busca; cuando se decida un nombre más llano («Horario
+      // de Clases»), se cambia en los dos sitios a la vez y no en uno.
+      'Cuadrante de Horarios',
       subtitulo: 'Planificación semanal de cursos regulares (sección obligatoria; materia y espacio opcionales). '
           'Toca una clase para editarla o pulsa en cualquier bloque libre para asignar una nueva.',
       acciones: [
@@ -398,7 +421,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
     );
   }
 
-  Widget _cuerpo() {
+  Widget _cuerpo({bool compacto = false}) {
     if (_periodos.isEmpty) {
       return const PanelVacio(
         titulo: 'Todavía no hay períodos registrados',
@@ -432,10 +455,10 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
       );
     }
 
-    return _rejilla();
+    return _rejilla(compacto: compacto);
   }
 
-  Widget _rejilla() {
+  Widget _rejilla({bool compacto = false}) {
     final theme = Theme.of(context);
 
     final clasesOrdinarias = _clases
@@ -545,18 +568,30 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
             ],
           ),
         ),
-        Expanded(
-          child: CuadranteGrid(
+        if (compacto)
+          CuadranteGrid(
             celdas: celdas,
             diaFiltro: _diaFiltro,
             mostrarSelectorDias: false,
-            horizontalController: _scrollHorizontalCtrl,
+            compacto: true,
             onCeldaTap: _razonParaNoAsignar() == null
                 ? (dia, bloque) =>
                     _abrirCreacion(diaInicial: dia, bloqueInicial: bloque)
                 : null,
+          )
+        else
+          Expanded(
+            child: CuadranteGrid(
+              celdas: celdas,
+              diaFiltro: _diaFiltro,
+              mostrarSelectorDias: false,
+              horizontalController: _scrollHorizontalCtrl,
+              onCeldaTap: _razonParaNoAsignar() == null
+                  ? (dia, bloque) =>
+                      _abrirCreacion(diaInicial: dia, bloqueInicial: bloque)
+                  : null,
+            ),
           ),
-        ),
       ],
         );
       },
