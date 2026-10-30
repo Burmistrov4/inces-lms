@@ -886,6 +886,15 @@ export const esquemaResolverGrupo = z
     programaId: z.string().uuid({ message: 'El programa debe ser un UUID válido.' }),
     materiaId: z.string().uuid({ message: 'La materia debe ser un UUID válido.' }),
     periodo: codigoPeriodo,
+    // `sections.name` es `varchar(5)`: aceptar más aquí solo movería el fallo
+    // del 400 al 22001 de Postgres, que el usuario no puede leer.
+    nombre: z
+      .string()
+      .trim()
+      .min(1, 'El nombre del grupo no puede estar vacío.')
+      .max(5, 'El nombre del grupo admite hasta 5 caracteres.')
+      .regex(/^[\p{L}\p{N}]+$/u, 'Usa letras o números (por ejemplo A, B o M1).')
+      .optional(),
   })
   .strict();
 

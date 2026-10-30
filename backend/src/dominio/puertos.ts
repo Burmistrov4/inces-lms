@@ -919,6 +919,18 @@ export interface EntradaResolverGrupo {
   programaId: string;
   materiaId: string;
   periodo: string;
+
+  /**
+   * Etiqueta opcional del grupo (1–5 caracteres: `A`, `B`, `M1`…).
+   *
+   * **El tope no es capricho**: `sections.name` es `varchar(5)` y forma parte de
+   * `unique (period_code, subject_id, name)`. El diálogo pedía «Nombre del grupo»
+   * como texto libre y mandaba «Soldadura Grupo Prueba»; el contrato `.strict()`
+   * lo rechazaba con «Los datos enviados no son válidos» y el administrador no
+   * podía crear el grupo que necesitaba. Se acepta el nombre, pero con el ancho
+   * que la tabla admite, y la interfaz lo dice en vez de prometer más.
+   */
+  nombre?: string;
 }
 
 export interface GrupoResuelto {

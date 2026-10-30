@@ -3285,7 +3285,13 @@ class SeccionesSupabase implements PuertaSecciones {
     const existente = await this.buscarGrupo(entrada);
     if (existente) return { seccion: existente, creada: false };
 
-    for (const nombre of NOMBRES_DE_GRUPO) {
+    // Si el administrador nombró el grupo, se respeta ESE nombre y no se cae a
+    // la secuencia A–Z: un nombre que se ignora en silencio es peor que un
+    // error, porque el grupo queda con una etiqueta que nadie eligió.
+    const nombrePedido = entrada.nombre?.toUpperCase();
+    const candidatos = nombrePedido ? [nombrePedido] : NOMBRES_DE_GRUPO;
+
+    for (const nombre of candidatos) {
       const respuesta = await this.cliente
         .from(TABLA_SECCIONES)
         .insert({
@@ -3307,6 +3313,14 @@ class SeccionesSupabase implements PuertaSecciones {
       // 23505 = el nombre ya está tomado para esa materia y período.
       if (respuesta.error.code !== '23505') {
         throw traducirError(respuesta.error, 'crear el grupo');
+      }
+
+      if (nombrePedido) {
+        throw ErrorApi.conflicto(
+          'GRUPO_NOMBRE_OCUPADO',
+          `Ya existe el grupo «${nombrePedido}» para esa materia en ese período. ` +
+            'Elige otra etiqueta.',
+        );
       }
 
       const trasChoque = await this.buscarGrupo(entrada);

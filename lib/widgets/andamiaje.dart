@@ -110,6 +110,7 @@ class AndamiajeApp extends StatefulWidget {
     this.nombreUsuario,
     this.correoUsuario,
     this.periodoActivo,
+    this.periodoCodigo,
     this.periodoVigente = true,
     this.accionesEncabezado = const [],
     this.onCerrarSesion,
@@ -126,6 +127,10 @@ class AndamiajeApp extends StatefulWidget {
   final String? nombreUsuario;
   final String? correoUsuario;
   final String? periodoActivo;
+
+  /// El código corto (`SA26-2`): la cabecera muestra el nombre, y el código
+  /// queda en el tooltip porque es lo que usan las exportaciones y los informes.
+  final String? periodoCodigo;
 
   /// Estado del período de la insignia: verde = vigente, ámbar = archivado.
   final bool periodoVigente;
@@ -261,6 +266,7 @@ class _AndamiajeAppState extends State<AndamiajeApp> {
                   nombreUsuario: widget.nombreUsuario,
                   correoUsuario: widget.correoUsuario,
                   periodoActivo: widget.periodoActivo,
+                  periodoCodigo: widget.periodoCodigo,
                   periodoVigente: widget.periodoVigente,
                   acciones: widget.accionesEncabezado,
                   // Este `context` pertenece al estado que está por encima

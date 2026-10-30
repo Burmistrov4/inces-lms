@@ -85,6 +85,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   late final CuadranteRepository _periodosRepo = CuadranteRepository();
 
   String? _periodoCodigo;
+  String? _periodoNombre;
   bool _periodoEsVigente = true;
 
   @override
@@ -109,6 +110,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
         if (elegido == null) return;
         setState(() {
           _periodoCodigo = elegido!.codigo;
+          // El nombre es lo que el administrador reconoce; el código es el
+          // identificador que usan las exportaciones. La cabecera muestra el
+          // nombre y deja el código en el tooltip.
+          _periodoNombre = elegido.nombre;
           _periodoEsVigente = elegido.vigente;
         });
       },
@@ -328,10 +333,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       onSeleccionar: (indice) {
         setState(() => _seleccionada = indice);
         RefrescoSecciones.notificar(menuConModulos(_items)[indice].titulo);
+        // **El período se relee al cambiar de sección.** Medido el 2026-10-30:
+        // se renombraba el período en su panel, se volvía al horario y la
+        // cabecera seguía con el nombre viejo hasta recargar la página —porque
+        // se leía una sola vez, en `initState`—. La lectura está cacheada 45 s,
+        // así que casi siempre es gratis; cuando de verdad cambió, se ve.
+        _cargarPeriodoVigente();
       },
       rolEtiqueta: 'Administrador Maestro',
       correoUsuario: _auth.emailActual,
-      periodoActivo: _periodoCodigo ?? _periodoActivo,
+      periodoActivo: _periodoNombre?.trim().isNotEmpty == true
+          ? _periodoNombre
+          : (_periodoCodigo ?? _periodoActivo),
+      periodoCodigo: _periodoCodigo ?? _periodoActivo,
       periodoVigente: _periodoEsVigente,
       onCerrarSesion: _cerrarSesion,
       temaActual: tema?.modo,

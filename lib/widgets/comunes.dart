@@ -25,6 +25,7 @@ class EncabezadoInstitucional extends StatelessWidget {
     this.nombreUsuario,
     this.correoUsuario,
     this.periodoActivo,
+    this.periodoCodigo,
     this.periodoVigente = true,
     this.acciones = const [],
     this.onAbrirMenu,
@@ -37,6 +38,11 @@ class EncabezadoInstitucional extends StatelessWidget {
   /// Período académico activo (`SA26-2`). Si es `null`, no se muestra la
   /// insignia: es preferible a mostrar un guion que no significa nada.
   final String? periodoActivo;
+
+  /// Código corto del período, para el tooltip: la insignia pinta el nombre
+  /// porque es lo que el administrador reconoce, y el código es el identificador
+  /// que viaja en las exportaciones.
+  final String? periodoCodigo;
 
   /// Si ese período es el **vigente** (`system_settings.periodo_activo`) o no.
   ///
@@ -129,6 +135,7 @@ class EncabezadoInstitucional extends StatelessWidget {
                                   const SizedBox(width: 6),
                                   _InsigniaPeriodo(
                                     periodo: periodoActivo!,
+                                    codigo: periodoCodigo,
                                     vigente: periodoVigente,
                                   ),
                                 ],
@@ -184,6 +191,7 @@ class EncabezadoInstitucional extends StatelessWidget {
                             if (periodoActivo != null)
                               _InsigniaPeriodo(
                                 periodo: periodoActivo!,
+                                codigo: periodoCodigo,
                                 vigente: periodoVigente,
                               ),
                             if (correoUsuario != null)
@@ -301,9 +309,10 @@ class _InsigniaRol extends StatelessWidget {
 }
 
 class _InsigniaPeriodo extends StatelessWidget {
-  const _InsigniaPeriodo({required this.periodo, this.vigente = true});
+  const _InsigniaPeriodo({required this.periodo, this.codigo, this.vigente = true});
 
   final String periodo;
+  final String? codigo;
   final bool vigente;
 
   @override
@@ -321,9 +330,11 @@ class _InsigniaPeriodo extends StatelessWidget {
     final fondo = color.withValues(alpha: 0.12);
 
     return Tooltip(
-      message: vigente
-          ? 'Período vigente: es el que se está dictando'
-          : 'Período archivado: se puede consultar, no se planifica en él',
+      message: codigo == null || codigo == periodo
+          ? (vigente
+              ? 'Período vigente: es el que se está dictando'
+              : 'Período archivado: se puede consultar, no se planifica en él')
+          : 'Código $codigo · ${vigente ? 'vigente' : 'archivado'}',
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration: BoxDecoration(

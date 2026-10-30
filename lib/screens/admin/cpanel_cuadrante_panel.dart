@@ -1643,10 +1643,17 @@ class _DialogoNuevoGrupoState extends State<_DialogoNuevoGrupo> {
                     TextField(
                       controller: _nombreCtrl,
                       textCapitalization: TextCapitalization.characters,
+                      // **Tope real, no adorno.** `sections.name` es `varchar(5)`
+                      // y el contrato lo valida: escribir «Soldadura Grupo
+                      // Prueba» devolvía «Los datos enviados no son válidos» y el
+                      // grupo no se creaba. El límite se ve mientras se escribe
+                      // en vez de aparecer como error al guardar.
+                      maxLength: 5,
                       decoration: const InputDecoration(
-                        labelText: 'Nombre del grupo',
-                        helperText: 'Por defecto «ÚNICA». Cámbialo si habrá '
-                            'varios grupos del mismo curso y materia.',
+                        labelText: 'Etiqueta del grupo',
+                        helperText: 'Un identificador corto: «A», «B», «M1». Si '
+                            'sólo habrá uno, deja «ÚNICA».',
+                        counterText: '',
                       ),
                     ),
                     if (_error != null) ...[

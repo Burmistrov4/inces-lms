@@ -320,11 +320,17 @@ class _CeldaContenido extends StatelessWidget {
           ? (onTap != null
               ? Center(
                   child: Tooltip(
-                    message: 'Clic para asignar clase aquí',
+                    message: 'Toca para asignar una clase en este bloque',
                     child: Icon(
-                      Icons.add_circle_outline_rounded,
-                      size: 16,
-                      color: theme.colorScheme.primary.withValues(alpha: 0.28),
+                      Icons.add_rounded,
+                      // El icono ocupa lo que la celda: a 16 px y con alfa 0.28
+                      // parecía una celda muerta y no un botón — reportado el
+                      // 2026-10-30: «el botón de más no es inteligente, no ocupa
+                      // todo el espacio que debería». El área táctil ya era toda
+                      // la celda (el InkWell la envuelve); lo que no se veía era
+                      // la invitación.
+                      size: 22,
+                      color: theme.colorScheme.primary.withValues(alpha: 0.45),
                     ),
                   ),
                 )

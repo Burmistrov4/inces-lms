@@ -2,6 +2,49 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.7.3] - 2026-10-30
+### Crear el grupo ya no falla, el período se llama por su nombre y el «+» se ve
+
+Reportado usando el sistema como administrador. Cuatro cosas, la primera
+bloqueante.
+
+#### 1. «Los datos enviados no son válidos» al crear curso · materia
+
+`sections.name` es `varchar(5)` —un identificador corto, «A», «B», «M1»— y el
+diálogo ofrecía «Nombre del grupo» como texto libre. Al escribir «Soldadura Grupo
+Prueba» el contrato lo rechazaba con un mensaje genérico y **el grupo no se
+creaba**. Ahora el campo está limitado a 5 caracteres con la ayuda a la vista, y
+`POST /admin/grupos/resolver` acepta la etiqueta (antes la prohibía con
+`.strict()`), con 409 claro si esa etiqueta ya existe.
+
+#### 2. El período de la cabecera
+
+Mostraba el **código** (`SA26-2`) y se leía una sola vez al entrar: al renombrar
+el período en su panel, la cabecera seguía igual hasta recargar la página. Ahora
+muestra el **nombre** («INCES 26-3»), el código pasa al tooltip, y se relee al
+cambiar de sección.
+
+Editar el **código** sigue sin estar disponible: `sections.period_code` es una
+clave ajena a `academic_periods.code`, así que cambiarlo con grupos vivos exige
+`on update cascade` o bloquearlo. Queda como decisión en
+`docs/PLAN_REDISENO_LMS_2026-10-30.md` §4.1.
+
+#### 3. El «+» de una celda vacía
+
+Era un icono de 16 px al 28 % de opacidad: se leía como celda muerta. Ahora 22 px
+al 45 %. El área táctil ya era toda la celda.
+
+#### 4. Plan de rediseño
+
+`docs/PLAN_REDISENO_LMS_2026-10-30.md`: los cuatro conceptos que hoy se pisan
+(curso, materia, grupo, aula virtual), cómo lo resuelven Classroom/Moodle/Canvas,
+y las fases de materias editables, aula virtual con CRUD, supervisión, notas
+01–20, expediente y certificado. **Sin volver a introducir secciones.**
+
+#### Verificación
+
+- `flutter test` **1054/1054** · `npm run verify` **728/728** · analizador 251 archivos 0/0/0.
+
 ## [1.7.2] - 2026-10-30
 ### El móvil vuelve a deslizar, la cabecera deja de mentir y el tope de archivos sale del parámetro
 
