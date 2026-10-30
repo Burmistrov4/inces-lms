@@ -2,6 +2,35 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.7.4] - 2026-10-30
+### Crear el grupo ya no deja al administrador sin salida, logo real y celda que se ve
+
+#### 1. «Ocurrió un error inesperado» al crear curso · materia
+
+Medido contra la API real: el alta de un grupo que **ya existe** devuelve
+`409 REGISTRO_DUPLICADO`. El diálogo lo trataba como fallo y el administrador se
+quedaba sin salida — cuando el grupo que quería estaba creado desde el primer
+intento. Ahora un conflicto de unicidad **resuelve el grupo existente** y sigue.
+
+#### 2. El «+» de la celda vacía
+
+Segundo reporte sobre lo mismo: el «+» centrado no cubría la celda. Ahora la celda
+vacía se pinta como un botón —relleno tenue y «+» de 24 px— para que el objetivo
+completo se vea.
+
+#### 3. El logo
+
+La cabecera y el menú mostraban un cuadrado con una «I» tipográfica. Ahora usan
+`assets/images/inces_lms_logo.png`, el mismo arte del favicon, con caída a icono
+si el asset faltara.
+
+#### Verificación
+
+- `flutter test` (73 pruebas de los paneles, navegación y barrido) en verde ·
+  analizador 251 archivos 0/0/0.
+- API real: `POST /admin/secciones` con grupo existente → `409` (antes el cliente
+  lo mostraba como error inesperado).
+
 ## [1.7.3] - 2026-10-30
 ### Crear el grupo ya no falla, el período se llama por su nombre y el «+» se ve
 

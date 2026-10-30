@@ -1577,6 +1577,40 @@ class _DialogoNuevoGrupoState extends State<_DialogoNuevoGrupo> {
               '(${_materias[_materiaId]})',
         ),
       ),
+      failure: (fallo) {
+        // **El grupo ya existía.** Medido el 2026-10-30 contra la API real: el
+        // alta de un grupo repetido devuelve 409 `REGISTRO_DUPLICADO`, y el
+        // diálogo lo mostraba como «Ocurrió un error inesperado» dejando al
+        // administrador sin salida — cuando el grupo que quería **ya estaba
+        // creado**. Ahora se resuelve el que existe y se sigue.
+        if (fallo.esConflicto) {
+          _reusarGrupoExistente();
+          return;
+        }
+        setState(() {
+          _guardando = false;
+          _error = fallo.message;
+        });
+      },
+    );
+  }
+
+  /// Cierra el diálogo con el grupo que ya existe para ese curso y materia.
+  Future<void> _reusarGrupoExistente() async {
+    final existente = await _secRepo.resolverGrupo(
+      programaId: _programaId!,
+      materiaId: _materiaId!,
+      periodo: widget.periodo,
+    );
+    if (!mounted) return;
+    existente.when(
+      success: (r) => Navigator.of(context).pop(
+        _GrupoCreado(
+          id: r.seccion.id,
+          etiqueta: '${_programas[_programaId] ?? 'Curso'} · Secc. '
+              '${r.seccion.nombre} (${_materias[_materiaId]})',
+        ),
+      ),
       failure: (fallo) => setState(() {
         _guardando = false;
         _error = fallo.message;

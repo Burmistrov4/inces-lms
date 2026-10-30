@@ -258,20 +258,31 @@ class _EscudoInces extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lado = diminuto ? 32.0 : 40.0;
-    return Container(
+    // **El logo real, no una «I» dibujada.** Reportado el 2026-10-30: en el
+    // menú y en la cabecera aparecía un cuadrado azul con una «I» tipográfica,
+    // que no es la marca de nada. `inces_lms_logo.png` es el mismo arte del
+    // favicon, así que la pestaña y la aplicación por fin se reconocen igual.
+    return SizedBox(
       width: lado,
       height: lado,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        gradient: IncesTheme.degradadoAzul,
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(IncesTheme.radioControl),
-      ),
-      child: Text(
-        'I',
-        style: GoogleFonts.inter(
-          fontSize: diminuto ? 15 : 19,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
+        child: Image.asset(
+          'assets/images/inces_lms_logo.png',
+          fit: BoxFit.cover,
+          // Si el asset faltara en un build, la aplicación no debe romperse por
+          // un logo: se cae a un icono, no a una pantalla roja.
+          errorBuilder: (context, error, stack) => Container(
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              gradient: IncesTheme.degradadoAzul,
+            ),
+            child: Icon(
+              Icons.school_rounded,
+              size: diminuto ? 18 : 22,
+              color: Colors.white,
+            ),
+          ),
         ),
       ),
     );

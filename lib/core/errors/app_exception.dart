@@ -139,6 +139,14 @@ class AppException implements Exception {
       type != AppErrorType.permisos &&
       type != AppErrorType.esquemaDesactualizado;
 
+  /// ¿Es un conflicto de unicidad (ya existe)?
+  ///
+  /// Existe porque hay acciones donde «ya existe» **no es un fallo**: crear el
+  /// grupo de un curso · materia que ya lo tiene debe terminar usando el que hay,
+  /// no plantando un error. La API lo devuelve como 409 `REGISTRO_DUPLICADO`.
+  bool get esConflicto =>
+      type == AppErrorType.duplicado || code == 'REGISTRO_DUPLICADO';
+
   static AppException _fromPostgrest(PostgrestException error) {
     final detail = '${error.message} ${error.details ?? ''}'.toLowerCase();
     final technical = 'PostgrestException(${error.code}): ${error.message}';
