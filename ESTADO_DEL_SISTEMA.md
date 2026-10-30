@@ -67,10 +67,13 @@ proxy (`env -u HTTP_PROXY … NO_PROXY=…`). Detalle en `docs/MAESTRO/04` §0.
 - **`m8_pasantias` / `m7_calificaciones` encendidos** en la nube sin código: decisión
   de Lorenzo (¿apagarlos?).
 - **Rotar la contraseña del administrador** (expuesta en el historial de git).
-- **3 specs E2E con causa diagnosticada y sin arreglar**: `admin_cpanel_p0` y
-  `export_csv` no montan el motor en 120 s; `aula_virtual` no ve la señal de alumno
-  «Mi inscripción». `refresco_al_volver` tiene la causa arreglada (el viewport) pero
-  **sin re-ejecutar**.
+- **3 specs E2E con causa diagnosticada**: `admin_cpanel_p0` (18/18) y
+  `refresco_al_volver` quedaron **en verde** al arreglar el `viewport`; `aula_virtual` y
+  `export_csv` siguen en rojo **por datos**: en la nube sólo queda **una sección y está
+  archivada** (`SA26-2`, `is_active = false`), así que el aprendiz no tiene aula y
+  «Cursos y PNA» no tiene tarjetas de donde exportar. Corrida: 19 pasan · 2 fallan ·
+  11 no corren. **Con el filtro `activa=true` ya correcto, el panel dice la verdad: no
+  hay ninguna sección activa.**
 - **Frontend sin desplegar**: hasta que se suba este bundle, producción sigue con el
   `400` del catálogo de secciones y el cuadrante roto para todos.
 
