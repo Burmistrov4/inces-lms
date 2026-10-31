@@ -1,21 +1,38 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — 2026-10-30 (noche) · v1.7.7 desplegada · **API suspendida**
+## Fotografía operativa vigente — 2026-10-31 · v1.9.0 desplegada · **API en Vercel**
 
-> **BLOQUEO VIGENTE (H1).** `https://inces-lms-api.onrender.com` responde **503**
-> con cabecera `x-render-routing: suspend` y el cuerpo «This service has been
-> suspended». Medido el 2026-10-30 a las 01:34 UTC: **96 s consecutivos de 503**,
-> no es un arranque en frío. Render suspendió el servicio; hace falta que el
-> propietario lo reactive desde el panel de Render (horas del plan gratuito o
-> facturación). Mientras dure: la web estática funciona, pero **toda la
-> administración que pasa por la API** —cuadrante, PNA, periodos, secciones—
-> devuelve listas vacías y deja los botones deshabilitados. Las lecturas de
-> catálogo que van por PostgREST siguen vivas.
+> **H1 RESUELTO.** La API ya no vive en Render. Render agotó sus 750 horas/mes y
+> suspendió el servicio el 2026-10-30 (`503` + `x-render-routing: suspend`); y
+> Cloud Run, Fly.io y Google Cloud rechazaron las tarjetas del centro porque son
+> prepagadas (`OR_CCR_104`: «No se admiten tarjetas prepagadas. Usa otra forma de
+> pago admitida»).
 >
-> Consecuencia medida: la captura del cuadrante mostraba la rejilla vacía y
-> «Asignar clase» en gris sin decir por qué. La app **sí** tiene el mensaje
-> («El servidor del INCES está iniciando sus servicios en la nube») pero el panel
-> no lo pinta de forma persistente: queda pendiente mostrarlo con un reintento.
+> **API de producción: `https://inces-lms-api.vercel.app`** (Vercel Hobby: gratis,
+> sin tarjeta, sin techo de horas, sin suspensión, sin dormir). Despliegue
+> automático desde `main`; el proyecto está vinculado al repo.
+>
+> Medido el 2026-10-31 08:25 UTC, contra producción:
+> `/salud` → 200 `{"estado":"ok"}` en 0,7 s · `/salud/profundo` → 200 con
+> `baseDeDatos:"ok"` · `POST` con cuerpo inválido → 400 `PETICION_INVALIDA` con
+> detalles de Zod · `/api/v1/yo` sin token → 401 · preflight desde
+> `inces-lms.pages.dev` → 204 con el origen autorizado · `openapi.json` 219 KB ·
+> `fetch` real desde el navegador en producción → 200. Bundle web
+> `b9d6a5cd…`, idéntico al local, sin `onrender.com`, con `1.9.0`.
+>
+> **Costes aceptados de Vercel** (escritos en `docs/PROCEDIMIENTO_DESPLIEGUE_PRODUCCION.md`):
+> el **WebSocket de asistencia** (`/asistencia/rt`) no puede mantener el canal
+> abierto en serverless —la pantalla del docente cae al GET plano y la asistencia
+> sigue por REST—; `@fastify/rate-limit` pasa a contar por instancia; y el plan
+> Hobby es **sólo para uso no comercial** (un centro público sin ánimo de lucro
+> encaja, pero si el uso crece habrá que pasar a Pro, 20 $/mes por asiento).
+>
+> **Pendiente del dueño:** suspender el servicio de Render en su panel. Mañana se
+> le reinician las 750 h y arrancaría solo contra la misma base: dos APIs vivas
+> sobre el mismo Supabase. Y probar un login real en producción (la contraseña de
+> administrador se rotó y no está en el repo, así que ese camino no se pudo medir).
+
+
 
 ### Lo que sí quedó cerrado hoy (verificado)
 
