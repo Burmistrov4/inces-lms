@@ -2,6 +2,35 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.7.8] - 2026-10-30
+### El aula virtual tiene código de entrada, y se lee desde el panel
+
+Primera parte visible de F2. El código existía en la base desde la migración
+`202610300002` pero no había forma de leerlo, así que no servía de nada.
+
+- `sections.join_code`: 8 caracteres sin letras ni dígitos ambiguos (fuera `I`,
+  `O`, `0` y `1`) porque esto se dicta en un aula. Lo genera la **base** en
+  `generar_codigo_aula()`: si lo generara el cliente, dos alumnos podrían recibir
+  el mismo código en una carrera de dos peticiones.
+- El panel de Aulas Virtuales muestra **«código XXXXXXXX»** en cada aula activa,
+  con un botón para copiarlo. En las archivadas no se muestra: no sirve para
+  entrar.
+- `enrollments.origen` (`INSCRIPCION` / `CODIGO` / `ADMIN`) para que una matrícula
+  hecha a mano no sea indistinguible de una inscripción formal.
+
+**Lo que NO se tocó, a propósito:** `enrollments.status`. La vista
+`v_exportacion_hacer` filtra `status = 'ENROLLED'`, así que cambiar ese enum
+cambia la planilla oficial de HACER. Es una decisión del dueño, no una migración
+silenciosa.
+
+#### Verificación
+
+- `flutter test` (8 del scroll móvil con el código a la vista) · backend
+  **735/735** · analizador 251 0/0/0.
+- En la base: los 3 grupos con código único de 8 caracteres
+  (`629FYKB5`, `MASCW556`, `CJBFWR3G`); `generar_codigo_aula(8)` devuelve
+  `D2F5U9J8`; las 4 matrículas existentes quedaron en `INSCRIPCION`.
+
 ## [1.7.7] - 2026-10-30
 ### Las materias del pensum se pueden editar: horas, nombre y código
 

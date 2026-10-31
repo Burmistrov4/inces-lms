@@ -12,6 +12,14 @@ class Seccion {
   /// materia vive en `subjects.name`.
   final String nombre;
 
+  /// Código de entrada al aula virtual (F2): 8 caracteres que el docente dicta
+  /// en clase para que el alumno entre sin buscarse en una lista.
+  ///
+  /// Lo genera la base (`generar_codigo_aula`), así que aquí sólo se lee: una
+  /// sección recién creada lo trae al volver del servidor. `null` sólo si la
+  /// fila es anterior a la migración y no se pudo rellenar.
+  final String? codigoAula;
+
   /// Cupo declarado. `null` significa "usar el global del centro"
   /// (`cupo_maximo_por_seccion`); `0` es "sección sin cupo" y NO equivale a
   /// nulo: una sección con `0` cupo no acepta inscripciones, una con `null`
@@ -31,6 +39,7 @@ class Seccion {
     required this.materiaId,
     required this.periodo,
     required this.nombre,
+    this.codigoAula,
     required this.cupoMaximo,
     required this.activa,
     this.creadoEn,
@@ -43,6 +52,7 @@ class Seccion {
         materiaId: json['materiaId'] as String,
         periodo: json['periodo'] as String,
         nombre: json['nombre'] as String,
+        codigoAula: json['codigoAula'] as String?,
         cupoMaximo: json['cupoMaximo'] as int?,
         activa: json['activa'] as bool? ?? false,
         creadoEn: json['creadoEn'] as String?,

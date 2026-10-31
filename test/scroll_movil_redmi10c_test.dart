@@ -639,6 +639,7 @@ void main() {
                 materiaId: 'mat-1',
                 periodo: 'SA26-2',
                 nombre: 'S${i + 1}',
+                codigoAula: 'COD${(i + 1).toString().padLeft(5, 'A')}',
                 cupoMaximo: 20,
                 activa: true,
               ),
@@ -692,6 +693,9 @@ void main() {
 
       // Nombres resueltos desde los catálogos.
       expect(find.text('Materia de Prueba (S1)'), findsOneWidget);
+
+      // El código de aula se lee en la tarjeta: es lo que el docente dicta.
+      expect(find.textContaining('código CODAAAA1'), findsOneWidget);
 
       // La lista desliza hasta la última sección.
       for (var i = 0;

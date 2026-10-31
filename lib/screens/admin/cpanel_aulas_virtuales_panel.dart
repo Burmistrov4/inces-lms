@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/gateways/aula_gateway.dart';
 import '../../models/materia.dart';
@@ -240,13 +241,42 @@ class _CpanelAulasVirtualesPanelState extends State<CpanelAulasVirtualesPanel> {
           ),
         ),
         subtitle: Text(
-          archivada ? '${_subtituloDe(s)} · archivada' : _subtituloDe(s),
+          // **El código, a la vista.** Es lo que el docente dicta en clase y lo
+          // que el administrador lee por teléfono; esconderlo en un detalle es
+          // esconder la función. Se muestra en las activas: en una archivada no
+          // sirve para entrar.
+          archivada
+              ? '${_subtituloDe(s)} · archivada'
+              : (s.codigoAula == null || s.codigoAula!.isEmpty)
+                  ? _subtituloDe(s)
+                  : '${_subtituloDe(s)} · código ${s.codigoAula}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         trailing: archivada
             ? null
-            : const Icon(Icons.chevron_right_rounded),
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (s.codigoAula != null && s.codigoAula!.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.copy_rounded, size: 18),
+                      visualDensity: VisualDensity.compact,
+                      tooltip: 'Copiar el código de aula',
+                      onPressed: () async {
+                        final codigo = s.codigoAula!;
+                        await Clipboard.setData(ClipboardData(text: codigo));
+                        if (!mounted) return;
+                        mostrarAviso(
+                          context,
+                          'Código $codigo copiado. Dictalo en clase.',
+                          exito: true,
+                        );
+                      },
+                    ),
+                  const Icon(Icons.chevron_right_rounded),
+                ],
+              ),
         onTap: archivada
             ? null
             : () => setState(() => _abierta = s),
