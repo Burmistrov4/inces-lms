@@ -178,7 +178,15 @@ class _GestorDocumentalPanelState extends State<GestorDocumentalPanel> {
   /// Sin entidad, no: la ruta pregunta por los archivos de una tarea o una guía
   /// concreta, y un id nulo no es una pregunta válida. Se comprueba aquí en vez
   /// de intentar la petición, para no gastar un viaje en un 400 anunciado.
-  bool get _puedeListar => widget.entidadId != null;
+  /// ¿Se puede pedir la lista?
+  ///
+  /// **Siempre.** Con entidad se listan los de esa tarea o guía; sin entidad se
+  /// listan los propios. Antes esto era `entidadId != null`, y por eso la pestaña
+  /// «Mis archivos» del aprendiz enseñaba el archivo recién subido y lo perdía al
+  /// cambiar de pestaña: `_cargarLista` salía sin pedir nada. Medido el
+  /// 2026-10-31: un PDF de 665 KB aparecía como «Confirmado» y desaparecía al
+  /// volver, porque sólo vivía en memoria.
+  bool get _puedeListar => true;
 
   @override
   void initState() {
@@ -197,12 +205,16 @@ class _GestorDocumentalPanelState extends State<GestorDocumentalPanel> {
   /// impedir subir sería convertir un fallo de lectura en una pantalla muerta.
   Future<void> _cargarLista() async {
     final entidadId = widget.entidadId;
-    if (entidadId == null) return;
 
-    final resultado = await _repo.listarPorEntidad(
-      entityType: widget.entityType,
-      entidadId: entidadId,
-    );
+    final resultado = entidadId == null
+        // Sin tarea ni guía: los archivos propios, que es lo que se ve en «Mis
+        // archivos». Es la misma colección en la que acaba de entrar lo subido,
+        // así que al volver a la pestaña sigue estando.
+        ? await _repo.listarMios(entityType: widget.entityType)
+        : await _repo.listarPorEntidad(
+            entityType: widget.entityType,
+            entidadId: entidadId,
+          );
 
     if (!mounted) return;
 
@@ -522,15 +534,10 @@ class _GestorDocumentalPanelState extends State<GestorDocumentalPanel> {
         // listado: la lista ya no es de sesión. Sólo queda el caso en que de
         // verdad no se puede listar —una vista sin entidad—, y ahí sigue siendo
         // cierto y necesario.
-        if (!_puedeListar)
-          const AvisoEnLinea(
-            tono: TonoAviso.advertencia,
-            icono: Icons.info_outline,
-            texto: 'Esta vista todavía no está atada a una tarea o una guía '
-                'concreta, así que sólo muestra lo que subas ahora. Cuando el '
-                'Aula Virtual publique la entidad, aparecerá aquí todo lo '
-                'guardado.',
-          ),
+        // Ya no hay vista sin listado: sin entidad se listan los archivos
+        // propios. El aviso se retiró porque afirmaba que lo subido no se
+        // guardaba, y no era cierto —el archivo quedaba en la base—; lo que
+        // fallaba era que la pantalla no volvía a pedirlo.
         const SizedBox(height: 20),
         _tarjetaDeSubida(theme),
         if (_error != null) ...[

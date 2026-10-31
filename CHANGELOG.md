@@ -2,6 +2,22 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.11.1] - 2026-10-31
+### El archivo subido deja de desaparecer
+
+Reportado: en «Mis archivos» el archivo sube, se marca «Confirmado» y al ir a
+«Mis tareas» y volver ya no está.
+
+- **El archivo estaba guardado.** Medido en la base: `Lorenzo Roca.pdf`, 680 KB,
+  estado `CONFIRMED`, con dueño y sin entidad asociada.
+- Lo que fallaba era la pantalla: `_cargarLista` salía en silencio cuando no
+  había tarea o guía (`entidadId == null`), y esa pestaña no tiene entidad. La
+  lista sólo vivía en memoria, así que al reconstruir el widget se perdía.
+- Ahora, sin entidad, se piden los archivos **propios** (`/archivos/mios`, que va
+  por RLS). Al volver a la pestaña siguen ahí.
+- Se retira el aviso que decía «sólo muestra lo que subas ahora»: era falso y
+  hacía que el fallo pareciera comportamiento previsto.
+
 ## [1.11.0] - 2026-10-31
 ### Brújula: el asistente que te lleva
 
