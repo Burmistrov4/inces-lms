@@ -391,6 +391,22 @@ Después basta con `outputDirectory: "public"` y un `public/index.html`
 cualquiera: Vercel exige un directorio de salida aunque sólo se sirvan
 funciones. El `tsc` se ejecuta en `postinstall`, no en `buildCommand`.
 
+### Sin despliegue automático de Git, a propósito
+
+`vercel link` conectó el repo y quedó `rootDirectory: null`, así que un push a
+`main` habría construido **la raíz del repo** —sin `package.json` ni `api/`— y
+fallado. Corregirlo a `rootDirectory: "backend"` rompe el CLI: lanzado desde
+`backend/` busca `backend/backend` y aborta, y lanzado desde la raíz del repo el
+CLI intenta subir todo el proyecto y el upload se cae.
+
+Se elige lo que está medido y funciona: **se quita el vínculo de Git** y se
+despliega con `vercel --prod` desde `backend/`, que es lo que produce los tres
+despliegues verdes. El costo es que un push no publica la API sola; a cambio no
+hay builds rotos que confundan.
+
+También se fijó **Node 22.x**: Vercel ponía 26.x por defecto, una versión que el
+proyecto nunca corrió (`engines` declara `>=22` y Docker y Render usan 22).
+
 **Falta `CLOUDFLARE_ACCOUNT_ID` y la API no arranca.** `crearAlmacenamiento`
 exige las cuatro variables de R2 o ninguna, así que sin la cuenta de Cloudflare
 el proceso muere en el arranque con `Configuración de R2 incompleta`. Se ve en
