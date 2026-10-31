@@ -550,6 +550,10 @@ function aClaseCuadrante(fila: Fila): ClaseCuadrante {
     periodo: textoObligatorio(fila.period_code),
     programaId: textoObligatorio(fila.program_id),
     programa: textoObligatorio(fila.program_name),
+    // El código viaja aparte del nombre a propósito: el panel de Horario PNA
+    // decide si una clase es del PNA por código, porque el programa del PNA se
+    // llama «Curso Introductorio (14-17 años)» y su nombre no lo delata.
+    programaCodigo: texto(fila.program_code) ?? '',
     materiaId: textoObligatorio(fila.subject_id),
     materia: textoObligatorio(fila.subject_name),
     seccion: textoObligatorio(fila.section_name),
@@ -1099,7 +1103,7 @@ const COLUMNAS_GUARDIA =
  * repositorio siguen siendo comprobables.
  */
 const COLUMNAS_CLASE =
-  'id,period_code,program_id,program_name,subject_id,subject_name,section_id,section_name,teacher_id,teacher_name,classroom_id,classroom_name,day_of_week,block,turno,is_active';
+  'id,period_code,program_id,program_code,program_name,subject_id,subject_name,section_id,section_name,teacher_id,teacher_name,classroom_id,classroom_name,day_of_week,block,turno,is_active';
 
 /** Columnas de `profiles` que bastan para pintar una fila de la rejilla. */
 const COLUMNAS_DOCENTE_RESUMEN = 'id,nombres,apellidos,email';

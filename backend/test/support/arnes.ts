@@ -2340,6 +2340,9 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       periodo: seccion.periodo,
       programaId: seccion.programaId,
       programa: programa?.nombre ?? '',
+      // El doble imita a la vista: nombre y código van por separado, y el panel
+      // PNA decide por código.
+      programaCodigo: programa?.codigo ?? '',
       materiaId: seccion.materiaId,
       materia: materia?.nombre ?? '',
       seccion: seccion.nombre,

@@ -448,6 +448,8 @@ export interface ClaseCuadrante {
   periodo: string;
   programaId: string;
   programa: string;
+  /** Código del programa (`CUR-INT-01`, `SEM-SOL-01`…). */
+  programaCodigo: string;
   materiaId: string;
   materia: string;
   seccion: string;

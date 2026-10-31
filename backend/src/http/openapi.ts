@@ -739,6 +739,10 @@ const ClaseCuadrante = z
       description:
         'Especialidad de la cabecera de la rejilla. La vista ya lo resuelve, así que la pantalla no necesita una segunda llamada.',
     }),
+    programaCodigo: z.string().openapi({
+      description:
+        'Código del programa (`CUR-INT-01`, `SEM-SOL-01`…). Va aparte del nombre porque la pantalla de Horario PNA decide por código: el programa del PNA se llama «Curso Introductorio (14-17 años)» y su nombre no lo delata.',
+    }),
     materiaId: z.string().uuid(),
     materia: z.string(),
     seccion: z.string(),
