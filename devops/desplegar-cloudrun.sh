@@ -62,10 +62,22 @@ leer_env() {
     sed -e 's/^["'\'']//' -e 's/["'\'']$//' -e 's/[[:space:]]*$//'
 }
 
-necesita gcloud
+# En Windows con git-bash el ejecutable es `gcloud.cmd` y `command -v gcloud`
+# puede no encontrarlo aunque esté instalado. Se resuelve aquí una sola vez.
+if command -v gcloud >/dev/null 2>&1; then
+  GCLOUD=gcloud
+elif command -v gcloud.cmd >/dev/null 2>&1; then
+  GCLOUD=gcloud.cmd
+else
+  echo "Falta gcloud. Instala el Google Cloud SDK:" >&2
+  echo "  https://cloud.google.com/sdk/docs/install" >&2
+  echo "y abre una terminal NUEVA para que el PATH se actualice." >&2
+  exit 1
+fi
+
 [ -f "$ENV_FILE" ] || { echo "No encuentro $ENV_FILE" >&2; exit 1; }
 
-PROYECTO="$(gcloud config get-value project 2>/dev/null || true)"
+PROYECTO="$("$GCLOUD" config get-value project 2>/dev/null || true)"
 if [ -z "$PROYECTO" ] || [ "$PROYECTO" = "(unset)" ]; then
   echo "No hay proyecto de gcloud configurado. Ejecuta: gcloud config set project TU_ID" >&2
   exit 1
@@ -75,13 +87,13 @@ IMAGEN="${IMAGEN/PROYECTO/$PROYECTO}"
 echo "Proyecto: $PROYECTO · región: $REGION · servicio: $SERVICIO"
 
 # 1. APIs necesarias (idempotente: si ya están, no hace nada).
-gcloud services enable run.googleapis.com artifactregistry.googleapis.com \
+"$GCLOUD" services enable run.googleapis.com artifactregistry.googleapis.com \
   cloudbuild.googleapis.com --project "$PROYECTO"
 
 # 2. Repositorio de imágenes (idempotente).
-gcloud artifacts repositories describe "$REPOSITORIO" \
+"$GCLOUD" artifacts repositories describe "$REPOSITORIO" \
   --location="$REGION" --project "$PROYECTO" >/dev/null 2>&1 ||
-  gcloud artifacts repositories create "$REPOSITORIO" \
+  "$GCLOUD" artifacts repositories create "$REPOSITORIO" \
     --repository-format=docker --location="$REGION" --project "$PROYECTO" \
     --description="Imágenes del INCES LMS"
 
@@ -89,7 +101,7 @@ gcloud artifacts repositories describe "$REPOSITORIO" \
 #    Dockerfile; el contexto es el propio backend, no la raíz del repo.
 if [ "${1:-}" != "--solo-env" ]; then
   echo "Construyendo la imagen…"
-  gcloud builds submit "$RAIZ/backend" \
+  "$GCLOUD" builds submit "$RAIZ/backend" \
     --tag "$IMAGEN:latest" --project "$PROYECTO"
 fi
 
@@ -109,7 +121,7 @@ done
 #    cero coste. `--cpu-boost` acorta el arranque en frío, que es el precio de
 #    escalar a cero.
 echo "Desplegando…"
-gcloud run deploy "$SERVICIO" \
+"$GCLOUD" run deploy "$SERVICIO" \
   --image "$IMAGEN:latest" \
   --region "$REGION" \
   --project "$PROYECTO" \
@@ -122,7 +134,7 @@ gcloud run deploy "$SERVICIO" \
   --port=3000 \
   --set-env-vars "^@^${ENV_ARGS}"
 
-URL="$(gcloud run services describe "$SERVICIO" --region "$REGION" \
+URL="$("$GCLOUD" run services describe "$SERVICIO" --region "$REGION" \
   --project "$PROYECTO" --format='value(status.url)')"
 
 echo
