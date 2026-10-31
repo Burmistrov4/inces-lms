@@ -320,6 +320,34 @@ Prueba CORS desde el origen real del frontend:
 
 El preflight debe responder con un código 2xx esperado (se ha verificado HTTP 204) y autorizar el origen exacto de producción. Health 200 no sustituye pruebas funcionales.
 
+## 7 ter. Fly.io: siempre encendida por 3,69 $/mes
+
+La otra cara de la moneda. Cloud Run es gratis al volumen del centro pero paga
+arranque en frío; Fly **no tiene capa gratuita** para cuentas nuevas, cobra por
+segundo de máquina encendida y no tiene techo de horas: `shared-cpu-1x` con
+512 MB son **3,69 $/mes** a 30 días continuos.
+
+`backend/fly.toml` ya trae `auto_stop_machines = "off"` y
+`min_machines_running = 1`: la máquina no se duerme, y eso es justo lo que se
+está pagando. Los 512 MB no son un lujo: la API genera **PDF de planilla y
+certificados en memoria**, y con 256 MB el proceso muere en la ruta más pesada.
+
+```bash
+flyctl auth login
+./devops/desplegar-fly.sh
+```
+
+Las claves van por `fly secrets` (cifradas, inyectadas como entorno), nunca en
+`fly.toml`, que se versiona. Después, el mismo orden que con Cloud Run:
+`CORS_ORIGINS` con el dominio de la web, y recompilar con el `--dart-define`
+nuevo.
+
+| | Cloud Run | Fly.io | Render free |
+|---|---|---|---|
+| Coste al volumen del centro | 0 $ | 3,69 $/mes | 0 $ |
+| Techo | free tier generoso | ninguno | **750 h/mes** |
+| Arranque en frío | 1–3 s | no | ~1 min tras 15 min |
+
 ## 8. Supabase: verificación sin migrar automáticamente
 
 La validación de migraciones en CI no las aplica automáticamente a producción.
