@@ -1328,6 +1328,18 @@ export const esquemaCrearTarea = z
  * El rol **no** viaja: lo fija el servidor como `estudiante`. Aceptarlo del
  * cliente convertiría el campo en una escalada de privilegios de una línea.
  */
+/**
+ * Vincula un archivo del centro a un aula virtual.
+ *
+ * `null` desvincula a propósito: es la forma de volver a «material general» sin
+ * borrar el archivo.
+ */
+export const esquemaVincularAula = z
+  .object({
+    seccionId: z.string().uuid('El aula no es un identificador válido.').nullable(),
+  })
+  .strict();
+
 export const esquemaInvitarAprendiz = z
   .object({
     email: z.string().trim().email('El correo no parece válido.').max(160),

@@ -2,6 +2,32 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.13.0] - 2026-10-31
+### El vínculo archivo → aula se guarda de verdad
+
+Reportado: asignar un archivo a un aula virtual «no hace nada» y al refrescar se
+pierde.
+
+- **El aula era una cadena en memoria.** `aulaVirtual` vivía en el modelo del
+  explorador, no en la base: elegirla cambiaba el texto de la pantalla y nada
+  más. Ningún módulo podía saber qué archivo pertenece a qué aula.
+- Migración `202610310004`: `files_metadata.section_id` con FK a `sections` y
+  `on delete set null`. Es una **relación**, no un nombre: el grupo puede
+  renombrarse y el vínculo tiene que sobrevivirle.
+- `PATCH /api/v1/admin/archivos/{id}/aula` con `{ seccionId | null }`; `null`
+  desvincula sin borrar el archivo.
+- El diálogo guarda contra el servidor **antes** de cerrarse y avisa si falla, en
+  vez de dar por hecho que se guardó.
+- La lista del diálogo sale de las secciones reales (1.12.1) y ahora se guarda su
+  id, no su etiqueta.
+
+Medido: 3/3 pruebas del endpoint (vincula, desvincula, id inválido) y 750/750 del
+backend.
+
+**Lo que sigue sin persistir, dicho claro:** los **enlaces de Google Drive**.
+Siguen siendo locales porque no tienen tabla; crear una es el siguiente paso, no
+un parche.
+
 ## [1.12.1] - 2026-10-31
 ### El vínculo de archivos ofrece las aulas que existen
 

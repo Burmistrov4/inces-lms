@@ -16,6 +16,7 @@ import type { DependenciasRutas } from '../dependencias.js';
 import { ZipArchive } from 'archiver';
 import {
   esquemaBarrido,
+  esquemaVincularAula,
   esquemaDescargarZip,
   esquemaFirmarSubida,
   esquemaIdArchivo,
@@ -210,6 +211,33 @@ export function rutasArchivos(
       // El administrador borra cualquier archivo. La RPC lo autoriza por
       // `is_admin()`, así que la única diferencia con la ruta del propietario es
       // la guardia: el mismo camino, con otro portero.
+      /**
+       * Vincula un archivo a un aula virtual, o lo desvincula con `null`.
+       *
+       * **Por qué es una relación y no un texto.** Antes el aula vivía como una
+       * cadena en memoria del explorador: elegirla cambiaba la pantalla y nada
+       * más, así que al refrescar se perdía y ningún módulo sabía qué archivo
+       * era de qué aula. Ahora se guarda `section_id`, que sobrevive a un
+       * renombrado de la sección.
+       *
+       * Sólo administración: decidir a qué aula pertenece el material del centro
+       * es una decisión de coordinación, no de cada docente.
+       */
+      admin.patch<{ Params: { id: string } }>(
+        '/archivos/:id/aula',
+        async (request) => {
+          const { id } = esquemaRutaIdArchivo.parse(request.params);
+          const { seccionId } = esquemaVincularAula.parse(request.body);
+
+          const archivo = await reposDe(request).archivos.vincularAula(
+            id,
+            seccionId,
+          );
+
+          return { archivo };
+        },
+      );
+
       admin.delete<{ Params: { id: string } }>('/archivos/:id', async (request) =>
         borrar(request),
       );

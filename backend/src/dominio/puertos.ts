@@ -787,6 +787,14 @@ export interface PuertaArchivos {
   marcarBorrado(id: string): Promise<ArchivoMetadata>;
 
   /**
+   * Vincula el archivo a un aula virtual, o lo desvincula con `null`.
+   *
+   * El aula se guarda como **relación** (`section_id`), no como texto: el nombre
+   * de la sección puede cambiar y el vínculo tiene que sobrevivirle.
+   */
+  vincularAula(id: string, seccionId: string | null): Promise<ArchivoMetadata>;
+
+  /**
    * Un archivo por su id. `null` si no existe **o si la RLS no deja verlo**.
    *
    * Las dos cosas se funden a propósito en el mismo `null`: distinguirlas

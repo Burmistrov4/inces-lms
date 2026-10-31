@@ -121,6 +121,10 @@ class ArchivosRepository {
   Future<Result<Archivo>> borrarComoAdmin(String archivoId) =>
       Result.guard(() => _gateway.borrarComoAdmin(archivoId));
 
+  /// Vincula el archivo a un aula virtual, o lo desvincula con `null`.
+  Future<Result<Archivo>> vincularAula(String archivoId, String? seccionId) =>
+      Result.guard(() => _gateway.vincularAula(archivoId, seccionId));
+
   /// Descarga un archivo ZIP generado en backend por streaming conteniendo los archivos indicados.
   Future<Result<List<int>>> descargarZip(List<String> archivoIds) =>
       Result.guard(() => _gateway.descargarZip(archivoIds));

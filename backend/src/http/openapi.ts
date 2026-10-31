@@ -796,6 +796,13 @@ const RespuestaGuardias = z
   })
   .openapi('RespuestaGuardias');
 
+const CuerpoVincularAula = z
+  .object({ seccionId: z.string().uuid().nullable() })
+  .strict()
+  .openapi('CuerpoVincularAula', {
+    description: '`null` desvincula: el archivo vuelve a material general.',
+  });
+
 const CuerpoInvitarAprendiz = z
   .object({
     email: z.string().email(),
@@ -4191,6 +4198,31 @@ export function construirRegistro(): OpenAPIRegistry {
       403: moduloApagado,
       404: error('Ninguno de los archivos está disponible o no se tienen permisos.'),
       503: RESPUESTAS_ERROR[503],
+    },
+  });
+
+  registro.registerPath({
+    ...archivosTag,
+    method: 'patch',
+    path: '/api/v1/admin/archivos/{id}/aula',
+    summary: 'Vincula un archivo a un aula virtual (administrador)',
+    description:
+      'Guarda la relación con `sections`: el aula sobrevive a un renombrado y deja de ser una etiqueta en memoria. `seccionId: null` desvincula sin borrar el archivo.',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: ParametroIdArchivo,
+      body: {
+        content: { 'application/json': { schema: CuerpoVincularAula } },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Archivo actualizado.',
+        content: { 'application/json': { schema: RespuestaArchivo } },
+      },
+      400: { description: 'Identificador o cuerpo inválido.' },
+      401: { description: 'Sin sesión.' },
+      404: { description: 'El archivo no existe.' },
     },
   });
 

@@ -788,6 +788,7 @@ function aArchivo(fila: Fila): ArchivoMetadata {
     entityType: tipoEntidadSeguro(fila.entity_type),
     entidadId: texto(fila.entidad_id),
     estado: estadoArchivoSeguro(fila.estado),
+    seccionId: texto(fila.section_id),
     creadoEn: textoObligatorio(fila.created_at),
     confirmadoEn: texto(fila.confirmado_en),
     borradoEn: texto(fila.deleted_at),
@@ -4538,6 +4539,20 @@ class ArchivosSupabase implements PuertaArchivos {
     });
 
     return this.filaDevuelta(respuesta, 'borrar un archivo');
+  }
+
+  async vincularAula(
+    id: string,
+    seccionId: string | null,
+  ): Promise<ArchivoMetadata> {
+    const respuesta = await this.cliente
+      .from(TABLA_ARCHIVOS)
+      .update({ section_id: seccionId })
+      .eq('id', id)
+      .select(COLUMNAS_ARCHIVO)
+      .single();
+
+    return this.filaDevuelta(respuesta, 'vincular el archivo a un aula');
   }
 
   async porId(id: string): Promise<ArchivoMetadata | null> {

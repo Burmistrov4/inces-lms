@@ -140,6 +140,18 @@ class BackendArchivosGateway implements ArchivosGateway {
   }
 
   @override
+  @override
+  Future<Archivo> vincularAula(String archivoId, String? seccionId) async {
+    final respuesta = await _api.patch(
+      '/api/v1/admin/archivos/$archivoId/aula',
+      token: _tokenSesion(),
+      cuerpo: {'seccionId': seccionId},
+    );
+
+    return Archivo.fromJson(respuesta['archivo'] as Map<String, dynamic>);
+  }
+
+  @override
   Future<Archivo> borrarComoAdmin(String archivoId) async {
     final respuesta = await _api.delete(
       '/api/v1/admin/archivos/$archivoId',

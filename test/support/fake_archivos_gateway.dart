@@ -161,6 +161,13 @@ class FakeArchivosGateway implements ArchivosGateway {
   }
 
   @override
+  Future<Archivo> vincularAula(String archivoId, String? seccionId) async {
+    llamadas.add('vincularAula:$archivoId:$seccionId');
+    ultimoArchivoId = archivoId;
+    return archivoBorradoDevuelto;
+  }
+
+  @override
   Future<List<Archivo>> listarPorEntidad({
     required TipoEntidadArchivo entityType,
     required String entidadId,

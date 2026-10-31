@@ -3179,6 +3179,23 @@
         ],
         "additionalProperties": false
       },
+      "CuerpoVincularAula": {
+        "type": "object",
+        "properties": {
+          "seccionId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "seccionId"
+        ],
+        "additionalProperties": false,
+        "description": "`null` desvincula: el archivo vuelve a material general."
+      },
       "RespuestaBarrido": {
         "type": "object",
         "properties": {
@@ -10888,6 +10905,63 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/archivos/{id}/aula": {
+      "patch": {
+        "tags": [
+          "Archivos"
+        ],
+        "summary": "Vincula un archivo a un aula virtual (administrador)",
+        "description": "Guarda la relación con `sections`: el aula sobrevive a un renombrado y deja de ser una etiqueta en memoria. `seccionId: null` desvincula sin borrar el archivo.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID del archivo. Un valor que no sea UUID se rechaza con 400 antes de tocar la base.",
+              "example": "46342064-c05a-4341-8638-f35c2541718c"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuerpoVincularAula"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Archivo actualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaArchivo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Identificador o cuerpo inválido."
+          },
+          "401": {
+            "description": "Sin sesión."
+          },
+          "404": {
+            "description": "El archivo no existe."
           }
         }
       }

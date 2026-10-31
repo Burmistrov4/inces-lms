@@ -825,6 +825,13 @@ export interface ArchivoMetadata {
   /** Id de la tarea o guía concreta. `null` si la entidad aún no existe. */
   entidadId: string | null;
   estado: EstadoArchivo;
+  /**
+   * Aula virtual a la que se vinculó el archivo, o `null` si es material general.
+   *
+   * Es una relación con `sections`, no un texto: el nombre del aula puede
+   * cambiar y el vínculo tiene que sobrevivir a ese cambio.
+   */
+  seccionId: string | null;
   creadoEn: string;
   confirmadoEn: string | null;
   borradoEn: string | null;

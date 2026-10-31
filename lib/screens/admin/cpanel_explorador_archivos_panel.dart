@@ -1251,6 +1251,10 @@ class _CpanelExploradorArchivosPanelState
     final aulasDisponibles = <String>[
       'General CFS (Todos los programas)',
     ];
+    // La etiqueta es para leer; el id es lo que se guarda.
+    final idPorEtiqueta = <String, String?>{
+      'General CFS (Todos los programas)': null,
+    };
 
     try {
       final resultado = await _repoSecciones.listarTodasLasSecciones(
@@ -1262,6 +1266,7 @@ class _CpanelExploradorArchivosPanelState
         final etiqueta = 'Aula ${s.nombre} · ${s.periodo}'
             '${s.codigoAula != null && s.codigoAula!.isNotEmpty ? ' · código ${s.codigoAula}' : ''}';
         aulasDisponibles.add(etiqueta);
+        idPorEtiqueta[etiqueta] = s.id;
       }
     } catch (_) {
       // Sin catálogo se ofrece al menos lo que ya tenía el archivo: peor sería
@@ -1355,7 +1360,33 @@ class _CpanelExploradorArchivosPanelState
               child: const Text('Cancelar'),
             ),
             FilledButton.icon(
-              onPressed: () {
+              onPressed: () async {
+                // **Se guarda en la base, no en memoria.** Antes sólo cambiaba
+                // el texto del modelo y al refrescar se perdía.
+                //
+                // El mensajero y el navegador se capturan **antes** del `await`:
+                // después, el `context` del diálogo puede haberse ido y usarlo
+                // sería el clásico «BuildContext across async gaps».
+                final mensajero = ScaffoldMessenger.of(ctx);
+                final navegador = Navigator.of(ctx);
+                final seccionId = idPorEtiqueta[aulaSeleccionada];
+
+                try {
+                  await _repoArchivos.vincularAula(item.id, seccionId);
+                } catch (_) {
+                  mensajero.showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'No pudimos guardar el vínculo con el aula. '
+                        'Inténtalo otra vez.',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
+                if (!mounted) return;
+
                 setState(() {
                   item.aulaVirtual = aulaSeleccionada;
                   item.permiso = permisoSeleccionado;
@@ -1370,8 +1401,8 @@ class _CpanelExploradorArchivosPanelState
                     ...item.actividad,
                   ];
                 });
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
+                navegador.pop();
+                mensajero.showSnackBar(
                   SnackBar(
                     content: Text(
                       '«${item.nombre}» asignado a «$aulaSeleccionada».',

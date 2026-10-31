@@ -60,6 +60,12 @@ abstract interface class ArchivosGateway {
   /// Borra cualquier archivo como administrador.
   Future<Archivo> borrarComoAdmin(String archivoId);
 
+  /// Vincula el archivo a un aula virtual, o lo desvincula con `null`.
+  ///
+  /// El aula viaja como **id de sección**, no como texto: es lo que hace que el
+  /// vínculo sobreviva al refresco y a un renombrado del grupo.
+  Future<Archivo> vincularAula(String archivoId, String? seccionId);
+
   /// Los archivos vivos de una tarea o una guía.
   ///
   /// Es la lectura que le faltaba al módulo (deuda D17). Sin ella el panel podía

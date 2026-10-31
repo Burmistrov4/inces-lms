@@ -846,6 +846,8 @@ export interface ArchivoFalso {
   tamanoBytes?: number | null;
   entityType?: TipoEntidadArchivo;
   entidadId?: string | null;
+  /** Aula virtual vinculada (relación con `sections`). */
+  seccionId?: string | null;
   estado?: EstadoArchivo;
   creadoEn?: string;
   confirmadoEn?: string | null;
@@ -3873,6 +3875,7 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       entityType: fila.entityType ?? 'TASK_SUBMISSION',
       entidadId: fila.entidadId ?? null,
       estado: fila.estado ?? 'PENDING',
+      seccionId: fila.seccionId ?? null,
       creadoEn: fila.creadoEn ?? CREADO_EN_FALSO,
       confirmadoEn: fila.confirmadoEn ?? null,
       borradoEn: fila.borradoEn ?? null,
@@ -3888,6 +3891,16 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
    * la ruta —tiene que venir del puerto—, así que el doble la produce.
    */
   const archivos: PuertaArchivos = {
+    async vincularAula(id, seccionId) {
+      revisar('archivos.vincularAula');
+      const fila = estado.archivos.find((a) => a.id === id);
+      if (!fila) {
+        throw ErrorApi.noEncontrado('ARCHIVO_INEXISTENTE', 'El archivo no existe.');
+      }
+      fila.seccionId = seccionId;
+      return aArchivoFalso(fila);
+    },
+
     async registrarPendiente(
       entrada: EntradaRegistrarArchivo,
     ): Promise<ArchivoMetadata> {
