@@ -9,6 +9,7 @@ import '../../repositories/curriculo_repository.dart';
 import '../../repositories/secciones_repository.dart';
 import '../../services/aula_service.dart';
 import '../aula_virtual_dashboard.dart';
+import 'dialogo_aprendices.dart';
 import '../../widgets/comunes.dart';
 
 /// Panel «Aulas Virtuales» del administrador.
@@ -258,6 +259,20 @@ class _CpanelAulasVirtualesPanelState extends State<CpanelAulasVirtualesPanel> {
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Quién está en el aula, y los botones para meter o sacar.
+                  IconButton(
+                    icon: const Icon(Icons.group_outlined, size: 18),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Aprendices del aula',
+                    onPressed: () => showDialog<void>(
+                      context: context,
+                      builder: (_) => DialogoAprendices(
+                        seccionId: s.id,
+                        etiquetaAula: _etiquetaDe(s),
+                        seccionesRepo: _seccionesRepo,
+                      ),
+                    ),
+                  ),
                   if (s.codigoAula != null && s.codigoAula!.isNotEmpty)
                     IconButton(
                       icon: const Icon(Icons.copy_rounded, size: 18),
