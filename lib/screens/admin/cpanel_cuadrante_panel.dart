@@ -507,8 +507,17 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
   Widget _rejilla({bool compacto = false}) {
     final theme = Theme.of(context);
 
+    // Misma regla que el panel PNA, y por el mismo motivo: el programa del PNA se
+    // llama «Curso Introductorio (14-17 años)» y no contiene «pna» ni
+    // «aprendizaje», así que mirando sólo el nombre esas clases se colaban en la
+    // rejilla ordinaria **y** faltaban en la suya.
     final clasesOrdinarias = _clases
-        .where((c) => !esProgramaPNA(c.programa) && !esProgramaPNA(c.materia))
+        .where(
+          (c) =>
+              !esProgramaPNA(c.programaCodigo) &&
+              !esProgramaPNA(c.programa) &&
+              !esProgramaPNA(c.materia),
+        )
         .toList();
     final celdas = <String, List<Widget>>{};
     for (final entrada in agruparClases(clasesOrdinarias, chip: _chipClase).entries) {

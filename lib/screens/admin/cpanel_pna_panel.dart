@@ -183,22 +183,28 @@ class _CpanelPnaPanelState extends State<CpanelPnaPanel> {
     } catch (_) {}
   }
 
-  List<ClaseCuadrante> get _clasesPna => _clases
-      .where(
-        (c) =>
-            esProgramaPNA(c.programa) ||
-            esProgramaPNA(c.materia) ||
-            c.programaId.toLowerCase().contains('cur-int-01'),
-      )
-      .toList();
+  /// ¿Esta clase es del PNA?
+  ///
+  /// **Por el código primero.** El nombre del programa PNA es «Curso
+  /// Introductorio (14-17 años)», que no contiene «pna» ni «aprendizaje»: mirar
+  /// el nombre —lo que se hacía hasta el 2026-10-31— dejaba fuera toda clase del
+  /// PNA y la rejilla decía «aún no tiene materias PNA asignadas» con la clase
+  /// guardada en la base. El nombre se sigue aceptando como respaldo para los
+  /// programas que se llamen «PNA…».
+  static bool _esDelPna(ClaseCuadrante c) =>
+      esProgramaPNA(c.programaCodigo) ||
+      esProgramaPNA(c.programa) ||
+      esProgramaPNA(c.materia);
+
+  List<ClaseCuadrante> get _clasesPna =>
+      _clases.where(_esDelPna).toList();
 
   Map<String, String> get _seccionesPnaDisponibles {
     final mapa = <String, String>{..._seccionesPnaCatalogo};
     for (final clase in _clases) {
       if (clase.seccionId.isNotEmpty &&
           !mapa.containsKey(clase.seccionId) &&
-          (esProgramaPNA(clase.programa) ||
-              clase.programaId.toLowerCase().contains('cur-int-01'))) {
+          _esDelPna(clase)) {
         mapa[clase.seccionId] = clase.seccion.isNotEmpty
             ? '${clase.programa} · ${clase.seccion}'
             : clase.seccionId;

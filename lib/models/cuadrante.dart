@@ -534,6 +534,7 @@ class ClaseCuadrante {
     required this.periodo,
     required this.programaId,
     required this.programa,
+    this.programaCodigo = '',
     required this.materiaId,
     required this.materia,
     required this.seccion,
@@ -554,6 +555,17 @@ class ClaseCuadrante {
   final String periodo;
   final String programaId;
   final String programa;
+
+  /// Código del programa (`CUR-INT-01`, `SEM-SOL-01`…), tal como lo trae
+  /// `program_code` de la vista.
+  ///
+  /// **Por qué hace falta.** El panel de Horario PNA decidía qué clase es del PNA
+  /// mirando el **nombre** del programa, y el del PNA se llama «Curso
+  /// Introductorio (14-17 años)»: no contiene «pna» ni «aprendizaje», así que la
+  /// clase desaparecía de la rejilla aunque estuviera guardada. Medido el
+  /// 2026-10-31: la clase existía en INCES26-3 (CUR-INT-01, lunes bloque 1) y la
+  /// pantalla decía «este período aún no tiene materias PNA asignadas».
+  final String programaCodigo;
   final String materiaId;
   final String materia;
   final String seccion;
@@ -587,6 +599,8 @@ class ClaseCuadrante {
       periodo: (json['periodo'] ?? json['period_code']) as String? ?? '',
       programaId: (json['programaId'] ?? json['program_id']) as String? ?? '',
       programa: (json['programa'] ?? json['program_name']) as String? ?? '',
+      programaCodigo:
+          (json['programaCodigo'] ?? json['program_code']) as String? ?? '',
       materiaId: (json['materiaId'] ?? json['subject_id']) as String? ?? '',
       materia: (json['materia'] ?? json['subject_name']) as String? ?? '',
       seccion: (json['seccion'] ?? json['section_name']) as String? ?? '',

@@ -2,6 +2,25 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.10.2] - 2026-10-31
+### La rejilla PNA vuelve a ver sus propias clases
+
+Reportado: se asignó un bloque al docente Alcides y la rejilla siguió diciendo
+«este período aún no tiene materias PNA asignadas».
+
+- **La clase existía.** Medido en la base: INCES26-3, `CUR-INT-01`, Alcides
+  Mencias, lunes bloque 1. El problema era cómo se decidía qué es PNA.
+- El panel miraba el **nombre** del programa con `esProgramaPNA`, y el del PNA se
+  llama «Curso Introductorio (14-17 años)»: no contiene «pna» ni «aprendizaje».
+  También comparaba `programaId` (un UUID) contra `'cur-int-01'`, que nunca podía
+  coincidir.
+- Ahora `ClaseCuadrante` lee `program_code` de la vista (`programaCodigo`) y la
+  decisión va por código, con el nombre como respaldo. La rejilla **ordinaria**
+  usa la misma regla: antes esas clases se colaban en ella y faltaban en la suya.
+
+Medido: suite completa 1073/1073 antes de este cambio; 22/22 en las pruebas del
+panel y en las tres nuevas del modelo.
+
 ## [1.10.1] - 2026-10-31
 ### El aula virtual de una clase se corrige sin borrarla
 
