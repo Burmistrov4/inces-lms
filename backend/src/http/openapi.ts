@@ -3300,6 +3300,30 @@ export function construirRegistro(): OpenAPIRegistry {
 
   registro.registerPath({
     ...seccionesTag,
+    method: 'delete',
+    path: '/api/v1/admin/aulas/{id}/matricular/{estudianteId}',
+    summary: 'Da de baja a un aprendiz sin borrar nada',
+    description:
+      'Quita la matrícula del aula cambiando el estado a `DROPPED`. **No se borra la fila**: el expediente y la planilla del alumno siguen visibles para administración y para él. El motivo es obligatorio y se guarda en `config_audit_log` con quién lo hizo — es lo único que explicará, dentro de dos años, por qué ese alumno no terminó el curso. Idempotente. Libera el cupo y promueve al siguiente de la cola.',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: z.object({ id: z.string().uuid(), estudianteId: z.string().uuid() }),
+      query: z.object({ motivo: z.string().min(3).max(500) }),
+    },
+    responses: {
+      200: {
+        description: 'Baja registrada (o ya lo estaba).',
+        content: { 'application/json': { schema: RespuestaMatricula } },
+      },
+      400: error('Sin motivo, o el aprendiz no está matriculado en esa aula.'),
+      401: RESPUESTAS_ERROR[401],
+      403: RESPUESTAS_ERROR[403],
+      503: RESPUESTAS_ERROR[503],
+    },
+  });
+
+  registro.registerPath({
+    ...seccionesTag,
     method: 'post',
     path: '/api/v1/aulas/unirse',
     summary: 'El aprendiz canjea el código de su aula',

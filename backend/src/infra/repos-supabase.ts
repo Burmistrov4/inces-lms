@@ -3837,6 +3837,20 @@ class InscripcionesSupabase implements PuertaInscripciones {
     return id;
   }
 
+  async darDeBaja(
+    estudianteId: string,
+    seccionId: string,
+    motivo: string,
+  ): Promise<EstadoInscripcion> {
+    const respuesta = await this.cliente.rpc('dar_de_baja_por_administrador', {
+      p_student_id: estudianteId,
+      p_section_id: seccionId,
+      p_motivo: motivo,
+    });
+
+    return this.estadoDevuelto(respuesta, 'dar de baja a un aprendiz');
+  }
+
   async expirarOfertas(): Promise<number> {
     const respuesta = await this.cliente.rpc('expirar_ofertas_cupo');
 

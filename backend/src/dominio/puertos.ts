@@ -1099,6 +1099,16 @@ export interface PuertaInscripciones {
    */
   unirsePorCodigo(codigo: string): Promise<string>;
 
+  /**
+   * Da de baja a un aprendiz **sin borrar nada**: cambia `status` a `DROPPED` y
+   * guarda el motivo en `config_audit_log`.
+   *
+   * Decisión del dueño (2026-10-30): el alumno dado de baja conserva su
+   * expediente y su planilla, visibles para administración y para él.
+   * Idempotente: repetirla devuelve `DROPPED` sin error.
+   */
+  darDeBaja(estudianteId: string, seccionId: string, motivo: string): Promise<EstadoInscripcion>;
+
   /** Vence las ofertas caducadas. **Idempotente**: devuelve cuántas venció. */
   expirarOfertas(): Promise<number>;
 

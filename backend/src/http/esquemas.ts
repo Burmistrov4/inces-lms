@@ -338,6 +338,26 @@ export const esquemaMatricular = z
  * nuestra. El formato se valida aquí para no gastar una consulta en algo que no
  * puede existir.
  */
+/** Params de una ruta que lleva el aula y el aprendiz. */
+export const esquemaRutaEstudiante = z.object({
+  estudianteId: z.string().uuid({ message: 'El aprendiz debe ser un UUID válido.' }),
+});
+
+/**
+ * Motivo de una baja.
+ *
+ * Obligatorio y con un mínimo real: es lo único que explicará, dentro de dos
+ * años, por qué ese alumno no terminó el curso. Un motivo de «x» no explica nada
+ * y el mínimo de 3 no molesta a nadie que tenga algo que decir.
+ */
+export const esquemaBaja = z.object({
+  motivo: z
+    .string()
+    .trim()
+    .min(3, 'Indica el motivo de la baja.')
+    .max(500, 'El motivo no puede pasar de 500 caracteres.'),
+});
+
 export const esquemaUnirse = z
   .object({
     codigo: z

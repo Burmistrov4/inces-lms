@@ -8158,6 +8158,102 @@
         }
       }
     },
+    "/api/v1/admin/aulas/{id}/matricular/{estudianteId}": {
+      "delete": {
+        "tags": [
+          "Secciones"
+        ],
+        "summary": "Da de baja a un aprendiz sin borrar nada",
+        "description": "Quita la matrícula del aula cambiando el estado a `DROPPED`. **No se borra la fila**: el expediente y la planilla del alumno siguen visibles para administración y para él. El motivo es obligatorio y se guarda en `config_audit_log` con quién lo hizo — es lo único que explicará, dentro de dos años, por qué ese alumno no terminó el curso. Idempotente. Libera el cupo y promueve al siguiente de la cola.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "estudianteId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 500
+            },
+            "required": true,
+            "name": "motivo",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Baja registrada (o ya lo estaba).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaMatricula"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Sin motivo, o el aprendiz no está matriculado en esa aula.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta la sesión o el token no es válido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "La sesión es válida pero el rol no alcanza, o la cuenta está inactiva.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El servicio o la base de datos no están disponibles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/aulas/unirse": {
       "post": {
         "tags": [

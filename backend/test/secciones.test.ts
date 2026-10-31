@@ -73,6 +73,49 @@ describe('puertas del aula (F2)', () => {
     expect(respuesta.statusCode).toBe(403);
   });
 
+  it('el administrador da de baja con motivo', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/aulas/${ID_SECCION_SA}/matricular/${ID_ALUMNO}` +
+        '?motivo=Abandono%20del%20curso',
+      headers: conToken(TOKEN_ADMIN),
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    expect(respuesta.json().estado).toBe('DROPPED');
+  });
+
+  it('la baja exige motivo: sin él no se da de baja a nadie', async () => {
+    // El motivo es lo único que explicará la baja dentro de dos años.
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/aulas/${ID_SECCION_SA}/matricular/${ID_ALUMNO}`,
+      headers: conToken(TOKEN_ADMIN),
+    });
+
+    expect(respuesta.statusCode).toBe(400);
+  });
+
+  it('un aprendiz no puede dar de baja a nadie', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/admin/aulas/${ID_SECCION_SA}/matricular/${ID_ALUMNO}` +
+        '?motivo=intento',
+      headers: conToken(TOKEN_ALUMNO),
+    });
+
+    expect(respuesta.statusCode).toBe(403);
+  });
+
   it('unirse sin sesión no entra', async () => {
     const arnés = crearArnés();
     app = arnés.app;

@@ -3346,6 +3346,31 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       return 'ENROLLED';
     },
 
+    async darDeBaja(estudianteId, seccionId, motivo) {
+      revisar('inscripciones.darDeBaja');
+
+      if (motivo.trim().length < 3) {
+        throw new ErrorApi(400, 'PETICION_INVALIDA', 'Indica el motivo de la baja.');
+      }
+
+      const fila = estado.inscripciones.find(
+        (i) => i.seccionId === seccionId && i.estudianteId === estudianteId,
+      );
+      if (!fila) {
+        throw new ErrorApi(
+          400,
+          'RESTRICCION_VIOLADA',
+          'Ese aprendiz no está matriculado en esta aula.',
+        );
+      }
+
+      // Idempotente, como la RPC.
+      if (estadoDe(fila) === 'DROPPED') return 'DROPPED';
+
+      fila.estado = 'DROPPED';
+      return 'DROPPED';
+    },
+
     async unirsePorCodigo(codigo) {
       revisar('inscripciones.unirsePorCodigo');
 

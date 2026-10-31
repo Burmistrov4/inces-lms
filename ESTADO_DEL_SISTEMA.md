@@ -55,6 +55,21 @@
 7. **El cuadrante no se calla** (v1.7.6): la razón del botón deshabilitado se lee
    bajo la cabecera —estaba en un `Tooltip`, que en un teléfono no existe— y
    «Reintentar» recarga períodos **y** rejilla.
+8. **La baja de un alumno no borra nada** (F2.4, backend). Decisión del dueño del
+   2026-10-30: «el estudiante debe seguir conservando un registro de su planilla
+   accesible para los administradores y para el estudiante». `dar_de_baja_por_administrador`
+   cambia el estado a `DROPPED`, exige motivo y lo guarda en `config_audit_log`
+   con quién lo hizo; la fila se conserva entera. Ruta
+   `DELETE /admin/aulas/{id}/matricular/{estudianteId}?motivo=…`. **Medido**
+   contra Supabase con el rol simulado: alumno intentando la baja → `42501`; sin
+   motivo → `22023`; admin → `DROPPED`; la fila sigue existiendo; la auditoría
+   guarda el motivo y el correo del actor; repetir es idempotente. Backend
+   **742/742**.
+   - **Pendiente de decisión:** `v_exportacion_hacer` sigue exportando sólo
+     `ENROLLED`, así que el retirado **no** aparece en la planilla de HACER. La
+     aplicación sí lo muestra (ni `misInscripciones` ni `inscritosDeSeccion`
+     filtran por estado). Si el centro quiere que HACER reciba también a los
+     retirados, es una línea de la vista y necesita su visto bueno.
 
 ## Fotografía anterior — 2026-10-29 (noche) · v1.7.0 + correcciones
 

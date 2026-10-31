@@ -2,11 +2,13 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import {
   esquemaActualizarSeccion,
+  esquemaBaja,
   esquemaCrearSeccion,
   esquemaIdSeccion,
   esquemaListadoSecciones,
   esquemaMatricular,
   esquemaResolverGrupo,
+  esquemaRutaEstudiante,
   esquemaUnirse,
 } from '../esquemas.js';
 import { exigirAdmin, exigirSesion, reposDe } from '../plugins/autenticacion.js';
@@ -122,6 +124,34 @@ export function rutasSecciones(app: FastifyInstance): void {
 
           const estado = await reposDe(request).inscripciones
             .matricularPorAdministrador(estudianteId, seccionId);
+
+          return { estado, seccionId };
+        },
+      );
+
+      /**
+       * Da de baja a un aprendiz del aula.
+       *
+       * **No borra nada.** Cambia el estado a `DROPPED` y guarda el motivo en la
+       * auditoría; el expediente y la planilla del alumno siguen visibles para
+       * administración y para él —decisión del dueño del 2026-10-30—.
+       *
+       * Es `DELETE` porque quita la matrícula del aula, no porque destruya la
+       * fila. El motivo va en la query: un `DELETE` con cuerpo lo pierden
+       * algunos clientes y proxies.
+       */
+      admin.delete<{ Params: { id: string; estudianteId: string } }>(
+        '/aulas/:id/matricular/:estudianteId',
+        async (request) => {
+          const seccionId = esquemaIdSeccion.parse(request.params.id);
+          const { estudianteId } = esquemaRutaEstudiante.parse(request.params);
+          const { motivo } = esquemaBaja.parse(request.query);
+
+          const estado = await reposDe(request).inscripciones.darDeBaja(
+            estudianteId,
+            seccionId,
+            motivo,
+          );
 
           return { estado, seccionId };
         },
