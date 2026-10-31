@@ -1,6 +1,49 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — 2026-10-29 (noche) · v1.7.0 + correcciones · **sin desplegar**
+## Fotografía operativa vigente — 2026-10-30 (noche) · v1.7.5 desplegada · **API suspendida**
+
+> **BLOQUEO VIGENTE (H1).** `https://inces-lms-api.onrender.com` responde **503**
+> con cabecera `x-render-routing: suspend` y el cuerpo «This service has been
+> suspended». Medido el 2026-10-30 a las 01:34 UTC: **96 s consecutivos de 503**,
+> no es un arranque en frío. Render suspendió el servicio; hace falta que el
+> propietario lo reactive desde el panel de Render (horas del plan gratuito o
+> facturación). Mientras dure: la web estática funciona, pero **toda la
+> administración que pasa por la API** —cuadrante, PNA, periodos, secciones—
+> devuelve listas vacías y deja los botones deshabilitados. Las lecturas de
+> catálogo que van por PostgREST siguen vivas.
+>
+> Consecuencia medida: la captura del cuadrante mostraba la rejilla vacía y
+> «Asignar clase» en gris sin decir por qué. La app **sí** tiene el mensaje
+> («El servidor del INCES está iniciando sus servicios en la nube») pero el panel
+> no lo pinta de forma persistente: queda pendiente mostrarlo con un reintento.
+
+### Lo que sí quedó cerrado hoy (verificado)
+
+1. **F0.1 — el nombre del grupo ya no topa en 5.** Migración
+   `202610300001_ampliar_nombre_grupo`: `sections.name` pasa a `varchar(24)` con
+   restricción de no vacío. Las tres vistas que leían la columna
+   (`v_cuadrante_clases`, `v_exportacion_hacer`, `v_ocupacion_secciones`) se
+   guardan con `pg_get_viewdef` y se recrean idénticas dentro de la migración,
+   porque Postgres rechaza el cambio de tipo mientras dependan de ella (`0A000`).
+   Contrato, OpenAPI y las dos pantallas dicen 24; el regex admite guiones, así
+   que «SOLD-B» es un nombre válido. **Medido**: columna =
+   `character varying(24)`, restricción `sections_nombre_no_vacio` presente, las
+   tres vistas con sus permisos. Backend **729/729**.
+2. **F0.3 — cerrar período informa.** El servicio atrapaba cualquier fallo de la
+   API y reintentaba escribiendo directo a Supabase, tapando la causa real con
+   «No pudimos guardar la información». Ahora manda la API. **Medido**:
+   `PATCH /admin/periodos/{id}` con `{cerrado:true}` → 200, estado `CERRADO`.
+3. **Estado de los períodos**: `SA26-2` (nombre «INCES 26-3») quedó **cerrado**
+   durante una prueba de cierre, y **`INCES26-3` es el vigente** (200 confirmado).
+   Quedan dos períodos con nombres parecidos: el cerrado conviene borrarlo.
+4. **Capturas honestas.** `e2e/tests/captura_dashboards_roles.spec.ts` esperaba
+   4 s y fotografiaba el cuadrante en esqueletos; ahora espera `networkidle` + 7 s.
+   Las imágenes de `docs/assets/dashboards/` están regeneradas contra producción.
+5. **Plan de consolidación escrito**: `docs/PLAN_CONSOLIDACION_LMS_2026-10-30.md`
+   — qué existe de verdad en la base, qué falta, fases F0–F7 con criterio de
+   aceptación, cómo se verifica cada una y las siete decisiones del dueño.
+
+## Fotografía anterior — 2026-10-29 (noche) · v1.7.0 + correcciones
 
 > Trabajo de la sesión de la noche. **Nada de esto está en producción todavía**: el
 > frente desplegado (`inces-lms.pages.dev`) sigue siendo el del mediodía, y como se

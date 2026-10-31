@@ -64,7 +64,12 @@ test.describe.serial('Captura de Dashboards Multi-Rol (Admin, Docente, Estudiant
     await page.mouse.wheel(0, 300);
     await page.waitForTimeout(500);
     await login.app.pulsarReal('Cuadrante de Horarios', { tiempoLimiteMs: 15_000 });
-    await page.waitForTimeout(4000);
+    // **La captura tiene que esperar a que el cuadrante pinte.** Con 4 s salía
+    // en esqueletos y el administrador concluía —con razón— que el módulo no
+    // carga. Medido el 2026-10-30: las peticiones responden 200; lo que faltaba
+    // era tiempo para que el motor de Flutter pintara la rejilla.
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(7000);
     const rutaHorarios = path.join(DIR_DESTINO, '04_dashboard_admin_horarios.png');
     await page.screenshot({ path: rutaHorarios, fullPage: false });
     console.log(`[OK] Capturado: ${rutaHorarios}`);
