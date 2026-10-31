@@ -206,10 +206,15 @@ class BackendAulaGateway implements AulaGateway {
       // «publícalo ya»; por eso se envían sólo los valores presentes. Los
       // esquemas HTTP de M6 son `.strict()` y `tema: ''` reventaría el `.min(1)`,
       // así que un `null` se omite y no se manda como cadena vacía.
+      // **`toUtc()` antes de serializar.** `DateTime.toIso8601String()` en un
+      // `DateTime` local NO lleva zona («2026-10-31T09:05:00.000») y el
+      // contrato exige ISO con zona (`datetime({ offset: true })`), así que el
+      // servidor respondía 400 «Los datos enviados no son válidos». Medido el
+      // 2026-10-31 publicando un anuncio con fecha diferida.
       cuerpo: _sinNulos(<String, dynamic>{
         'titulo': titulo,
         'cuerpo': cuerpo ?? '',
-        'programadoPara': programadoPara?.toIso8601String(),
+        'programadoPara': programadoPara?.toUtc().toIso8601String(),
       }),
     );
 
@@ -259,7 +264,7 @@ class BackendAulaGateway implements AulaGateway {
         // lo rechaza con 23514. Si viniera `0` por un campo numérico vacío,
         // el `CHECK` de material lo habría rechazado; omitir la clave evita eso.
         'puntosMaximos': puntosMaximos,
-        'fechaLimite': fechaLimite?.toIso8601String(),
+        'fechaLimite': fechaLimite?.toUtc().toIso8601String(),
         'permitirEntregaTardia': permitirEntregaTardia,
         'tema': tema,
         'orden': orden,

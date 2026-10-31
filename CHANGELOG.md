@@ -2,6 +2,22 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.14.0] - 2026-10-31
+### Se puede publicar el anuncio, y la asistencia deja de fingir un canal
+
+- **«Los datos enviados no son válidos» al publicar.** El cliente mandaba la fecha
+  con `toIso8601String()`, que en un `DateTime` **local** no lleva zona
+  («2026-10-31T09:05:00.000»), y el contrato exige ISO con zona. Fallaba el
+  anuncio diferido **y la tarea con fecha límite**. Ahora se serializa en UTC.
+  Lo mismo en el cierre de período.
+- **El QR dura 45 s** (antes 15: no daba tiempo a proyectarlo) y el docente elige
+  30/45/60/90 antes de abrir la sesión, que es cuando el servidor fija la
+  ventana.
+- **Se retira el «la conexión en vivo se cayó».** Una función serverless no puede
+  mantener un WebSocket: el intento fallaba siempre y la pantalla daba un error
+  rojo en cada clase aunque las marcas se guardaran. Ahora se sondea cada 4 s y
+  las marcas aparecen igual, sin mentir sobre el canal.
+
 ## [1.13.0] - 2026-10-31
 ### El vínculo archivo → aula se guarda de verdad
 

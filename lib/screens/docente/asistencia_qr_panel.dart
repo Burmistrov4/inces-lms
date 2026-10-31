@@ -44,11 +44,18 @@ class _AsistenciaQrPanelState extends State<AsistenciaQrPanel> {
 
   Map<String, dynamic>? _sesion;
   final List<MarcaAsistencia> _marcas = [];
-  StreamSubscription<EventoAsistencia>? _suscripcion;
+  Timer? _sondeo;
   Timer? _rotador;
 
   String _error = '';
   bool _cargando = false;
+
+  /// Duración del código QR de esta sesión, en segundos.
+  ///
+  /// Antes eran 15 fijos: el docente no llegaba a proyectarlo. Ahora 45 por
+  /// defecto y ajustable antes de abrir la sesión, que es cuando el servidor fija
+  /// la ventana (`ventanaSeg`).
+  int _ventanaSeg = 45;
 
   @override
   void initState() {
@@ -59,7 +66,7 @@ class _AsistenciaQrPanelState extends State<AsistenciaQrPanel> {
   @override
   void dispose() {
     _rotador?.cancel();
-    _suscripcion?.cancel();
+    _sondeo?.cancel();
     super.dispose();
   }
 
@@ -84,7 +91,10 @@ class _AsistenciaQrPanelState extends State<AsistenciaQrPanel> {
 
     setState(() { _cargando = true; _error = ''; });
 
-    final creada = await _servicio.abrirSesion(seccionId: seccionId);
+    final creada = await _servicio.abrirSesion(
+      seccionId: seccionId,
+      ventanaSeg: _ventanaSeg,
+    );
     creada.when(
       success: (sesion) {
         setState(() { _sesion = sesion; _cargando = false; });
@@ -96,7 +106,6 @@ class _AsistenciaQrPanelState extends State<AsistenciaQrPanel> {
 
   /// El «servidor lógico» de la pantalla: un rotador para el QR y el canal WS.
   void _arrancar(Map<String, dynamic> sesion) {
-    final sesionId = sesion['id'] as String;
 
     // Un tick por segundo: el QR rota sólo. La app no pregunta a la base ni al
     // servidor entre un tick y el siguiente.
@@ -113,40 +122,38 @@ class _AsistenciaQrPanelState extends State<AsistenciaQrPanel> {
     // terminando de su lado. Con sólo `onError`, ese cierre dejaba el tablero
     // congelado **sin decir nada**, que es exactamente lo que este mensaje
     // existe para evitar. Ver D22.
-    _suscripcion = _servicio.enVivo(sesionId: sesionId).listen(
-      (evento) {
-        if (!mounted) return;
-        if (evento.tipo == 'marca' && evento.marca != null) {
-          setState(() => _marcas.add(evento.marca!));
-        } else if (evento.tipo == 'sesion_cerrada') {
-          setState(() => _sesion = {..._sesion!, 'status': 'CLOSED'});
+    // **Sondeo, no WebSocket.** Una función serverless no puede mantener el
+    // canal abierto: el intento fallaba siempre y la pantalla mostraba «la
+    // conexión en vivo se cayó» en cada clase, aunque las marcas se estuvieran
+    // guardando. Preguntar cada 4 s da la misma sensación de vivo y no miente.
+    _sondeo = Timer.periodic(const Duration(seconds: 4), (_) => _refrescarMarcas());
+
+    _refrescarMarcas();
+  }
+
+  /// Trae las marcas y las fusiona sin duplicar.
+  Future<void> _refrescarMarcas() async {
+    final sesion = _sesion;
+    if (sesion == null || !mounted) return;
+
+    final resultado = await _servicio.marcas(sesionId: sesion['id'] as String);
+    if (!mounted) return;
+
+    resultado.when(
+      success: (lista) {
+        final conocidas = _marcas.map((m) => m.studentId).toSet();
+        final nuevas = lista.where((m) => !conocidas.contains(m.studentId));
+        if (nuevas.isNotEmpty) {
+          setState(() => _marcas.addAll(nuevas));
         }
       },
-      onError: (_) => _avisarCanalCaido(),
-      onDone: _avisarCanalCaido,
+      failure: (_) {
+        // Un sondeo que falla no es una avería que anunciar: el siguiente
+        // intento llega en cuatro segundos.
+      },
     );
-
-    _servicio.marcas(sesionId: sesionId).then((resultado) {
-      if (!mounted) return;
-      resultado.when(
-        success: (lista) => setState(() => _marcas.addAll(lista)),
-        failure: (_) {},
-      );
-    });
   }
 
-  /// Avisa de que el canal en vivo se perdió.
-  ///
-  /// **No alarma cuando el cierre era lo esperado.** Al cerrar la sesión el
-  /// servidor cierra el socket, y entonces llega `done` con el estado ya en
-  /// `CLOSED`: eso no es una avería y decir lo contrario entrenaría al docente a
-  /// ignorar el aviso.
-  void _avisarCanalCaido() {
-    if (!mounted) return;
-    if (_sesion?['status'] == 'CLOSED') return;
-    setState(() =>
-        _error = 'La conexión en vivo se cayó. Las marcas ya están en la base.');
-  }
 
   Future<void> _cerrar() async {
     final sesion = _sesion;
@@ -157,8 +164,7 @@ class _AsistenciaQrPanelState extends State<AsistenciaQrPanel> {
     await resultado.when(
       success: (_) async {
         setState(() => _sesion = {...sesion, 'status': 'CLOSED'});
-        await _suscripcion?.cancel();
-        _suscripcion = null;
+        _sondeo?.cancel();
         _rotador?.cancel();
         _rotador = null;
       },
@@ -291,6 +297,38 @@ class _AsistenciaQrPanelState extends State<AsistenciaQrPanel> {
         Text(
           'Elige la sección. El QR lo proyectas en tu pantalla y caduca cada pocos segundos.',
           style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 12),
+        // **Cuánto dura cada código.** El docente lo elige antes de abrir la
+        // sesión porque la ventana la fija el servidor al crearla. 45 s por
+        // defecto: con 15 no daba tiempo a proyectarlo.
+        Row(
+          children: [
+            Icon(
+              Icons.timer_outlined,
+              size: 18,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Cada código dura',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(width: 8),
+            DropdownButton<int>(
+              value: _ventanaSeg,
+              underline: const SizedBox.shrink(),
+              items: const [
+                DropdownMenuItem(value: 30, child: Text('30 s')),
+                DropdownMenuItem(value: 45, child: Text('45 s')),
+                DropdownMenuItem(value: 60, child: Text('60 s')),
+                DropdownMenuItem(value: 90, child: Text('90 s')),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => _ventanaSeg = v);
+              },
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         if (_cargando)

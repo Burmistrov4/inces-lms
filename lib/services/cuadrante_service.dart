@@ -327,7 +327,7 @@ class BackendCuadranteGateway implements CuadranteGateway {
                 final Map<String, dynamic> parche = {};
                 if (cambios.cerrado != null) {
                   parche['closed_at'] =
-                      cambios.cerrado! ? DateTime.now().toIso8601String() : null;
+                      cambios.cerrado! ? DateTime.now().toUtc().toIso8601String() : null;
                   parche['is_active'] = !cambios.cerrado!;
                 }
                 if (cambios.nombre != null) parche['name'] = cambios.nombre;
