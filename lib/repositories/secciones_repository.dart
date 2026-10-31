@@ -1,3 +1,4 @@
+import '../core/errors/app_exception.dart';
 import '../core/gateways/secciones_gateway.dart';
 import '../core/result.dart';
 import '../models/seccion.dart';
@@ -63,6 +64,29 @@ class SeccionesRepository {
 
   Future<Result<Seccion>> crearSeccion(Seccion borrador) =>
       Result.guard(() => _gateway.crearSeccion(borrador));
+
+  /// Matricula a un aprendiz en un aula.
+  ///
+  /// Sólo valida lo que no puede saber el servidor —que le lleguen dos ids—. La
+  /// regla de cupo, período y rol vive en la RPC: replicarla aquí daría dos
+  /// verdades que acaban discrepando.
+  Future<Result<String>> matricular({
+    required String seccionId,
+    required String estudianteId,
+  }) {
+    return Result.guard(() async {
+      final seccion = seccionId.trim();
+      final estudiante = estudianteId.trim();
+
+      if (seccion.isEmpty || estudiante.isEmpty) {
+        throw const AppException.validacion(
+          'Falta el aula o el aprendiz.',
+        );
+      }
+
+      return _gateway.matricular(seccion, estudiante);
+    });
+  }
 
   Future<Result<Seccion>> actualizarSeccion(
           String id, CambiosSeccion cambios) =>

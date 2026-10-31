@@ -17,6 +17,14 @@ abstract interface class SeccionesGateway {
   /// Crea una sección. Devuelve la sección recién creada (con `id`).
   Future<Seccion> crearSeccion(Seccion borrador);
 
+  /// Matricula a un aprendiz en el aula (grupo).
+  ///
+  /// Va por `POST /admin/aulas/{id}/matricular` y no por un `insert`: la tabla
+  /// `enrollments` tiene la escritura revocada para `authenticated`, y la RPC
+  /// hace su propia autorización. Es **idempotente**: matricular a quien ya
+  /// está no falla, devuelve el mismo estado.
+  Future<String> matricular(String seccionId, String estudianteId);
+
   /// Archiva, renombra o recapacita una sección. No se puede cambiar
   /// programa, materia ni período (identidad).
   Future<Seccion> actualizarSeccion(String id, CambiosSeccion cambios);

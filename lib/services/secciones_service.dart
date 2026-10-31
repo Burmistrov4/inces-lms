@@ -59,6 +59,24 @@ class BackendSeccionesGateway implements SeccionesGateway {
   }
 
   @override
+  @override
+  Future<String> matricular(String seccionId, String estudianteId) async {
+    final respuesta = await _api.post(
+      '/api/v1/admin/aulas/${Uri.encodeComponent(seccionId)}/matricular',
+      cuerpo: {'estudianteId': estudianteId},
+      token: _tokenSesion,
+    );
+
+    final estado = respuesta['estado'];
+    if (estado is! String || estado.isEmpty) {
+      throw const AppException.validacion(
+        'El servidor no confirmó la matrícula. Vuelve a intentarlo.',
+      );
+    }
+    return estado;
+  }
+
+  @override
   Future<Seccion> crearSeccion(Seccion borrador) async {
     final cuerpo = <String, dynamic>{
       'programaId': borrador.programaId,

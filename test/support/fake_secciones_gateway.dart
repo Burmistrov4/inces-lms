@@ -75,6 +75,19 @@ class FakeSeccionesGateway implements SeccionesGateway {
     return paginaSegunDesplazamiento?.call(desplazamiento, limite) ?? paginaDevuelta;
   }
 
+  final List<(String, String)> matriculasPedidas = [];
+
+  /// Error que lanzará `matricular`, para probar el aula llena o el rol.
+  Object? errorAlMatricular;
+
+  @override
+  Future<String> matricular(String seccionId, String estudianteId) async {
+    matriculasPedidas.add((seccionId, estudianteId));
+    final fallo = errorAlMatricular;
+    if (fallo != null) throw fallo;
+    return 'ENROLLED';
+  }
+
   @override
   Future<Seccion> crearSeccion(Seccion borrador) async {
     llamadas.add('crearSeccion');
