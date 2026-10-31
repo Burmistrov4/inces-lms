@@ -54,6 +54,18 @@ class _DialogoAprendicesState extends State<DialogoAprendices> {
   List<UsuarioAdmin> _resultados = const [];
   bool _cargando = true;
   bool _buscando = false;
+
+  /// Incluir las cuentas de siembra (`@semilla.invalid`).
+  ///
+  /// **Por qué está aquí.** El buscador pedía al servidor sin `incluirDemo`, que
+  /// es el valor por defecto, así que en un centro que aún no tiene aprendices
+  /// reales la lista salía siempre vacía y la pantalla parecía rota. Medido el
+  /// 2026-10-31: los únicos perfiles de estudiante eran de siembra, y ni el
+  /// listado ni la búsqueda mostraban nada.
+  bool _incluirDemo = false;
+
+  /// Ya se pidió algo al servidor: sirve para no decir «no hay» antes de tiempo.
+  bool _consultado = false;
   String? _error;
   String? _aviso;
 
@@ -61,6 +73,9 @@ class _DialogoAprendicesState extends State<DialogoAprendices> {
   void initState() {
     super.initState();
     _cargarMatriculados();
+    // Se listan los primeros aprendices sin escribir nada: una caja de búsqueda
+    // que no responde hasta la segunda letra se lee como un buscador roto.
+    _buscar('');
   }
 
   @override
@@ -89,15 +104,15 @@ class _DialogoAprendicesState extends State<DialogoAprendices> {
 
   Future<void> _buscar(String texto) async {
     final limpio = texto.trim();
-    if (limpio.length < 2) {
-      setState(() => _resultados = const []);
-      return;
-    }
 
     setState(() => _buscando = true);
     final resultado = await _usuarios.listar(
       rol: 'estudiante',
-      busqueda: limpio,
+      // Con una sola letra se consulta igual: el filtro del servidor es `ilike`
+      // y devolver diez coincidencias es mejor que no devolver nada. Con la caja
+      // vacía se listan los primeros, para que se vea que el buscador existe.
+      busqueda: limpio.isNotEmpty ? limpio : null,
+      incluirDemo: _incluirDemo,
       limite: 10,
     );
     if (!mounted) return;
@@ -105,6 +120,7 @@ class _DialogoAprendicesState extends State<DialogoAprendices> {
     resultado.when(
       success: (pagina) => setState(() {
         _buscando = false;
+        _consultado = true;
         // Quien ya está dentro no se ofrece: el servidor lo rechazaría con un
         // 409 y la pantalla estaría proponiendo algo imposible.
         final dentro = _matriculados
@@ -262,6 +278,45 @@ class _DialogoAprendicesState extends State<DialogoAprendices> {
                       : null,
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _incluirDemo
+                            ? 'Mostrando también cuentas de prueba (@semilla)'
+                            : 'Sólo cuentas reales',
+                        style: tema.textTheme.bodySmall?.copyWith(
+                          color: tema.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    Switch.adaptive(
+                      value: _incluirDemo,
+                      onChanged: (v) {
+                        setState(() => _incluirDemo = v);
+                        _buscar(_busquedaCtrl.text);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              // Decir por qué no hay nada es parte del arreglo: antes la caja
+              // simplemente no respondía y parecía rota.
+              if (_consultado && _resultados.isEmpty && !_buscando) ...[
+                const SizedBox(height: 6),
+                Text(
+                  _busquedaCtrl.text.trim().isEmpty
+                      ? (_incluirDemo
+                          ? 'No hay aprendices registrados todavía. Se crean desde «Usuarios y Roles» o con una invitación.'
+                          : 'No hay aprendices reales todavía: las únicas cuentas de estudiante son de prueba. Activa el interruptor de arriba para verlas.')
+                      : 'Ningún aprendiz coincide con «${_busquedaCtrl.text.trim()}».',
+                  style: tema.textTheme.bodySmall?.copyWith(
+                    color: tema.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
               if (_resultados.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 ConstrainedBox(

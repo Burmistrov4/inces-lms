@@ -2,6 +2,27 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.10.3] - 2026-10-31
+### El buscador de aprendices dice lo que pasa
+
+Reportado: «el buscador de aprendices en un aula virtual no funciona, ni siquiera
+lista».
+
+- **No estaba roto: no había a quién listar.** El diálogo buscaba sólo a partir
+  de dos letras —con la caja vacía no pedía nada— y el servidor excluye por
+  defecto las cuentas de siembra (`@semilla.invalid`), que eran **el 100 %** de
+  los perfiles de estudiante del centro. Resultado: la caja no respondía nunca.
+- Ahora el diálogo **lista los primeros diez al abrirse** y consulta desde la
+  primera letra.
+- Cuando no hay resultados lo dice con el motivo, en vez de dejar el hueco: «no
+  hay aprendices reales todavía…» o «ningún aprendiz coincide con «x»».
+- Interruptor **«Mostrando también cuentas de prueba»** para que, mientras el
+  centro no tenga aprendices reales, se pueda comprobar el flujo de matrícula.
+
+El listado vacío de la captura era correcto además por otra razón: esa aula
+(Metalurgia y Materiales) no tiene matrículas. La única sección con matrículas es
+la «SA» del período anterior, con cuatro.
+
 ## [1.10.2] - 2026-10-31
 ### La rejilla PNA vuelve a ver sus propias clases
 
