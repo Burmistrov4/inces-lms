@@ -1,0 +1,9 @@
+test/
+scripts/
+coverage/
+*.md
+.env
+.env.*
+docker-compose*.yml
+vitest.config.ts
+eslint.config.js

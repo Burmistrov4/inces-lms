@@ -348,6 +348,56 @@ nuevo.
 | Techo | free tier generoso | ninguno | **750 h/mes** |
 | Arranque en frío | 1–3 s | no | ~1 min tras 15 min |
 
+## 7 quater. Vercel Hobby: la opción sin tarjeta
+
+**Es la que se usa.** Render agota las 750 horas al mes, Cloud Run y Fly exigen
+tarjeta y las disponibles son prepagadas (`OR_CCR_104`: «No se admiten tarjetas
+prepagadas»). Vercel Hobby es gratis, **no pide tarjeta**, no tiene techo de
+horas y no duerme el servicio.
+
+**No hay reescritura.** `backend/src/vercel.ts` hace lo mismo que `server.ts`
+—cargar el entorno, construir los clientes de Supabase y llamar a
+`construirApp`— y en vez de `app.listen()` entrega cada petición al servidor
+interno de Fastify con `server.emit('request')`. Las ~100 rutas, los hooks, las
+guardias y la RLS quedan intactos.
+
+```bash
+cd backend
+npx vercel link          # vincular a la cuenta (una vez)
+npx vercel --prod        # compila y despliega
+```
+
+### Variables de entorno en el panel de Vercel
+
+Las mismas que en Render, sin `PORT` ni `HOST` (Vercel los pone):
+
+`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
+`CORS_ORIGINS` (con `https://inces-lms.pages.dev`), `FRONTEND_URL`,
+`NODE_ENV=production`, y las de R2 y SMTP si se usan.
+
+### Lo que no funciona aquí, y por qué se acepta
+
+| Limitación | Efecto | Mitigación |
+|---|---|---|
+| **WebSocket** (`/api/v1/asistencia/rt`) | Una función serverless no puede quedarse abierta: el canal no se abre | La pantalla del docente ya cae al GET plano (200 con descripción) y la asistencia sigue por REST; se pierde el empujón en vivo |
+| `@fastify/rate-limit` en memoria | Cada instancia cuenta por su lado: el límite real es más alto | El control de verdad es la RLS de Supabase |
+| Caché de módulos/parámetros | Por instancia y corta | Sólo abarata consultas; no rompe nada |
+| Arranque en frío | ~1 s en la primera petición | Aceptable; el plan Hobby no permite instancias fijas |
+
+### Mancha que hay que mirar antes de crecer
+
+El plan Hobby es **sólo para uso personal no comercial**. Un centro de formación
+público sin ánimo de lucro encaja en el espíritu de la norma, pero si el uso
+crece o alguien cobra por el proyecto, Vercel puede pedir el plan Pro
+(20 $/mes por asiento). Queda escrito aquí para que la decisión no se olvide.
+
+Medido el 2026-10-31 con un banco que imita a `@vercel/node` (cuerpo ya
+parseado en `req.body` y stream consumido): `GET /salud` → 200
+`{"estado":"ok"}`; `POST` con cuerpo inválido → 400 `PETICION_INVALIDA` con
+`detalles` de Zod, o sea que el cuerpo **vuelve al stream** gracias al hook
+`preParsing`; ruta inexistente → 404. Sin ese hook, el POST se queda colgado
+hasta el timeout.
+
 ## 8. Supabase: verificación sin migrar automáticamente
 
 La validación de migraciones en CI no las aplica automáticamente a producción.
