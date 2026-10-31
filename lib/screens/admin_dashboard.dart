@@ -34,6 +34,7 @@ import 'admin/cpanel_explorador_archivos_panel.dart';
 import '../widgets/walkthrough_interactivo.dart';
 import '../widgets/guardia_toque.dart';
 import 'perfil_panel.dart';
+import '../widgets/asistente_brjula.dart';
 
 /// cPanel del Administrador Maestro.
 ///
@@ -350,6 +351,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       onCerrarSesion: _cerrarSesion,
       temaActual: tema?.modo,
       onCambiarTema: tema?.cambiar,
+      asistente: AsistenteBrujula(
+        rol: 'admin',
+        etiquetaRol: 'Administrador',
+        onNavegar: _navegarA,
+      ),
       accionesEncabezado: [
         IconButton(
           tooltip: 'Cursos y Cupos',

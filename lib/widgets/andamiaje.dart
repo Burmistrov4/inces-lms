@@ -116,7 +116,15 @@ class AndamiajeApp extends StatefulWidget {
     this.onCerrarSesion,
     this.temaActual,
     this.onCambiarTema,
+    this.asistente,
   });
+
+  /// Botón flotante de ayuda (Brújula). `null` ⇒ no se muestra.
+  ///
+  /// Va aquí y no en cada dashboard para que **todos** lo tengan en el mismo
+  /// sitio: tres implementaciones distintas acabarían en tres posiciones y tres
+  /// comportamientos.
+  final Widget? asistente;
 
   final List<ItemNavegacion> items;
   final int seleccionado;
@@ -213,6 +221,7 @@ class _AndamiajeAppState extends State<AndamiajeApp> {
 
     return Scaffold(
       key: _scaffoldKey,
+      floatingActionButton: widget.asistente,
       drawer: !menuLateralFijo
           ? Drawer(
               width: IncesTheme.anchoMenu,

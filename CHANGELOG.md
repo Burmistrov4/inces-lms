@@ -2,6 +2,29 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.11.0] - 2026-10-31
+### Brújula: el asistente que te lleva
+
+Botón flotante en **las tres pantallas** (administrador, docente y aprendiz) que
+abre un buscador de tareas y responde en dos frases con un botón de acceso
+directo a la sección exacta.
+
+- **Respuestas escritas, no inventadas.** Cada entrada apunta a una sección que
+  existe de verdad; si no hay coincidencia, Brújula lo dice y sugiere palabras en
+  vez de inventar un módulo. Un asistente que improvisa en una demostración es
+  peor que no tener asistente.
+- **Filtra por perfil**: al aprendiz no se le explica cómo cerrar un período.
+- **No estorba**: botón pequeño, hoja que se cierra con la X, el fondo o
+  arrastrando; 520 px en escritorio y ancho completo en móvil.
+- Cubre crear período, cursos, grupos, asignar clase (incluido el turno
+  nocturno), matricular y dar de baja, invitar docentes, ver inscritos, archivos,
+  tareas y calificar, asistencia y el flujo del aprendiz (código de aula, tareas,
+  notas, inscripción).
+
+Medido: 5/5 pruebas de Brújula (incluida 360 px sin desbordar) y 20/20 de las
+pruebas de móvil y de menú alcanzable, que ahora construyen el andamiaje con el
+botón nuevo.
+
 ## [1.10.3] - 2026-10-31
 ### El buscador de aprendices dice lo que pasa
 

@@ -28,6 +28,7 @@ import 'mis_inscripciones_panel.dart';
 import 'perfil_panel.dart';
 import '../widgets/walkthrough_interactivo.dart';
 import '../widgets/guardia_toque.dart';
+import '../widgets/asistente_brjula.dart';
 
 /// Panel del aspirante y del estudiante.
 ///
@@ -377,6 +378,11 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
       onCerrarSesion: _cerrarSesion,
       temaActual: tema?.modo,
       onCambiarTema: tema?.cambiar,
+      asistente: AsistenteBrujula(
+        rol: 'aspirante',
+        etiquetaRol: 'Aprendiz',
+        onNavegar: _navegarA,
+      ),
       accionesEncabezado: [
         IconButton(
           tooltip: 'Inscribirme en un curso',

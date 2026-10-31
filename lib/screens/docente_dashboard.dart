@@ -17,6 +17,7 @@ import 'mi_horario_panel.dart';
 import 'mis_aulas_panel.dart';
 import '../widgets/walkthrough_interactivo.dart';
 import '../widgets/guardia_toque.dart';
+import '../widgets/asistente_brjula.dart';
 
 /// Panel del docente.
 ///
@@ -207,6 +208,11 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
       onCerrarSesion: _cerrarSesion,
       temaActual: tema?.modo,
       onCambiarTema: tema?.cambiar,
+      asistente: AsistenteBrujula(
+        rol: 'docente',
+        etiquetaRol: 'Docente',
+        onNavegar: _navegarA,
+      ),
       accionesEncabezado: [
         // **Sólo dos atajos, y ninguno duplica el menú.** Aquí había cuatro
         // iconos —Mis aulas, Asistencia, Calificaciones, Mi horario— que
