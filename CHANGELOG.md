@@ -2,6 +2,29 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.7.7] - 2026-10-30
+### Las materias del pensum se pueden editar: horas, nombre y código
+
+Lo que el dueño pidió desde el primer reporte: «no puedo editar las materias
+actuales, sólo crear nuevas... es para editar las horas».
+
+- **Un lápiz por materia** en el detalle del pensum de *Cursos y PNA*. Antes la
+  fila era texto plano (`ALG-I · 72 h`) y no había forma de tocarla.
+- Diálogo con **código, nombre y horas**. Sólo viaja lo que cambió: mandar el
+  nombre sin tocarlo no rompe nada, pero hace creer al registro que hubo una
+  corrección.
+- `PATCH /api/v1/admin/materias/{id}` (backend, en el commit anterior) con la
+  regla del código: si la materia ya tiene entregas calificadas devuelve
+  `409 CODIGO_CON_NOTAS` y **su mensaje se muestra tal cual** — es el servidor
+  quien ve las notas, aquí no se adivina ni se replica la regla.
+
+#### Verificación
+
+- `flutter test` **1060/1060** (5 pruebas nuevas del repositorio) · backend
+  **734/734** · analizador 251 0/0/0.
+- La API sigue suspendida en Render (`503`, `x-render-routing: suspend`), así que
+  el recorrido completo contra producción queda pendiente de que se reactive.
+
 ## [1.7.6] - 2026-10-30
 ### El cuadrante dice por qué no puede, y reintentar reintenta de verdad
 

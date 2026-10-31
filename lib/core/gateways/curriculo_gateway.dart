@@ -47,6 +47,18 @@ abstract interface class CurriculoGateway {
 
   /// Registra una materia en caliente, desde el asistente.
   Future<Materia> crearMateria(EntradaCrearMateria entrada);
+
+  /// Edita una materia del banco. `null` = no tocar ese campo.
+  ///
+  /// El servidor puede rechazar el **código** con `CODIGO_CON_NOTAS` si la
+  /// materia ya tiene entregas calificadas: el código viaja en la planilla y en
+  /// la exportación a HACER. El nombre y las horas no tienen esa restricción.
+  Future<Materia> actualizarMateria(
+    String id, {
+    String? codigo,
+    String? nombre,
+    int? horasAcademicas,
+  });
 }
 
 /// Cuerpo de `POST /api/v1/admin/programas`.

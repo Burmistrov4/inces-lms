@@ -34,6 +34,9 @@ class FakeCurriculoGateway implements CurriculoGateway {
   Object? errorAlListarMaterias;
   Object? errorAlCrearMateria;
 
+  /// Error que lanza la edición de una materia (para probar `CODIGO_CON_NOTAS`).
+  Object? errorAlEditarMateria;
+
   // --- Registro de llamadas -------------------------------------------------
 
   final List<String> llamadas = [];
@@ -42,6 +45,11 @@ class FakeCurriculoGateway implements CurriculoGateway {
   CambiosPrograma? ultimosCambios;
   List<EntradaPensum>? ultimoPensum;
   EntradaCrearMateria? ultimaMateria;
+
+  /// Lo último que se pidió editar: sirve para comprobar que sólo viaja lo que
+  /// cambió y que el código se normaliza a mayúsculas.
+  ({String id, String? codigo, String? nombre, int? horasAcademicas})?
+      ultimaMateriaEditada;
   String? ultimaBusquedaMaterias;
   int? ultimoDesplazamientoMaterias;
 
@@ -137,6 +145,33 @@ class FakeCurriculoGateway implements CurriculoGateway {
     final m = materiaCreada;
     if (m == null) throw StateError('El doble no tiene materiaCreada.');
     return m;
+  }
+
+  @override
+  Future<Materia> actualizarMateria(
+    String id, {
+    String? codigo,
+    String? nombre,
+    int? horasAcademicas,
+  }) async {
+    llamadas.add('actualizarMateria');
+    ultimaMateriaEditada = (
+      id: id,
+      codigo: codigo,
+      nombre: nombre,
+      horasAcademicas: horasAcademicas,
+    );
+    _lanzarSi(errorAlEditarMateria);
+
+    final base = materiaCreada ?? materias.first;
+    return Materia(
+      id: id,
+      codigo: codigo ?? base.codigo,
+      nombre: nombre ?? base.nombre,
+      horasAcademicas: horasAcademicas ?? base.horasAcademicas,
+      creadoEn: base.creadoEn,
+      actualizadoEn: base.actualizadoEn,
+    );
   }
 
   static void _lanzarSi(Object? error) {

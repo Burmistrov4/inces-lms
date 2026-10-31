@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/gateways/curriculo_gateway.dart';
@@ -313,6 +314,22 @@ class _CpanelProgramasPanelState extends State<CpanelProgramasPanel>
         onEditarPensum: () {
           Navigator.of(context).pop();
           _editarPensum(programa);
+        },
+        // **Editar una materia desde el pensum.** Reportado el 2026-10-30: «no
+        // puedo editar las materias actuales, sólo crear nuevas... es para
+        // editar las horas». El sitio natural es aquí, donde el administrador
+        // ya está viendo el pensum con sus horas.
+        onEditarMateria: (materia) async {
+          final guardado = await showDialog<bool>(
+            context: context,
+            builder: (_) => _DialogoEditarMateria(
+              repositorio: _repo,
+              materia: materia,
+            ),
+          );
+          if (guardado == true && context.mounted) {
+            await _verDetalle(programa);
+          }
         },
       ),
     );
@@ -1320,10 +1337,14 @@ class _DialogoDetallePrograma extends StatelessWidget {
   const _DialogoDetallePrograma({
     required this.detalle,
     required this.onEditarPensum,
+    required this.onEditarMateria,
   });
 
   final DetallePrograma detalle;
   final VoidCallback onEditarPensum;
+
+  /// Editar una materia del pensum (horas, nombre y —si se puede— código).
+  final Future<void> Function(MateriaEnPensum materia) onEditarMateria;
 
   @override
   Widget build(BuildContext context) {
@@ -1432,6 +1453,19 @@ class _DialogoDetallePrograma extends StatelessWidget {
                               fontWeight: FontWeight.w400,
                             ),
                           ),
+                          // El lápiz que faltaba: hasta hoy las materias del
+                          // pensum se veían y no se tocaban.
+                          IconButton(
+                            onPressed: () => onEditarMateria(materia),
+                            icon: const Icon(Icons.edit_outlined, size: 16),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32,
+                            ),
+                            tooltip: 'Editar «${materia.nombre}»',
+                          ),
                         ],
                       ),
                     ),
@@ -1450,6 +1484,159 @@ class _DialogoDetallePrograma extends StatelessWidget {
           onPressed: onEditarPensum,
           icon: const Icon(Icons.edit_outlined, size: 17),
           label: const Text('Editar pensum'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Diálogo de edición de una materia del banco.
+///
+/// **Por qué existe.** Hasta el 2026-10-30 una materia sólo se podía crear; el
+/// administrador lo reportó así: «no puedo editar las materias actuales, sólo
+/// crear nuevas... es para editar las horas». El código se manda igual, pero el
+/// servidor lo rechaza con `CODIGO_CON_NOTAS` si la materia ya tiene entregas
+/// calificadas —su mensaje se muestra tal cual, sin reinterpretarlo: es el
+/// servidor quien ve las notas, y aquí no se adivina.
+class _DialogoEditarMateria extends StatefulWidget {
+  const _DialogoEditarMateria({
+    required this.repositorio,
+    required this.materia,
+  });
+
+  final CurriculoRepository repositorio;
+
+  /// El pensum entrega `MateriaEnPensum`: trae el id del banco y las horas que
+  /// el asistente guardó, que es justo lo que aquí se corrige.
+  final MateriaEnPensum materia;
+
+  @override
+  State<_DialogoEditarMateria> createState() => _DialogoEditarMateriaState();
+}
+
+class _DialogoEditarMateriaState extends State<_DialogoEditarMateria> {
+  late final TextEditingController _codigoCtrl =
+      TextEditingController(text: widget.materia.codigo);
+  late final TextEditingController _nombreCtrl =
+      TextEditingController(text: widget.materia.nombre);
+  late final TextEditingController _horasCtrl =
+      TextEditingController(text: '${widget.materia.horasAcademicas}');
+
+  String? _error;
+  bool _guardando = false;
+
+  @override
+  void dispose() {
+    _codigoCtrl.dispose();
+    _nombreCtrl.dispose();
+    _horasCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _guardar() async {
+    if (_guardando) return;
+
+    final horas = int.tryParse(_horasCtrl.text.trim());
+    if (horas == null) {
+      setState(() => _error = 'Las horas tienen que ser un número entero.');
+      return;
+    }
+
+    setState(() {
+      _guardando = true;
+      _error = null;
+    });
+
+    // Sólo viaja lo que cambió: mandar el nombre sin tocarlo no rompe nada, pero
+    // ensucia el registro y hace creer que hubo una corrección.
+    final codigo = _codigoCtrl.text.trim().toUpperCase();
+    final nombre = _nombreCtrl.text.trim();
+
+    final resultado = await widget.repositorio.actualizarMateria(
+      widget.materia.materiaId,
+      codigo: codigo == widget.materia.codigo ? null : codigo,
+      nombre: nombre == widget.materia.nombre ? null : nombre,
+      horasAcademicas: horas == widget.materia.horasAcademicas ? null : horas,
+    );
+
+    if (!mounted) return;
+
+    resultado.when(
+      success: (_) => Navigator.of(context).pop(true),
+      failure: (fallo) => setState(() {
+        _guardando = false;
+        _error = fallo.message;
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Editar materia'),
+      content: SizedBox(
+        width: anchoDialogoSeguro(context, 460),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: _codigoCtrl,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(
+                  labelText: 'Código',
+                  helperText: 'Si la materia ya tiene notas calificadas, '
+                      'el código no se puede cambiar.',
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _nombreCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre',
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _horasCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(
+                  labelText: 'Horas académicas',
+                  helperText: 'Lo que el pensum muestra como «72 h».',
+                  isDense: true,
+                ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _error!,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _guardando ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _guardando ? null : _guardar,
+          child: _guardando
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Guardar'),
         ),
       ],
     );

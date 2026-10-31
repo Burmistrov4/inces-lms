@@ -200,6 +200,54 @@ class CurriculoRepository {
     });
   }
 
+  /// Edita una materia: nombre, horas y —si se puede— código.
+  ///
+  /// La validación de forma vive aquí para que valga igual desde el pensum, el
+  /// asistente o cualquier pantalla futura. La regla del **código con notas** no
+  /// se replica: la decide el servidor, que es quien ve las entregas, y su
+  /// motivo se muestra tal cual —inventar aquí una regla paralela sólo crearía
+  /// dos verdades.
+  Future<Result<Materia>> actualizarMateria(
+    String id, {
+    String? codigo,
+    String? nombre,
+    int? horasAcademicas,
+  }) {
+    return Result.guard(() async {
+      final idLimpio = id.trim();
+      if (idLimpio.isEmpty) {
+        throw const AppException.validacion('Falta el identificador.');
+      }
+
+      final codigoLimpio = codigo?.trim().toUpperCase();
+      final nombreLimpio = nombre?.trim();
+
+      if (codigoLimpio != null && codigoLimpio.isEmpty) {
+        throw const AppException.validacion('El código no puede quedar vacío.');
+      }
+      if (codigoLimpio != null) _validarCodigo(codigoLimpio);
+      if (nombreLimpio != null && nombreLimpio.isEmpty) {
+        throw const AppException.validacion('El nombre no puede quedar vacío.');
+      }
+      if (nombreLimpio != null) _validarNombre(nombreLimpio);
+      if (horasAcademicas != null && horasAcademicas <= 0) {
+        throw const AppException.validacion(
+          'Las horas académicas deben ser mayores que cero.',
+        );
+      }
+      if (codigoLimpio == null && nombreLimpio == null && horasAcademicas == null) {
+        throw const AppException.validacion('Indica al menos un campo que cambiar.');
+      }
+
+      return _gateway.actualizarMateria(
+        idLimpio,
+        codigo: codigoLimpio,
+        nombre: nombreLimpio,
+        horasAcademicas: horasAcademicas,
+      );
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Validaciones
   // ---------------------------------------------------------------------------

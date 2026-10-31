@@ -157,11 +157,31 @@ class BackendCurriculoGateway implements CurriculoGateway {
     );
   }
 
+  @override
+  Future<Materia> actualizarMateria(
+    String id, {
+    String? codigo,
+    String? nombre,
+    int? horasAcademicas,
+  }) async {
+    final cuerpo = <String, dynamic>{};
+    if (codigo != null) cuerpo['codigo'] = codigo;
+    if (nombre != null) cuerpo['nombre'] = nombre;
+    if (horasAcademicas != null) cuerpo['horasAcademicas'] = horasAcademicas;
+
+    final respuesta = await _api.patch(
+      '$_base/materias/${Uri.encodeComponent(id)}',
+      cuerpo: cuerpo,
+      token: _tokenSesion,
+    );
+
+    return Materia.fromJson(
+      respuesta['materia'] as Map<String, dynamic>? ?? const {},
+    );
+  }
+
   /// Un texto de búsqueda en blanco equivale a no filtrar.
   ///
-  /// Se recorta aquí y no en la pantalla para que valga igual desde cualquier
-  /// llamante: un filtro escrito con un espacio al final no encuentra nada y el
-  /// administrador culpa a los datos.
   static String? _limpiar(String? texto) {
     final limpio = texto?.trim();
     return (limpio == null || limpio.isEmpty) ? null : limpio;

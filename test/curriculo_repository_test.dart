@@ -259,6 +259,64 @@ void main() {
     });
   });
 
+  group('actualizarMateria', () {
+    test('manda sólo las horas cuando sólo cambian las horas', () async {
+      gateway.materiaCreada = basesDeDatos();
+
+      await repo.actualizarMateria(
+        idAlgoritmica,
+        horasAcademicas: 96,
+      );
+
+      final enviado = gateway.ultimaMateriaEditada!;
+      expect(enviado.id, idAlgoritmica);
+      expect(enviado.horasAcademicas, 96);
+      // Sin nombre ni código: mandar lo que no cambió hace creer al registro de
+      // auditoría que hubo una corrección.
+      expect(enviado.nombre, isNull);
+      expect(enviado.codigo, isNull);
+    });
+
+    test('normaliza el código a mayúsculas', () async {
+      gateway.materiaCreada = basesDeDatos();
+
+      await repo.actualizarMateria(idAlgoritmica, codigo: 'alg-iii');
+
+      expect(gateway.ultimaMateriaEditada!.codigo, 'ALG-III');
+    });
+
+    test('rechaza horas en cero o negativas sin llamar al servidor', () async {
+      final r = await repo.actualizarMateria(
+        idAlgoritmica,
+        horasAcademicas: 0,
+      );
+
+      expect(r.errorOrNull!.message, contains('mayores que cero'));
+      expect(gateway.llamadas, isEmpty);
+    });
+
+    test('rechaza una edición sin nada que cambiar', () async {
+      final r = await repo.actualizarMateria(idAlgoritmica);
+
+      expect(r.errorOrNull!.message, contains('al menos un campo'));
+      expect(gateway.llamadas, isEmpty);
+    });
+
+    test('propaga el 409 del código con notas tal cual lo dice el servidor',
+        () async {
+      // La regla vive en el servidor porque es quien ve las entregas; aquí no se
+      // reinterpreta ni se inventa una paralela.
+      gateway.errorAlEditarMateria = const AppException.validacion(
+        'No se puede cambiar el código: esta materia ya tiene 3 entrega(s) '
+        'calificada(s).',
+      );
+
+      final r = await repo.actualizarMateria(idAlgoritmica, codigo: 'ALG-III');
+
+      expect(r.errorOrNull!.message, contains('ya tiene'));
+    });
+  });
+
   group('paginación', () {
     test('rechaza un desplazamiento negativo', () async {
       final r = await repo.listarProgramas(desplazamiento: -1);
