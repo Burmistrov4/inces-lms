@@ -1,6 +1,6 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — 2026-10-30 (noche) · v1.7.5 desplegada · **API suspendida**
+## Fotografía operativa vigente — 2026-10-30 (noche) · v1.7.7 desplegada · **API suspendida**
 
 > **BLOQUEO VIGENTE (H1).** `https://inces-lms-api.onrender.com` responde **503**
 > con cabecera `x-render-routing: suspend` y el cuerpo «This service has been
@@ -41,7 +41,20 @@
    Las imágenes de `docs/assets/dashboards/` están regeneradas contra producción.
 5. **Plan de consolidación escrito**: `docs/PLAN_CONSOLIDACION_LMS_2026-10-30.md`
    — qué existe de verdad en la base, qué falta, fases F0–F7 con criterio de
-   aceptación, cómo se verifica cada una y las siete decisiones del dueño.
+   aceptación, cómo se verifica cada una y las siete decisiones del dueño. La
+   fase **F2 (aula virtual = grupo, con código de clase) queda diseñada al
+   detalle**: migración, endpoints, UI, criterios y riesgos, medidos contra el
+   código (`CpanelAulasVirtualesPanel` usa `SeccionesRepository`: el aula virtual
+   **ya es** el grupo, no hay que inventar entidad).
+6. **F1 — las materias se editan** (v1.7.7). `PATCH /admin/materias/{id}` con
+   nombre y horas siempre, y el código sólo mientras la materia no tenga entregas
+   calificadas (`409 CODIGO_CON_NOTAS`, porque el código viaja en la planilla y en
+   la exportación a HACER). En la interfaz, un lápiz por materia en el detalle del
+   pensum. **Medido**: backend 734/734, Flutter **1060/1060**, analizador 251
+   0/0/0, contrato OpenAPI regenerado (D6 en verde).
+7. **El cuadrante no se calla** (v1.7.6): la razón del botón deshabilitado se lee
+   bajo la cabecera —estaba en un `Tooltip`, que en un teléfono no existe— y
+   «Reintentar» recarga períodos **y** rejilla.
 
 ## Fotografía anterior — 2026-10-29 (noche) · v1.7.0 + correcciones
 

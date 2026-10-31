@@ -247,7 +247,74 @@ F1, F2, F3, F4, F6 son independientes).
 
 ---
 
-## 6. Riesgos
+## 7. F2 en detalle — el aula virtual con CRUD y código de clase
+
+Medido antes de diseñar (2026-10-30): **no existe tabla `aulas_virtuales`**. El
+panel `lib/screens/admin/cpanel_aulas_virtuales_panel.dart` se apoya en
+`SeccionesRepository` (grupos) + `AulaGateway`. Es decir, el aula virtual **ya
+es** el grupo (`sections`), que es la decisión que pide el plan: no hay que
+inventar una entidad nueva, hay que darle CRUD y una forma de entrar.
+
+### 7.1 Migración `202610300002_codigo_de_aula.sql`
+
+| Cambio | Por qué |
+|---|---|
+| `sections.join_code varchar(8)` único por período | Es el equivalente al código de clase de Classroom: el alumno entra con seis u ocho caracteres en vez de buscarse en una lista de 40 |
+| índice único `(period_code, join_code)` | Dos grupos del mismo período no pueden compartir código; entre períodos sí, porque un alumno nunca ve ambos |
+| `sections.join_code_rotado_en timestamptz` | Rotar el código es la única «expulsión» que existe sin borrar matrícula: sirve cuando el código se filtra |
+| `enrollments.origen text` (`'INSCRIPCION'`, `'CODIGO'`, `'ADMIN'`) | Saber cómo entró cada alumno es lo que hace auditable el aula; sin eso, una matrícula manual es indistinguible |
+
+Generación: 8 caracteres del alfabeto sin ambigüedad (`ABCDEFGHJKLMNPQRSTUVWXYZ23456789`; fuera `I`, `O`, `0`, `1`) para que se pueda dictar en voz alta. La genera el **servidor** en una función `generar_codigo_aula()`, no el cliente.
+
+### 7.2 Endpoints
+
+| Ruta | Qué hace |
+|---|---|
+| `POST /admin/aulas` | Crea el grupo (programa + materia + período) **y** su código, en una transacción. Debe ser idempotente ante un grupo ya existente: devuelve el que hay (409 → el cliente reusa) |
+| `PATCH /admin/aulas/{id}` | Nombre, docente asignado, archivar |
+| `POST /admin/aulas/{id}/rotar-codigo` | Código nuevo, invalida el anterior |
+| `POST /admin/aulas/{id}/matricular` | Alta individual por `estudianteId` u `origen: CODIGO`. Rechaza duplicado con 409 |
+| `DELETE /admin/aulas/{id}/matricular/{estudianteId}` | Baja lógica (`status = 'RETIRADO'`), nunca borrado físico |
+| `POST /aulas/unirse` (rol aprendiz) | El alumno canjea el código. Devuelve el aula y su matrícula |
+
+**Regla que no se negocia:** matricular no crea usuario. Si la persona no tiene
+cuenta, el flujo es invitación (`teacher_invitations` ya existe como patrón).
+
+### 7.3 UI
+
+- **Panel de aulas (admin):** botón «Nueva aula», columna de estado
+  (activa/archivada), docente, nº de alumnos y **el código con botón de copiar**.
+- **Detalle del aula (admin):** lista de alumnos con origen de la matrícula,
+  botón «Añadir aprendiz» (buscador por cédula/nombre) y «Rotar código».
+- **Aula del alumno:** un campo «Código de aula» en su panel; al canjearlo aparece
+  el aula sin recargar.
+- **Docente:** ve sus aulas con el código para dictarlo en clase.
+
+### 7.4 Criterio de aceptación
+
+1. El admin crea un aula desde el panel y ve su código.
+2. Añade a dos alumnos por buscador y uno por código desde la cuenta del alumno.
+3. El docente ve el aula con sus tres alumnos al entrar.
+4. Rotar el código **no** expulsa a quien ya está dentro, y el código viejo deja
+   de servir (404 con mensaje claro, no un error genérico).
+5. Archivar el aula la saca de los desplegables del cuadrante pero conserva notas
+   y asistencias.
+
+### 7.5 Riesgos
+
+- **Códigos adivinables**: 8 caracteres sobre 32 símbolos son ~10¹² combinaciones;
+  aun así, `POST /aulas/unirse` debe limitar intentos por usuario (5/minuto) o el
+  código es una puerta abierta.
+- **Rotar el código** con alumnos dentro: la rotación no toca `enrollments`; si se
+  quiere expulsar, es una baja explícita.
+- **`enrollments.status`**: hoy la vista `v_exportacion_hacer` filtra
+  `status = 'ENROLLED'`. Una baja con otro estado cambia la planilla — hay que
+  decidirlo con el dueño antes de tocar ese enum.
+
+---
+
+## 8. Riesgos
+
 
 - **Dos períodos con nombres parecidos** confunden cualquier planificación. Se
   resuelve en F0.4 o el resto del trabajo se mide contra datos sucios.
