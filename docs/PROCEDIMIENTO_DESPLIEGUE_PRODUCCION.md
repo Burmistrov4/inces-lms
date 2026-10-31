@@ -363,9 +363,39 @@ guardias y la RLS quedan intactos.
 
 ```bash
 cd backend
-npx vercel link          # vincular a la cuenta (una vez)
-npx vercel --prod        # compila y despliega
+vercel link --yes --project inces-lms-api   # una vez
+vercel env add <NOMBRE> production          # una por variable
+vercel --prod
 ```
+
+**URL de producción:** `https://inces-lms-api.vercel.app`
+
+### La trampa que costó cinco despliegues
+
+`vercel link` **detecta Fastify** en `package.json` y crea el proyecto con
+`framework: "fastify"` y `outputDirectory: "public"` **en los ajustes del
+servidor**, que mandan sobre `vercel.json`. Con ese preset el build busca un
+entrypoint de servidor (`app|index|server.js`) dentro de `public/` y falla con
+`No entrypoint found in output directory`, ignorando lo que diga el archivo.
+
+Ni `"framework": "other"` ni `"framework": ""` se aceptan por `vercel.json`
+(enum cerrado). La salida es limpiar los ajustes del proyecto por API:
+
+```bash
+curl -X PATCH "https://api.vercel.com/v9/projects/<projectId>?teamId=<teamId>" \
+  -H "Authorization: Bearer <token>" -H "content-type: application/json" \
+  -d '{"framework":null,"outputDirectory":null,"buildCommand":null,"installCommand":null}'
+```
+
+Después basta con `outputDirectory: "public"` y un `public/index.html`
+cualquiera: Vercel exige un directorio de salida aunque sólo se sirvan
+funciones. El `tsc` se ejecuta en `postinstall`, no en `buildCommand`.
+
+**Falta `CLOUDFLARE_ACCOUNT_ID` y la API no arranca.** `crearAlmacenamiento`
+exige las cuatro variables de R2 o ninguna, así que sin la cuenta de Cloudflare
+el proceso muere en el arranque con `Configuración de R2 incompleta`. Se ve en
+`vercel logs <url> --json`, no en el navegador: el cliente sólo recibe un 500
+`ARRANQUE_FALLIDO`.
 
 ### Variables de entorno en el panel de Vercel
 

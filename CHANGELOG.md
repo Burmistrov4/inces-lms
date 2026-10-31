@@ -2,6 +2,34 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.9.0] - 2026-10-31
+### La API deja de suspenderse y el aula tiene lista de aprendices
+
+**La API se mudó a Vercel.** Render agota sus 750 horas al mes (medido el
+2026-10-30: `503` con `x-render-routing: suspend`), y Cloud Run, Fly y Google
+Cloud rechazaron las tarjetas prepagadas del centro (`OR_CCR_104`: «No se
+admiten tarjetas prepagadas»). Vercel Hobby es gratis, no pide tarjeta, no tiene
+techo de horas y no duerme el servicio.
+
+- **No hubo reescritura**: `backend/src/vercel.ts` hace lo mismo que `server.ts`
+  —cargar el entorno, construir los clientes de Supabase y llamar a
+  `construirApp`— y entrega cada petición con `server.emit('request')` en vez de
+  `app.listen()`. Las rutas, los hooks, las guardias y la RLS quedan igual.
+- **El detalle que habría fallado en silencio**: Vercel entrega el cuerpo ya
+  parseado en `req.body`, así que el stream que Fastify espera leer llega vacío
+  y la petición se cuelga hasta el timeout —el mismo síntoma que el «No pudimos
+  guardar la información» del cierre de período—. Un hook `preParsing` lo
+  devuelve al stream.
+- **Se pierde el WebSocket de asistencia**: una función serverless no puede
+  mantener el canal abierto. La pantalla del docente cae al GET plano que ya
+  existía y la asistencia sigue funcionando por REST.
+
+**El aula tiene lista de aprendices.** Nuevo diálogo por aula que muestra quién
+está, busca por nombre, correo o cédula para matricular, y da de baja con motivo
+obligatorio. Quien ya está dentro no aparece en la búsqueda —el servidor lo
+rechazaría— y los dados de baja se listan en gris: el expediente y la planilla se
+conservan, porque una baja cambia el estado, no borra nada.
+
 ## [1.8.0] - 2026-10-30
 ### El aprendiz entra al aula con el código que dicta el docente
 
