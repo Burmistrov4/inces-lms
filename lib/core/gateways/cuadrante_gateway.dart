@@ -351,6 +351,7 @@ class EntradaCrearClase {
 /// Cambios de una clase. Mover `dia` o `bloque` es un traslado.
 class CambiosClase {
   const CambiosClase({
+    this.seccionId,
     this.docenteId,
     this.aulaId,
     this.dia,
@@ -358,6 +359,14 @@ class CambiosClase {
     this.activa,
   });
 
+  /// Aula virtual (el grupo) a la que pertenece la clase.
+  ///
+  /// **Editable a propósito.** Una clase se asigna muchas veces con prisa y el
+  /// grupo se elige mal; hasta el 2026-10-31 el diálogo ocultaba este campo al
+  /// editar, así que la única salida era borrar la clase y volver a crearla. El
+  /// `PATCH` ya aceptaba `seccionId`, así que era un hueco de la pantalla, no del
+  /// contrato.
+  final String? seccionId;
   final String? docenteId;
   final String? aulaId;
   final int? dia;
@@ -365,10 +374,11 @@ class CambiosClase {
   final bool? activa;
 
   bool get vacio =>
-      docenteId == null && aulaId == null && dia == null && bloque == null &&
-      activa == null;
+      seccionId == null && docenteId == null && aulaId == null && dia == null &&
+      bloque == null && activa == null;
 
   Map<String, dynamic> toJson() => {
+        if (seccionId != null) 'seccionId': seccionId,
         if (docenteId != null) 'docenteId': docenteId,
         if (aulaId != null) 'aulaId': aulaId,
         if (dia != null) 'dia': dia,

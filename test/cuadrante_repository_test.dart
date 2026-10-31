@@ -290,7 +290,7 @@ void main() {
       expect(gateway.llamadas, isEmpty);
     });
 
-    test('crear rechaza el domingo y el bloque 13', () async {
+    test('crear rechaza el domingo y el bloque 18', () async {
       final domingo = await repo.crearGuardia(
         const EntradaCrearGuardia(
           docenteId: docente,
@@ -302,16 +302,18 @@ void main() {
       );
       expect(falloDe(domingo), contains('lunes y el sábado'));
 
-      final bloque13 = await repo.crearGuardia(
+      // El 13 dejó de ser inválido con el turno nocturno (2026-10-31): el techo
+      // pasó a 17, así que el primero que se sale es el 18.
+      final bloque18 = await repo.crearGuardia(
         const EntradaCrearGuardia(
           docenteId: docente,
           aulaId: aula,
           periodo: '2026-1',
           dia: 1,
-          bloque: 13,
+          bloque: 18,
         ),
       );
-      expect(falloDe(bloque13), contains('entre 1 y 12'));
+      expect(falloDe(bloque18), contains('entre 1 y 17'));
 
       expect(gateway.llamadas, isEmpty);
     });

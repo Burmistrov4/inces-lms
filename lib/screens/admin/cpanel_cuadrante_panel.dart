@@ -794,6 +794,12 @@ class _DialogoClaseState extends State<_DialogoClase> {
         ? await widget.repo.actualizarClase(
             widget.clase!.id,
             CambiosClase(
+              // El aula virtual se puede corregir sin borrar la clase: antes el
+              // diálogo ocultaba el campo al editar y la única salida era
+              // recrearla. Sólo viaja si de verdad cambió.
+              seccionId: _seccionId != widget.clase!.seccionId
+                  ? _seccionId
+                  : null,
               aulaId: _aulaId != widget.clase!.aulaId ? _aulaId : null,
               docenteId:
                   _docenteId != widget.clase!.docenteId ? _docenteId : null,
@@ -1066,6 +1072,27 @@ class _DialogoClaseState extends State<_DialogoClase> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (_esEdicion) ...[
+                _Desplegable<String>(
+                  etiqueta: 'Aula virtual',
+                  ancho: double.infinity,
+                  valor: _seccionId,
+                  opciones: [
+                    for (final entrada in _secciones.entries)
+                      DropdownMenuItem(
+                        value: entrada.key,
+                        child: Text(
+                          entrada.value,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                  onChanged: (v) => setState(
+                    () => _seccionId = (v == null || v.isEmpty) ? null : v,
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               if (!_esEdicion) ...[
                 _Desplegable<String>(
                   // **Primero lo que hay, y se llama por su nombre.** Reportado

@@ -18,7 +18,7 @@ import 'package:inces_lms_app/models/cuadrante.dart';
 /// distintos y cada uno necesita su propia vigilancia.
 void main() {
   group('turnos y bloques', () {
-    test('el turno de un bloque sigue la frontera, para los doce bloques', () {
+    test('el turno de un bloque sigue la frontera, para los diecisiete', () {
       for (var bloque = 1; bloque <= bloquesDeManana; bloque++) {
         expect(
           turnoDeBloque(bloque),
@@ -27,7 +27,7 @@ void main() {
         );
       }
       for (var bloque = bloquesDeManana + 1;
-          bloque <= bloqueMaximo;
+          bloque <= ultimoBloqueTarde;
           bloque++) {
         expect(
           turnoDeBloque(bloque),
@@ -35,12 +35,22 @@ void main() {
           reason: 'el bloque $bloque es de la tarde',
         );
       }
+      for (var bloque = ultimoBloqueTarde + 1;
+          bloque <= bloqueMaximo;
+          bloque++) {
+        expect(
+          turnoDeBloque(bloque),
+          Turno.noche,
+          reason: 'el bloque $bloque es de la noche',
+        );
+      }
     });
 
-    test('los bloques de los dos turnos cubren el día sin huecos ni solapes', () {
+    test('los bloques de los tres turnos cubren el día sin huecos ni solapes', () {
       final todos = [
         ...bloquesDelTurno(Turno.manana),
         ...bloquesDelTurno(Turno.tarde),
+        ...bloquesDelTurno(Turno.noche),
       ];
 
       // Cada bloque aparece exactamente una vez, y entre los dos turnos cubren
@@ -65,7 +75,9 @@ void main() {
     // Los valores que se comprueban, leídos del SQL y no escritos aquí.
     late int corteEnSql;
     late String mananaEnSql;
+    late int ultimoTardeEnSql;
     late String tardeEnSql;
+    late String nocheEnSql;
     late Map<int, String> diasEnSql;
     late List<int> diasMaximosEnSql;
     late List<int> bloquesMaximosEnSql;
@@ -75,17 +87,21 @@ void main() {
 
       // `turno_de_bloque`: la frontera y los dos nombres de turno.
       final turno = _cuerpoDeFuncion(sql, 'turno_de_bloque');
-      final corte = RegExp(
-        r"p_bloque\s*<=\s*(\d+)\s+then\s+'([^']+)'\s+else\s+'([^']+)'",
-      ).firstMatch(turno);
+      // Tres tramos: dos `when` y un `else` (la noche).
+      final cortes = RegExp(
+        r"p_bloque\s*<=\s*(\d+)\s+then\s+'([^']+)'",
+      ).allMatches(turno).toList();
+      final porDefecto = RegExp(r"else\s+'([^']+)'").firstMatch(turno);
 
-      if (corte == null) {
-        fail('No se encontró el corte de `turno_de_bloque` en la migración.');
+      if (cortes.length < 2 || porDefecto == null) {
+        fail('`turno_de_bloque` debería tener dos cortes y un turno por defecto.');
       }
 
-      corteEnSql = int.parse(corte.group(1)!);
-      mananaEnSql = corte.group(2)!;
-      tardeEnSql = corte.group(3)!;
+      corteEnSql = int.parse(cortes[0].group(1)!);
+      mananaEnSql = cortes[0].group(2)!;
+      ultimoTardeEnSql = int.parse(cortes[1].group(1)!);
+      tardeEnSql = cortes[1].group(2)!;
+      nocheEnSql = porDefecto.group(1)!;
 
       // `dia_legible`: los seis nombres.
       final dia = _cuerpoDeFuncion(sql, 'dia_legible');
@@ -132,7 +148,9 @@ void main() {
         reason: 'la frontera de turnos se movió en la base y no en Dart',
       );
       expect(turnoDeBloque(1).valorApi, mananaEnSql);
-      expect(turnoDeBloque(bloqueMaximo).valorApi, tardeEnSql);
+      // El techo del día ya no es «tarde»: con el turno nocturno, el bloque 17
+      // pertenece a NOCHE, que es el `else` de la función SQL.
+      expect(turnoDeBloque(bloqueMaximo).valorApi, nocheEnSql);
     });
 
     test('los días son los mismos que los de la base, y en el mismo orden', () {
@@ -153,9 +171,15 @@ void main() {
       for (final maximo in diasMaximosEnSql) {
         expect(diaMaximo, maximo, reason: 'el máximo de día no coincide');
       }
-      for (final maximo in bloquesMaximosEnSql) {
-        expect(bloqueMaximo, maximo, reason: 'el máximo de bloque no coincide');
-      }
+      // **Manda el último `check` escrito**, no todos: las migraciones se leen
+      // juntas, y la del turno nocturno reemplaza el techo de 12 por el de 17.
+      // Lo que no puede pasar es que la base siga aceptando menos bloques que
+      // Dart: entonces el backend ofrecería un bloque que la tabla rechaza.
+      expect(
+        bloquesMaximosEnSql.last,
+        bloqueMaximo,
+        reason: 'el techo vigente de bloque no coincide',
+      );
     });
 
     test('las dos tablas del cuadrante usan el mismo rango', () {
@@ -163,7 +187,13 @@ void main() {
       // válido en una y rechazado en la otra, y el chequeo de colisiones
       // compararía rangos distintos.
       expect(diasMaximosEnSql.toSet(), hasLength(1));
-      expect(bloquesMaximosEnSql.toSet(), hasLength(1));
+      // Los dos últimos `check` son los de las dos tablas tras la última
+      // migración que los tocó: tienen que decir lo mismo.
+      expect(
+        bloquesMaximosEnSql.reversed.take(2).toSet(),
+        hasLength(1),
+        reason: 'las dos tablas del cuadrante se separaron de techo',
+      );
     });
   });
 
@@ -372,20 +402,38 @@ File _archivoMigracion() {
   );
 }
 
-String _leerMigracion() => _archivoMigracion().readAsStringSync();
+/// Todas las migraciones, en orden de aplicación, concatenadas.
+///
+/// **Por qué no sólo la de M3.** La frontera de turnos y los techos de día y
+/// bloque se definieron en `202609180001_mod3_cuadrante_aulas.sql`, pero
+/// `202610310001_turno_nocturno` los cambió (bloques 13–17). Leyendo un solo
+/// archivo, este espejo se quedaba verde sobre una definición que la base ya no
+/// usa, que es justo lo que existe para impedir.
+String _leerMigracion() {
+  final dir = _archivoMigracion().parent;
+  final archivos = dir
+      .listSync()
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.sql'))
+      .toList()
+    ..sort((a, b) => a.path.compareTo(b.path));
+  return archivos.map((f) => f.readAsStringSync()).join('\n');
+}
 
 /// Extrae el cuerpo de una función `create or replace function public.X`.
 String _cuerpoDeFuncion(String sql, String nombre) {
+  // El delimitador puede ser `$$` o `$function$`: Postgres acepta ambos y las
+  // migraciones usan los dos. Se toma **la última** definición, que es la vigente.
   final patron = RegExp(
-    'create or replace function public\\.$nombre\\b[\\s\\S]*?\\\$\\\$'
-    '([\\s\\S]*?)\\\$\\\$',
+    'create or replace function public\\.$nombre\\b[\\s\\S]*?'
+    '\\\$(\\w*)\\\$([\\s\\S]*?)\\\$\\1\\\$',
     caseSensitive: false,
   );
-  final coincidencia = patron.firstMatch(sql);
+  final cuerpos = patron.allMatches(sql).map((m) => m.group(2) ?? '').toList();
 
-  if (coincidencia == null) {
-    fail('No se encontró la función $nombre en la migración de M3.');
+  if (cuerpos.isEmpty) {
+    fail('No se encontró la función $nombre en supabase/migrations.');
   }
 
-  return coincidencia.group(1) ?? '';
+  return cuerpos.last;
 }

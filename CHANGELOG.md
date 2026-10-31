@@ -2,6 +2,24 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.10.1] - 2026-10-31
+### El aula virtual de una clase se corrige sin borrarla
+
+Reportado junto al turno nocturno: «espero que la asignación de aulas virtuales
+en cuadrante sea editable luego de asignar una clase».
+
+- El `PATCH /admin/clases/{id}` **ya aceptaba** `seccionId`; lo que faltaba era la
+  pantalla: el diálogo ocultaba el selector cuando se editaba, así que la única
+  salida era borrar la clase y volver a crearla.
+- `CambiosClase` gana `seccionId` y el diálogo muestra el aula virtual en modo
+  edición. Sólo viaja si de verdad cambió, para no mandar un `PATCH` que no
+  cambia nada.
+
+El espacio físico sigue siendo opcional, y lo era desde antes: lo que no era
+opcional es el **aula virtual**, porque `schedule_slots.section_id` es
+`not null` en la base. Hacerla opcional de verdad es una migración con cambio de
+vistas, no un checkbox; queda anotado como siguiente paso.
+
 ## [1.10.0] - 2026-10-31
 ### Turno nocturno: bloques 13 a 17
 
