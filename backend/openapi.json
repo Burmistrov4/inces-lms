@@ -2088,6 +2088,13 @@
             "type": "string",
             "description": "Identificador corto dentro del lapso (\"SA\", \"SOLD-B\"), de hasta 24 caracteres. El nombre largo de la materia vive en `subjects.name`."
           },
+          "codigoAula": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Código de entrada al aula virtual (F2), 8 caracteres sin letras ni dígitos ambiguos (sin I, O, 0 ni 1) porque se dicta en clase. Lo genera la base en `generar_codigo_aula()` y es único por período. `null` sólo en una fila que la migración no alcanzó."
+          },
           "cupoMaximo": {
             "type": [
               "integer",
@@ -2112,6 +2119,7 @@
           "materiaId",
           "periodo",
           "nombre",
+          "codigoAula",
           "cupoMaximo",
           "activa",
           "creadoEn",

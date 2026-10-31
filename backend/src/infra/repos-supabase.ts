@@ -575,6 +575,7 @@ function aSeccion(fila: Fila): Seccion {
     materiaId: textoObligatorio(fila.subject_id),
     periodo: textoObligatorio(fila.period_code),
     nombre: textoObligatorio(fila.name),
+    codigoAula: fila.join_code == null ? null : textoObligatorio(fila.join_code),
     // `null` y `0` significan cosas distintas y la diferencia se conserva:
     // `null` cae al cupo global, `0` es una sección que no admite a nadie.
     cupoMaximo:
@@ -1106,7 +1107,7 @@ const COLUMNAS_DOCENTE_RESUMEN = 'id,nombres,apellidos,email';
 // --- M4 ---------------------------------------------------------------------
 
 const COLUMNAS_SECCION =
-  'id,program_id,subject_id,period_code,name,max_capacity,is_active,created_at,updated_at';
+  'id,program_id,subject_id,period_code,name,join_code,max_capacity,is_active,created_at,updated_at';
 
 /**
  * Los nombres que `resolverGrupo` prueba, en orden.

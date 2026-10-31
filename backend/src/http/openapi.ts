@@ -1197,6 +1197,10 @@ const Seccion = z
       description:
         'Identificador corto dentro del lapso ("SA", "SOLD-B"), de hasta 24 caracteres. El nombre largo de la materia vive en `subjects.name`.',
     }),
+    codigoAula: z.string().nullable().openapi({
+      description:
+        'Código de entrada al aula virtual (F2), 8 caracteres sin letras ni dígitos ambiguos (sin I, O, 0 ni 1) porque se dicta en clase. Lo genera la base en `generar_codigo_aula()` y es único por período. `null` sólo en una fila que la migración no alcanzó.',
+    }),
     cupoMaximo: z.number().int().nullable().openapi({
       description:
         'Cupo declarado. `null` = usa el global del centro (`cupo_maximo_por_seccion`). `0` = sección sin cupo, y NO es lo mismo: sólo `null` cae al global.',

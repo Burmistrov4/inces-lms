@@ -535,6 +535,15 @@ export interface Seccion {
   periodo: string;
   /** Nombre corto dentro del lapso ('SA', 'SC'). */
   nombre: string;
+
+  /**
+   * Código de entrada al aula virtual (F2). Lo dicta el docente en clase.
+   *
+   * `null` sólo en una fila que la migración no alcanzó; toda sección nueva nace
+   * con uno. Se genera en la base (`generar_codigo_aula`), no aquí: dos peticiones
+   * simultáneas desde la API podrían repartir el mismo código.
+   */
+  codigoAula: string | null;
   /**
    * Cupo declarado de la sección, o `null` para «usa el global del centro».
    *

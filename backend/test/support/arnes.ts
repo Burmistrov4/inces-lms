@@ -512,6 +512,12 @@ export interface SeccionFalsa {
   periodo: string;
   /** Identificador corto dentro del período ('SA', 'SC'). */
   nombre: string;
+
+  /**
+   * Código de entrada al aula. Opcional porque las secciones sembradas por las
+   * pruebas anteriores a F2 no lo declaran; las que se crean por la ruta sí.
+   */
+  codigoAula?: string | null;
   /**
    * Cupo declarado de la sección, o `null` para «usa el global del centro».
    *
@@ -2961,6 +2967,7 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
     materiaId: fila.materiaId,
     periodo: fila.periodo,
     nombre: fila.nombre,
+    codigoAula: fila.codigoAula ?? null,
     cupoMaximo: fila.cupoMaximo ?? null,
     activa: fila.activa ?? true,
     creadoEn: new Date(0).toISOString(),
@@ -3079,6 +3086,16 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
         periodo: entrada.periodo,
         nombre: entrada.nombre,
         cupoMaximo: entrada.cupoMaximo,
+        // Igual que la base: toda sección nace con código de aula, y del mismo
+        // alfabeto sin letras ni dígitos ambiguos —si el doble usara otro, la
+        // prueba del contrato no probaría el contrato—.
+        codigoAula: Array.from(
+          { length: 8 },
+          (_, i) =>
+            'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[
+              (secuenciaSeccion * 7 + i * 13) % 32
+            ],
+        ).join(''),
         activa: true,
       };
 

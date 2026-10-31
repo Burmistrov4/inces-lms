@@ -268,6 +268,27 @@ describe('crear una sección', () => {
     expect(respuesta.json().seccion.nombre).toBe('SOLD-B');
   });
 
+  it('toda sección nueva nace con un código de aula de 8 caracteres', async () => {
+    // F2.1: el código es la puerta de entrada del alumno. Nace en la base, no en
+    // la interfaz, así que lo que se comprueba aquí es que el contrato lo
+    // devuelve —sin él, el panel no tiene nada que dictar en clase—.
+    const arnes = crearArnés();
+    app = arnes.app;
+
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/secciones',
+      headers: conToken(TOKEN_ADMIN),
+      payload: { ...NUEVA, nombre: 'AULA-1' },
+    });
+
+    expect(respuesta.statusCode).toBe(201);
+    const codigo = respuesta.json().seccion.codigoAula as string;
+    expect(codigo).toHaveLength(8);
+    // Sin letras ni dígitos que se confunden al dictarlos.
+    expect(codigo).not.toMatch(/[IO01]/);
+  });
+
   it('rechaza un nombre de más de 24 caracteres', async () => {
     const arnes = crearArnés();
     app = arnes.app;
