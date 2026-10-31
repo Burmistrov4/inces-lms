@@ -268,14 +268,29 @@ Generación: 8 caracteres del alfabeto sin ambigüedad (`ABCDEFGHJKLMNPQRSTUVWXY
 
 ### 7.2 Endpoints
 
+> **Hallazgo que manda (medido 2026-10-30).** La tabla `enrollments` tiene
+> `INSERT`, `UPDATE`, `DELETE` y `TRUNCATE` **revocados** para `anon` y
+> `authenticated` (R-23). Todas las escrituras de matrícula pasan por RPC
+> `security definer` que hacen su propia autorización con `auth.uid()`
+> (`solicitar_inscripcion`, `aceptar_cupo`, `renunciar_cupo`,
+> `reincorporar_inscripcion`, `promover_siguiente`).
+>
+> Consecuencia: **`matricular` no puede ser una ruta que haga `insert`**. Un
+> `POST /admin/aulas/{id}/matricular` escrito así devuelve `42501` contra la base
+> real y pasa las pruebas del armés —el clásico verde que miente—. Hace falta una
+> RPC nueva, `matricular_por_administrador(p_student_id, p_section_id, p_origen)`,
+> `security definer` y con su propia comprobación de rol, en una migración. Las
+> RPC existentes no sirven: autorizan al **llamante** como alumno, y aquí quien
+> llama es el administrador matriculando a un tercero.
+
 | Ruta | Qué hace |
 |---|---|
 | `POST /admin/aulas` | Crea el grupo (programa + materia + período) **y** su código, en una transacción. Debe ser idempotente ante un grupo ya existente: devuelve el que hay (409 → el cliente reusa) |
 | `PATCH /admin/aulas/{id}` | Nombre, docente asignado, archivar |
 | `POST /admin/aulas/{id}/rotar-codigo` | Código nuevo, invalida el anterior |
-| `POST /admin/aulas/{id}/matricular` | Alta individual por `estudianteId` u `origen: CODIGO`. Rechaza duplicado con 409 |
-| `DELETE /admin/aulas/{id}/matricular/{estudianteId}` | Baja lógica (`status = 'RETIRADO'`), nunca borrado físico |
-| `POST /aulas/unirse` (rol aprendiz) | El alumno canjea el código. Devuelve el aula y su matrícula |
+| `POST /admin/aulas/{id}/matricular` | Alta individual. **Requiere la RPC nueva** del aviso de arriba, no un `insert` |
+| `DELETE /admin/aulas/{id}/matricular/{estudianteId}` | Baja lógica (`status = 'RETIRADO'`), nunca borrado físico — y también por RPC, por la misma razón |
+| `POST /aulas/unirse` (rol aprendiz) | El alumno canjea el código. Devuelve el aula y su matrícula. Va por RPC `security definer` con límite de intentos |
 
 **Regla que no se negocia:** matricular no crea usuario. Si la persona no tiene
 cuenta, el flujo es invitación (`teacher_invitations` ya existe como patrón).
