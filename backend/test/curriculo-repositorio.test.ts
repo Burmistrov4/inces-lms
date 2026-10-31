@@ -289,7 +289,8 @@ describe('la búsqueda se escapa para PostgREST', () => {
       expect(filtro).toMatchObject({
         metodo: 'or',
         tabla: 'programs',
-        valor: 'code.ilike."o,o",name.ilike."o,o"',
+        // Con comodines alrededor: la búsqueda es «contiene», no «es igual».
+      valor: 'code.ilike."%o,o%",name.ilike."%o,o%"',
       });
       expect(filtro.valor.startsWith('(')).toBe(false);
     }
@@ -306,7 +307,9 @@ describe('la búsqueda se escapa para PostgREST', () => {
       desplazamiento: 0,
     });
 
-    expect(filtros[0]?.valor).toBe('code.ilike."o""brien",name.ilike."o""brien"');
+    expect(filtros[0]?.valor).toBe(
+      'code.ilike."%o""brien%",name.ilike."%o""brien%"',
+    );
   });
 });
 

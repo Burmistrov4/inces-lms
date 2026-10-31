@@ -1219,7 +1219,20 @@ const COLUMNAS_PERFIL = 'id, email, cedula, nombres, apellidos, rol, active';
  * paréntesis: los tres responden 200 en vez de romper la sintaxis.
  */
 function filtroIlike(columnas: readonly string[], texto: string): string {
-  const literal = `"${texto.replaceAll('"', '""')}"`;
+  // **Con comodines alrededor, o no busca «contiene».** Medido el 2026-10-31:
+  // escribir «zeo» en el buscador de usuarios no encontraba
+  // «usezeoworks223@protonmail.com», porque `ilike 'zeo'` sólo casa con el valor
+  // exacto. Lo que el usuario espera —y lo que hace cualquier buscador— es
+  // encontrar el pedazo dentro del dato.
+  //
+  // `%` y `_` son comodines de ILIKE, así que se escapan: sin esto, escribir
+  // «50%» devolvería a todo el mundo y «a_b» casaría con «a1b».
+  const escapado = texto
+    .replaceAll('\\', '\\\\')
+    .replaceAll('%', '\\%')
+    .replaceAll('_', '\\_')
+    .replaceAll('"', '""');
+  const literal = `"%${escapado}%"`;
   return columnas.map((columna) => `${columna}.ilike.${literal}`).join(',');
 }
 
