@@ -42,10 +42,11 @@ const RUTAS_ADMIN = [
   { method: 'PATCH' as const, url: `/api/v1/admin/programas/${ID_PROGRAMA_SISTEMAS}/pensum` },
   { method: 'GET' as const, url: '/api/v1/admin/materias' },
   { method: 'POST' as const, url: '/api/v1/admin/materias' },
+  { method: 'PATCH' as const, url: `/api/v1/admin/materias/${ID_MATERIA_ALGORITMICA}` },
 ];
 
 describe('control de acceso a las rutas de currículo', () => {
-  it('exige sesión en las siete', async () => {
+  it('exige sesión en todas', async () => {
     const arnés = crearArnés();
     app = arnés.app;
 
@@ -649,6 +650,93 @@ describe('PATCH /api/v1/admin/programas/:id/pensum', () => {
 });
 
 describe('banco de materias', () => {
+  it('edita las horas académicas, que es lo que faltaba', async () => {
+    // Reportado el 2026-10-30: «no puedo editar las materias actuales, sólo
+    // crear nuevas... es para editar las horas».
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/materias/${ID_MATERIA_ALGORITMICA}`,
+      headers: conToken(TOKEN_ADMIN),
+      payload: { horasAcademicas: 96 },
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    expect(respuesta.json().materia).toMatchObject({
+      id: ID_MATERIA_ALGORITMICA,
+      horasAcademicas: 96,
+      // Lo que no se manda no se toca.
+      codigo: 'ALG-I',
+    });
+  });
+
+  it('permite corregir el nombre sin tocar el resto', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/materias/${ID_MATERIA_ALGORITMICA}`,
+      headers: conToken(TOKEN_ADMIN),
+      payload: { nombre: 'Algoritmos y Estructuras de Datos' },
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    expect(respuesta.json().materia.nombre).toBe(
+      'Algoritmos y Estructuras de Datos',
+    );
+  });
+
+  it('rechaza cambiar el código de una materia que ya tiene notas', async () => {
+    // El `code` viaja en la planilla y en la exportación a HACER: cambiarlo con
+    // notas emitidas deja dos documentos oficiales que no cuadran.
+    const arnés = crearArnés({
+      entregasCalificadasPorMateria: { [ID_MATERIA_ALGORITMICA]: 3 },
+    });
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/materias/${ID_MATERIA_ALGORITMICA}`,
+      headers: conToken(TOKEN_ADMIN),
+      payload: { codigo: 'ALG-II' },
+    });
+
+    expect(respuesta.statusCode).toBe(409);
+    expect(respuesta.json().error.codigo).toBe('CODIGO_CON_NOTAS');
+  });
+
+  it('sí deja cambiar el código cuando la materia no tiene notas', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/materias/${ID_MATERIA_ALGORITMICA}`,
+      headers: conToken(TOKEN_ADMIN),
+      payload: { codigo: 'ALG-II' },
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    expect(respuesta.json().materia.codigo).toBe('ALG-II');
+  });
+
+  it('rechaza un cuerpo sin nada que cambiar', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/admin/materias/${ID_MATERIA_ALGORITMICA}`,
+      headers: conToken(TOKEN_ADMIN),
+      payload: {},
+    });
+
+    expect(respuesta.statusCode).toBe(400);
+  });
+
   it('lista, busca y pagina', async () => {
     const arnés = crearArnés();
     app = arnés.app;

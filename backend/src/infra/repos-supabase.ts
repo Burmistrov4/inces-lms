@@ -15,6 +15,7 @@ import type {
   EntradaCrearAula,
   EntradaCrearClase,
   EntradaCrearGuardia,
+  CambiosMateria,
   EntradaCrearMateria,
   EntradaCrearPeriodo,
   EntradaCrearPrograma,
@@ -2187,6 +2188,73 @@ class CurriculoSupabase implements PuertaCurriculo {
 
     if (respuesta.error) throw this.traducirEscritura(respuesta.error, 'crear materia');
     return aMateria(respuesta.data as Fila);
+  }
+
+  async actualizarMateria(id: string, cambios: CambiosMateria): Promise<Materia> {
+    const parche: Record<string, unknown> = {};
+    if (cambios.codigo !== undefined) parche.code = cambios.codigo;
+    if (cambios.nombre !== undefined) parche.name = cambios.nombre;
+    if (cambios.horasAcademicas !== undefined) {
+      parche.academic_hours = cambios.horasAcademicas;
+    }
+
+    const respuesta = await this.cliente
+      .from(TABLA_MATERIAS)
+      .update(parche)
+      .eq('id', id)
+      .select(COLUMNAS_MATERIA)
+      .maybeSingle();
+
+    if (respuesta.error) {
+      throw this.traducirEscritura(respuesta.error, 'editar materia');
+    }
+    // PostgREST no distingue «no existe» de «no te toca»: sin fila, no hay nada.
+    if (!respuesta.data) {
+      throw ErrorApi.noEncontrado(
+        'MATERIA_NO_ENCONTRADA',
+        'No encontramos esa materia. Puede que la hayan borrado.',
+      );
+    }
+    return aMateria(respuesta.data as Fila);
+  }
+
+  /**
+   * Entregas calificadas de una materia, en tres consultas simples.
+   *
+   * Se evita el filtro anidado de PostgREST (`m6_tareas.sections.subject_id`)
+   * porque su sintaxis cambia con la profundidad del embed y falla en silencio
+   * devolviendo 0 — que aquí sería peor que un error: autorizaría cambiar un
+   * código que sí tiene notas.
+   */
+  async contarEntregasCalificadasMateria(id: string): Promise<number> {
+    const secciones = await this.cliente
+      .from(TABLA_SECCIONES)
+      .select('id')
+      .eq('subject_id', id);
+    if (secciones.error) {
+      throw traducirError(secciones.error, 'secciones de la materia');
+    }
+    const idsSecciones = (secciones.data ?? []).map((f) => (f as Fila).id);
+    if (idsSecciones.length === 0) return 0;
+
+    const tareas = await this.cliente
+      .from(TABLA_TAREAS)
+      .select('id')
+      .in('seccion_id', idsSecciones);
+    if (tareas.error) throw traducirError(tareas.error, 'tareas de la materia');
+    const idsTareas = (tareas.data ?? []).map((f) => (f as Fila).id);
+    if (idsTareas.length === 0) return 0;
+
+    const entregas = await this.cliente
+      .from(TABLA_ENTREGAS)
+      .select('id', { count: 'exact', head: true })
+      .in('tarea_id', idsTareas)
+      .not('nota_asignada', 'is', null);
+
+    if (entregas.error) {
+      throw traducirError(entregas.error, 'entregas calificadas');
+    }
+    return entregas.count ?? 0;
   }
 
   // --- Piezas internas ------------------------------------------------------

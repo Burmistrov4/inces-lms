@@ -1171,6 +1171,13 @@ export interface EstadoFalso {
   correos: { para: string; asunto: string }[];
   programas: Programa[];
   materias: Materia[];
+  /**
+   * Cuántas entregas ya calificadas tiene cada materia, por id.
+   *
+   * Existe para probar la regla que impide cambiar el código de una materia con
+   * notas sin tener que sembrar secciones, tareas y entregas completas.
+   */
+  entregasCalificadasPorMateria: Record<string, number>;
   /** El pensum de cada programa, por id. Es la única fuente de los totales. */
   pensum: Record<string, EntradaPensum[]>;
   /**
@@ -1312,6 +1319,8 @@ export interface OpcionesArnés {
   acceso?: EntradaAcceso[];
   programas?: Programa[];
   materias?: Materia[];
+  /** Entregas ya calificadas por materia, para la regla del código editable. */
+  entregasCalificadasPorMateria?: Record<string, number>;
   pensum?: Record<string, EntradaPensum[]>;
   /** Secciones activas por programa, para ejercitar la Regla 2. */
   seccionesActivas?: Record<string, number>;
@@ -1593,6 +1602,7 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
     correos: [],
     programas: opciones.programas ?? [...PROGRAMAS_POR_DEFECTO],
     materias: opciones.materias ?? [...MATERIAS_POR_DEFECTO],
+    entregasCalificadasPorMateria: opciones.entregasCalificadasPorMateria ?? {},
     // Se copia en profundidad: el pensum es un objeto anidado, y compartir el
     // arreglo con el valor por defecto haría que un test que reemplaza un
     // pensum contaminara el siguiente. Es el fallo clásico de los dobles que
@@ -2236,6 +2246,51 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
 
       estado.materias = [...estado.materias, materia];
       return materia;
+    },
+
+    async actualizarMateria(id, cambios) {
+      revisar('curriculo.actualizarMateria');
+
+      const indice = estado.materias.findIndex((m) => m.id === id);
+      if (indice < 0) {
+        throw ErrorApi.noEncontrado(
+          'MATERIA_NO_ENCONTRADA',
+          'No encontramos esa materia. Puede que la hayan borrado.',
+        );
+      }
+
+      if (
+        cambios.codigo !== undefined &&
+        estado.materias.some((m) => m.codigo === cambios.codigo && m.id !== id)
+      ) {
+        throw ErrorApi.conflicto('REGISTRO_DUPLICADO', 'Ese registro ya existe.');
+      }
+
+      const actual = estado.materias[indice];
+      if (!actual) {
+        throw ErrorApi.noEncontrado('MATERIA_NO_ENCONTRADA', 'No existe.');
+      }
+      const actualizada: Materia = {
+        ...actual,
+        codigo: cambios.codigo ?? actual.codigo,
+        nombre: cambios.nombre ?? actual.nombre,
+        horasAcademicas: cambios.horasAcademicas ?? actual.horasAcademicas,
+        actualizadoEn: new Date().toISOString(),
+      };
+
+      estado.materias = [
+        ...estado.materias.slice(0, indice),
+        actualizada,
+        ...estado.materias.slice(indice + 1),
+      ];
+      return actualizada;
+    },
+
+    async contarEntregasCalificadasMateria(id) {
+      revisar('curriculo.contarEntregasCalificadasMateria');
+      // El arnés siembra `entregasCalificadasPorMateria` para que la prueba pueda
+      // declarar el escenario sin montar tareas, secciones y entregas reales.
+      return estado.entregasCalificadasPorMateria[id] ?? 0;
     },
   };
 

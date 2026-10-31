@@ -385,6 +385,25 @@ export interface PuertaCurriculo {
 
   /** Registra una materia en caliente desde el paso 2 del asistente. */
   crearMateria(entrada: EntradaCrearMateria): Promise<Materia>;
+
+  /**
+   * Edita una materia del banco. `undefined` = no tocar ese campo.
+   *
+   * **Existe porque sólo se podía crear.** Reportado el 2026-10-30: «no puedo
+   * editar las materias actuales, sólo crear nuevas» — y lo que hacía falta era
+   * cambiar las horas académicas, que es el dato del pensum.
+   */
+  actualizarMateria(id: string, cambios: CambiosMateria): Promise<Materia>;
+
+  /**
+   * Entregas **ya calificadas** de esta materia, en cualquier período.
+   *
+   * Se cuenta para decidir si el código se puede tocar: el `code` de la materia
+   * viaja en la planilla y en la exportación a HACER, así que cambiarlo después
+   * de emitir notas deja dos documentos que no cuadran. La regla vive aquí
+   * porque necesita datos, no porque sea una regla de la interfaz.
+   */
+  contarEntregasCalificadasMateria(id: string): Promise<number>;
 }
 
 /** Filtros y paginación del listado de programas. Todos opcionales salvo la paginación. */
@@ -468,6 +487,13 @@ export interface EntradaCrearMateria {
   codigo: string;
   nombre: string;
   horasAcademicas: number;
+}
+
+/** Cambios de una materia. `undefined` = no tocar ese campo. */
+export interface CambiosMateria {
+  codigo?: string;
+  nombre?: string;
+  horasAcademicas?: number;
 }
 
 // --- Módulo 3: cuadrante, aulas y guardias ----------------------------------

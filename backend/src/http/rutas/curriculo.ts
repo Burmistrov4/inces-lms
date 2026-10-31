@@ -3,10 +3,12 @@ import { z } from 'zod';
 import { ErrorApi } from '../../dominio/errores.js';
 import type { DependenciasRutas } from '../dependencias.js';
 import {
+  esquemaActualizarMateria,
   esquemaActualizarPrograma,
   esquemaCrearMateria,
   esquemaCrearPrograma,
   esquemaIdPrograma,
+  esquemaIdMateria,
   esquemaListadoMaterias,
   esquemaListadoProgramas,
   esquemaReemplazarPensum,
@@ -206,6 +208,36 @@ export function rutasCurriculo(app: FastifyInstance, deps: DependenciasRutas): v
         const materia = await reposDe(request).curriculo.crearMateria(entrada);
 
         return reply.status(201).send({ materia });
+      });
+
+      // --- Editar una materia -------------------------------------------------
+      //
+      // **La regla del código, y por qué está aquí.** El `code` viaja en la
+      // planilla que se exporta a HACER; cambiarlo cuando la materia ya tiene
+      // entregas calificadas deja dos documentos oficiales que no cuadran. Se
+      // permite corregir el nombre y las horas siempre —lo que el administrador
+      // reportó que le faltaba— y el código sólo mientras no haya notas.
+      admin.patch<{ Params: { id: string } }>('/materias/:id', async (request) => {
+        const id = esquemaIdMateria.parse(request.params.id);
+        const cambios = esquemaActualizarMateria.parse(request.body);
+        const curriculo = reposDe(request).curriculo;
+
+        if (cambios.codigo !== undefined) {
+          const calificadas = await curriculo.contarEntregasCalificadasMateria(id);
+          if (calificadas > 0) {
+            throw ErrorApi.conflicto(
+              'CODIGO_CON_NOTAS',
+              'No se puede cambiar el código: esta materia ya tiene ' +
+                `${calificadas} entrega(s) calificada(s). El código aparece en la ` +
+                'planilla y en la exportación a HACER, así que dos documentos ' +
+                'dejarían de coincidir. Puedes corregir el nombre y las horas.',
+              { contexto: 'editar materia', calificadas },
+            );
+          }
+        }
+
+        const materia = await curriculo.actualizarMateria(id, cambios);
+        return { materia };
       });
     },
     { prefix: '/api/v1/admin' },

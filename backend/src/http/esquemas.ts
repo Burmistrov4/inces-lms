@@ -316,6 +316,9 @@ export const esquemaIdPrograma = z.string().uuid({
   message: 'El identificador de programa debe ser un UUID válido.',
 });
 
+/** Identificador de una materia del banco. */
+export const esquemaIdMateria = idDeRecurso('materia');
+
 /**
  * Listado paginado de programas.
  *
@@ -467,6 +470,34 @@ export const esquemaCrearMateria = z
       .positive('Las horas académicas deben ser mayores que cero.'),
   })
   .strict();
+
+/**
+ * Edición de una materia del banco.
+ *
+ * Todo es opcional porque la pantalla de edición manda sólo lo que se cambió —y
+ * mandar el nombre sin querer cambiarlo lo sobreescribiría con el mismo valor,
+ * que es inofensivo pero engaña al registro de auditoría—. La regla que impide
+ * tocar el **código** cuando la materia ya tiene notas no vive aquí: necesita
+ * datos (`contarEntregasCalificadasMateria`), así que la aplica la ruta.
+ */
+export const esquemaActualizarMateria = z
+  .object({
+    codigo: codigoCatalogo.optional(),
+    nombre: nombreCatalogo.optional(),
+    horasAcademicas: z
+      .number()
+      .int()
+      .positive('Las horas académicas deben ser mayores que cero.')
+      .optional(),
+  })
+  .strict()
+  .refine(
+    (cuerpo) =>
+      cuerpo.codigo !== undefined ||
+      cuerpo.nombre !== undefined ||
+      cuerpo.horasAcademicas !== undefined,
+    { message: 'Indica al menos un campo que cambiar.' },
+  );
 
 export type ListadoProgramasEntrada = z.infer<typeof esquemaListadoProgramas>;
 export type ListadoMateriasEntrada = z.infer<typeof esquemaListadoMaterias>;

@@ -1352,6 +1352,22 @@
         ],
         "additionalProperties": false
       },
+      "CuerpoActualizarMateria": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "horasAcademicas": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
       "Aula": {
         "type": "object",
         "properties": {
@@ -6151,6 +6167,115 @@
           },
           "409": {
             "description": "El código de la materia ya existe (REGISTRO_DUPLICADO).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El servicio o la base de datos no están disponibles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/materias/{id}": {
+      "patch": {
+        "tags": [
+          "Currículo"
+        ],
+        "summary": "Edita el nombre, las horas o el código de una materia",
+        "description": "Corrige una materia que ya existe: es lo que faltaba para poder ajustar las horas académicas de un pensum en marcha. El nombre y las horas se pueden cambiar siempre; el **código**, sólo mientras la materia no tenga entregas calificadas —viaja en la planilla y en la exportación a HACER, así que cambiarlo después deja dos documentos que no cuadran—. En ese caso responde 409 `CODIGO_CON_NOTAS`.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID de la materia. Un valor que no sea UUID se rechaza con 400 antes de tocar la base.",
+              "example": "aaaaaaaa-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuerpoActualizarMateria"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Materia actualizada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaMateria"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Petición inválida. El cuerpo o los parámetros no pasan la validación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta la sesión o el token no es válido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "La sesión es válida pero el rol no alcanza, o la cuenta está inactiva.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe esa materia (MATERIA_NO_ENCONTRADA).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El código nuevo ya existe (REGISTRO_DUPLICADO) o la materia ya tiene notas y su código no se puede cambiar (CODIGO_CON_NOTAS).",
             "content": {
               "application/json": {
                 "schema": {

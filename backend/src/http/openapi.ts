@@ -610,6 +610,22 @@ const CuerpoCrearMateria = z
   .strict()
   .openapi('CuerpoCrearMateria');
 
+const CuerpoActualizarMateria = z
+  .object({
+    codigo: z.string().optional(),
+    nombre: z.string().optional(),
+    horasAcademicas: z.number().int().positive().optional(),
+  })
+  .strict()
+  .refine(
+    (c) =>
+      c.codigo !== undefined ||
+      c.nombre !== undefined ||
+      c.horasAcademicas !== undefined,
+    { message: 'Indica al menos un campo que cambiar.' },
+  )
+  .openapi('CuerpoActualizarMateria');
+
 // ------------------------------------------------------------- cuadrante ---
 //
 // Módulo 3: trece rutas de administración bajo `/api/v1/admin` y una de lectura
@@ -917,6 +933,16 @@ const ParametroIdPrograma = z.object({
     example: '46342064-c05a-4341-8638-f35c2541718c',
     description:
       'UUID del programa. Un valor que no sea UUID se rechaza con 400 antes de tocar la base.',
+  }),
+});
+
+/** Identificador de una materia del banco. */
+const ParametroIdMateria = z.object({
+  id: z.string().uuid().openapi({
+    param: { name: 'id', in: 'path' },
+    example: 'aaaaaaaa-1111-4111-8111-111111111111',
+    description:
+      'UUID de la materia. Un valor que no sea UUID se rechaza con 400 antes de tocar la base.',
   }),
 });
 
@@ -2732,6 +2758,37 @@ export function construirRegistro(): OpenAPIRegistry {
       401: RESPUESTAS_ERROR[401],
       403: RESPUESTAS_ERROR[403],
       409: error('El código de la materia ya existe (REGISTRO_DUPLICADO).'),
+      503: RESPUESTAS_ERROR[503],
+    },
+  });
+
+  registro.registerPath({
+    ...curriculo,
+    method: 'patch',
+    path: '/api/v1/admin/materias/{id}',
+    summary: 'Edita el nombre, las horas o el código de una materia',
+    description:
+      'Corrige una materia que ya existe: es lo que faltaba para poder ajustar las horas académicas de un pensum en marcha. El nombre y las horas se pueden cambiar siempre; el **código**, sólo mientras la materia no tenga entregas calificadas —viaja en la planilla y en la exportación a HACER, así que cambiarlo después deja dos documentos que no cuadran—. En ese caso responde 409 `CODIGO_CON_NOTAS`.',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: ParametroIdMateria,
+      body: {
+        required: true,
+        content: { 'application/json': { schema: CuerpoActualizarMateria } },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Materia actualizada.',
+        content: { 'application/json': { schema: RespuestaMateria } },
+      },
+      400: RESPUESTAS_ERROR[400],
+      401: RESPUESTAS_ERROR[401],
+      403: RESPUESTAS_ERROR[403],
+      404: error('No existe esa materia (MATERIA_NO_ENCONTRADA).'),
+      409: error(
+        'El código nuevo ya existe (REGISTRO_DUPLICADO) o la materia ya tiene notas y su código no se puede cambiar (CODIGO_CON_NOTAS).',
+      ),
       503: RESPUESTAS_ERROR[503],
     },
   });
