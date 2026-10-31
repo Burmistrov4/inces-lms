@@ -255,6 +255,14 @@ Confirma que la nueva publicación figura como Production en main. Un URL de pre
 
 ## 7. Render: backend
 
+> **Aviso medido el 2026-10-30/31.** El plan gratuito de Render da **750 horas
+> de instancia al mes por workspace** (≈ un servicio siempre encendido, sin
+> margen: un mes son 744 h) y **suspende** los servicios free al agotarlas. Se
+> observó en producción: `503` con `x-render-routing: suspend` y el cuerpo «This
+> service has been suspended». Las horas se reinician el día 1 de cada mes.
+> Si vuelve a pasar, la alternativa sin cambios de código es
+> `devops/desplegar-cloudrun.sh` (§7 bis).
+
 render.yaml declara un servicio con raíz backend, Dockerfile ./Dockerfile y health check /salud. Si Render tiene auto-deploy habilitado, el push a la rama configurada puede iniciarlo; confírmalo en el Dashboard. render.yaml por sí solo no demuestra que el despliegue haya terminado.
 
 1. Abre el Dashboard de Render y selecciona inces-lms-api.
@@ -262,6 +270,34 @@ render.yaml declara un servicio con raíz backend, Dockerfile ./Dockerfile y hea
 3. Espera el estado Live/Deploy succeeded y revisa logs si hay errores.
 4. Comprueba que las variables secretas requeridas están configuradas, sin imprimir valores.
 5. No inicies un segundo deploy si ya hay uno en curso. Antes de un redeploy, verifica commit, rama y estado.
+
+## 7 bis. Cloud Run: la misma API, sin techo de horas
+
+`devops/desplegar-cloudrun.sh` despliega la **misma imagen** en Google Cloud Run:
+free tier real (2M peticiones, 180k vCPU-s, 360k GiB-s al mes) y
+`--min-instances=0`, así que sin tráfico no consume cuota. No hay que tocar una
+línea de código: el Dockerfile ya construye una API stateless que escucha en
+`$PORT` y responde en `/salud`.
+
+Requiere `gcloud` autenticado y un proyecto con facturación asociada (Cloud Run
+la exige aunque no cobre dentro del free tier).
+
+```bash
+gcloud auth login
+gcloud config set project TU_PROYECTO
+./devops/desplegar-cloudrun.sh
+```
+
+Al terminar imprime la URL del servicio. Después:
+
+1. Añade el dominio de la web a `CORS_ORIGINS` en `backend/.env` y vuelve a
+   correr el script con `--solo-env`.
+2. Recompila la web con `--dart-define=API_BASE_URL=<esa URL>` (§5) y publica.
+3. **No** dejes las dos APIs vivas apuntando a la misma base sin querer: elige
+   una y apaga la otra.
+
+Las variables se envían por lista explícita, no «todas las del `.env`»: mandar de
+más a un servicio público es la forma más fácil de filtrar una clave.
 
 Prueba el endpoint:
 
