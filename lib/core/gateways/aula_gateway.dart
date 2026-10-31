@@ -573,6 +573,16 @@ abstract interface class AulasPropiasGateway {
 /// (`test/support/fake_aula_gateway.dart`) sigue valiendo para la UI, como el de
 /// M5.
 abstract interface class AulaGateway implements AulasPropiasGateway {
+  /// Invita a un aprendiz por correo al aula.
+  ///
+  /// Devuelve el enlace de activación ya generado: el correo puede fallar —SMTP
+  /// no configurado, buzón lleno— y el docente necesita poder pasarlo a mano.
+  Future<InvitacionDeAprendiz> invitarAprendiz({
+    required String seccionId,
+    required String email,
+    String? nombres,
+    String? apellidos,
+  });
   /// El feed del tablón de una sección.
   ///
   /// **Devuelve lo que la RLS deja ver** (§3.1): el docente ve borradores y
@@ -667,4 +677,27 @@ abstract interface class AulaGateway implements AulasPropiasGateway {
   /// previa es legítimo —«devuelta sin calificar»—; lo que prohíbe el `CHECK` es
   /// una nota asignada sin borrador.
   Future<LibroEntrega> devolver(String entregaId);
+}
+
+/// Lo que devuelve una invitación de aprendiz.
+class InvitacionDeAprendiz {
+  const InvitacionDeAprendiz({
+    required this.email,
+    required this.enlaceActivacion,
+    required this.correoEnviado,
+    required this.codigoAula,
+  });
+
+  final String email;
+  final String enlaceActivacion;
+  final bool correoEnviado;
+  final String? codigoAula;
+
+  factory InvitacionDeAprendiz.fromJson(Map<String, dynamic> json) =>
+      InvitacionDeAprendiz(
+        email: json['email'] as String? ?? '',
+        enlaceActivacion: json['enlaceActivacion'] as String? ?? '',
+        correoEnviado: json['correoEnviado'] as bool? ?? false,
+        codigoAula: json['codigoAula'] as String?,
+      );
 }

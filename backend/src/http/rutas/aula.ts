@@ -2,12 +2,15 @@ import type { FastifyInstance } from 'fastify';
 import type { DependenciasRutas } from '../dependencias.js';
 import {
   esquemaCalificar,
+  esquemaInvitarAprendiz,
   esquemaCrearAnuncio,
   esquemaCrearTarea,
   esquemaRutaEntrega,
   esquemaRutaSeccion,
   esquemaRutaTarea,
 } from '../esquemas.js';
+import { ErrorApi } from '../../dominio/errores.js';
+import { generarToken, hashearToken } from '../../infra/tokens.js';
 import { exigirSesion, reposDe } from '../plugins/autenticacion.js';
 import { exigirModulo } from '../plugins/modulos.js';
 
@@ -315,4 +318,130 @@ export function rutasAula(app: FastifyInstance, deps: DependenciasRutas): void {
       return { entrega };
     },
   );
+
+  /**
+   * Invita a un aprendiz **por correo**, desde el aula del docente.
+   *
+   * **El rol lo pone el servidor**, no el cliente: `estudiante`. Antes de la
+   * migración `202610310003` la activación escribía `'docente'` a mano, así que
+   * una invitación de alumno habría creado un profesor con permiso para
+   * calificar.
+   *
+   * **No se confía en el cliente para saber si el aula es suya.** Un docente
+   * sólo puede invitar a secciones donde tiene un bloque; administración puede
+   * en cualquiera. Es la comprobación que la RLS no hace, porque la invitación no
+   * toca ninguna tabla de la sección.
+   */
+  app.post<{ Params: { seccionId: string } }>(
+    '/api/v1/aula/secciones/:seccionId/invitar',
+    { preHandler: [exigirSesion(), exigirAula] },
+    async (request, reply) => {
+      const usuario = request.usuario;
+      if (!usuario) throw ErrorApi.noAutorizado();
+
+      const esAdmin = usuario.rol === 'admin';
+      if (!esAdmin && usuario.rol !== 'docente') {
+        throw ErrorApi.prohibido(
+          'SIN_PERMISO',
+          'Sólo un docente o un administrador puede invitar al aula.',
+        );
+      }
+
+      const { seccionId } = esquemaRutaSeccion.parse(request.params);
+      const { email, nombres, apellidos } = esquemaInvitarAprendiz.parse(request.body);
+
+      const repos = reposDe(request);
+
+      if (!esAdmin) {
+        const imparte = await repos.aula.docenteImparte(seccionId, usuario.id);
+        if (!imparte) {
+          throw ErrorApi.prohibido(
+            'AULA_AJENA',
+            'Esa aula no es tuya: sólo puedes invitar a tus secciones.',
+          );
+        }
+      }
+
+      const seccion = await repos.secciones.porId(seccionId);
+      if (!seccion) throw ErrorApi.noEncontrado('SECCION_INEXISTENTE', 'La sección no existe.');
+
+      // Token generado aquí, huella guardada: el token en claro nunca se persiste.
+      const token = generarToken();
+      const expiraEn = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+
+      const invitacion = await repos.invitaciones.crear({
+        email,
+        rol: 'estudiante',
+        nombres: nombres ?? '',
+        apellidos: apellidos ?? '',
+        tokenHash: hashearToken(token),
+        expiresAt: expiraEn,
+      });
+
+      const enlace = `${deps.urlFrente}/#/auth/activate?token=${token}`;
+      const codigo = seccion.codigoAula?.trim()
+
+        ? seccion.codigoAula.trim()
+        : null;
+
+      const correo = await deps.enviarCorreo.enviar({
+        para: email,
+        asunto: 'Te invitaron a un aula del INCES LMS',
+        html: htmlInvitacionAprendiz({
+          enlace,
+          aula: `${seccion.nombre}`,
+          docente: usuario.perfil.nombres || 'Tu docente',
+          codigo,
+        }),
+      });
+
+      return reply.status(201).send({
+        email: invitacion.email,
+        enlaceActivacion: enlace,
+        correoEnviado: correo.entregado,
+        codigoAula: codigo,
+      });
+    },
+  );
+}
+
+/**
+ * Correo de invitación a un aula.
+ *
+ * Dice **quién** invita y **a qué aula**, y lleva el código de acceso dentro: el
+ * aprendiz activa su cuenta y entra sin tener que pedir nada más. Es la
+ * diferencia con la invitación de docente, que no tiene aula todavía.
+ */
+function htmlInvitacionAprendiz(datos: {
+  enlace: string;
+  aula: string;
+  docente: string;
+  codigo: string | null;
+}): string {
+  const bloqueCodigo = datos.codigo
+    ? `<div style="background:#f1f5f9;border-left:4px solid #0b5cab;padding:12px;border-radius:6px;margin:18px 0;">
+         <p style="margin:0;font-size:13px;color:#334155;">Código del aula</p>
+         <p style="margin:4px 0 0;font-family:monospace;font-size:20px;letter-spacing:3px;color:#0b5cab;font-weight:700;">${datos.codigo}</p>
+       </div>`
+    : '';
+
+  return `<div style="font-family:Inter,Segoe UI,Arial,sans-serif;max-width:540px;margin:0 auto;padding:24px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;">
+    <div style="background:linear-gradient(135deg,#0b5cab 0%,#003366 100%);padding:20px;border-radius:8px;text-align:center;margin-bottom:20px;">
+      <h1 style="color:#fff;margin:0;font-size:19px;font-weight:700;">INCES LMS · Invitación a un aula</h1>
+      <p style="color:#e2e8f0;margin:4px 0 0;font-size:12px;">CFS Nacional de Soldadura «Rafael Urdaneta»</p>
+    </div>
+    <p style="color:#1e293b;font-size:14px;line-height:1.5;">
+      <strong>${datos.docente}</strong> te invitó al aula <strong>${datos.aula}</strong>.
+    </p>
+    <p style="color:#475569;font-size:14px;line-height:1.5;">
+      Crea tu contraseña con este enlace y quedarás dentro:
+    </p>
+    <p style="text-align:center;margin:22px 0;">
+      <a href="${datos.enlace}" style="background:#0b5cab;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-size:14px;font-weight:600;">Activar mi cuenta</a>
+    </p>
+    ${bloqueCodigo}
+    <p style="color:#64748b;font-size:12px;line-height:1.5;">
+      El enlace caduca en 48 horas. Si no esperabas esta invitación, ignora este mensaje.
+    </p>
+  </div>`;
 }

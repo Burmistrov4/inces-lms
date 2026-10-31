@@ -217,6 +217,26 @@ class BackendAulaGateway implements AulaGateway {
   }
 
   @override
+  Future<InvitacionDeAprendiz> invitarAprendiz({
+    required String seccionId,
+    required String email,
+    String? nombres,
+    String? apellidos,
+  }) async {
+    final respuesta = await _api.post(
+      '$_rutaAula/secciones/$seccionId/invitar',
+      token: _tokenSesion(),
+      cuerpo: _sinNulos(<String, dynamic>{
+        'email': email.trim(),
+        'nombres': nombres?.trim(),
+        'apellidos': apellidos?.trim(),
+      }),
+    );
+
+    return InvitacionDeAprendiz.fromJson(respuesta);
+  }
+
+  @override
   Future<TareaDeClase> crearTarea({
     required String seccionId,
     required String titulo,

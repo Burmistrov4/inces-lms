@@ -148,6 +148,10 @@ void main() {
         reason: 'la frontera de turnos se movió en la base y no en Dart',
       );
       expect(turnoDeBloque(1).valorApi, mananaEnSql);
+      // La segunda frontera y el nombre del turno de la tarde, leídos del SQL:
+      // si alguien mueve el corte 12/13 en la base, esto lo caza.
+      expect(ultimoBloqueTarde, ultimoTardeEnSql);
+      expect(Turno.tarde.valorApi, tardeEnSql);
       // El techo del día ya no es «tarde»: con el turno nocturno, el bloque 17
       // pertenece a NOCHE, que es el `else` de la función SQL.
       expect(turnoDeBloque(bloqueMaximo).valorApi, nocheEnSql);

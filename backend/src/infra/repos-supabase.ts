@@ -315,6 +315,8 @@ function aInvitacion(fila: Fila): InvitacionDocente {
   return {
     id: textoObligatorio(fila.id),
     email: textoObligatorio(fila.email),
+    // `docente` por defecto: es el valor que la base pone a las filas viejas.
+    rol: (texto(fila.rol) ?? 'docente') === 'estudiante' ? 'estudiante' : 'docente',
     nombres: textoObligatorio(fila.nombres),
     apellidos: textoObligatorio(fila.apellidos),
     tokenHash: textoObligatorio(fila.token_hash),
@@ -1543,6 +1545,7 @@ class InvitacionesSupabase implements PuertaInvitacionesDocente {
   async crear(
     entrada: {
       email: string;
+      rol?: 'docente' | 'estudiante';
       nombres: string;
       apellidos: string;
       tokenHash: string;
@@ -1553,6 +1556,9 @@ class InvitacionesSupabase implements PuertaInvitacionesDocente {
       .from(TABLA_INVITACIONES)
       .insert({
         email: entrada.email,
+        // Sin rol explícito, `docente`: el default de la base y el
+        // comportamiento que tenía antes de la migración 202610310003.
+        rol: entrada.rol ?? 'docente',
         nombres: entrada.nombres,
         apellidos: entrada.apellidos,
         token_hash: entrada.tokenHash,
@@ -3317,6 +3323,18 @@ class SeccionesSupabase implements PuertaSecciones {
     return respuesta.count;
   }
 
+  async porId(id: string): Promise<Seccion | null> {
+    const respuesta = await this.cliente
+      .from(TABLA_SECCIONES)
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (respuesta.error) throw traducirError(respuesta.error, 'leer sección');
+    if (!respuesta.data) return null;
+    return aSeccion(respuesta.data as Fila);
+  }
+
   async crear(entrada: EntradaCrearSeccion): Promise<Seccion> {
     const respuesta = await this.cliente
       .from(TABLA_SECCIONES)
@@ -4752,6 +4770,25 @@ class ArchivosSupabase implements PuertaArchivos {
  */
 class AulaSupabase implements PuertaAula {
   constructor(private readonly cliente: SupabaseClient) {}
+
+  /**
+   * ¿El docente tiene un bloque en esa sección?
+   *
+   * Se pregunta a `schedule_slots`, que es donde el cuadrante guarda quién da
+   * qué. `limit(1)` basta: la pregunta es de existencia, no de cuántas horas.
+   */
+  async docenteImparte(seccionId: string, docenteId: string): Promise<boolean> {
+    const respuesta = await this.cliente
+      .from('schedule_slots')
+      .select('id')
+      .eq('section_id', seccionId)
+      .eq('teacher_id', docenteId)
+      .eq('is_active', true)
+      .limit(1);
+
+    if (respuesta.error) throw traducirError(respuesta.error, 'comprobar el aula');
+    return (respuesta.data ?? []).length > 0;
+  }
 
   // --- Tablón ---------------------------------------------------------------
 

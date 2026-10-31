@@ -796,6 +796,26 @@ const RespuestaGuardias = z
   })
   .openapi('RespuestaGuardias');
 
+const CuerpoInvitarAprendiz = z
+  .object({
+    email: z.string().email(),
+    nombres: z.string().optional(),
+    apellidos: z.string().optional(),
+  })
+  .strict()
+  .openapi('CuerpoInvitarAprendiz', {
+    description: '`rol` no viaja: lo fija el servidor como `estudiante`.',
+  });
+
+const RespuestaInvitacionAprendiz = z
+  .object({
+    email: z.string().email(),
+    enlaceActivacion: z.string(),
+    correoEnviado: z.boolean(),
+    codigoAula: z.string().nullable(),
+  })
+  .openapi('RespuestaInvitacionAprendiz');
+
 const RespuestaClase = z.object({ clase: ClaseCuadrante }).openapi('RespuestaClase');
 
 const RejillaCuadrante = z
@@ -4457,6 +4477,33 @@ export function construirRegistro(): OpenAPIRegistry {
         'La entrega no es tuya (SIN_PERMISO_EN_EL_AULA), o el módulo está apagado (MODULO_DESHABILITADO).',
       ),
       503: RESPUESTAS_ERROR[503],
+    },
+  });
+
+  registro.registerPath({
+    ...aulaTag,
+    method: 'post',
+    path: '/api/v1/aula/secciones/{seccionId}/invitar',
+    summary: 'Invita a un aprendiz al aula (docente o admin)',
+    description:
+      'Crea una cuenta pendiente y envía el enlace de activación. **El rol lo fija el servidor** (`estudiante`): aceptarlo del cliente sería una escalada de privilegios de una línea. Un docente sólo puede invitar a secciones donde tiene un bloque; administración, a cualquiera. La respuesta trae el enlace aunque el correo falle, porque la activación nunca depende del correo.',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: ParametroSeccionAula,
+      body: {
+        content: { 'application/json': { schema: CuerpoInvitarAprendiz } },
+      },
+    },
+    responses: {
+      201: {
+        description: 'Invitación creada.',
+        content: {
+          'application/json': { schema: RespuestaInvitacionAprendiz },
+        },
+      },
+      400: { description: 'Correo inválido o campo desconocido.' },
+      401: { description: 'Sin sesión.' },
+      403: { description: 'No es docente del aula, o el rol no invita.' },
     },
   });
 

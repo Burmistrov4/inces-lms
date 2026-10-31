@@ -2,6 +2,31 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.12.0] - 2026-10-31
+### El docente invita a sus aprendices
+
+Hasta hoy un aprendiz sólo entraba al aula de tres formas: matrícula de
+administración, código de 8 caracteres, o solicitud pública. El docente tenía que
+pedirle a coordinación que matricule a su gente.
+
+- **`POST /api/v1/aula/secciones/{id}/invitar`**: el docente escribe el correo y
+  el aprendiz recibe un enlace para crear su contraseña; al activarla queda
+  dentro. El correo lleva el **código del aula** dentro para que pueda entrar
+  también desde su pantalla.
+- **El rol lo fija el servidor** (`estudiante`). No es un detalle: la activación
+  hacía `cambiarRol(id, 'docente')` con el rol escrito a mano, así que reutilizar
+  la invitación de docentes habría creado **profesores** con permiso para
+  calificar. Se añade `teacher_invitations.rol` con `default 'docente'` para no
+  tocar las filas existentes.
+- **Un docente sólo invita a sus aulas**: se comprueba contra `schedule_slots`
+  (`aula.docenteImparte`). La RLS no lo cubría porque la invitación no toca
+  ninguna tabla de la sección. Administración puede en cualquiera.
+- `rol` en el cuerpo da **400** (`.strict()`): aceptarlo sería una escalada de
+  privilegios de una línea.
+
+Medido: 5/5 pruebas del endpoint (rol, escalada, aprendiz, aula ajena, correo
+inválido) y 747 del backend. El esquema publicado pasa a 141.
+
 ## [1.11.3] - 2026-10-31
 ### La cabecera deja de mentir con el período
 

@@ -171,6 +171,8 @@ export interface PuertaInvitacionesDocente {
    */
   crear(entrada: {
     email: string;
+    /** Rol que se otorgará al activar. Por defecto `docente`. */
+    rol?: 'docente' | 'estudiante';
     /** Nombre(s) del docente, capturado por el administrador (R-21). */
     nombres: string;
     /** Apellido(s) del docente, capturado por el administrador (R-21). */
@@ -919,6 +921,15 @@ export interface EntradaRegistrarArchivo {
  */
 export interface PuertaSecciones {
   listar(opciones: OpcionesListadoSecciones): Promise<PaginaSecciones>;
+
+  /**
+   * Una sección por id, o `null`.
+   *
+   * Lo necesita la invitación del docente: para el correo hacen falta el nombre
+   * del aula y su código de acceso, y listar por período sería pedir una página
+   * entera para quedarse con una fila.
+   */
+  porId(id: string): Promise<Seccion | null>;
   crear(entrada: EntradaCrearSeccion): Promise<Seccion>;
   /** `nombre`, `cupoMaximo` y `activa`. Nunca borra: archiva. */
   actualizar(id: string, cambios: CambiosSeccion): Promise<Seccion>;
@@ -1287,6 +1298,16 @@ export interface PuertaPlanilla {
  * `m6_entregas_de_tarea` la lee como dueña de la función.
  */
 export interface PuertaAula {
+  /**
+   * ¿Ese docente dicta clase en esa sección?
+   *
+   * **Es una comprobación de autorización, no de presentación.** Invitar a un
+   * aprendiz a un aula ajena sería una forma de meter gente en la clase de otro;
+   * la RLS no lo impide porque la invitación no toca ninguna tabla de la sección,
+   * así que se comprueba aquí y no se confía en el cliente.
+   */
+  docenteImparte(seccionId: string, docenteId: string): Promise<boolean>;
+
   /** El feed de anuncios de una sección, del más nuevo al más viejo. */
   tablon(seccionId: string): Promise<Anuncio[]>;
 

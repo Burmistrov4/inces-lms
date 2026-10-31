@@ -1816,6 +1816,7 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       const invitacion: InvitacionDocente = {
         id: `11111111-1111-4111-8111-${sufijo}`,
         email: entrada.email,
+        rol: entrada.rol ?? 'docente',
         nombres: entrada.nombres,
         apellidos: entrada.apellidos,
         tokenHash: entrada.tokenHash,
@@ -3032,6 +3033,12 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
   };
 
   const secciones: PuertaSecciones = {
+    async porId(id) {
+      revisar('secciones.porId');
+      const encontrada = estado.secciones.find((s) => s.id === id);
+      return encontrada ? aSeccionFalsa(encontrada) : null;
+    },
+
     async listar(opciones) {
       revisar('secciones.listar');
 
@@ -4323,6 +4330,15 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
    * operaciones que la base rechaza.
    */
   const aula: PuertaAula = {
+    async docenteImparte(seccionId, docenteId) {
+      revisar('aula.docenteImparte');
+      // El doble dice la verdad de la misma forma que la consulta real: hay que
+      // tener un bloque en esa sección.
+      return estado.clases.some(
+        (c) => c.seccionId === seccionId && c.docenteId === docenteId,
+      );
+    },
+
     async tablon(seccionId) {
       revisar('aula.tablon');
 

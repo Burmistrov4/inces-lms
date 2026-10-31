@@ -178,6 +178,7 @@ describe('activación de la invitación — profesor (ruta pública)', () => {
     arnés.estado.invitaciones.push({
       id: 'inv-caducada',
       email: 'caducado@inces.test',
+      rol: 'docente',
 
        nombres: 'Caducado',
 

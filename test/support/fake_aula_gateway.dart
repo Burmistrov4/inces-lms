@@ -42,6 +42,10 @@ class FakeAulaGateway implements AulaGateway {
   /// Las entregas del estudiante.
   List<Entrega> entregas = const [];
 
+  /// Invitaciones enviadas, como `seccionId|email`. Sirve para comprobar que la
+  /// pantalla llama al contrato y no a la API por su cuenta.
+  final List<String> invitados = [];
+
   /// El libro de calificaciones de una tarea (vista del docente). Se arma a mano.
   List<LibroEntrega> libro = const [];
 
@@ -196,6 +200,22 @@ class FakeAulaGateway implements AulaGateway {
       cuerpo: cuerpo ?? '',
       estado: EstadoAnuncio.borrador,
       programadoPara: programadoPara?.toIso8601String(),
+    );
+  }
+
+  @override
+  Future<InvitacionDeAprendiz> invitarAprendiz({
+    required String seccionId,
+    required String email,
+    String? nombres,
+    String? apellidos,
+  }) async {
+    invitados.add('$seccionId|$email');
+    return InvitacionDeAprendiz(
+      email: email,
+      enlaceActivacion: 'https://ejemplo/#/auth/activate?token=prueba',
+      correoEnviado: true,
+      codigoAula: 'ABCD2345',
     );
   }
 

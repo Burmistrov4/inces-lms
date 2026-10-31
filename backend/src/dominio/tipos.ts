@@ -79,6 +79,14 @@ export interface EntradaAuditoria {
 export interface InvitacionDocente {
   id: string;
   email: string;
+  /**
+   * Rol que se otorga al activar. `docente` para las invitaciones del
+   * administrador; `estudiante` para las que crea un docente desde su aula.
+   *
+   * Antes la activación escribía `'docente'` a mano, así que una invitación de
+   * alumno habría creado un docente con permiso para calificar.
+   */
+  rol: 'docente' | 'estudiante';
   /** Nombre(s) del docente, capturado por el administrador al invitar (R-21). */
   nombres: string;
   /** Apellido(s) del docente, capturado por el administrador al invitar (R-21). */

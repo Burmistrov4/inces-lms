@@ -324,6 +324,18 @@ class _AulaVirtualDashboardScreenState
               widget.seccionNombre,
               subtitulo: 'Aula Virtual · tablón y trabajo de clase',
             ),
+            if (widget.esDocente)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _invitarAprendiz,
+                  icon: const Icon(Icons.person_add_alt_1, size: 18),
+                  label: const Text('Invitar aprendiz'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
             const SizedBox(height: 8),
             if (tarea == null) ...[
               const TabBar(
@@ -349,6 +361,133 @@ class _AulaVirtualDashboardScreenState
         ),
       ),
     );
+  }
+
+  /// Invita a un aprendiz por correo a este aula.
+  ///
+  /// El rol lo pone el servidor (`estudiante`); aquí sólo se piden los datos. Al
+  /// terminar se muestra el enlace aunque el correo falle: SMTP puede no estar
+  /// configurado y el docente tiene que poder pasarlo a mano.
+  Future<void> _invitarAprendiz() async {
+    final correo = TextEditingController();
+    final nombres = TextEditingController();
+    final apellidos = TextEditingController();
+    var guardando = false;
+    String? error;
+    InvitacionDeAprendiz? resultado;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setEstado) => AlertDialog(
+          title: const Text('Invitar aprendiz'),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (resultado == null) ...[
+                  const Text(
+                    'Le llega un correo con un enlace para crear su contraseña. '
+                    'Al activarla queda matriculado en esta aula.',
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: correo,
+                    autofocus: true,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Correo del aprendiz',
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: nombres,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombres (opcional)',
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: apellidos,
+                    decoration: const InputDecoration(
+                      labelText: 'Apellidos (opcional)',
+                      isDense: true,
+                    ),
+                  ),
+                  if (error != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      error!,
+                      style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+                    ),
+                  ],
+                ] else ...[
+                  Text(
+                    resultado!.correoEnviado
+                        ? 'Invitación enviada a ${resultado!.email}.'
+                        : 'La invitación quedó creada, pero el correo no salió. '
+                            'Pásale este enlace a ${resultado!.email}:',
+                  ),
+                  const SizedBox(height: 8),
+                  SelectableText(
+                    resultado!.enlaceActivacion,
+                    style: Theme.of(ctx).textTheme.bodySmall,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(resultado == null ? 'Cancelar' : 'Cerrar'),
+            ),
+            if (resultado == null)
+              FilledButton(
+                onPressed: guardando
+                    ? null
+                    : () async {
+                        final email = correo.text.trim();
+                        if (!email.contains('@')) {
+                          setEstado(() => error = 'Escribe un correo válido.');
+                          return;
+                        }
+                        setEstado(() {
+                          guardando = true;
+                          error = null;
+                        });
+                        try {
+                          final r = await widget.gateway.invitarAprendiz(
+                            seccionId: widget.seccionId,
+                            email: email,
+                            nombres: nombres.text,
+                            apellidos: apellidos.text,
+                          );
+                          setEstado(() {
+                            guardando = false;
+                            resultado = r;
+                          });
+                        } catch (e) {
+                          setEstado(() {
+                            guardando = false;
+                            error = 'No se pudo invitar. Revisa el correo e inténtalo otra vez.';
+                          });
+                        }
+                      },
+                child: Text(guardando ? 'Enviando…' : 'Invitar'),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    correo.dispose();
+    nombres.dispose();
+    apellidos.dispose();
   }
 
   // ── Tablón ─────────────────────────────────────────────────────────────────

@@ -1322,6 +1322,20 @@ export const esquemaCrearTarea = z
  * el `CHECK` de `m6_entregas`: Zod da el 400 antes de abrir una transacción y
  * nombra el campo; el `CHECK` sigue siendo la invariante.
  */
+/**
+ * Invitación de un aprendiz desde el aula.
+ *
+ * El rol **no** viaja: lo fija el servidor como `estudiante`. Aceptarlo del
+ * cliente convertiría el campo en una escalada de privilegios de una línea.
+ */
+export const esquemaInvitarAprendiz = z
+  .object({
+    email: z.string().trim().email('El correo no parece válido.').max(160),
+    nombres: z.string().trim().min(1).max(80).optional(),
+    apellidos: z.string().trim().min(1).max(80).optional(),
+  })
+  .strict();
+
 export const esquemaCalificar = z
   .object({
     nota: z

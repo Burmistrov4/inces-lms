@@ -126,7 +126,13 @@ export function rutasAuth(app: FastifyInstance, deps: DependenciasRutas): void {
             invitacion.nombres,
             invitacion.apellidos,
           );
-          const perfil = await deps.reposAdmin.perfiles.cambiarRol(idUsuario, 'docente');
+          // El rol lo trae la invitación. Estaba escrito a mano como `'docente'`, y
+        // una invitación de aprendiz habría creado un docente con permiso para
+        // calificar y ver notas ajenas.
+        const perfil = await deps.reposAdmin.perfiles.cambiarRol(
+          idUsuario,
+          invitacion.rol ?? 'docente',
+        );
           await deps.reposAdmin.acceso.registrar({
             userId: idUsuario,
             email: invitacion.email,

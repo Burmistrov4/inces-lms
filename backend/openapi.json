@@ -3702,6 +3702,53 @@
           "entrega"
         ]
       },
+      "RespuestaInvitacionAprendiz": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "enlaceActivacion": {
+            "type": "string"
+          },
+          "correoEnviado": {
+            "type": "boolean"
+          },
+          "codigoAula": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "email",
+          "enlaceActivacion",
+          "correoEnviado",
+          "codigoAula"
+        ]
+      },
+      "CuerpoInvitarAprendiz": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "nombres": {
+            "type": "string"
+          },
+          "apellidos": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "additionalProperties": false,
+        "description": "`rol` no viaja: lo fija el servidor como `estudiante`."
+      },
       "EntregaCalificada": {
         "type": "object",
         "properties": {
@@ -11714,6 +11761,63 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/aula/secciones/{seccionId}/invitar": {
+      "post": {
+        "tags": [
+          "Aula Virtual"
+        ],
+        "summary": "Invita a un aprendiz al aula (docente o admin)",
+        "description": "Crea una cuenta pendiente y envía el enlace de activación. **El rol lo fija el servidor** (`estudiante`): aceptarlo del cliente sería una escalada de privilegios de una línea. Un docente sólo puede invitar a secciones donde tiene un bloque; administración, a cualquiera. La respuesta trae el enlace aunque el correo falle, porque la activación nunca depende del correo.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID de la sección. Un valor que no sea UUID se rechaza con 400.",
+              "example": "46342064-c05a-4341-8638-f35c2541718c"
+            },
+            "required": true,
+            "name": "seccionId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuerpoInvitarAprendiz"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invitación creada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaInvitacionAprendiz"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Correo inválido o campo desconocido."
+          },
+          "401": {
+            "description": "Sin sesión."
+          },
+          "403": {
+            "description": "No es docente del aula, o el rol no invita."
           }
         }
       }
