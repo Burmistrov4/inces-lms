@@ -320,6 +320,37 @@ export const esquemaIdPrograma = z.string().uuid({
 export const esquemaIdMateria = idDeRecurso('materia');
 
 /**
+ * Matricular a un aprendiz en un aula (administración).
+ *
+ * Sólo el id del alumno: el aula va en la ruta y el origen lo fija la ruta
+ * (`ADMIN`). Aceptar un `origen` del cliente dejaría que la interfaz marcara una
+ * matrícula manual como si fuera una inscripción formal.
+ */
+export const esquemaMatricular = z
+  .object({ estudianteId: z.string().uuid({ message: 'El aprendiz debe ser un UUID válido.' }) })
+  .strict();
+
+/**
+ * Canjear el código de aula.
+ *
+ * Se normaliza a mayúsculas y sin espacios porque el código se dicta y se copia
+ * a mano; rechazar «abc-2» por la caja sería castigar al usuario por una regla
+ * nuestra. El formato se valida aquí para no gastar una consulta en algo que no
+ * puede existir.
+ */
+export const esquemaUnirse = z
+  .object({
+    codigo: z
+      .string()
+      .trim()
+      .min(4, 'El código de aula tiene al menos 4 caracteres.')
+      .max(8, 'El código de aula tiene como mucho 8 caracteres.')
+      .regex(/^[A-Za-z0-9]+$/, 'El código de aula sólo tiene letras y números.')
+      .transform((v) => v.toUpperCase()),
+  })
+  .strict();
+
+/**
  * Listado paginado de programas.
  *
  * `activo` se acepta como cadena y se convierte, por la misma razón que en el

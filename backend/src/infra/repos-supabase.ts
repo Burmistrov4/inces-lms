@@ -3804,6 +3804,39 @@ class InscripcionesSupabase implements PuertaInscripciones {
     return this.estadoDevuelto(respuesta, 'reincorporar una inscripción');
   }
 
+  async matricularPorAdministrador(
+    estudianteId: string,
+    seccionId: string,
+  ): Promise<EstadoInscripcion> {
+    const respuesta = await this.cliente.rpc('matricular_por_administrador', {
+      p_student_id: estudianteId,
+      p_section_id: seccionId,
+      p_origen: 'ADMIN',
+    });
+
+    return this.estadoDevuelto(respuesta, 'matricular a un aprendiz');
+  }
+
+  async unirsePorCodigo(codigo: string): Promise<string> {
+    const respuesta = await this.cliente.rpc('unirse_por_codigo', {
+      p_codigo: codigo,
+    });
+
+    if (respuesta.error) {
+      throw this.traducirInscripcion(respuesta.error, 'unirse con un código de aula');
+    }
+
+    const id = respuesta.data;
+    if (typeof id !== 'string' || id.length === 0) {
+      // La RPC devuelve el uuid del aula o lanza. Un `null` aquí significa que la
+      // función cambió: mejor fallar claro que devolver «te uniste» sin aula.
+      throw ErrorApi.interno(
+        'La operación de unirse no devolvió el aula.',
+      );
+    }
+    return id;
+  }
+
   async expirarOfertas(): Promise<number> {
     const respuesta = await this.cliente.rpc('expirar_ofertas_cupo');
 

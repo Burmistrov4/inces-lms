@@ -1075,6 +1075,30 @@ export interface PuertaInscripciones {
    */
   reincorporar(estudianteId: string, seccionId: string): Promise<EstadoInscripcion>;
 
+  /**
+   * Matricula a un aprendiz en un aula un administrador. **Idempotente** si el
+   * alumno ya estaba: devuelve `ENROLLED` en vez de un conflicto.
+   *
+   * No es un `insert`: `enrollments` tiene la escritura revocada para
+   * `authenticated` (R-23), así que va por la RPC
+   * `matricular_por_administrador`, que exige rol admin activo, aula viva,
+   * período abierto y cupo disponible.
+   */
+  matricularPorAdministrador(
+    estudianteId: string,
+    seccionId: string,
+  ): Promise<EstadoInscripcion>;
+
+  /**
+   * El aprendiz canjea el código de aula del período vigente y queda matriculado.
+   * Devuelve el id del aula.
+   *
+   * El mensaje de error es **el mismo** para «código inexistente» y «aula
+   * cerrada»: distinguirlos convertiría la RPC en un oráculo para adivinar
+   * códigos. El límite de intentos vive en la ruta, no en la base.
+   */
+  unirsePorCodigo(codigo: string): Promise<string>;
+
   /** Vence las ofertas caducadas. **Idempotente**: devuelve cuántas venció. */
   expirarOfertas(): Promise<number>;
 

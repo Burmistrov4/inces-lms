@@ -2,6 +2,34 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.7.9] - 2026-10-30
+### Las dos puertas del aula, ya expuestas por HTTP
+
+F2.3. Las funciones de base se probaron primero contra Supabase con el rol
+simulado; ahora tienen ruta.
+
+- `POST /api/v1/admin/aulas/{id}/matricular` → `matricular_por_administrador`.
+  **Idempotente**: matricular a quien ya está devuelve `ENROLLED`, no un 409.
+- `POST /api/v1/aulas/unirse` → `unirse_por_codigo`. El aprendiz dicta el código
+  del aula y queda matriculado con `origen = CODIGO`.
+
+**Ninguna de las dos hace un `insert`.** `enrollments` tiene la escritura revocada
+para `authenticated` (R-23): un `insert` habría devuelto `42501` contra la base
+real y habría pasado las pruebas del armés. Se vio antes de escribir la ruta, no
+después.
+
+La sesión la exige la ruta y el **rol** lo comprueba la RPC: comprobarlo en los
+dos sitios sería dos sitios donde equivocarse.
+
+#### Verificación
+
+- Contra la base real, con `request.jwt.claims` simulado: alumno intentando
+  matricular → `42501`; sin sesión → `42501`; admin → `ENROLLED`; repetir →
+  `ENROLLED`; origen guardado → `ADMIN`; canje de código → ok con origen
+  `CODIGO`; código inventado → `23514`. Las matrículas de prueba se borraron.
+- Backend **739/739** · contrato OpenAPI regenerado (D6 en verde) · verificador
+  de esquema 1 FALLA (m7/m8, la conocida).
+
 ## [1.7.8] - 2026-10-30
 ### El aula virtual tiene código de entrada, y se lee desde el panel
 

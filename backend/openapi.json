@@ -2221,6 +2221,50 @@
         },
         "additionalProperties": false
       },
+      "RespuestaMatricula": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string",
+            "description": "Estado resultante de la matrícula. `ENROLLED` si quedó dentro."
+          },
+          "seccionId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "estado",
+          "seccionId"
+        ]
+      },
+      "CuerpoMatricular": {
+        "type": "object",
+        "properties": {
+          "estudianteId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "estudianteId"
+        ],
+        "additionalProperties": false
+      },
+      "CuerpoUnirse": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 8
+          }
+        },
+        "required": [
+          "codigo"
+        ],
+        "additionalProperties": false
+      },
       "RespuestaGrupoResuelto": {
         "type": "object",
         "properties": {
@@ -7996,6 +8040,179 @@
           },
           "409": {
             "description": "El nombre nuevo choca con otra sección del mismo lapso y materia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El servicio o la base de datos no están disponibles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/aulas/{id}/matricular": {
+      "post": {
+        "tags": [
+          "Secciones"
+        ],
+        "summary": "Matricula a un aprendiz en un aula",
+        "description": "**No es un `insert`.** La tabla `enrollments` tiene la escritura revocada para `authenticated` (R-23), así que llama a la RPC `matricular_por_administrador`, que exige rol admin activo, aula viva, período abierto y cupo disponible. Es **idempotente**: matricular a quien ya está devuelve `ENROLLED`, no un conflicto — el panel no tiene por qué tragarse un error que no aporta nada. El `origen` lo fija el servidor (`ADMIN`), no el cliente.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuerpoMatricular"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Matriculado (o ya lo estaba).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaMatricula"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "El aula no existe, está archivada, el período está cerrado o no hay cupo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta la sesión o el token no es válido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "La sesión es válida pero el rol no alcanza, o la cuenta está inactiva.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El alumno ya tiene una matrícula en otro estado; usa reincorporar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El servicio o la base de datos no están disponibles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/aulas/unirse": {
+      "post": {
+        "tags": [
+          "Secciones"
+        ],
+        "summary": "El aprendiz canjea el código de su aula",
+        "description": "La puerta del alumno: dicta el código que el docente escribe en clase y queda matriculado con `origen = CODIGO`. Sólo funciona con el **período vigente**: un código de un período cerrado no sirve para entrar a clase hoy. El mensaje de error es el mismo para «no existe» y «está cerrada» a propósito — distinguirlos convertiría la ruta en un oráculo para adivinar códigos.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuerpoUnirse"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Matriculado en el aula.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaMatricula"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "El código no corresponde a ninguna aula abierta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta la sesión o el token no es válido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "La sesión es válida pero el rol no alcanza, o la cuenta está inactiva.",
             "content": {
               "application/json": {
                 "schema": {

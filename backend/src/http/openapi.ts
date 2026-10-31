@@ -1405,6 +1405,25 @@ const CuerpoCrearSeccion = z
   .strict()
   .openapi('CuerpoCrearSeccion');
 
+const CuerpoMatricular = z
+  .object({ estudianteId: z.string().uuid() })
+  .strict()
+  .openapi('CuerpoMatricular');
+
+const CuerpoUnirse = z
+  .object({ codigo: z.string().min(4).max(8) })
+  .strict()
+  .openapi('CuerpoUnirse');
+
+const RespuestaMatricula = z
+  .object({
+    estado: z.string().openapi({
+      description: 'Estado resultante de la matrícula. `ENROLLED` si quedó dentro.',
+    }),
+    seccionId: z.string().uuid(),
+  })
+  .openapi('RespuestaMatricula');
+
 const CuerpoActualizarSeccion = z
   .object({
     nombre: z.string().max(24).optional(),
@@ -3247,6 +3266,60 @@ export function construirRegistro(): OpenAPIRegistry {
       403: RESPUESTAS_ERROR[403],
       404: error('La sección no existe (SECCION_INEXISTENTE).'),
       409: error('El nombre nuevo choca con otra sección del mismo lapso y materia.'),
+      503: RESPUESTAS_ERROR[503],
+    },
+  });
+
+  registro.registerPath({
+    ...seccionesTag,
+    method: 'post',
+    path: '/api/v1/admin/aulas/{id}/matricular',
+    summary: 'Matricula a un aprendiz en un aula',
+    description:
+      '**No es un `insert`.** La tabla `enrollments` tiene la escritura revocada para `authenticated` (R-23), así que llama a la RPC `matricular_por_administrador`, que exige rol admin activo, aula viva, período abierto y cupo disponible. Es **idempotente**: matricular a quien ya está devuelve `ENROLLED`, no un conflicto — el panel no tiene por qué tragarse un error que no aporta nada. El `origen` lo fija el servidor (`ADMIN`), no el cliente.',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: z.object({ id: z.string().uuid() }),
+      body: {
+        required: true,
+        content: { 'application/json': { schema: CuerpoMatricular } },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Matriculado (o ya lo estaba).',
+        content: { 'application/json': { schema: RespuestaMatricula } },
+      },
+      400: error('El aula no existe, está archivada, el período está cerrado o no hay cupo.'),
+      401: RESPUESTAS_ERROR[401],
+      403: RESPUESTAS_ERROR[403],
+      409: error('El alumno ya tiene una matrícula en otro estado; usa reincorporar.'),
+      503: RESPUESTAS_ERROR[503],
+    },
+  });
+
+  registro.registerPath({
+    ...seccionesTag,
+    method: 'post',
+    path: '/api/v1/aulas/unirse',
+    summary: 'El aprendiz canjea el código de su aula',
+    description:
+      'La puerta del alumno: dicta el código que el docente escribe en clase y queda matriculado con `origen = CODIGO`. Sólo funciona con el **período vigente**: un código de un período cerrado no sirve para entrar a clase hoy. El mensaje de error es el mismo para «no existe» y «está cerrada» a propósito — distinguirlos convertiría la ruta en un oráculo para adivinar códigos.',
+    security: [{ bearerAuth: [] }],
+    request: {
+      body: {
+        required: true,
+        content: { 'application/json': { schema: CuerpoUnirse } },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Matriculado en el aula.',
+        content: { 'application/json': { schema: RespuestaMatricula } },
+      },
+      400: error('El código no corresponde a ninguna aula abierta.'),
+      401: RESPUESTAS_ERROR[401],
+      403: RESPUESTAS_ERROR[403],
       503: RESPUESTAS_ERROR[503],
     },
   });

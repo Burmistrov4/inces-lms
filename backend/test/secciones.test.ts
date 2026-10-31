@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   conToken,
   crearArnés,
+  ID_ALUMNO,
   ID_MATERIA_ALGORITMICA,
   ID_MATERIA_BASEDATOS,
   ID_PROGRAMA_SISTEMAS,
@@ -39,7 +40,70 @@ const RUTAS_ADMIN = [
   { method: 'PATCH' as const, url: `/api/v1/admin/secciones/${ID_SECCION_SA}` },
 ];
 
-describe('control de acceso a las secciones', () => {
+describe('puertas del aula (F2)', () => {
+  it('el administrador matricula a un aprendiz', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/aulas/${ID_SECCION_SA}/matricular`,
+      headers: conToken(TOKEN_ADMIN),
+      payload: { estudianteId: ID_ALUMNO },
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    expect(respuesta.json()).toMatchObject({
+      estado: 'ENROLLED',
+      seccionId: ID_SECCION_SA,
+    });
+  });
+
+  it('un aprendiz no puede matricular a nadie', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: `/api/v1/admin/aulas/${ID_SECCION_SA}/matricular`,
+      headers: conToken(TOKEN_ALUMNO),
+      payload: { estudianteId: ID_ALUMNO },
+    });
+
+    expect(respuesta.statusCode).toBe(403);
+  });
+
+  it('unirse sin sesión no entra', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: '/api/v1/aulas/unirse',
+      payload: { codigo: 'ABCD2345' },
+    });
+
+    expect(respuesta.statusCode).toBe(401);
+  });
+
+  it('un código que no existe no entra, y no dice por qué', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: '/api/v1/aulas/unirse',
+      headers: conToken(TOKEN_ALUMNO),
+      payload: { codigo: 'ZZZZZZZZ' },
+    });
+
+    expect(respuesta.statusCode).toBe(400);
+    // Mismo mensaje para inexistente y cerrada: distinguirlos sería un oráculo.
+    expect(respuesta.json().error.mensaje).toContain('ninguna aula abierta');
+  });
+});
+
+describe('control de acceso a las rutas de secciones', () => {
   it('exige sesión en las tres rutas de administración', async () => {
     const arnes = crearArnés();
     app = arnes.app;

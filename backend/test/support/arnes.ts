@@ -3304,6 +3304,84 @@ export function crearArnés(opciones: OpcionesArnés = {}): Arnés {
       return 0;
     },
 
+    async matricularPorAdministrador(estudianteId, seccionId) {
+      revisar('inscripciones.matricularPorAdministrador');
+
+      const seccion = estado.secciones.find((s) => s.id === seccionId);
+      if (!seccion) {
+        throw new ErrorApi(400, 'REFERENCIA_INVALIDA', 'Esa aula no existe.');
+      }
+      if (seccion.activa === false) {
+        throw new ErrorApi(400, 'RESTRICCION_VIOLADA', 'El aula está archivada.');
+      }
+
+      const alumno = estado.perfiles.find((p) => p.id === estudianteId);
+      if (!alumno || alumno.rol !== 'estudiante') {
+        throw new ErrorApi(400, 'RESTRICCION_VIOLADA', 'Ese usuario no es un aprendiz.');
+      }
+
+      const existente = estado.inscripciones.find(
+        (i) => i.seccionId === seccionId && i.estudianteId === estudianteId,
+      );
+
+      // Idempotente, igual que la RPC: ya matriculado no es un conflicto.
+      if (existente) {
+        if (estadoDe(existente) === 'ENROLLED') return 'ENROLLED';
+        throw new ErrorApi(
+          409,
+          'REGISTRO_DUPLICADO',
+          'El alumno ya tiene una matrícula en esta aula. Usa reincorporar.',
+        );
+      }
+
+      estado.inscripciones.push({
+        seccionId,
+        estudianteId,
+        estado: 'ENROLLED',
+        origen: 'ADMIN',
+        creadaEn: new Date(0).toISOString(),
+        posicion: 1,
+      } as never);
+
+      return 'ENROLLED';
+    },
+
+    async unirsePorCodigo(codigo) {
+      revisar('inscripciones.unirsePorCodigo');
+
+      const seccion = estado.secciones.find(
+        (s) =>
+          (s.codigoAula ?? '').toUpperCase() === codigo.toUpperCase() &&
+          s.activa !== false,
+      );
+
+      // Mismo mensaje para inexistente y cerrada: en el doble tampoco se
+      // distingue, para que la prueba no dependa de esa diferencia.
+      if (!seccion) {
+        throw new ErrorApi(
+          400,
+          'RESTRICCION_VIOLADA',
+          'Ese código no corresponde a ninguna aula abierta.',
+        );
+      }
+
+      const yo = estado.usuarioActual;
+      if (!yo) {
+        throw new ErrorApi(401, 'NO_AUTENTICADO', 'Se requiere una sesión.');
+      }
+
+      estado.inscripciones.push({
+        seccionId: seccion.id,
+        estudianteId: yo,
+        estado: 'ENROLLED',
+        origen: 'CODIGO',
+        creadaEn: new Date(0).toISOString(),
+        posicion: 1,
+      } as never);
+
+      return seccion.id;
+    },
+
     async resumenCursos() {
       revisar('inscripciones.resumenCursos');
 

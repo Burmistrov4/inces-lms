@@ -5,9 +5,11 @@ import {
   esquemaCrearSeccion,
   esquemaIdSeccion,
   esquemaListadoSecciones,
+  esquemaMatricular,
   esquemaResolverGrupo,
+  esquemaUnirse,
 } from '../esquemas.js';
-import { exigirAdmin, reposDe } from '../plugins/autenticacion.js';
+import { exigirAdmin, exigirSesion, reposDe } from '../plugins/autenticacion.js';
 
 /**
  * Rutas del catálogo de secciones.
@@ -102,7 +104,49 @@ export function rutasSecciones(app: FastifyInstance): void {
 
         return reply.status(creada ? 201 : 200).send({ seccion, creada });
       });
+
+      /**
+       * Matricula a un aprendiz en un aula.
+       *
+       * **No es un `insert`.** `enrollments` tiene la escritura revocada para
+       * `authenticated` (R-23), así que esto llama a la RPC
+       * `matricular_por_administrador`, que hace su propia autorización. Es
+       * idempotente: matricular a quien ya está devuelve 200, no un conflicto —
+       * el panel no tiene por qué tragarse un error que no aporta nada.
+       */
+      admin.post<{ Params: { id: string } }>(
+        '/aulas/:id/matricular',
+        async (request) => {
+          const seccionId = esquemaIdSeccion.parse(request.params.id);
+          const { estudianteId } = esquemaMatricular.parse(request.body);
+
+          const estado = await reposDe(request).inscripciones
+            .matricularPorAdministrador(estudianteId, seccionId);
+
+          return { estado, seccionId };
+        },
+      );
     },
     { prefix: '/api/v1/admin' },
+  );
+
+  /**
+   * El aprendiz canjea el código de su aula.
+   *
+   * Va fuera del plugin `admin` porque no es administración: es la puerta del
+   * alumno. El rol lo comprueba la RPC (no esta ruta): si se comprobara aquí,
+   * habría dos sitios donde equivocarse.
+   */
+  app.post(
+    '/api/v1/aulas/unirse',
+    // La sesión se exige aquí, y el **rol** dentro de la RPC: si el rol se
+    // comprobara también en la ruta, habría dos sitios donde equivocarse.
+    { preHandler: exigirSesion() },
+    async (request) => {
+      const { codigo } = esquemaUnirse.parse(request.body);
+      const seccionId = await reposDe(request).inscripciones.unirsePorCodigo(codigo);
+
+      return { seccionId, estado: 'ENROLLED' as const };
+    },
   );
 }
