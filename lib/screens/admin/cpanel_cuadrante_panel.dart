@@ -286,7 +286,15 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
         final cuerpo = EstadoPanel(
           cargando: _cargando,
           error: _error,
-          onReintentar: _cargarPeriodos,
+          // **Reintentar recarga lo que falló, no sólo la lista de períodos.**
+          // Antes apuntaba a `_cargarPeriodos`, así que tras un fallo de red el
+          // botón dejaba la rejilla igual: el mensaje desaparecía y la pantalla
+          // volvía a quedar vacía sin explicación (reportado el 2026-10-30 con
+          // la API en 503). Ahora rehace las dos cargas en orden.
+          onReintentar: () async {
+            await _cargarPeriodos();
+            await _cargarRejilla();
+          },
           child: _cuerpo(compacto: compacto),
         );
 
@@ -294,6 +302,7 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _cabecera(razon),
+        if (razon != null && !_cargando) _avisoDeBloqueo(razon),
         if (_lapso != null && !_hayVigente) _avisoSinVigente(),
         const SizedBox(height: 8),
         const GuiaContextualModulo(
@@ -376,6 +385,38 @@ class _CpanelCuadrantePanelState extends State<CpanelCuadrantePanel> {
         else
           Tooltip(message: razon, child: boton),
       ],
+    );
+  }
+
+  /// La razón por la que no se puede asignar, **visible**, no sólo en un tooltip.
+  ///
+  /// Reportado el 2026-10-30: «el botón de asignar clase está en gris y no dice
+  /// nada». En un teléfono el tooltip no existe —no hay ratón—, así que el
+  /// administrador ve un botón muerto y ninguna pista de por qué. Es la misma
+  /// razón que ya se calculaba, puesta donde se lee.
+  Widget _avisoDeBloqueo(String razon) {
+    final tema = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.info_outline_rounded,
+            size: 15,
+            color: tema.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              razon,
+              style: tema.textTheme.bodySmall?.copyWith(
+                color: tema.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

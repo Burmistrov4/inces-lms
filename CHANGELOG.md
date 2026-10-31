@@ -2,6 +2,29 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.7.6] - 2026-10-30
+### El cuadrante dice por qué no puede, y reintentar reintenta de verdad
+
+Reportado con la API caída: «el botón de asignar clase está en gris y no dice
+nada». La razón ya existía, pero vivía en un `Tooltip` — que en un teléfono no
+existe, porque no hay ratón.
+
+- La razón del bloqueo («No hay docentes activos…», «Registra los espacios del
+  centro primero», «Crea primero una sección…») ahora se **lee** bajo la
+  cabecera, no sólo al pasar el ratón.
+- **Reintentar recarga las dos cosas.** Antes `onReintentar` apuntaba sólo a la
+  lista de períodos: tras un fallo de red el mensaje desaparecía y la rejilla
+  volvía a quedar vacía sin decir nada. Ahora rehace períodos **y** rejilla.
+
+Prueba nueva: «sin docentes, la razón del botón deshabilitado se lee».
+
+#### Verificación
+
+- 16 pruebas del panel y del scroll móvil en verde · analizador 251 0/0/0.
+- Sin desplegar al momento de escribir: `inces-lms-api.onrender.com` responde
+  **503 con `x-render-routing: suspend`** (servicio suspendido por Render), así
+  que el cuadrante no se puede probar de punta a punta contra producción.
+
 ## [1.7.5] - 2026-10-30
 ### El período se puede cerrar, los chips suman y asignar clase pide lo que necesita
 

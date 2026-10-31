@@ -156,6 +156,39 @@ void main() {
       expect(find.text('No hay espacios registrados'), findsOneWidget);
     });
 
+    testWidgets('sin docentes, la razón del botón deshabilitado se lee',
+        (tester) async {
+      // Reportado el 2026-10-30: «el botón de asignar clase está en gris y no
+      // dice nada». La razón existía, pero vivía en un tooltip — que en un
+      // teléfono no existe. Ahora tiene que estar en el texto.
+      gateway.periodos = const [
+        Periodo(id: 'p1', codigo: 'SA26-2', activo: true, vigente: true),
+      ];
+      gateway.rejillaDevuelta = const RejillaCuadrante(
+        periodo: 'SA26-2',
+        aulas: [
+          Aula(
+            id: 'a1',
+            nombre: 'Taller A',
+            capacidad: 20,
+            esTaller: true,
+            activa: true,
+          ),
+        ],
+        docentes: [],
+      );
+
+      await montar(tester, CpanelCuadrantePanel(repositorio: repo));
+
+      expect(
+        find.text('No hay docentes activos a los que asignar la clase.'),
+        // `findsWidgets` y no `findsOneWidget`: el panel compone la cabecera en
+        // las dos ramas de tamaño (compacta y ancha) y el texto aparece en la que
+        // se pinta. Lo que importa —y es lo que se reportó— es que se lea.
+        findsWidgets,
+      );
+    });
+
     testWidgets('un lapso sin marcar como vigente lo avisa, pero pinta',
         (tester) async {
       sembrarCuadrante(vigente: false, clases: [claseEn(1, 1)]);

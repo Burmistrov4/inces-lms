@@ -14,7 +14,7 @@ class AppConfig {
   /// exigirÃ­a `package_info_plus` (y una llamada de plataforma en cada arranque
   /// web). En su lugar, `test/version_coherente_test.dart` compara las dos y
   /// falla si se separan.
-  static const String version = '1.7.5';
+  static const String version = '1.7.6';
   static const String versionLabel =
       'INCES LMS v$version Â· CFS Rafael Urdaneta Â· Prod 2026';
 
