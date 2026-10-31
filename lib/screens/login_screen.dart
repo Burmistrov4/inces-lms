@@ -74,6 +74,15 @@ class _LoginScreenState extends State<LoginScreen> {
       password: _passwordController.text,
     );
 
+    // Cierra el ciclo de autocompletado para que el navegador guarde o
+    // actualice las credenciales. Sin esto, Chrome decide por su cuenta y a
+    // veces deja el formulario en un estado intermedio: el campo muestra un
+    // valor que el controlador no tiene, y borrarlo con el teclado no surte
+    // efecto.
+    if (resultado.isSuccess) {
+      TextInput.finishAutofillContext();
+    }
+
     // `_isLoading` se libera ANTES de comprobar `mounted`.
     //
     // El orden importa: si el widget se desmonta mientras la petición viaja
@@ -574,22 +583,43 @@ class _LoginScreenState extends State<LoginScreen> {
                 autofillHints: const [AutofillHints.password],
                 textInputAction: TextInputAction.done,
                 obscureText: _obscurePassword,
+                onChanged: (_) => setState(() {}),
                 onFieldSubmitted: (_) => _handleLogin(),
                 decoration: InputDecoration(
                   labelText: 'Contraseña',
                   prefixIcon: const Icon(Icons.lock_outline, size: 20),
-                  suffixIcon: IconButton(
-                    tooltip: _obscurePassword
-                        ? 'Mostrar contraseña'
-                        : 'Ocultar contraseña',
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      size: 20,
-                    ),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // **Vaciar, siempre.** Con el autocompletado del navegador
+                      // el campo puede quedar con un valor que el controlador
+                      // no ve —el navegador escribe en el input oculto y Flutter
+                      // no se entera—, y entonces borrar con el teclado no
+                      // vacía nada. Un botón que limpia el controlador resuelve
+                      // el caso sin depender de esa sincronía.
+                      if (_passwordController.text.isNotEmpty)
+                        IconButton(
+                          tooltip: 'Vaciar contraseña',
+                          icon: const Icon(Icons.backspace_outlined, size: 18),
+                          onPressed: () {
+                            _passwordController.clear();
+                            setState(() {});
+                          },
+                        ),
+                      IconButton(
+                        tooltip: _obscurePassword
+                            ? 'Mostrar contraseña'
+                            : 'Ocultar contraseña',
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          size: 20,
+                        ),
+                        onPressed: () =>
+                            setState(() => _obscurePassword = !_obscurePassword),
+                      ),
+                    ],
                   ),
                 ),
                 validator: (value) {

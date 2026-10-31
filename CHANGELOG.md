@@ -2,6 +2,25 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.11.2] - 2026-10-31
+### La contraseña se puede vaciar
+
+Reportado: «luego de poner una contraseña no me deja quitarla» y «a veces no se
+coloca ni el correo ni la contraseña» cuando el navegador ofrece credenciales
+guardadas.
+
+- **Botón de vaciar** en el campo de contraseña. Con el autocompletado del
+  navegador el campo puede quedar con un valor que el controlador de Flutter no
+  ve —el navegador escribe en el input oculto—, y entonces borrar con el teclado
+  no vacía nada. El botón limpia el controlador y no depende de esa sincronía.
+- `TextInput.finishAutofillContext()` tras un inicio de sesión correcto: cierra
+  el ciclo para que el navegador guarde o actualice las credenciales en vez de
+  dejar el formulario a medias.
+
+**Lo que no se arregla desde aquí:** que Chrome decida rellenar uno de los dos
+campos y no el otro es comportamiento suyo. El formulario ya declara
+`AutofillHints.username/password` dentro de un `AutofillGroup`.
+
 ## [1.11.1] - 2026-10-31
 ### El archivo subido deja de desaparecer
 
