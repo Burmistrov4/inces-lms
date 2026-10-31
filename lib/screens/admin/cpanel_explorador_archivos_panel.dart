@@ -15,6 +15,8 @@ import '../../theme/inces_theme.dart';
 import '../../widgets/comunes.dart';
 import '../../widgets/guardia_toque.dart';
 import '../../widgets/responsivo.dart';
+import '../../models/seccion.dart';
+import '../../repositories/secciones_repository.dart';
 
 /// Tipo de elemento en el explorador de archivos.
 enum TipoElemento {
@@ -199,6 +201,9 @@ class _CpanelExploradorArchivosPanelState
   /// Motor real de subida (Módulo 5): selector del navegador + los tres pasos
   /// firmar → PUT a R2 → confirmar. Desde el 2026-10-20 la subida es de verdad;
   /// antes era una simulación que insertía un elemento local sin tocar R2.
+  /// Las aulas virtuales de verdad, para el vínculo de archivos.
+  late final SeccionesRepository _repoSecciones = SeccionesRepository();
+
   late final ArchivosRepository _repoArchivos =
       widget.repositorio ?? ArchivosRepository();
   late final SelectorDeArchivos _selectorArchivos =
@@ -1232,27 +1237,50 @@ class _CpanelExploradorArchivosPanelState
     return buf.toBytes();
   }
 
-  void _vincularAulaVirtual(ElementoArchivo item) {
+  /// Vincula un archivo a un aula virtual.
+  ///
+  /// **La lista sale de la base, no del código.** Estaba escrita a mano con
+  /// nombres de talleres que no existen en el centro («Soldadura Avanzada
+  /// TIG/MIG - Taller 2», «Refrigeración y Climatización»…), así que el
+  /// administrador no reconocía ninguna de sus aulas y las que tenía no
+  /// aparecían. Medido el 2026-10-31.
+  Future<void> _vincularAulaVirtual(ElementoArchivo item) async {
     String aulaSeleccionada = item.aulaVirtual;
     String permisoSeleccionado = item.permiso;
 
-    final aulasDisponibles = [
+    final aulasDisponibles = <String>[
       'General CFS (Todos los programas)',
-      'Soldadura Básica - Taller 1',
-      'Soldadura Avanzada TIG/MIG - Taller 2',
-      'Electricidad y Mantenimiento Industrial',
-      'Refrigeración y Climatización',
-      'Alimentación y Gastronomía Industrial',
-      'Asistente Administrativo y Ofimática',
-      'Diseño Gráfico y Computación',
-      'Formación Juvenil y Bachillerato Productivo',
     ];
+
+    try {
+      final resultado = await _repoSecciones.listarTodasLasSecciones(
+        soloActivas: true,
+      );
+      for (final s in resultado.valueOrNull ?? const <Seccion>[]) {
+        // Nombre reconocible sin depender del catálogo: el grupo, el lapso y el
+        // código que el docente dicta en clase.
+        final etiqueta = 'Aula ${s.nombre} · ${s.periodo}'
+            '${s.codigoAula != null && s.codigoAula!.isNotEmpty ? ' · código ${s.codigoAula}' : ''}';
+        aulasDisponibles.add(etiqueta);
+      }
+    } catch (_) {
+      // Sin catálogo se ofrece al menos lo que ya tenía el archivo: peor sería
+      // una lista vacía que borre la asignación al abrir el diálogo.
+    }
+
+    // Lo que ya estaba asignado no puede desaparecer del desplegable.
+    if (!aulasDisponibles.contains(aulaSeleccionada)) {
+      aulasDisponibles.add(aulaSeleccionada);
+    }
 
     final permisosDisponibles = [
       'Docentes y Estudiantes',
       'Sólo Docente / Instructor',
       'Público Institucional (Todo el CFS)',
     ];
+
+    // El `await` de arriba puede haber desmontado el panel.
+    if (!mounted) return;
 
     showDialog<void>(
       context: context,

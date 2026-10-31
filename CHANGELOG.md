@@ -2,6 +2,21 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.12.1] - 2026-10-31
+### El vínculo de archivos ofrece las aulas que existen
+
+Reportado: al asignar un archivo a un aula virtual aparecían cursos que no
+existen en «Cursos y PNA».
+
+- **La lista estaba escrita a mano**: «Soldadura Avanzada TIG/MIG - Taller 2»,
+  «Refrigeración y Climatización», «Asistente Administrativo y Ofimática»… ocho
+  nombres que no existen en la base. Las aulas reales del centro no aparecían.
+- Ahora se piden al servidor las secciones activas y se etiquetan con lo que el
+  docente reconoce: `Aula <grupo> · <lapso> · código <8 caracteres>`.
+- Lo que ya estaba asignado se conserva en el desplegable aunque no venga del
+  catálogo: abrir el diálogo no puede borrar una asignación previa.
+- Si el catálogo no carga, el diálogo sigue abriendo con lo que tenía el archivo.
+
 ## [1.12.0] - 2026-10-31
 ### El docente invita a sus aprendices
 
