@@ -49,6 +49,19 @@ cd backend && npm run openapi            # regenera openapi.json (contrato D6)
 # Esquema en la nube (fuera del repo, contra Supabase)
 node supabase/apply-migrations.mjs --check
 node supabase/verificar-esquema.mjs      # 147 OK · 1 rojo = deriva real de módulos (B13)
+```
+
+> **Obligatorio después de CUALQUIER migración: correr `verificar-esquema.mjs`.**
+> No es opcional y no basta con mirar que la migración diga «aplicada». Medido el
+> 2026-10-30: una migración que recreaba tres vistas para cambiar el tipo de una
+> columna las dejó sin `security_invoker = true` —`pg_get_viewdef()` devuelve el
+> SELECT, no las opciones de la vista— y eso es un **bypass de RLS**: cualquier
+> usuario autenticado veía los datos de todos los aspirantes del centro. La
+> migración salió en verde, los permisos estaban bien, y el hueco solo lo vio el
+> verificador, con tres rojos. Lo que la migración no puede decir de sí misma, lo
+> dice ese script.
+
+```bash
 
 # E2E (Playwright) — requiere backend en 3001 + NO_PROXY
 NO_PROXY=localhost,127.0.0.1 playwright test        # en e2e/
