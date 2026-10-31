@@ -18,6 +18,7 @@ import 'mis_aulas_panel.dart';
 import '../widgets/walkthrough_interactivo.dart';
 import '../widgets/guardia_toque.dart';
 import '../widgets/asistente_brjula.dart';
+import '../repositories/cuadrante_repository.dart';
 
 /// Panel del docente.
 ///
@@ -90,6 +91,12 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
   @override
   ModuloRepository get repositorioDeModulos => _modulosRepo;
 
+  @override
+  void initState() {
+    super.initState();
+    _cargarPeriodoVigente();
+  }
+
   /// El listado de aulas de «Aulas Virtuales».
   ///
   /// Cae al gateway de contenido cuando se inyecta —un [AulaGateway] **es** un
@@ -153,7 +160,32 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
     ),
   ];
 
-  static const String _periodoActivo = 'SA26-2';
+  /// Período vigente, leído del servidor.
+  ///
+  /// Era una constante (`'SA26-2'`): la cabecera mostraba un período anterior
+  /// mientras los paneles ya trabajaban con el vigente. Medido el 2026-10-31.
+  late final CuadranteRepository _periodosRepo = CuadranteRepository();
+  String? _periodoCodigo;
+  String? _periodoNombre;
+  bool _periodoEsVigente = true;
+
+  Future<void> _cargarPeriodoVigente() async {
+    final resultado = await _periodosRepo.listarPeriodos();
+    if (!mounted) return;
+    resultado.when(
+      success: (periodos) {
+        final elegido = periodos.where((p) => p.vigente).firstOrNull ??
+            (periodos.isNotEmpty ? periodos.first : null);
+        if (elegido == null) return;
+        setState(() {
+          _periodoCodigo = elegido.codigo;
+          _periodoNombre = elegido.nombre;
+          _periodoEsVigente = elegido.vigente;
+        });
+      },
+      failure: (_) {},
+    );
+  }
 
   Future<void> _cerrarSesion() async {
     await _auth.cerrarSesion();
@@ -204,7 +236,11 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
       onSeleccionar: (indice) => setState(() => _seleccionada = indice),
       rolEtiqueta: 'Docente',
       correoUsuario: _auth.emailActual,
-      periodoActivo: _periodoActivo,
+      periodoActivo: _periodoNombre?.trim().isNotEmpty == true
+          ? _periodoNombre
+          : _periodoCodigo,
+      periodoCodigo: _periodoCodigo,
+      periodoVigente: _periodoEsVigente,
       onCerrarSesion: _cerrarSesion,
       temaActual: tema?.modo,
       onCambiarTema: tema?.cambiar,

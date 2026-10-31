@@ -2,6 +2,20 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.11.3] - 2026-10-31
+### La cabecera deja de mentir con el período
+
+Reportado: la insignia de arriba decía un período y «Mis aulas» otro.
+
+- **El período estaba escrito a mano** en el panel del aprendiz
+  (`periodoActivo: 'SA26-2'`) y en el del docente
+  (`static const _periodoActivo = 'SA26-2'`). Los paneles ya leían el vigente, así
+  que la cabecera contaba la historia vieja. Ahora los tres perfiles lo piden al
+  servidor y muestran su nombre, con el código en el tooltip.
+- Al crear un grupo, el campo de período venía precargado con «SA26-2»: un grupo
+  creado sin mirar quedaba en un lapso anterior. Ahora empieza vacío y hay que
+  elegirlo.
+
 ## [1.11.2] - 2026-10-31
 ### La contraseña se puede vaciar
 

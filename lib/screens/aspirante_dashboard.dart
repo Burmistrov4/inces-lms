@@ -29,6 +29,7 @@ import 'perfil_panel.dart';
 import '../widgets/walkthrough_interactivo.dart';
 import '../widgets/guardia_toque.dart';
 import '../widgets/asistente_brjula.dart';
+import '../repositories/cuadrante_repository.dart';
 
 /// Panel del aspirante y del estudiante.
 ///
@@ -227,6 +228,7 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
   @override
   void initState() {
     super.initState();
+    _cargarPeriodoVigente();
     if (widget.seccionInicial != null) {
       final idx = _items.indexWhere(
         (it) => it.titulo.toLowerCase() == widget.seccionInicial!.toLowerCase(),
@@ -347,6 +349,38 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
     Navigator.of(context, rootNavigator: true).pushReplacementNamed('/login');
   }
 
+  /// Período vigente, leído del servidor.
+  ///
+  /// **Antes estaba escrito a mano** (`periodoActivo: 'SA26-2'`), así que la
+  /// cabecera decía un período y los paneles otro: medido el 2026-10-31, la
+  /// insignia mostraba «SA26-2» mientras «Mis aulas» decía «Período: INCES26-3».
+  /// Un dato fijo en una cabecera es una mentira con fecha de caducidad.
+  late final CuadranteRepository _periodosRepo = CuadranteRepository();
+  String? _periodoCodigo;
+  String? _periodoNombre;
+  bool _periodoEsVigente = true;
+
+  Future<void> _cargarPeriodoVigente() async {
+    final resultado = await _periodosRepo.listarPeriodos();
+    if (!mounted) return;
+    resultado.when(
+      success: (periodos) {
+        final elegido = periodos.where((p) => p.vigente).firstOrNull ??
+            (periodos.isNotEmpty ? periodos.first : null);
+        if (elegido == null) return;
+        setState(() {
+          _periodoCodigo = elegido.codigo;
+          _periodoNombre = elegido.nombre;
+          _periodoEsVigente = elegido.vigente;
+        });
+      },
+      failure: (_) {
+        // Sin dato se deja la insignia como está: inventar un período sería peor
+        // que no mostrarlo.
+      },
+    );
+  }
+
   void _navegarA(String destino) {
     final idx = _items.indexWhere(
       (it) =>
@@ -374,7 +408,11 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
       onSeleccionar: (indice) => setState(() => _seleccionada = indice),
       rolEtiqueta: 'Estudiante',
       correoUsuario: _auth.emailActual,
-      periodoActivo: 'SA26-2',
+      periodoActivo: _periodoNombre?.trim().isNotEmpty == true
+          ? _periodoNombre
+          : _periodoCodigo,
+      periodoCodigo: _periodoCodigo,
+      periodoVigente: _periodoEsVigente,
       onCerrarSesion: _cerrarSesion,
       temaActual: tema?.modo,
       onCambiarTema: tema?.cambiar,

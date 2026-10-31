@@ -328,7 +328,9 @@ class _DialogoCrearSeccionState extends State<_DialogoCrearSeccion> {
   final _forma = GlobalKey<FormState>();
   final _programa = TextEditingController();
   final _materia = TextEditingController();
-  final _periodo = TextEditingController(text: 'SA26-2');
+  // Sin valor por defecto: antes traía «SA26-2» escrito y un grupo creado sin
+  // mirar quedaba en un período viejo.
+  final _periodo = TextEditingController();
   final _nombre = TextEditingController();
   final _cupo = TextEditingController(text: '25');
   bool _guardando = false;
