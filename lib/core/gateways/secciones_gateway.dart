@@ -25,6 +25,15 @@ abstract interface class SeccionesGateway {
   /// está no falla, devuelve el mismo estado.
   Future<String> matricular(String seccionId, String estudianteId);
 
+  /// Da de baja a un aprendiz **sin borrar nada**: el servidor cambia el estado
+  /// y conserva su expediente y su planilla. El motivo es obligatorio y queda
+  /// auditado con quién lo hizo.
+  Future<String> darDeBaja(
+    String seccionId,
+    String estudianteId, {
+    required String motivo,
+  });
+
   /// Archiva, renombra o recapacita una sección. No se puede cambiar
   /// programa, materia ni período (identidad).
   Future<Seccion> actualizarSeccion(String id, CambiosSeccion cambios);

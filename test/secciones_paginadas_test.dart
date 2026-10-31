@@ -91,4 +91,32 @@ void main() {
 
     expect(resultado.isSuccess, isFalse);
   });
+
+  test('darDeBaja exige un motivo de verdad, sin llamar al servidor', () async {
+    final r = await repo.darDeBaja(
+      seccionId: 'sec-1',
+      estudianteId: 'alumno-1',
+      motivo: '   ',
+    );
+
+    expect(r.errorOrNull!.message, contains('motivo de la baja'));
+    expect(gateway.bajasPedidas, isEmpty);
+  });
+
+  test('darDeBaja manda el motivo recortado y los dos ids', () async {
+    await repo.darDeBaja(
+      seccionId: ' sec-1 ',
+      estudianteId: ' alumno-1 ',
+      motivo: '  Abandono del curso  ',
+    );
+
+    expect(gateway.bajasPedidas, [('sec-1', 'alumno-1', 'Abandono del curso')]);
+  });
+
+  test('matricular exige el aula y el aprendiz', () async {
+    final r = await repo.matricular(seccionId: '', estudianteId: 'x');
+
+    expect(r.errorOrNull!.message, contains('Falta'));
+    expect(gateway.matriculasPedidas, isEmpty);
+  });
 }

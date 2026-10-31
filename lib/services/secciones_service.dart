@@ -77,6 +77,31 @@ class BackendSeccionesGateway implements SeccionesGateway {
   }
 
   @override
+  Future<String> darDeBaja(
+    String seccionId,
+    String estudianteId, {
+    required String motivo,
+  }) async {
+    // El motivo va en la query y no en el cuerpo: un `DELETE` con cuerpo lo
+    // pierden algunos clientes y proxies. `ApiClient.delete` no acepta
+    // parámetros, así que la query se arma aquí.
+    final consulta = Uri(queryParameters: {'motivo': motivo}).query;
+    final respuesta = await _api.delete(
+      '/api/v1/admin/aulas/${Uri.encodeComponent(seccionId)}'
+      '/matricular/${Uri.encodeComponent(estudianteId)}?$consulta',
+      token: _tokenSesion,
+    );
+
+    final estado = respuesta['estado'];
+    if (estado is! String || estado.isEmpty) {
+      throw const AppException.validacion(
+        'El servidor no confirmó la baja. Vuelve a intentarlo.',
+      );
+    }
+    return estado;
+  }
+
+  @override
   Future<Seccion> crearSeccion(Seccion borrador) async {
     final cuerpo = <String, dynamic>{
       'programaId': borrador.programaId,

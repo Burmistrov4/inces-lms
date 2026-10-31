@@ -88,6 +88,34 @@ class SeccionesRepository {
     });
   }
 
+  /// Da de baja a un aprendiz del aula.
+  ///
+  /// El mínimo del motivo se valida aquí para que el usuario lo sepa antes de
+  /// gastar una petición; el servidor lo vuelve a comprobar y además guarda
+  /// quién lo hizo. La baja **no borra nada**: el expediente y la planilla del
+  /// alumno siguen visibles.
+  Future<Result<String>> darDeBaja({
+    required String seccionId,
+    required String estudianteId,
+    required String motivo,
+  }) {
+    return Result.guard(() async {
+      final motivoLimpio = motivo.trim();
+      if (motivoLimpio.length < 3) {
+        throw const AppException.validacion(
+          'Indica el motivo de la baja: es lo que explicará después por qué ese '
+          'alumno no terminó el curso.',
+        );
+      }
+
+      return _gateway.darDeBaja(
+        seccionId.trim(),
+        estudianteId.trim(),
+        motivo: motivoLimpio,
+      );
+    });
+  }
+
   Future<Result<Seccion>> actualizarSeccion(
           String id, CambiosSeccion cambios) =>
       Result.guard(() => _gateway.actualizarSeccion(id, cambios));

@@ -88,6 +88,20 @@ class FakeSeccionesGateway implements SeccionesGateway {
     return 'ENROLLED';
   }
 
+
+  /// Bajas pedidas en la prueba: `(seccionId, estudianteId, motivo)`.
+  final List<(String, String, String)> bajasPedidas = [];
+
+  @override
+  Future<String> darDeBaja(
+    String seccionId,
+    String estudianteId, {
+    required String motivo,
+  }) async {
+    bajasPedidas.add((seccionId, estudianteId, motivo));
+    return 'DROPPED';
+  }
+
   @override
   Future<Seccion> crearSeccion(Seccion borrador) async {
     llamadas.add('crearSeccion');
