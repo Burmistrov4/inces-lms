@@ -41,10 +41,18 @@ class AppConfig {
     final uriActual = Uri.base;
     final hostActual = uriActual.host.trim();
 
-    // En dominios de Cloudflare Pages (*.pages.dev): se delega de forma nativa a
-    // las Cloudflare Pages Functions del mismo origen para garantizar respuesta
-    // inmediata en el Edge (0 ms cold start) y compatibilidad total con CORS.
-    if (hostActual.endsWith('.pages.dev')) {
+    // En dominios de Cloudflare Pages (*.pages.dev) se delega al mismo origen
+    // **sólo si no hay URL configurada**, para el caso en que el despliegue
+    // incluya las Pages Functions de `functions/` que hacen de proxy.
+    //
+    // Medido el 2026-10-31: esas funciones apuntan a Render
+    // (`RENDER_BACKEND_URL || onrender.com`) y **no viajan** en
+    // `wrangler pages deploy build/web`, así que en producción el atajo dejaba
+    // la app pidiendo `/api/v1/...` a Pages y recibiendo un 503 en HTML. Ese HTML
+    // es el «El servidor respondió con contenido HTML en lugar de datos JSON»
+    // de Cursos y PNA, Guardias, Aulas Virtuales, Archivos y Usuarios. La app
+    // parecía muerta con Render arriba y abajo, porque nunca lo alcanzaba.
+    if (hostActual.endsWith('.pages.dev') && configurada.isEmpty) {
       final esquema = uriActual.scheme.isNotEmpty ? uriActual.scheme : 'https';
       return '$esquema://$hostActual';
     }
