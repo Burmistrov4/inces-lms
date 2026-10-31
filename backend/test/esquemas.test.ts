@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ErrorApi } from '../src/dominio/errores.js';
+import { BLOQUE_MAXIMO } from '../src/dominio/reglas-cuadrante.js';
 import { ROLES, modulosVisibles } from '../src/dominio/tipos.js';
 import {
   esquemaActualizarAula,
@@ -195,18 +196,21 @@ describe('límites de día y de bloque', () => {
     }
   });
 
-  it('el bloque 13 tampoco, y el mensaje dice el techo', () => {
+  it('el bloque 18 tampoco, y el mensaje dice el techo', () => {
     const resultado = esquemaCrearClase.safeParse({
       seccionId: UUID,
       docenteId: UUID,
       aulaId: UUID,
       dia: 1,
-      bloque: 13,
+      bloque: 18,
     });
 
     expect(resultado.success).toBe(false);
     if (!resultado.success) {
-      expect(resultado.error.issues[0]?.message).toContain('12');
+      // El mensaje nombra el techo vigente (17 desde el turno nocturno); se
+      // comprueba contra la constante para que no vuelva a quedarse escrito a
+      // mano un número que la API ya no usa.
+      expect(resultado.error.issues[0]?.message).toContain(String(BLOQUE_MAXIMO));
     }
   });
 
@@ -242,7 +246,7 @@ describe('límites de día y de bloque', () => {
         aulaId: UUID,
         periodo: '2026-1',
         dia: 1,
-        bloque: 13,
+        bloque: 18,
       }).success,
     ).toBe(false);
   });

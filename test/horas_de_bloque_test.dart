@@ -31,6 +31,8 @@ void main() {
 
   test('un bloque fuera de rango devuelve vacío en vez de inventar una hora', () {
     expect(horaConMeridianoDeBloque(0), '');
-    expect(horaConMeridianoDeBloque(13), '');
+    // El 13 dejó de estar fuera de rango con el turno nocturno (2026-10-31);
+    // el techo ahora es 17, así que el primero que no existe es el 18.
+    expect(horaConMeridianoDeBloque(18), '');
   });
 }

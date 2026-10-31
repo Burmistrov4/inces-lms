@@ -822,7 +822,7 @@ describe('POST /api/v1/admin/guardias — el alta normal', () => {
     expect(respuesta.statusCode).toBe(400);
   });
 
-  it('rechaza el día 7 y el bloque 13', async () => {
+  it('rechaza el día 7 y el bloque 18', async () => {
     const arnés = crearArnés();
     app = arnés.app;
 
@@ -849,7 +849,7 @@ describe('POST /api/v1/admin/guardias — el alta normal', () => {
         aulaId: ID_AULA_TEORICA,
         periodo: '2026-1',
         dia: 2,
-        bloque: 13,
+        bloque: 18,
       },
     });
     expect(bloqueTrece.statusCode).toBe(400);

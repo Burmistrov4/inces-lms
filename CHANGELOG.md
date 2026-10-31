@@ -2,6 +2,33 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.10.0] - 2026-10-31
+### Turno nocturno: bloques 13 a 17
+
+El centro abrió horario nocturno y el sistema no lo conocía. No era un desplegable
+que faltara: `turno_de_bloque` respondía «TARDE» para **todo** lo que pasara de 6 y
+las dos tablas cerraban el bloque en 12, así que un bloque 13 era imposible de
+guardar. Y si se hubiera permitido sin tocar la función, la rejilla lo habría
+pintado a la una de la tarde.
+
+- **Base** (`202610310001_turno_nocturno`): la función pasa a tres tramos
+  (1–6 mañana, 7–12 tarde, 13–17 noche) y las restricciones `check (block between
+  1 and 17)` en `schedule_slots` y `teacher_duties`. Los bloques 1–12 conservan su
+  significado: `turno` es una columna `generated stored` y no se recalcula, así que
+  renumerar habría dejado filas con un turno que la función ya no produce.
+- **Franjas**: 13 · 06:00–06:45 p. m., 14 · 06:45–07:30, 15 · 07:30–08:15,
+  16 · 08:15–09:00, 17 · 09:00–09:45.
+- **Contrato**: `Turno` y el enum de OpenAPI aceptan `NOCHE`; el techo de bloque
+  sube a 17 en el esquema y en el artefacto.
+- **Interfaz**: la rejilla agrupa el tercer turno con `bloquesDelTurno`, que ahora
+  deriva los tres tramos de las constantes — añadir un cuarto turno será cambiar
+  dos números, no este switch.
+
+Los guardarraíles de pruebas leían **sólo** la migración original de M3, así que
+una migración posterior que cambiara esos números los dejaba verdes sobre una
+definición que la base ya no usa. Ahora leen todas las migraciones y toman la
+última definición vigente.
+
 ## [1.9.1] - 2026-10-31
 ### El grupo se creaba y la pantalla decía «error»
 

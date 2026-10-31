@@ -134,7 +134,12 @@ bool bloqueValido(int bloque) => bloque >= 1 && bloque <= bloqueMaximo;
 List<int> bloquesDelTurno(Turno turno) => switch (turno) {
       Turno.manana => [for (var b = 1; b <= bloquesDeManana; b++) b],
       Turno.tarde => [
-          for (var b = bloquesDeManana + 1; b <= bloqueMaximo; b++) b,
+          for (var b = bloquesDeManana + 1; b <= ultimoBloqueTarde; b++) b,
+        ],
+      // La noche va de `ultimoBloqueTarde + 1` al techo del día: si mañana se
+      // añadiera otro turno, basta cambiar las constantes, no este switch.
+      Turno.noche => [
+          for (var b = ultimoBloqueTarde + 1; b <= bloqueMaximo; b++) b,
         ],
     };
 

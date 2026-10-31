@@ -25,10 +25,18 @@ export const DIA_MAXIMO = 6;
 /**
  * Bloque máximo admitido.
  *
- * Doce es un techo holgado para turnos de mañana y tarde. Coincide con el
- * `check (block between 1 and 12)` de las dos tablas.
+ * Diecisiete: doce para mañana y tarde, más cinco del turno nocturno que el
+ * centro abrió el 2026-10-31 (bloques 13–17, de 6:00 a 9:45 p. m.). Coincide con
+ * el `check (block between 1 and 17)` de las dos tablas, migración
+ * `202610310001_turno_nocturno`.
  */
-export const BLOQUE_MAXIMO = 12;
+export const BLOQUE_MAXIMO = 17;
+
+/** Último bloque de la mañana. 1–6. */
+export const ULTIMO_BLOQUE_MANANA = 6;
+
+/** Último bloque de la tarde. 7–12; a partir de 13 empieza la noche. */
+export const ULTIMO_BLOQUE_TARDE = 12;
 
 /**
  * Turno de un bloque horario.
@@ -46,7 +54,9 @@ export const BLOQUE_MAXIMO = 12;
  * la prueba de esta función es la que avisa de que los dos sitios se separaron.
  */
 export function turnoDeBloque(bloque: number): Turno {
-  return bloque <= 6 ? 'MAÑANA' : 'TARDE';
+  if (bloque <= ULTIMO_BLOQUE_MANANA) return 'MAÑANA';
+  if (bloque <= ULTIMO_BLOQUE_TARDE) return 'TARDE';
+  return 'NOCHE';
 }
 
 /** Nombres de día, indexados por `day_of_week` ISO (1 = lunes). */

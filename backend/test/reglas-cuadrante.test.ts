@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -12,6 +12,7 @@ import {
   rangoDeFechasValido,
   sumarDuracion,
   turnoDeBloque,
+  ULTIMO_BLOQUE_TARDE,
   validarHorarioMTP,
   validarHorarioOrdinario,
   validarHorarioPNA,
@@ -34,9 +35,12 @@ describe('turnoDeBloque', () => {
     }
   });
 
-  it('del séptimo en adelante es la tarde', () => {
-    for (let bloque = 7; bloque <= BLOQUE_MAXIMO; bloque += 1) {
+  it('del séptimo al duodécimo es la tarde, y del trece en adelante la noche', () => {
+    for (let bloque = 7; bloque <= ULTIMO_BLOQUE_TARDE; bloque += 1) {
       expect(turnoDeBloque(bloque), `bloque ${bloque}`).toBe('TARDE');
+    }
+    for (let bloque = ULTIMO_BLOQUE_TARDE + 1; bloque <= BLOQUE_MAXIMO; bloque += 1) {
+      expect(turnoDeBloque(bloque), `bloque ${bloque}`).toBe('NOCHE');
     }
   });
 
@@ -212,15 +216,38 @@ const MIGRACION_M3 = join(
 );
 const SQL = readFileSync(MIGRACION_M3, 'utf8');
 
+/**
+ * Todas las migraciones, en orden de aplicación.
+ *
+ * Los dos guardarraíles de abajo (la frontera de turnos y los techos de día y
+ * bloque) comparaban sólo contra `202609180001_mod3_cuadrante_aulas.sql`, así
+ * que cualquier migración posterior que cambiara esos números —como
+ * `202610310001_turno_nocturno`, que abrió los bloques 13–17— los dejaba verdes
+ * sobre una definición que la base ya no usa. Aquí se lee el conjunto y se toma
+ * **la última** definición de cada cosa, que es la que está vigente.
+ */
+const SQL_VIGENTE = readdirSync(join(AQUI, '..', '..', 'supabase', 'migrations'))
+  .filter((f) => f.endsWith('.sql'))
+  .sort()
+  .map((f) => readFileSync(join(AQUI, '..', '..', 'supabase', 'migrations', f), 'utf8'))
+  .join('\n');
+
 /** El cuerpo `$$ … $$` de una función `create or replace function <nombre>`. */
 function cuerpoDeFuncion(nombre: string): string {
+  // `matchAll` y no `exec`: la función puede haberse redefinido en una migración
+  // posterior, y la que manda es la última.
+  // El delimitador puede ser `$$` o `$function$` con una etiqueta: Postgres
+  // acepta ambos y las migraciones usan los dos.
   const patron = new RegExp(
-    `create or replace function public\\.${nombre}\\b[\\s\\S]*?\\$\\$([\\s\\S]*?)\\$\\$`,
-    'i',
+    `create or replace function public\\.${nombre}\\b[\\s\\S]*?\\$(\\w*)\\$([\\s\\S]*?)\\$\\1\\$`,
+    'gi',
   );
-  const coincidencia = patron.exec(SQL);
-  if (!coincidencia) throw new Error(`no se encontró la función ${nombre} en ${MIGRACION_M3}`);
-  return coincidencia[1] ?? '';
+  const cuerpos = [...SQL_VIGENTE.matchAll(patron)].map((m) => m[2] ?? '');
+  const ultimo = cuerpos.at(-1);
+  if (ultimo === undefined) {
+    throw new Error(`no se encontró la función ${nombre} en supabase/migrations`);
+  }
+  return ultimo;
 }
 
 /** Los literales de todos los `raise exception`, sin el `%` interpolado. */
@@ -240,20 +267,32 @@ describe('el corte de turnos del SQL y el de TypeScript son el mismo', () => {
     // que avisa de que los dos sitios se separaron». Antes no podía: comparaba
     // 6 y 7 contra constantes propias. Ahora el corte se lee del SQL.
     const cuerpo = cuerpoDeFuncion('turno_de_bloque');
-    const corte = /p_bloque\s*<=\s*(\d+)\s+then\s+'([^']+)'\s+else\s+'([^']+)'/i.exec(cuerpo);
 
-    expect(corte, 'no se pudo leer el corte en `turno_de_bloque`').not.toBeNull();
-    const [, limite, manana, tarde] = corte as RegExpExecArray;
+    // La noche añadió un segundo corte, así que se leen los dos `when`.
+    const cortes = [
+      ...cuerpo.matchAll(/p_bloque\s*<=\s*(\d+)\s+then\s+'([^']+)'/gi),
+    ].map((m) => ({ limite: Number(m[1]), turno: m[2] }));
+    const porDefecto = /else\s+'([^']+)'/i.exec(cuerpo);
 
-    expect(Number(limite)).toBe(6);
-    expect(manana).toBe('MAÑANA');
-    expect(tarde).toBe('TARDE');
+    expect(cortes.length, 'se esperaban dos cortes: mañana y tarde').toBe(2);
+    expect(porDefecto, 'falta el turno por defecto (la noche)').not.toBeNull();
 
-    // Y el espejo de TypeScript coincide en TODO el rango, no sólo en la
-    // frontera: si alguien cambiara el SQL a `<= 7`, esto lo caza.
+    const [primero, segundo] = cortes;
+    expect(primero?.limite).toBe(6);
+    expect(primero?.turno).toBe('MAÑANA');
+    expect(segundo?.limite).toBe(12);
+    expect(segundo?.turno).toBe('TARDE');
+    expect(porDefecto?.[1]).toBe('NOCHE');
+
+    // Y el espejo de TypeScript coincide en TODO el rango: si alguien moviera
+    // cualquiera de los dos cortes en el SQL, esto lo caza.
+    const nocturno = porDefecto?.[1] ?? '';
+    const esperadoPara = (bloque: number): string => {
+      for (const c of cortes) if (bloque <= c.limite) return c.turno ?? nocturno;
+      return nocturno;
+    };
     for (let bloque = 1; bloque <= BLOQUE_MAXIMO; bloque += 1) {
-      const esperado = bloque <= Number(limite) ? manana : tarde;
-      expect(turnoDeBloque(bloque), `bloque ${bloque}`).toBe(esperado);
+      expect(turnoDeBloque(bloque), `bloque ${bloque}`).toBe(esperadoPara(bloque));
     }
   });
 });
@@ -340,23 +379,28 @@ describe('`esChoqueDeAgenda` reconoce los mensajes REALES de la migración', () 
 });
 
 describe('los techos del backend y los de la base siguen de acuerdo', () => {
-  it('el día llega hasta el sábado y el bloque hasta doce, en los dos sitios', () => {
+  it('el día llega hasta el sábado y el bloque hasta diecisiete, en los dos sitios', () => {
     // Los `check` de `teacher_duties` y `schedule_slots` llevan los mismos dos
     // números. Se leen del SQL para que no puedan separarse.
     expect(DIA_MAXIMO).toBe(6);
-    expect(BLOQUE_MAXIMO).toBe(12);
+    expect(BLOQUE_MAXIMO).toBe(17);
 
-    const checks = [...SQL.matchAll(/check \(day_of_week between 1 and (\d+)\)/g)].map((m) =>
-      Number(m[1]),
+    const checks = [...SQL_VIGENTE.matchAll(/check \(day_of_week between 1 and (\d+)\)/g)].map(
+      (m) => Number(m[1]),
     );
     expect(checks.length).toBeGreaterThanOrEqual(2);
     expect(checks.every((limite) => limite === DIA_MAXIMO)).toBe(true);
 
-    const bloques = [...SQL.matchAll(/check \(block between 1 and (\d+)\)/g)].map((m) =>
+    const bloques = [...SQL_VIGENTE.matchAll(/check \(block between 1 and (\d+)\)/g)].map((m) =>
       Number(m[1]),
     );
     expect(bloques.length).toBeGreaterThanOrEqual(2);
-    expect(bloques.every((limite) => limite === BLOQUE_MAXIMO)).toBe(true);
+    // **El techo es el último que se escribió, no el único.** Las migraciones se
+    // leen todas juntas, y la del turno nocturno (202610310001) reemplaza el
+    // `check` de 12 por el de 17: conviven en el texto. Lo que no puede pasar es
+    // que alguna migración **baje** el techo por debajo del que usa el backend,
+    // porque entonces la base rechazaría un bloque que la API acepta.
+    expect(Math.max(...bloques)).toBe(BLOQUE_MAXIMO);
   });
 });
 

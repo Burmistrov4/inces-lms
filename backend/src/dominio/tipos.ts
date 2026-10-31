@@ -316,9 +316,9 @@ export interface DetallePrograma {
  * `POST`/`PATCH` es un `400` por `.strict()`, y no un campo ignorado en silencio:
  * aceptar un turno que contradiga al bloque sería aceptar una agenda que miente.
  */
-export type Turno = 'MAÑANA' | 'TARDE';
+export type Turno = 'MAÑANA' | 'TARDE' | 'NOCHE';
 
-export const TURNOS: readonly Turno[] = ['MAÑANA', 'TARDE'];
+export const TURNOS: readonly Turno[] = ['MAÑANA', 'TARDE', 'NOCHE'];
 
 export function esTurno(valor: unknown): valor is Turno {
   return typeof valor === 'string' && (TURNOS as readonly string[]).includes(valor);

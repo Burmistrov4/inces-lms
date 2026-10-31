@@ -1655,7 +1655,8 @@
             "type": "string",
             "enum": [
               "MAÑANA",
-              "TARDE"
+              "TARDE",
+              "NOCHE"
             ],
             "description": "Turno del bloque. DERIVADO de `block` por `turno_de_bloque()`: sólo viaja de salida, enviarlo es un 400."
           },
@@ -1831,7 +1832,8 @@
             "type": "string",
             "enum": [
               "MAÑANA",
-              "TARDE"
+              "TARDE",
+              "NOCHE"
             ],
             "description": "Turno del bloque. DERIVADO de `block` por `turno_de_bloque()`: sólo viaja de salida, enviarlo es un 400."
           },

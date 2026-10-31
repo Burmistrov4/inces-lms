@@ -709,7 +709,7 @@ const Guardia = z
       description: '1 = lunes … 6 = sábado. El domingo queda fuera por requisito.',
     }),
     bloque: z.number().int().openapi({ description: 'Bloque horario, de 1 a 12.' }),
-    turno: z.enum(['MAÑANA', 'TARDE']).openapi({ description: NOTA_TURNO }),
+    turno: z.enum(['MAÑANA', 'TARDE', 'NOCHE']).openapi({ description: NOTA_TURNO }),
     notas: z.string().nullable(),
     activa: z.boolean().openapi({
       description:
@@ -728,7 +728,7 @@ const ClaseCuadrante = z
     aulaId: z.string().uuid().nullable(),
     dia: z.number().int(),
     bloque: z.number().int(),
-    turno: z.enum(['MAÑANA', 'TARDE']).openapi({ description: NOTA_TURNO }),
+    turno: z.enum(['MAÑANA', 'TARDE', 'NOCHE']).openapi({ description: NOTA_TURNO }),
     activa: z.boolean(),
     periodo: z.string().openapi({
       description:

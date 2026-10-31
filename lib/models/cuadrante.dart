@@ -18,17 +18,20 @@ library;
 /// sería aceptar una agenda que miente.
 enum Turno {
   manana,
-  tarde;
+  tarde,
+  noche;
 
   String get etiqueta => switch (this) {
         Turno.manana => 'Mañana',
         Turno.tarde => 'Tarde',
+        Turno.noche => 'Noche',
       };
 
   /// Valor que usa el backend.
   String get valorApi => switch (this) {
         Turno.manana => 'MAÑANA',
         Turno.tarde => 'TARDE',
+        Turno.noche => 'NOCHE',
       };
 
   /// Interpreta el valor del backend, con el bloque como red de seguridad.
@@ -42,6 +45,7 @@ enum Turno {
       switch (crudo) {
         'TARDE' => Turno.tarde,
         'MAÑANA' => Turno.manana,
+        'NOCHE' => Turno.noche,
         _ => turnoDeBloque(bloque),
       };
 }
@@ -54,14 +58,24 @@ enum Turno {
 /// con una franja que cambia de sitio al cruzar el mediodía.
 const int bloquesDeManana = 6;
 
+/// Último bloque de la tarde. A partir del 13 empieza la noche.
+///
+/// El centro abrió turno nocturno el 2026-10-31 (bloques 13–17, de 6:00 a
+/// 9:45 p. m.), así que la frontera vieja —«todo lo que pase de 6 es tarde»— ya
+/// no sirve: un bloque 14 pintado como tarde aparecería a la una de la tarde en
+/// la rejilla.
+const int ultimoBloqueTarde = 12;
+
 /// Último día de la semana con actividad docente. 1 = lunes … 6 = sábado.
 ///
 /// El domingo no existe en el cuadrante del centro: por eso la columna es
 /// `check (day_of_week between 1 and 6)` y no 1–7.
 const int diaMaximo = 6;
 
-/// Último bloque del día. Doce bloques, seis por turno.
-const int bloqueMaximo = 12;
+/// Último bloque del día: diecisiete. Seis de mañana, seis de tarde y cinco de
+/// noche, en franjas de 45 minutos. Coincide con el `check (block between 1 and
+/// 17)` de `schedule_slots` y `teacher_duties`.
+const int bloqueMaximo = 17;
 
 /// Nombres de los días, indexados por el número que usa la base.
 ///
@@ -79,8 +93,11 @@ const List<String> diasDeLaSemana = [
 ];
 
 /// El turno que corresponde a un bloque, con la misma frontera que la base.
-Turno turnoDeBloque(int bloque) =>
-    bloque <= bloquesDeManana ? Turno.manana : Turno.tarde;
+Turno turnoDeBloque(int bloque) {
+  if (bloque <= bloquesDeManana) return Turno.manana;
+  if (bloque <= ultimoBloqueTarde) return Turno.tarde;
+  return Turno.noche;
+}
 
 /// Nombre legible de un día, o `null` si el número se sale del rango.
 ///
@@ -119,6 +136,11 @@ final Map<int, String> horasDeBloque = {
   10: '03:15 - 04:00',
   11: '04:00 - 04:45',
   12: '04:45 - 05:30',
+  13: '06:00 - 06:45',
+  14: '06:45 - 07:30',
+  15: '07:30 - 08:15',
+  16: '08:15 - 09:00',
+  17: '09:00 - 09:45',
 };
 
 /// Devuelve la franja horaria formal de un bloque académico (ej. «07:30 - 08:15»).
