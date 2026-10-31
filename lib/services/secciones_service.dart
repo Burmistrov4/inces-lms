@@ -10,6 +10,23 @@ import 'supabase_service.dart';
 /// Comparte con `BackendInscripcionGateway` el patrón (URL prefijada por la
 /// API, JWT de la sesión) pero **no** la responsabilidad: aquí se modela la
 /// sección, no la inscripción. Reutiliza [SupabaseService] por la sesión.
+/// Desenvuelve el sobre `{ seccion: {...} }` que devuelven las rutas de alta y
+/// edición de grupos.
+///
+/// **Por qué existe.** `POST /admin/secciones` responde `201 { seccion }` y
+/// `PATCH /admin/secciones/{id}` responde `{ seccion }`. Pasar ese sobre a
+/// `Seccion.fromJson` hace que el modelo busque `id` en el sobre, no lo
+/// encuentre y reviente con un cast: el grupo **se crea**, y la pantalla dice
+/// «Ocurrió un error inesperado». Medido el 2026-10-31 en producción: `POST
+/// /api/v1/admin/secciones` devolvió 201 y el diálogo mostró el error genérico.
+///
+/// Si el cuerpo no trae el sobre se devuelve tal cual: así la función sirve
+/// también para un despliegue que responda el objeto plano.
+Map<String, dynamic> desenvolverSeccion(Map<String, dynamic> respuesta) {
+  final crudo = respuesta['seccion'];
+  return crudo is Map ? crudo.cast<String, dynamic>() : respuesta;
+}
+
 class BackendSeccionesGateway implements SeccionesGateway {
   BackendSeccionesGateway({ApiClient? api}) : _api = api ?? ApiClient();
 
@@ -117,7 +134,7 @@ class BackendSeccionesGateway implements SeccionesGateway {
     );
     // La lista cacheada ya no tiene la seccion nueva.
     cacheDeLecturas.invalidarPorPrefijo('secciones');
-    return Seccion.fromJson(respuesta);
+    return Seccion.fromJson(desenvolverSeccion(respuesta));
   }
 
   @override
@@ -133,7 +150,7 @@ class BackendSeccionesGateway implements SeccionesGateway {
       cuerpo: cuerpo,
       token: _tokenSesion,
     );
-    return Seccion.fromJson(respuesta);
+    return Seccion.fromJson(desenvolverSeccion(respuesta));
   }
 
   @override
@@ -155,10 +172,7 @@ class BackendSeccionesGateway implements SeccionesGateway {
     // La respuesta viene envuelta: `{ seccion, creada }`. Se desenvuelve aquí
     // y no con `Seccion.fromJson(respuesta)` porque eso leería `id` del sobre y
     // reventaría con un cast: el grupo se creó y la pantalla diría «error».
-    final crudo = respuesta['seccion'];
-    final seccionJson = crudo is Map
-        ? crudo.cast<String, dynamic>()
-        : respuesta;
+    final seccionJson = desenvolverSeccion(respuesta);
 
     // El catálogo cacheado ya no sabe de este grupo.
     cacheDeLecturas.invalidarPorPrefijo('secciones');

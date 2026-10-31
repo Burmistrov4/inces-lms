@@ -2,6 +2,25 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.9.1] - 2026-10-31
+### El grupo se creaba y la pantalla decía «error»
+
+Reportado por el dueño al asignar una clase en el cuadrante: «Ocurrió un error
+inesperado» al crear el grupo. Los registros de Vercel muestran
+`POST /api/v1/admin/secciones → 201`: **el grupo se creaba de verdad**.
+
+- **La causa** era leer el sobre: la ruta responde `{ seccion: {...} }` y el
+  cliente pasaba el cuerpo entero a `Seccion.fromJson`, que buscaba `id` en el
+  sobre y reventaba con un cast. El mismo defecto estaba en `PATCH
+  /admin/secciones/{id}`, así que editar un grupo también fallaba.
+- `resolverGrupo` ya lo hacía bien y su comentario advertía justo de esto; el
+  arreglo pone esa lógica en `desenvolverSeccion`, compartida por los tres, con
+  tres pruebas que fijan la forma del sobre y el caso del cuerpo plano.
+
+Medido además en producción, para descartar un segundo culpable: la web ya llama
+a Vercel en todas las rutas de administración (401 JSON sin token), así que el
+«contenido HTML» del reporte anterior está cerrado.
+
 ## [1.9.0] - 2026-10-31
 ### La API deja de suspenderse y el aula tiene lista de aprendices
 
