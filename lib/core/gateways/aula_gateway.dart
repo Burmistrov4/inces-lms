@@ -533,6 +533,15 @@ abstract interface class AulasPropiasGateway {
   ///
   /// `periodo` es opcional; sin él, el backend responde con el lapso vigente.
   Future<MisAulas> misAulas({String? periodo});
+
+  /// El alumno canjea el código que el docente dicta en clase y queda
+  /// matriculado en esa aula. Devuelve el id del aula.
+  ///
+  /// La validación de formato vive en el repositorio; el servidor es quien
+  /// decide si el código existe y si el aula admite más alumnos. El mensaje de
+  /// error es el mismo para «no existe» y «está cerrada» a propósito: en la
+  /// pantalla no se puede insinuar cuál de las dos es.
+  Future<String> unirsePorCodigo(String codigo);
 }
 
 /// Contrato de la capa de datos del Aula Virtual (M6).

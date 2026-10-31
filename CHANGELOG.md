@@ -2,6 +2,27 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.8.0] - 2026-10-30
+### El aprendiz entra al aula con el código que dicta el docente
+
+La cara de F2. Hasta hoy un alumno sólo entraba si alguien lo matriculaba desde
+administración; ahora tiene la puerta en su propia pantalla.
+
+- **«Unirme a un aula con un código»** en *Mis aulas*, tanto en la cabecera como
+  en el estado vacío —donde más falta hace: un alumno sin aulas es justo quien
+  tiene el código en la mano—.
+- El diálogo pide el código, lo normaliza a mayúsculas y lo canjea contra
+  `POST /api/v1/aulas/unirse`. Al volver, la lista se recarga sola.
+- **El docente no ve el botón**: tiene el código para dictarlo, no para canjearlo.
+- Se valida el formato (4–8 letras o números) antes de gastar una petición, y el
+  servidor sigue siendo quien decide si el código existe.
+
+#### Verificación
+
+- `flutter test` **1062/1062** (2 pruebas nuevas: el alumno canjea el código en
+  mayúsculas; el docente no ve la puerta) · analizador 251 0/0/0.
+- Backend sin cambios en esta versión (735+/739 en verde desde 1.7.9).
+
 ## [1.7.9] - 2026-10-30
 ### Las dos puertas del aula, ya expuestas por HTTP
 

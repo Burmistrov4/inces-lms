@@ -89,6 +89,102 @@ class _PanelMisAulasState extends State<PanelMisAulas> {
     _cargar();
   }
 
+  /// Pide el código de aula y entra.
+  ///
+  /// **Por qué un diálogo y no un campo fijo.** El código se usa una vez al
+  /// empezar el curso; un campo permanente en la pantalla ocuparía sitio todos
+  /// los días para algo que se usa una tarde.
+  Future<void> _unirseConCodigo() async {
+    final puerta = widget.aulaGateway;
+    if (puerta == null) return;
+
+    final control = TextEditingController();
+    final codigo = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Unirme a un aula'),
+        content: SizedBox(
+          width: 380,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Escribe el código que el docente dicta en clase. Son 8 '
+                'caracteres.',
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: control,
+                autofocus: true,
+                textCapitalization: TextCapitalization.characters,
+                maxLength: 8,
+                decoration: const InputDecoration(
+                  labelText: 'Código de aula',
+                  hintText: 'ABCD2345',
+                  counterText: '',
+                  isDense: true,
+                ),
+                onSubmitted: (valor) => Navigator.of(ctx).pop(valor),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(control.text),
+            child: const Text('Entrar'),
+          ),
+        ],
+      ),
+    );
+
+    final limpio = codigo?.trim().toUpperCase() ?? '';
+    if (limpio.isEmpty || !mounted) return;
+
+    // El formato se valida aquí para no gastar una petición en algo que no
+    // puede existir; el servidor decide si el código es real.
+    if (limpio.length < 4 || !RegExp(r'^[A-Z0-9]+$').hasMatch(limpio)) {
+      mostrarAviso(
+        context,
+        'Ese no parece un código de aula: son 4 a 8 letras o números.',
+        error: true,
+      );
+      return;
+    }
+
+    try {
+      await puerta.unirsePorCodigo(limpio);
+      if (!mounted) return;
+      mostrarAviso(
+        context,
+        'Ya estás dentro del aula. La verás en la lista.',
+        exito: true,
+      );
+      await _cargar();
+    } catch (fallo) {
+      if (!mounted) return;
+      mostrarAviso(
+        context,
+        fallo is Exception && '$fallo'.isNotEmpty
+            ? _mensajeDe(fallo)
+            : 'No pudimos unirte al aula. Revisa el código.',
+        error: true,
+      );
+    }
+  }
+
+  String _mensajeDe(Object fallo) {
+    // `AppException` trae el mensaje ya escrito para el usuario; cualquier otra
+    // cosa se resume, porque su `toString()` no se puede enseñar.
+    final texto = '$fallo';
+    return texto.replaceFirst(RegExp(r'^[^:]+:\s*'), '');
+  }
+
   Future<void> _cargar() async {
     setState(() {
       _cargando = true;
@@ -159,16 +255,35 @@ class _PanelMisAulasState extends State<PanelMisAulas> {
     final mis = _misAulas;
 
     if (mis == null || mis.vacio) {
-      return PanelVacio(
-        titulo: 'Todavía no tienes aulas activas',
-        mensaje: (mis?.esDocente ?? false)
-            ? 'Cuando la coordinación del centro te asigne secciones, '
-                'aparecerán aquí con su tablón y su trabajo de clase.'
-            : 'Cuando la coordinación active tu sección verás aquí el tablón '
-                'de anuncios y el trabajo de clase, y podrás subir tus '
-                'entregas sin salir del aula.',
-        icono: Icons.class_outlined,
-        nota: mis?.periodo != null ? 'Período: ${mis!.periodo}' : null,
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PanelVacio(
+            titulo: 'Todavía no tienes aulas activas',
+            mensaje: (mis?.esDocente ?? false)
+                ? 'Cuando la coordinación del centro te asigne secciones, '
+                    'aparecerán aquí con su tablón y su trabajo de clase.'
+                : 'Cuando la coordinación active tu sección verás aquí el tablón '
+                    'de anuncios y el trabajo de clase, y podrás subir tus '
+                    'entregas sin salir del aula.',
+            icono: Icons.class_outlined,
+            nota: mis?.periodo != null ? 'Período: ${mis!.periodo}' : null,
+          ),
+          // **La salida cuando la lista está vacía.** Un alumno sin aulas es
+          // justo quien tiene el código en la mano; esconder la puerta en otra
+          // pantalla le obliga a pedirle a alguien que lo meta a mano.
+          if (!(mis?.esDocente ?? false) && widget.aulaGateway != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Center(
+                child: FilledButton.icon(
+                  onPressed: _cargando ? null : _unirseConCodigo,
+                  icon: const Icon(Icons.key_rounded, size: 18),
+                  label: const Text('Unirme a un aula con un código'),
+                ),
+              ),
+            ),
+        ],
       );
     }
 
@@ -185,6 +300,12 @@ class _PanelMisAulasState extends State<PanelMisAulas> {
                 onPressed: () => widget.onNavegarA?.call('Mis entregas'),
                 icon: const Icon(Icons.assignment_turned_in_outlined, size: 16),
                 label: const Text('Ver tareas pendientes'),
+              ),
+            if (!mis.esDocente && widget.aulaGateway != null)
+              TextButton.icon(
+                onPressed: _cargando ? null : _unirseConCodigo,
+                icon: const Icon(Icons.key_rounded, size: 16),
+                label: const Text('Unirme con código'),
               ),
             IconButton(
               tooltip: 'Actualizar',

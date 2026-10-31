@@ -97,6 +97,27 @@ class FakeAulaGateway implements AulaGateway {
 
   void limpiarLlamadas() => llamadas.clear();
 
+
+  /// Códigos canjeados en la prueba. La primera entrada es la que se devuelve.
+  final List<String> codigosCanjeados = [];
+
+  /// Código de aula que devolverá `unirsePorCodigo`. Un uuid fijo: la prueba
+  /// comprueba que la pantalla navega al aula que el servidor dice, no a una
+  /// inventada por el cliente.
+  String aulaDelCodigo = '11111111-2222-4333-8444-555555555555';
+
+  /// Error que lanzará `unirsePorCodigo`, para probar el código equivocado.
+  Object? errorAlUnirse;
+
+  @override
+  Future<String> unirsePorCodigo(String codigo) async {
+    llamadas.add('unirsePorCodigo:$codigo');
+    codigosCanjeados.add(codigo);
+    final fallo = errorAlUnirse;
+    if (fallo != null) throw fallo;
+    return aulaDelCodigo;
+  }
+
   @override
   Future<MisAulas> misAulas({String? periodo}) async {
     llamadas.add(periodo == null ? 'misAulas' : 'misAulas:$periodo');

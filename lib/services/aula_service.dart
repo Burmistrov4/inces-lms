@@ -1,5 +1,6 @@
 import '../core/gateways/aula_gateway.dart';
 import '../core/cache_lecturas.dart';
+import '../core/errors/app_exception.dart';
 import '../core/network/api_client.dart';
 import '../models/cuadrante.dart';
 import 'supabase_service.dart';
@@ -63,6 +64,10 @@ class BackendAulaGateway implements AulaGateway {
   /// cuelga de aquí: es de M3 y vive en su propia constante.
   static const String _rutaAula = '/api/v1/aula';
 
+  /// Base de la API para las rutas que no cuelgan de `/aula` (F2: la puerta del
+  /// alumno vive en `/api/v1/aulas/unirse`).
+  static const String _rutaBaseDeApi = '/api/v1';
+
   /// La ruta del horario propio.
   ///
   /// Es la **misma** que usa `BackendCuadranteGateway`: no son dos rutas, son
@@ -94,6 +99,25 @@ class BackendAulaGateway implements AulaGateway {
     );
 
     return _reducir(MiHorario.fromJson(respuesta));
+  }
+
+  @override
+  Future<String> unirsePorCodigo(String codigo) async {
+    final respuesta = await _api.post(
+      '$_rutaBaseDeApi/aulas/unirse',
+      cuerpo: {'codigo': codigo},
+      token: _tokenSesion(),
+    );
+
+    // El servidor devuelve `{ seccionId, estado }`. Se exige el id: un «te
+    // uniste» sin aula dejaría la pantalla sin nada que abrir.
+    final id = respuesta['seccionId'];
+    if (id is! String || id.isEmpty) {
+      throw const AppException.validacion(
+        'El servidor no devolvió el aula. Vuelve a intentarlo.',
+      );
+    }
+    return id;
   }
 
   // --- Contenido del aula ---------------------------------------------------

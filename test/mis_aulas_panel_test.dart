@@ -112,6 +112,43 @@ void main() {
       expect(find.textContaining('SA26-2'), findsWidgets);
     });
 
+    testWidgets('sin aulas ofrece entrar con el código del docente',
+        (tester) async {
+      // Un alumno sin aulas es justo quien tiene el código en la mano.
+      final gateway = FakeAulaGateway()
+        ..misAulasResultado =
+            const MisAulas(esDocente: false, periodo: 'SA26-2');
+
+      await montar(tester, gateway: gateway);
+      await asentar(tester);
+
+      final boton = find.text('Unirme a un aula con un código');
+      expect(boton, findsOneWidget);
+
+      await tester.tap(boton);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      await tester.enterText(find.byType(TextField), 'abcd2345');
+      await tester.tap(find.text('Entrar'));
+      await asentar(tester);
+
+      // Se canjea en mayúsculas: el código se dicta, no se copia.
+      expect(gateway.codigosCanjeados, ['ABCD2345']);
+    });
+
+    testWidgets('un docente no ve la puerta del código', (tester) async {
+      // El docente tiene el código para dictarlo, no para canjearlo.
+      final gateway = FakeAulaGateway()
+        ..misAulasResultado =
+            const MisAulas(esDocente: true, periodo: 'SA26-2');
+
+      await montar(tester, gateway: gateway);
+      await asentar(tester);
+
+      expect(find.text('Unirme a un aula con un código'), findsNothing);
+    });
+
     testWidgets('un fallo se cuenta con su mensaje y un reintento', (tester) async {
       final gateway = FakeAulaGateway()
         ..errorAlListarAulas = const AppException(
