@@ -10,10 +10,14 @@
 
 | Herramienta | Versión / ruta en este equipo |
 |---|---|
-| Node | `C:\Users\Loro\.workbuddy-ai\binaries\node\versions\22.22.2-3\node.exe` |
-| Flutter SDK | `C:/Users/Loro/develop/flutter` |
+| Node | 22 o superior en el PATH (`engines.node: ">=22"`) |
+| Flutter SDK | `C:/Users/Admin/develop/flutter` (Flutter 3.50 / Dart 3.14, medido el 2026-11-18) |
 | Supabase | **en la nube** — no hay instancia local |
 | Credenciales | `backend/.env` y `e2e/.env.e2e` (los dos ignorados por git) |
+
+> Las rutas concretas cambian de una máquina a otra: usa `where flutter` (o
+> `which flutter`) y ajusta. La única obligación es que el SDK esté en el PATH
+> o en `FLUTTER_ROOT`.
 
 **Los dos `.env` no están en el repositorio y no se pueden recuperar de él.** Si no
 los tienes, pídelos: sin ellos no arranca ni el backend ni el E2E.
@@ -35,10 +39,11 @@ npm run start          # node --env-file-if-exists=.env dist/server.js
 curl -s http://127.0.0.1:3001/salud
 ```
 
-Debe responder `200`. Arranca escuchando en `0.0.0.0:3001` y lo dice en el log:
+Debe responder `200`. Arranca en `0.0.0.0:3001` en Linux/macOS y en `[::]:3001`
+en Windows (doble pila, para que `localhost` resuelva a `::1`), y lo dice en el log:
 
 ```
-INCES LMS API v0.1.0 escuchando en 0.0.0.0:3001 (entorno: development)
+INCES LMS API v0.1.0 escuchando en ::  3001 (entorno: development)
 ```
 
 **Verificación de tipos y pruebas:**
@@ -62,25 +67,33 @@ node serve.mjs "../build/web" 8090
 
 Y queda en `http://127.0.0.1:8090`.
 
-### 3.2 Si necesitas compilarlo — **y aquí está el problema**
+### 3.2 Si necesitas compilarlo
 
 ```bash
-flutter build web --dart-define-from-file=.env.json
+flutter build web --release --no-wasm-dry-run \
+  --dart-define-from-file=.env.json \
+  --dart-define=API_BASE_URL=https://inces-lms-api.vercel.app
 ```
 
-> **En este equipo `flutter build web` NO arranca.** El VM de Dart muere en su
-> primer intento de crear un proceso hijo con `ERROR_PIPE_BUSY` (231). No es un
-> error de configuración: es una limitación del entorno, y afecta por igual a
-> `flutter test`, `flutter analyze` y `dart test`.
+> **Estado medido el 2026-11-18 (Flutter 3.50 en `C:\Users\Admin\develop\flutter`):**
+> `flutter pub get`, `flutter analyze` y `flutter test` **sí corren** en este
+> equipo. El bloqueo histórico `CreateFile failed 231` (`ERROR_PIPE_BUSY`) no se
+> reprodujo en esta sesión. Si vuelve, el síntoma es que el CLI muere al lanzar
+> su primer proceso hijo y la salida es un solo `flutter` sin más: en ese caso,
+> compila en CI y sirve el artefacto (§3.3). No uses `--no-tree-shake-icons`
+> salvo que el build se cuelgue en esa fase.
 
 **Lo que sí funciona aquí:**
 
 ```bash
-# Verificación de TIPOS de los 207 archivos Dart, sin dart.exe de por medio:
-node devops/analizar-dart.mjs .
+# Verificación de TIPOS de los archivos Dart, con el analizador del SDK:
+flutter analyze
 
-# Resolver dependencias (esto sí corre):
-C:/Users/Loro/develop/flutter/bin/cache/dart-sdk/bin/dart.exe pub get --offline
+# Pruebas:
+flutter test
+
+# Resolver dependencias:
+flutter pub get
 ```
 
 **Y para obtener un bundle fresco**, el único camino fiable es descargar el
@@ -103,8 +116,8 @@ cp -r /c/tmp/web-bundle/* build/web/
 export SUPABASE_ACCESS_TOKEN=$(grep '^SUPABASE_ACCESS_TOKEN=' backend/.env | cut -d= -f2-)
 node supabase/apply-migrations.mjs --check
 
-# Aplicar las pendientes
-node supabase/apply-migrations.mjs --confirmar
+# Aplicar las pendientes (revisa antes el SQL; no existe bandera de confirmación)
+node supabase/apply-migrations.mjs
 
 # Inspeccionar el catálogo real (funciones, políticas, tablas)
 node supabase/verificar-esquema.mjs

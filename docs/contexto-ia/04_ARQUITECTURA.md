@@ -78,9 +78,9 @@
 
 ## 3. Backend — superficie HTTP
 
-Base: `/api/v1`. **80 rutas / 89 operaciones / 125 esquemas** (medido el
-2026-10-12 sobre `backend/openapi.json`; el documento se **genera** desde Zod,
-no se escribe a mano). Familias de rutas:
+Base: `/api/v1`. **94 rutas / 103 operaciones** (medido el 2026-11-18 sobre
+`backend/openapi.json`; el documento se **genera** desde Zod, no se escribe a
+mano). Familias de rutas:
 
 | Familia | Acceso | Ejemplos |
 |---|---|---|

@@ -113,6 +113,15 @@ class CuadranteRepository {
     return Result.guard(() => _gateway.listarPeriodos());
   }
 
+  /// El lapso vigente para la cabecera, legible por cualquier rol.
+  ///
+  /// `success(null)` significa «el centro no ha creado ningún lapso», que es un
+  /// estado legítimo; un fallo de red o de permisos llega como `failure`, no
+  /// como `null`. Confundir los dos pintaría «sin período» ante un corte.
+  Future<Result<Periodo?>> obtenerPeriodoVigente() {
+    return Result.guard(() => _gateway.obtenerPeriodoVigente());
+  }
+
   Future<Result<Periodo>> crearPeriodo(EntradaCrearPeriodo entrada) {
     return Result.guard(() async {
       final codigo = entrada.codigo.trim();

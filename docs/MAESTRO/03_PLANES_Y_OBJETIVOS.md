@@ -75,4 +75,4 @@ De `docs/REQUISITOS_NO_FUNCIONALES_UX.md` (ISO/IEC 25010, Nielsen, Material 3):
 - Campus vs Aula Virtual (TAREA 9 de la Especificación maestra).
 - Modelo de **duración/caducidad/estados de periodos** (5 decisiones institucionales).
 - Uno o varios grupos por curso y período (afecta la Fase 5).
-- SMTP real en Render (H1) para correo transaccional.
+- SMTP real en **Vercel** (H1) para correo transaccional.

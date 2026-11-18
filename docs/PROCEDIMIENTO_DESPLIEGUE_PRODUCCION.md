@@ -1,6 +1,12 @@
 # Procedimiento oficial de despliegue a producción — INCES LMS
 
-> Guía operativa para que otro agente compile, publique y verifique INCES LMS en GitHub, GitHub Actions, Cloudflare Pages, Render y Supabase. Un push no equivale a un despliegue exitoso.
+> Guía operativa para que otro agente compile, publique y verifique INCES LMS en GitHub, GitHub Actions, Cloudflare Pages, **Vercel** y Supabase. Un push no equivale a un despliegue exitoso.
+>
+> **Stack de producción, 100 % en capas gratuitas (decisión del 2026-10-31).**
+> El backend vive en **Vercel Hobby**; Render se retiró al agotar sus 750 h/mes.
+> El inventario completo de entornos, límites y variables está en
+> **[`ENTORNOS_Y_DESPLIEGUE.md`](ENTORNOS_Y_DESPLIEGUE.md)**, que es la fuente
+> única: si algo de esta guía lo contradice, manda ese documento.
 
 ## 1. Inventario de producción
 
@@ -10,17 +16,22 @@
 | Rama de producción | main |
 | Frontend Flutter Web | Cloudflare Pages, proyecto inces-lms |
 | Frontend público | https://inces-lms.pages.dev |
-| Backend | Render, servicio inces-lms-api |
-| Backend público | https://inces-lms-api.onrender.com |
-| Health check | https://inces-lms-api.onrender.com/salud |
+| Backend | **Vercel Hobby**, proyecto `inces-lms-api` |
+| Backend público | **https://inces-lms-api.vercel.app** |
+| Health check | https://inces-lms-api.vercel.app/salud |
 | Base de datos | Supabase PostgreSQL |
-| Configuración Render | render.yaml en la raíz |
+| Configuración del backend | `backend/vercel.json` (función `api/index.js` + `dist/`) |
+| Almacenamiento | Cloudflare R2 (bucket `inces-lms-media`) |
 
-El frontend debe usar la API https://inces-lms-api.onrender.com. No publiques un bundle que use localhost, una IP LAN o un servidor de desarrollo.
+El frontend debe usar la API **https://inces-lms-api.vercel.app**. No publiques un bundle que use localhost, una IP LAN, un servidor de desarrollo **ni la antigua URL de Render**: ese servicio está suspendido y el síntoma es «El servidor respondió con contenido HTML en lugar de datos JSON».
+
+> **Render está retirado.** Su blueprint quedó archivado en
+> `docs/historial/configuracion/render.yaml`. Las secciones §7 y §7 bis/ter se
+> conservan como historia y como plan de emergencia, no como camino operativo.
 
 ### 1.1 Workflows reales (`/.github/workflows/`)
 
-Siete archivos, verificados uno por uno el 2026-10-13. **Ninguno de ellos publica en Cloudflare Pages ni en Render por sí solo**: los que disparan con `push` construyen y prueban; el despliegue del frontend es la §6 y el del backend lo decide Render.
+Siete archivos, verificados uno por uno el 2026-10-13. **Ninguno de ellos publica en Cloudflare Pages ni en Vercel por sí solo**: los que disparan con `push` construyen y prueban; el despliegue del frontend es la §6 y el del backend se hace a mano con `npx vercel --prod` desde `backend/`.
 
 | Workflow | Disparo | Función real | ¿Despliega? |
 |---|---|---|---|
@@ -53,7 +64,7 @@ Dos advertencias que evitan un falso positivo:
 
 Ejecuta en PowerShell:
 
-    $root = 'C:\Users\Loro\Desktop\Cuarto Semestre\1. Servicio Comunitario\INCES-LMS-PROJECT'
+    $root = (Get-Location).Path   # ejecuta esto desde la raíz del repositorio
     Set-Location $root
     git rev-parse --show-toplevel
     git branch --show-current
@@ -118,7 +129,7 @@ Desde la raíz del proyecto:
 
     Set-Location $root
     $env:PROGRAMFILES_X86 = 'C:\Program Files (x86)'
-    flutter build web --release --no-pub --no-wasm-dry-run --dart-define-from-file=.env.json --dart-define=API_BASE_URL=https://inces-lms-api.onrender.com
+    flutter build web --release --no-pub --no-wasm-dry-run --dart-define-from-file=.env.json --dart-define=API_BASE_URL=https://inces-lms-api.vercel.app
     if ($LASTEXITCODE -ne 0) {
         throw "Flutter Web build falló con código $LASTEXITCODE"
     }
@@ -138,8 +149,8 @@ El override de API de producción debe prevalecer sobre cualquier valor local de
     if (!(Test-Path $robots)) { throw 'Falta build/web/robots.txt' }
     if (!(Test-Path $sitemap)) { throw 'Falta build/web/sitemap.xml' }
     $js = Get-Content $jsPath -Raw
-    if (!$js.Contains('https://inces-lms-api.onrender.com')) {
-        throw 'El bundle no contiene la API de producción'
+    if (!$js.Contains('https://inces-lms-api.vercel.app')) {
+        throw 'El bundle no contiene la API de producción (Vercel)'
     }
     if ($js.Contains('http://localhost:3001') -or $js.Contains('localhost:3001')) {
         throw 'El bundle contiene una API local; se cancela el despliegue'
@@ -219,7 +230,7 @@ expiration» evita esa trampa; con fecha, el riesgo es menor si el token se filt
 **Dónde va.** En `backend/.env`, que está cubierto por `.gitignore` y **no** se
 versiona (verificado con `git check-ignore -v backend/.env`). Es una credencial
 de **despliegue**, no de ejecución: el backend nunca la lee. Por eso **no debe
-estar en Render** — allí no sirve para nada y amplía la superficie.
+estar en el panel de Vercel** — allí no sirve para nada y amplía la superficie.
 
 **Comprobar que quedó bien antes de publicar:**
 
@@ -253,8 +264,12 @@ Confirma que la nueva publicación figura como Production en main. Un URL de pre
 
 **Wrangler no está fijado en este repositorio.** Los comandos usan `npx --yes wrangler`, que resuelve la última versión publicada en el momento de ejecutarse: el comportamiento puede cambiar entre dos despliegues sin que cambie el repositorio. La versión con la que se redactó esta sección es la 4.151.0 (comprobada el 2026-10-14). Si una GUI o un script necesita reproducibilidad, fija la versión (`npx --yes wrangler@4.151.0 …`) o declárala como dependencia de desarrollo.
 
-## 7. Render: backend
+## 7. Render: backend — RETIRADO (histórico)
 
+> **Ya no es el camino operativo.** Desde el 2026-10-31 el backend vive en
+> **Vercel** (§7 quater). Esta sección se conserva porque documenta el límite que
+> obligó al cambio y porque sirve de plan de emergencia si Vercel fallara.
+>
 > **Aviso medido el 2026-10-30/31.** El plan gratuito de Render da **750 horas
 > de instancia al mes por workspace** (≈ un servicio siempre encendido, sin
 > margen: un mes son 744 h) y **suspende** los servicios free al agotarlas. Se
@@ -263,7 +278,9 @@ Confirma que la nueva publicación figura como Production en main. Un URL de pre
 > Si vuelve a pasar, la alternativa sin cambios de código es
 > `devops/desplegar-cloudrun.sh` (§7 bis).
 
-render.yaml declara un servicio con raíz backend, Dockerfile ./Dockerfile y health check /salud. Si Render tiene auto-deploy habilitado, el push a la rama configurada puede iniciarlo; confírmalo en el Dashboard. render.yaml por sí solo no demuestra que el despliegue haya terminado.
+El blueprint `render.yaml` ya **no está en la raíz**: se archivó en
+`docs/historial/configuracion/render.yaml` para que un push no reactive el
+servicio. Si se decidiera volver, habría que restaurarlo a la raíz a mano.
 
 1. Abre el Dashboard de Render y selecciona inces-lms-api.
 2. Comprueba el despliegue asociado al SHA/commit esperado.
@@ -301,16 +318,16 @@ más a un servicio público es la forma más fácil de filtrar una clave.
 
 Prueba el endpoint:
 
-    $health = Invoke-WebRequest -Uri 'https://inces-lms-api.onrender.com/salud' -UseBasicParsing -TimeoutSec 30
+    $health = Invoke-WebRequest -Uri 'https://inces-lms-api.vercel.app/salud' -UseBasicParsing -TimeoutSec 30
     if ([int]$health.StatusCode -ne 200) {
-        throw 'Health check de Render no devolvió HTTP 200'
+        throw 'Health check del backend no devolvió HTTP 200'
     }
     $health.StatusCode
     $health.Content
 
 Prueba CORS desde el origen real del frontend:
 
-    $cors = Invoke-WebRequest -Uri 'https://inces-lms-api.onrender.com/api/v1/admin/invitaciones' -Method Options -Headers @{
+    $cors = Invoke-WebRequest -Uri 'https://inces-lms-api.vercel.app/api/v1/admin/invitaciones' -Method Options -Headers @{
         Origin = 'https://inces-lms.pages.dev'
         'Access-Control-Request-Method' = 'GET'
         'Access-Control-Request-Headers' = 'authorization,content-type'
@@ -470,8 +487,8 @@ No ejecutes node .\supabase\apply-migrations.mjs sin --check en producción salv
     if ([int]$index.StatusCode -ne 200) { throw 'Frontend no devuelve HTTP 200' }
     $bundle = Invoke-WebRequest -Uri "$base/main.dart.js?verify=$([guid]::NewGuid().ToString('N'))" -UseBasicParsing -TimeoutSec 60
     $js = $bundle.Content
-    if (!$js.Contains('https://inces-lms-api.onrender.com')) {
-        throw 'Bundle público no contiene la API esperada'
+    if (!$js.Contains('https://inces-lms-api.vercel.app')) {
+        throw 'Bundle público no contiene la API esperada (Vercel)'
     }
     if ($js.Contains('localhost:3001')) {
         throw 'Bundle público contiene localhost'
@@ -503,7 +520,8 @@ Guarda el SHA de GitHub, enlaces/estados CI, deployment ID/URL y rama de Cloudfl
 - **Build Flutter lento:** inspecciona logs, CPU/RAM y procesos Flutter/Dart; no ejecutes builds simultáneos. Detén solo un proceso obsoleto identificado y vuelve a compilar una vez.
 - **Wrangler sin autenticación:** no publiques; autentica por el procedimiento autorizado y confirma cuenta/proyecto.
 - **Bundle apunta a localhost:** cancela publicación, corrige configuración, recompila y vuelve a validar.
-- **Render no actualiza:** revisa rama, commit, auto-deploy y logs. No cambies secretos para ocultar el error.
+- **Render no actualiza:** (histórico) revisa rama, commit, auto-deploy y logs. No cambies secretos para ocultar el error.
+- **Vercel no actualiza:** revisa *Deployments* del proyecto, el commit asociado y los logs de la función; confirma que el despliegue está en **Ready** y promovido a Production.
 - **CI falla:** inspecciona el job del SHA exacto y repite CI tras corregirlo.
 - **Supabase muestra drift o pendientes:** detente y presenta diagnóstico; no migres ni reviertas sin autorización.
 - **Frontend y backend desincronizados:** revisa compatibilidad API y orden; prioriza cambios compatibles hacia atrás y verifica ambos servicios.
@@ -530,7 +548,7 @@ Para identificar el despliegue correcto antes de tocar nada, Wrangler sí sirve 
 
 Después del rollback repite la §9.1 completa: HTTP 200 en `/`, bundle con la API de producción y **sin** `localhost:3001`, `robots.txt` como `text/plain` y `sitemap.xml` como XML. Confirma además en el panel que el despliegue activo es el que elegiste y que su commit o artefacto es el esperado.
 
-**Backend (Render).** En el Dashboard de `inces-lms-api`, abre el despliegue anterior conocido como bueno y usa *Rollback to this deploy*. Confirma que el commit mostrado es el esperado y espera el estado Live; luego comprueba `/salud` y el preflight CORS de la §7.
+**Backend (Vercel).** En el panel del proyecto `inces-lms-api` → **Deployments**, abre el despliegue anterior conocido como bueno y elige **Promote to Production** (o `vercel rollback <deployment-url>` con el CLI). Confirma que el commit mostrado es el esperado y espera el estado **Ready**; luego comprueba `/salud` y el preflight CORS de la §7 bis.
 
 **Reglas del rollback.**
 
@@ -546,7 +564,7 @@ Después del rollback repite la §9.1 completa: HTTP 200 en `/`, bundle con la A
 - **CI:** estado y enlaces de los siete workflows de la §1.1 (Backend, Flutter, E2E, Supabase, limpiar-pendientes y, si se usaron, web bundle y APK Android).
 - **Flutter:** comando, código de salida y verificaciones del artefacto.
 - **Cloudflare:** deployment ID/URL, entorno Production y bundle público validado.
-- **Render:** deployment ID/commit, estado y health check.
+- **Backend:** deployment ID/URL, estado **Ready** en Vercel y health check.
 - **Supabase:** resultado de --check; declarar explícitamente si se aplicaron migraciones (por defecto, no).
 - **Pruebas funcionales:** qué se comprobó y qué no.
 - **Cambios locales excluidos:** enumerarlos sin borrarlos.
@@ -560,9 +578,10 @@ Nunca digas “todo está en producción” si solo se hizo push, si hay deploym
 - GitHub Actions: https://github.com/Burmistrov4/inces-lms/actions
 - Cloudflare Pages: https://developers.cloudflare.com/pages/
 - Wrangler Pages deploy: https://developers.cloudflare.com/pages/get-started/direct-upload/
-- Render deploys: https://render.com/docs/deploys
+- Render deploys (histórico): https://render.com/docs/deploys
+- Vercel: https://vercel.com/docs/deployments/overview
 - Supabase database migrations: https://supabase.com/docs/guides/deployment/database-migrations
 
 ---
 
-Última revisión documental: **2026-10-14 (cierre de Fase 1)**: se sustituyó el comando de rollback de Wrangler, que no existe, por el procedimiento del panel y la API (§10.1), y se documentó que Wrangler no está fijado (§6.2). Revisión anterior: **2026-10-13** (Fase 1): inventario de workflows verificado contra `.github/workflows/` (§1.1), vía del artefacto de CI (§5.2) y rollback (§10.1). Revisión anterior: 2026-10-10. Antes de cada despliegue, verifica los nombres de servicios, dominios, workflows, comandos y estado actual de cada plataforma. Actualiza esta guía si la infraestructura cambia.
+Última revisión documental: **2026-11-18**: se alinea todo con el backend en **Vercel** (Render retirado y su blueprint archivado en `docs/historial/configuracion/`), se actualizan inventario (§1), build y validación del bundle (§5 y §5.1), health/CORS (§7 bis), rollback (§10.1), informe (§11) y referencias (§12). Revisión anterior: **2026-10-14 (cierre de Fase 1)**: se sustituyó el comando de rollback de Wrangler, que no existe, por el procedimiento del panel y la API (§10.1), y se documentó que Wrangler no está fijado (§6.2). Revisión anterior: **2026-10-13** (Fase 1): inventario de workflows verificado contra `.github/workflows/` (§1.1), vía del artefacto de CI (§5.2) y rollback (§10.1). Revisión anterior: 2026-10-10. Antes de cada despliegue, verifica los nombres de servicios, dominios, workflows, comandos y estado actual de cada plataforma. Actualiza esta guía si la infraestructura cambia.

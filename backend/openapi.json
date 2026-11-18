@@ -1649,7 +1649,7 @@
           },
           "bloque": {
             "type": "integer",
-            "description": "Bloque horario, de 1 a 12."
+            "description": "Bloque horario, de 1 a 17: doce de mañana y tarde más los cinco del turno nocturno (13–17)."
           },
           "turno": {
             "type": "string",
@@ -7710,6 +7710,60 @@
           },
           "503": {
             "description": "El servicio o la base de datos no están disponibles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuerpoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/periodo-vigente": {
+      "get": {
+        "tags": [
+          "Cuadrante"
+        ],
+        "summary": "El lapso vigente, para cualquier sesión",
+        "description": "Devuelve el lapso que el sistema considera en curso, para la cabecera de los tres paneles. Existe porque el período de la cabecera se pedía a `GET /api/v1/admin/periodos`: docente y estudiante recibían **403 SOLO_ADMIN** en cada apertura del panel y el error quedaba tapado por un respaldo silencioso del cliente. **No lleva guardia de módulo**: el lapso en el que se trabaja no es contenido de M3, y con el módulo apagado la cabecera sigue haciendo falta. Sin lapsos declarados responde `{ \"periodo\": null }`, no un 404: es un estado legítimo.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El lapso marcado como vigente, o `null` si el centro no ha creado ninguno.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "periodo": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/Periodo"
+                        },
+                        {
+                          "type": [
+                            "object",
+                            "null"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "periodo"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta la sesión o el token no es válido.",
             "content": {
               "application/json": {
                 "schema": {

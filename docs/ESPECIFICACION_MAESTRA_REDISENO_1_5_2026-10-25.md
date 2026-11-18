@@ -375,8 +375,9 @@ Formación Socialista Nacional de Soldadura «Rafael Urdaneta», INCES La Isabel
 - Backend: **Node/TypeScript + Fastify 5 + Zod**, ESM (`backend/src/`).
 - Base de datos: **Supabase** (PostgreSQL 17, RLS, PostgREST).
 - Archivos: **Cloudflare R2** (S3 con URLs firmadas).
-- Producción: Render (API, `inces-lms-api.onrender.com`) y Cloudflare Pages
-  (`inces-lms.pages.dev`).
+- Producción: **Vercel** (API, `inces-lms-api.vercel.app`) y Cloudflare Pages
+  (bundle, `inces-lms.pages.dev`). *Render se retiró el 2026-10-31; ver
+  `docs/ENTORNOS_Y_DESPLIEGUE.md`.*
 
 **Reglas del proyecto que NO puedes romper:**
 

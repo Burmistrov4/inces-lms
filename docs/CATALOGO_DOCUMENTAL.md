@@ -1,6 +1,13 @@
 # Catálogo Markdown del repositorio
 
-Dos partes. **§1 Clasificación curada** es la que responde qué es cada documento, para quién, si sigue vigente y qué hacer con él; **§2 Inventario automático** es la lista reproducible de los 217 Markdown con ruta, tamaño y clasificación Git, para localizar cualquier archivo. Inventario contado y clasificado el **2026-10-13 (Fase 1)** y **recontado al cierre de la misma fase**: **218 archivos Markdown en total**, 217 listados (el catálogo se excluye a sí mismo). El documento que faltaba en el primer recuento es `docs/handover/FASE1_CONSOLIDACION_DOCUMENTAL_2026-10-13.md`, que este catálogo se adelantó a listar. El desglose por categoría se corrigió el **2026-10-14**: 72 rastreados, 16 no rastreados y 130 ignorados (ver la tabla de la cabecera del §2).
+Dos partes. **§1 Clasificación curada** es la que responde qué es cada documento, para quién, si sigue vigente y qué hacer con él; **§2 Inventario automático** es la lista reproducible de los 217 Markdown con ruta, tamaño y clasificación Git, para localizar cualquier archivo.
+
+> **Aviso (2026-11-18):** el inventario de abajo es del **2026-10-13** y ya no
+> cuadra con el árbol: hoy hay **126** `.md` rastreados (85 bajo `docs/`), 8 sin
+> seguimiento y 795 ignorados. La clasificación curada sigue siendo útil; los
+> recuentos, no. Recontar con `git ls-files '*.md'` antes de citarlos.
+
+Inventario contado y clasificado el **2026-10-13 (Fase 1)** y **recontado al cierre de la misma fase**: **218 archivos Markdown en total**, 217 listados (el catálogo se excluye a sí mismo). El documento que faltaba en el primer recuento es `docs/handover/FASE1_CONSOLIDACION_DOCUMENTAL_2026-10-13.md`, que este catálogo se adelantó a listar. El desglose por categoría se corrigió el **2026-10-14**: 72 rastreados, 16 no rastreados y 130 ignorados (ver la tabla de la cabecera del §2).
 
 Estados usados: **vigente** (se usa hoy), **histórico** (se conserva por su fecha, no manda), **obsoleto pendiente de revisión** (afirma algo que la medición posterior contradice), **pendiente de verificación** (no se ha podido medir). «Canónico relacionado» señala a qué documento remite cuando hay solapamiento.
 

@@ -19,13 +19,17 @@
 // (`R2_ACCESS_KEY_ID`) **no sirven**: son credenciales S3 del bucket, y Wrangler
 // las rechaza con un 400 (medido el 2026-10-25).
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const RAIZ = 'C:/Users/Loro/Desktop/Cuarto Semestre/1. Servicio Comunitario/INCES-LMS-PROJECT';
-const BUNDLE = process.argv[2] ?? 'C:/tmp/web-produccion';
+const RAIZ = path.resolve(import.meta.dirname, '..');
+const BUNDLE = process.argv[2] ?? path.join(os.tmpdir(), 'web-produccion');
 const PROYECTO = 'inces-lms';
-const API_PRODUCCION = 'https://inces-lms-api.onrender.com';
+// **API de producción: Vercel.** Render se retiró el 2026-10-31. Este valor
+// tiene que coincidir con `API_PRODUCCION` de `web_bundle.yml` y con
+// `.env.json`, o el bundle publicado apunta a un servicio que ya no existe.
+const API_PRODUCCION = 'https://inces-lms-api.vercel.app';
 
 /** Lee una clave de `backend/.env`. Devuelve null si no está. */
 function delEnv(clave) {

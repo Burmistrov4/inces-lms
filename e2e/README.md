@@ -235,7 +235,7 @@ El flujo completo está en `.github/workflows/e2e.yml`.
 
 ## Secretos que hacen falta
 
-Son **seis**, y el sexto no es evidente.
+Son **nueve**, y los últimos no son evidentes.
 
 | Secreto | Para qué |
 | --- | --- |
@@ -245,6 +245,12 @@ Son **seis**, y el sexto no es evidente.
 | `E2E_ADMIN_EMAIL` | Una cuenta **de administración y de prueba** |
 | `E2E_ADMIN_PASSWORD` | Íd. |
 | `E2E_SECCION` | El **título de la tarjeta** de una sección con matriculados |
+| `E2E_ALUMNO_EMAIL` / `E2E_ALUMNO_PASSWORD` | El ciclo del aula (M6) y la señal del panel del aprendiz. Sin ellas, `aula_virtual.spec.ts` se **salta** y un salto se lee como verde |
+| `E2E_DOCENTE_EMAIL` / `E2E_DOCENTE_PASSWORD` | Publicar, calificar y devolver en el ciclo del aula |
+
+`e2e.yml` comprueba los seis primeros antes de compilar y pasa los nueve al job.
+La lista corta de arriba (seis) es la de la **regresión mínima**; la de CI es la
+de nueve.
 
 ### Por qué el sexto
 

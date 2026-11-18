@@ -1,6 +1,19 @@
-# INCES LMS — Render Blueprint
-# Backend únicamente. Supabase y Cloudflare R2 permanecen como servicios externos.
-# Los secretos se cargan desde el Dashboard de Render y no se versionan aquí.
+# INCES LMS — Render Blueprint (ARCHIVADO, NO USAR)
+#
+# **Estado: histórico desde el 2026-10-31.** El backend de producción vive en
+# **Vercel** (`https://inces-lms-api.vercel.app`) por decisión del propietario:
+# todo el stack en capas gratuitas, sin tarjeta y sin techo de horas.
+#
+# Render se retiró porque su plan free da 750 h/mes por workspace (un mes son
+# 744 h) y **suspende** el servicio al agotarlas: medido el 2026-10-30 con un
+# `503` y `x-render-routing: suspend`.
+#
+# Este archivo se movió aquí desde la raíz para que ningún `push` pueda
+# reactivar un despliegue accidental. La configuración vigente de la API es
+# `backend/vercel.json`. Si algún día se volviera a Render, hay que restaurar la
+# ruta original a mano y actualizar `docs/ENTORNOS_Y_DESPLIEGUE.md`.
+#
+# --- contenido original a partir de aquí ---
 
 services:
   - type: web

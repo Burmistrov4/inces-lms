@@ -3,8 +3,10 @@
 > **ENTRADA PRINCIPAL (nueva, 2026-10-29):** [`docs/MAESTRO/00_INDICE_MAESTRO.md`](docs/MAESTRO/00_INDICE_MAESTRO.md) — punto de entrada único: estado, pendientes y plan delegable. **Empieza por aquí.**
 > **INDICE COMPLETO:** [`docs/README.md`](docs/README.md).
 > **PENDIENTES (consolidado):** [`docs/MAESTRO/02_PENDIENTES_Y_ERRORES.md`](docs/MAESTRO/02_PENDIENTES_Y_ERRORES.md).
+> **ENTORNOS Y DESPLIEGUE (fuente única):** [`docs/ENTORNOS_Y_DESPLIEGUE.md`](docs/ENTORNOS_Y_DESPLIEGUE.md) — dónde vive cada pieza (Vercel + Cloudflare Pages), planes gratuitos, variables y orden de despliegue.
 > **PLAN DE TRABAJO:** [`docs/MAESTRO/04_PLAN_MAESTRO_DELEGABLE.md`](docs/MAESTRO/04_PLAN_MAESTRO_DELEGABLE.md) (paquetes P0–P4).
 > **CONTINUIDAD:** [`docs/handover/REPORTE_CONTINUIDAD_2026-10-22.md`](docs/handover/REPORTE_CONTINUIDAD_2026-10-22.md).
+> **ÚLTIMO CIERRE:** [`docs/handover/CIERRE_2026-11-18_VERCEL_Y_DOCS.md`](docs/handover/CIERRE_2026-11-18_VERCEL_Y_DOCS.md) — consolidación Render → Vercel, contradicciones cerradas, bundle v1.14.1 compilado y verificado, y las 28 pruebas Flutter que ya venían en rojo.
 
 > ## ⚡ TRABAJO VIGENTE — REDISEÑO 1.5 (2026-10-25)
 >
@@ -12,8 +14,9 @@
 > [`docs/ESPECIFICACION_MAESTRA_REDISENO_1_5_2026-10-25.md`](docs/ESPECIFICACION_MAESTRA_REDISENO_1_5_2026-10-25.md).
 > Su **Parte V** es el mandato; las **11 tareas se hacen en orden**.
 > Reglas duras de esta tanda:
-> - **Trabaja directo en `main`.** No abras ramas `feat/*` / `fix/*` / `tarea/*`;
->   haz commit y push a `origin main`.
+> - **Trabaja directo en `main`** (no abras ramas `feat/*` / `fix/*` / `tarea/*`).
+>   Los cambios se dejan en el árbol; **commit y push solo con autorización del
+>   propietario** — ver §2 del procedimiento y el paso 1 de la ruta de abajo.
 > - **Las 5 ambigüedades de la Parte IV ya están resueltas** — no las preguntes.
 > - **Los cuatro controles** (analizador, backend, matriz, migraciones) pasan sin
 >   excepción; es la barra. No se declara «listo» sin ellos.

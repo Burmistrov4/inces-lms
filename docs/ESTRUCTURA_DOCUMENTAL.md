@@ -10,7 +10,7 @@ Cuando dos documentos se contradigan, se aplica este orden. **La jerarquía no a
 
 | Nivel | Qué es | Por qué manda |
 |---|---|---|
-| **1. Código, configuración y workflows reales** | `lib/`, `backend/src/`, `supabase/`, `render.yaml`, `.github/workflows/`, `android/`, `web/` | Es el comportamiento implementado. Ningún documento cambia lo que el código hace. |
+| **1. Código, configuración y workflows reales** | `lib/`, `backend/src/`, `supabase/`, `.github/workflows/`, `android/`, `web/` | Es el comportamiento implementado. Ningún documento cambia lo que el código hace. (`render.yaml` **ya no** está aquí: se archivó en `docs/historial/configuracion/` al pasar el backend a Vercel.) |
 | **2. Procedimientos operativos vigentes, respaldados por evidencia** | `docs/PROCEDIMIENTO_DESPLIEGUE_PRODUCCION.md`, `LEVANTAR_EN_LOCAL.md`, `devops/README.md`, `e2e/README.md` | Comandos reproducibles con salida esperada; se siguen para operar. |
 | **3. Estado del sistema y registros fechados de verificación** | `ESTADO_DEL_SISTEMA.md` (sección vigente), `docs/handover/*` | Fotografía del árbol en una fecha; sus cifras envejecen y se re-miden. |
 | **4. Manuales funcionales y documentación de arquitectura** | arquitectura, contratos de API, diseño, briefings de módulo | Explican el sistema; se validan contra el nivel 1 antes de citarlos como verdad. |
@@ -39,6 +39,11 @@ Cuando dos documentos se contradigan, se aplica este orden. **La jerarquía no a
 | Memoria de agentes | .workbuddy-ai/memory, MEMORY.md y memorias de otros agentes | Contexto auxiliar; no demuestra pruebas ni estado remoto. |
 
 ## Clasificación del inventario
+
+> Inventario **histórico**: contado el 2026-10-13 (Fase 1). Los recuentos de abajo
+> envejecieron; el vigente, medido el **2026-11-18** con `git ls-files`, es:
+> **126** `.md` rastreados en todo el repositorio (85 bajo `docs/`), **8** sin
+> seguimiento y **795** ignorados por `.gitignore`. Recontar antes de citar cifras.
 
 Inventario contado el **2026-10-13 (Fase 1)** con recorrido recursivo excluyendo dependencias y artefactos: node_modules, .git, .dart_tool, build, .wrangler, entornos virtuales y deploy-ad5ce67. **Resultado: 218 archivos Markdown** (recontado al cierre de la Fase 1; el primer recuento dio 217 porque aún no existía `docs/handover/FASE1_CONSOLIDACION_DOCUMENTAL_2026-10-13.md`), de los que el catálogo lista 217 —se excluye a sí mismo—.
 

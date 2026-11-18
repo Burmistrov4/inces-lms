@@ -44,7 +44,10 @@ permissions:
   contents: read
 
 env:
-  API_PRODUCCION: https://inces-lms-api.onrender.com
+  # El APK apunta a la misma API que la web. Render se retiró el 2026-10-31
+  # (750 h/mes y suspensión): la API vive en Vercel. Fuente única:
+  # docs/ENTORNOS_Y_DESPLIEGUE.md
+  API_PRODUCCION: https://inces-lms-api.vercel.app
 
 jobs:
   apk:

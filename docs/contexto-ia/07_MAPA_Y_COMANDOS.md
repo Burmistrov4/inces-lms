@@ -27,7 +27,7 @@
 │  ├─ openapi.json         Artefacto del contrato (generado por npm run openapi)
 │  └─ Dockerfile           Imagen de producción (Render)
 ├─ supabase/
-│  ├─ migrations/          46 migraciones YYYYMMDDNNN_*.sql (nunca editar una aplicada)
+│  ├─ migrations/          73 migraciones YYYYMMDDNNN_*.sql (nunca editar una aplicada)
 │  ├─ tests/               Validador PGlite: validate.mjs + vectores + medir-conteos
 │  ├─ apply-migrations.mjs Libro mayor (checksum SHA-256): --check / aplicar
 │  ├─ verificar-esquema.mjs  Comprueba el esquema DESPLEGADO (sólo lectura)
@@ -45,7 +45,7 @@
 ├─ devops/                 analizar-dart.mjs (verificador de tipos local),
 │                          pipeline de contexto (devops/out/, gitignored)
 ├─ docs/                   Documentación viva; **docs/contexto-ia/ = este paquete**
-├─ render.yaml             Blueprint de Render (backend Docker, /salud)
+├─ render.yaml             **YA NO EXISTE**: archivado en docs/historial/configuracion/ (Render retirado; backend en Vercel)
 ├─ docker-compose.yml      Arquitectura dual local
 └─ ESTADO_DEL_SISTEMA.md   EL documento que manda cuando hay contradicción
 ```

@@ -1,6 +1,14 @@
 // Cloudflare Pages Function: /api/[[catchall]]
-// Proxy inverso transparente desde Cloudflare Pages hacia el backend Fastify en Render.
-// Conecta todas las rutas de administración, horarios, módulos y usuarios con cero errores de CORS.
+// Proxy inverso desde Cloudflare Pages hacia el backend Fastify.
+//
+// **Histórico operativo, no se despliega.** El bundle de producción se publica
+// con `wrangler pages deploy build/web` (subida directa), que **no incluye**
+// esta carpeta; y desde el 2026-10-31 la web compila con `API_BASE_URL`
+// apuntando a Vercel, así que ni siquiera se usa el mismo origen. Se conserva
+// corregido para que nadie reactive un proxy hacia un servicio retirado.
+//
+// Backend vigente: Vercel (`https://inces-lms-api.vercel.app`). Render se retiró
+// al agotar sus 750 h/mes.
 
 export async function onRequest(context) {
   const { request, params, env } = context;
@@ -21,7 +29,7 @@ export async function onRequest(context) {
     });
   }
 
-  const backendHost = env.RENDER_BACKEND_URL || 'https://inces-lms-api.onrender.com';
+  const backendHost = env.BACKEND_URL || 'https://inces-lms-api.vercel.app';
   const targetUrl = `${backendHost}/api/${path}${url.search}`;
 
   const headers = new Headers(request.headers);

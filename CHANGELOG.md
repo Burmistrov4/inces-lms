@@ -2,6 +2,36 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.14.1] - 2026-11-18
+### El período de la cabecera deja de pedirse a una ruta de administrador
+
+- **403 en cada carga de los paneles de docente y estudiante.** Los tres
+  dashboards pedían el lapso que muestran en su cabecera a
+  `GET /api/v1/admin/periodos`, que exige rol de administrador. Docente y
+  estudiante recibían `403 SOLO_ADMIN` en **cada** apertura; el cliente lo tapaba
+  con un respaldo a PostgREST, así que la insignia se pintaba bien y el error
+  solo se veía en la consola y en el registro del servidor. Medido con Playwright
+  contra producción el 2026-11-18.
+  - Ruta nueva `GET /api/v1/periodo-vigente` (sesión, sin guardia de módulo).
+  - `CuadranteGateway.obtenerPeriodoVigente()`; los paneles de docente y
+    aprendiz la usan; el cPanel mantiene `/admin/periodos` porque necesita la
+    lista completa.
+  - 5 pruebas de backend y 6 de Flutter.
+- **El árbol no compilaba.** `constructor_direccion_inteligente.dart` llamaba a
+  `paleta.tarjeta`, que no existe en `PaletaInces`; `flutter test` y
+  `flutter build web` morían ahí. Corregido a `paleta.superficie`.
+- **Contrato OpenAPI:** `Guardia.bloque` documentaba «1 a 12» cuando el máximo
+  real es 17 desde el turno nocturno.
+
+### Consolidación de entornos (Vercel, 100 % gratuito)
+
+- `docs/ENTORNOS_Y_DESPLIEGUE.md` pasa a ser la fuente única de entornos, hosts,
+  planes gratuitos y variables.
+- `web_bundle.yml`, `devops/desplegar-pages.mjs` y las Pages Functions dejan de
+  apuntar a Render; `render.yaml` se archiva en `docs/historial/configuracion/`.
+- `PROCEDIMIENTO_DESPLIEGUE_PRODUCCION.md` alineado a Vercel (§1, §5, §5.1,
+  §9.1, §10.1, §11, §12); §7 queda marcada como histórica.
+
 ## [1.14.0] - 2026-10-31
 ### Se puede publicar el anuncio, y la asistencia deja de fingir un canal
 

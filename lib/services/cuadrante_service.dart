@@ -5,6 +5,13 @@ import '../core/network/api_client.dart';
 import '../models/cuadrante.dart';
 import 'supabase_service.dart';
 
+/// De dónde sale el JWT de la sesión actual.
+///
+/// Parámetro y no una llamada directa a `SupabaseService` por el mismo motivo
+/// que en `BackendArchivosGateway`: `Supabase.instance` **lanza** si Supabase no
+/// está inicializado, y entonces el gateway no se podría construir en una prueba.
+typedef ProveedorDeToken = String? Function();
+
 /// Implementación de [CuadranteGateway] contra el backend Fastify.
 ///
 /// Pasa por el backend y no por Supabase directamente por la misma razón que el
@@ -19,15 +26,31 @@ import 'supabase_service.dart';
 /// de `/mi-horario` no pasan por el prefijo de administración: esa ruta la
 /// guarda `exigirSesion()` y el aislamiento lo hace la RLS.
 class BackendCuadranteGateway implements CuadranteGateway {
-  BackendCuadranteGateway({ApiClient? api}) : _api = api ?? ApiClient();
+  BackendCuadranteGateway({ApiClient? api, ProveedorDeToken? tokenSesion})
+      : _api = api ?? ApiClient(),
+        _tokenInyectado = tokenSesion;
 
   final ApiClient _api;
 
+  /// Token de sesión inyectable **sólo para las pruebas**.
+  ///
+  /// Sin él, leer el token obliga a `Supabase.instance`, que lanza si Supabase
+  /// no está inicializado: la ruta del período de la cabecera —la que produjo el
+  /// 403— no se podría probar sin montar Supabase entero. Es el mismo patrón de
+  /// `BackendArchivosGateway`.
+  final ProveedorDeToken? _tokenInyectado;
+
   /// Token de sesión del llamante, para que el backend valide su rol.
   String? get _tokenSesion =>
+      _tokenInyectado?.call() ??
       SupabaseService.instance.auth.currentSession?.accessToken;
 
   static const String _base = '/api/v1/admin';
+
+  /// Ruta del lapso vigente: **no** cuelga de `/admin`, porque la cabecera la
+  /// pintan los tres roles y un docente o un estudiante no son administradores.
+  static const String _rutaPeriodoVigente = '/api/v1/periodo-vigente';
+
 
   /// La ruta del horario propio **no** cuelga de `/admin`: un docente y un
   /// estudiante no son administradores, y montarla bajo el prefijo habría
@@ -207,6 +230,28 @@ class BackendCuadranteGateway implements CuadranteGateway {
       ttl: const Duration(seconds: 45),
       fn: _listarPeriodosSinCache,
     );
+  }
+
+  /// El lapso vigente por su ruta propia, legible por los tres roles.
+  ///
+  /// **No se cachea**, y es deliberado: se pide una vez al abrir el panel, no
+  /// cuarenta y cinco. Cachearlo sólo añadiría el riesgo de que la cabecera
+  /// siguiera mostrando el lapso anterior después de cambiarlo en el cPanel.
+  @override
+  Future<Periodo?> obtenerPeriodoVigente() async {
+    final respuesta = await _api.get(
+      _rutaPeriodoVigente,
+      token: _tokenSesion,
+      // Tres segundos, como el resto de lecturas de esta capa: la cabecera no
+      // debe retener el panel si el servidor no responde.
+      tiempoEspera: const Duration(seconds: 3),
+      permitirReintento: false,
+    );
+
+    final crudo = respuesta['periodo'];
+    if (crudo is! Map<String, dynamic>) return null;
+
+    return Periodo.fromJson(crudo);
   }
 
   Future<List<Periodo>> _listarPeriodosSinCache() async {

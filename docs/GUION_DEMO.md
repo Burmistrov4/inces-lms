@@ -1,10 +1,10 @@
-# Guion de demostración — INCES LMS v1.11.0
+# Guion de demostración — INCES LMS v1.14.0
 
 Escrito para una defensa corta. Cada paso dice **qué hacer**, **qué debería verse**
 y **qué hacer si falla**. Si algo no sale, el paso siguiente no depende de ello.
 
 > Antes de entrar: `Ctrl + Shift + R` en el navegador. El pie debe decir
-> **v1.11.0**. Si dice otra cosa, la caché no se limpió y estás viendo código
+> **v1.14.0**. Si dice otra cosa, la caché no se limpió y estás viendo código
 > viejo — eso ya ha pasado dos veces y no es un fallo del sistema.
 
 ---
@@ -12,7 +12,7 @@ y **qué hacer si falla**. Si algo no sale, el paso siguiente no depende de ello
 ## 0. Lo que se muestra primero (30 segundos)
 
 1. Abre `https://inces-lms.pages.dev`.
-2. Señala el pie: **v1.11.0** y el nombre del centro.
+2. Señala el pie: **v1.14.0** y el nombre del centro.
 3. Di en voz alta: «Flutter Web, API en Vercel, base en Supabase con RLS».
 
 **Qué demuestra:** que hay una aplicación desplegada, con versionado, no una

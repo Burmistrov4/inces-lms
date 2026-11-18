@@ -48,6 +48,7 @@ class FakeCuadranteGateway implements CuadranteGateway {
   Object? errorAlCrearAula;
   Object? errorAlActualizarAula;
   Object? errorAlListarPeriodos;
+  Object? errorAlObtenerPeriodoVigente;
   Object? errorAlCrearPeriodo;
   Object? errorAlActualizarPeriodo;
   Object? errorAlMarcarVigente;
@@ -144,6 +145,13 @@ class FakeCuadranteGateway implements CuadranteGateway {
     llamadas.add('listarPeriodos');
     _lanzarSi(errorAlListarPeriodos);
     return periodos;
+  }
+
+  @override
+  Future<Periodo?> obtenerPeriodoVigente() async {
+    llamadas.add('obtenerPeriodoVigente');
+    _lanzarSi(errorAlObtenerPeriodoVigente);
+    return periodoVigente;
   }
 
   @override

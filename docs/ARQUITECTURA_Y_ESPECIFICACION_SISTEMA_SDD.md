@@ -7,9 +7,9 @@
 > **PROPÓSITO DE ESTE DOCUMENTO:**  
 > Este documento técnico ha sido diseñado de manera exhaustiva y autocontenida bajo la metodología **Spec-Driven Development (SDD)** para transferir el 100% del contexto operativo, arquitectónico, pedagógico, estructural y de seguridad del proyecto a una **IA que actúa como Arquitecto de Software Principal / Lead System Architect**, sin requerir acceso directo al código fuente.  
 > 
-> **Versión del Sistema:** `v1.2.9` (Producción 2026)  
-> **Árbol de Código:** 240 archivos Dart analizados (0 errores, 0 advertencias, 0 infos) · 705/705 pruebas unitarias/integración de backend aprobadas · 26/26 pruebas de frontend aprobadas.  
-> **Estado de Despliegue:** Cloudflare Pages (`https://inces-lms.pages.dev`), Render API (`https://inces-lms-api.onrender.com`), Supabase Cloud (PostgreSQL 15 con RLS y GoTrue Auth), Cloudflare R2 Object Storage.
+> **Versión del Sistema:** `v1.14.0` (Producción 2026) — **cabecera corregida el 2026-11-18**; este dossier se redactó sobre `v1.2.9` y el resto de sus cifras (240 archivos Dart, 705 pruebas, PostgreSQL 15, API en Render) son de esa fecha y **no** describen el sistema actual. Para el estado real: [`ESTADO_DEL_SISTEMA.md`](../ESTADO_DEL_SISTEMA.md) y [`ENTORNOS_Y_DESPLIEGUE.md`](ENTORNOS_Y_DESPLIEGUE.md).
+> **Árbol de Código:** 156 archivos Dart bajo `lib/` (medido el 2026-11-18) · backend 755/755 en 36 archivos · API en **Vercel**.
+> **Estado de Despliegue:** Cloudflare Pages (`https://inces-lms.pages.dev`), **Vercel API** (`https://inces-lms-api.vercel.app`), Supabase Cloud (PostgreSQL 17.6 con RLS y GoTrue Auth), Cloudflare R2 Object Storage.
 
 ---
 

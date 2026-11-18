@@ -14,7 +14,7 @@ class AppConfig {
   /// exigirÃ­a `package_info_plus` (y una llamada de plataforma en cada arranque
   /// web). En su lugar, `test/version_coherente_test.dart` compara las dos y
   /// falla si se separan.
-  static const String version = '1.14.0';
+  static const String version = '1.14.1';
   static const String versionLabel =
       'INCES LMS v$version Â· CFS Rafael Urdaneta Â· Prod 2026';
 
@@ -45,8 +45,8 @@ class AppConfig {
     // **sólo si no hay URL configurada**, para el caso en que el despliegue
     // incluya las Pages Functions de `functions/` que hacen de proxy.
     //
-    // Medido el 2026-10-31: esas funciones apuntan a Render
-    // (`RENDER_BACKEND_URL || onrender.com`) y **no viajan** en
+    // Medido el 2026-10-31: esas funciones apuntan al backend de la API
+    // (`BACKEND_URL`, hoy Vercel) y **no viajan** en
     // `wrangler pages deploy build/web`, así que en producción el atajo dejaba
     // la app pidiendo `/api/v1/...` a Pages y recibiendo un 503 en HTML. Ese HTML
     // es el «El servidor respondió con contenido HTML en lugar de datos JSON»

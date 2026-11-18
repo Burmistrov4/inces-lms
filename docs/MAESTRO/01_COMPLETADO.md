@@ -35,7 +35,7 @@
 - **Migraciones:** **62 aplicadas · 0 pendientes · 0 deriva** (`apply-migrations.mjs --check`).
 - **CI del push:** Flutter CI ✅ · Backend CI ✅ · Supabase CI ✅.
 - **Frontend desplegado:** `wrangler pages deploy` → `inces-lms.pages.dev` (HTTP 200, bundle con API de producción, cero `localhost`).
-- **Backend:** `GET https://inces-lms-api.onrender.com/salud` → 200 `{"estado":"ok"}`.
+- **Backend:** `GET https://inces-lms-api.vercel.app/salud` → 200 `{"estado":"ok"}` (Vercel desde el 2026-10-31; la medición original fue contra Render).
 - **OpenAPI 3.1** generado desde Zod; contrato cubierto por `openapi.test.ts` (D6).
 - **`cleanstack-ci.yml`** (workflow vacío de 0 bytes que fallaba en cada push) **borrado 2026-10-29**.
 

@@ -24,8 +24,12 @@
 
 ## Dónde vive el detalle (no hace falta leerlo salvo para trazar historia)
 
-- **`docs/ESTADO_DEL_SISTEMA.md`** — estado vivo y medido del sistema (cifras de CI,
-  tabla de completado, deuda). Sigue siendo la fuente de verdad numérica.
+- **`../ESTADO_DEL_SISTEMA.md`** (raíz) — estado vivo y medido del sistema (cifras de CI,
+  tabla de completado, deuda). Sigue siendo la fuente de verdad numérica. **Ojo con la
+  ruta:** vive en la raíz del repositorio, no en `docs/`; `docs/ESTADO_DEL_SISTEMA.md`
+  no existe.
+- **`docs/ENTORNOS_Y_DESPLIEGUE.md`** — entornos, hosts (Vercel + Cloudflare Pages),
+  planes gratuitos, variables y orden de despliegue. Es la fuente única de esa materia.
 - **`docs/BACKLOG_PENDIENTES.md`** — backlog detallado con evidencia por ítem.
 - **`docs/contexto-ia/`** (00–08) — contexto técnico estructurado para IA.
 - **`docs/historial/`** — **archivo completo** de los informes, planes, auditorías y
@@ -48,9 +52,12 @@
 - **Medir antes de afirmar.** Una cifra o un defecto van acompañados de cómo se
   midieron. No se afirma "está roto" sin medirlo con el mismo instrumento.
 - **La frontera de autorización es la RLS de Postgres, no la API.**
-- **`ESTADO_DEL_SISTEMA.md` gana al código** cuando discrepan; ciérralo el mismo
-  día que cierras algo en código.
-- **CI es el verificador de Flutter/Dart** (en este equipo `flutter test` no arranca
-  por tuberías nombradas / proxy). Comandos de verificación en `04_PLAN_MAESTRO_DELEGABLE.md`.
+- **Manda el código y la configuración real**; después la medición reproducible, y
+  solo entonces los documentos. `ESTADO_DEL_SISTEMA.md` gana a los demás `.md`, pero
+  **no** al código, al esquema ni a los workflows (`ESTRUCTURA_DOCUMENTAL.md` §precedencia).
+- **CI es el verificador de Flutter/Dart.** En este equipo `flutter` está en
+  `C:\Users\Admin\develop\flutter`; con el SDK en el PATH corren `flutter analyze`
+  y `flutter test` (medido el 2026-11-18). Si vuelve el bloqueo `CreateFile failed 231`,
+  CI sigue siendo la referencia.
 - **No borrar migraciones aplicadas.** Nuevas migraciones con formato `YYYYMMDDNNN_*.sql`.
 - **El push es el respaldo**; dos ediciones al mismo archivo en un commit se pierden.

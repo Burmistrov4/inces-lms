@@ -4,13 +4,13 @@
 > que se midió. Si vas a tomar una decisión con una de estas cifras, **vuelve a
 > medirla** con los comandos de `07_MAPA_Y_COMANDOS.md`.
 
-## 1. Producción (verificado 2026-10-10)
+## 1. Producción (verificado 2026-10-10; **hosts actualizados el 2026-11-18**)
 
 | Pieza | Dónde | URL / identificador |
 |---|---|---|
 | Frontend (Flutter Web) | Cloudflare Pages, proyecto `inces-lms` | https://inces-lms.pages.dev |
-| Backend (Fastify) | Render, servicio `inces-lms-api` (Docker, plan free) | https://inces-lms-api.onrender.com |
-| Health check | Render | `GET /salud` → **200** |
+| Backend (Fastify) | **Vercel Hobby**, proyecto `inces-lms-api` | https://inces-lms-api.vercel.app |
+| Health check | Vercel | `GET /salud` → **200** |
 | Base de datos | Supabase, proyecto `twdppwnxlnmxkiejbrei` (región sa-east-1, PostgreSQL 17.6) | `https://twdppwnxlnmxkiejbrei.supabase.co` |
 | Repositorio | GitHub, rama `main` | `github.com/Burmistrov4/inces-lms` |
 

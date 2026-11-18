@@ -145,12 +145,12 @@ async function verificar() {
     console.error('Proxy a Render error:', e.message);
   }
 
-  console.log('\n=== VERIFICACIÓN DE SERVIDOR FASTIFY RENDER DIRECTO ===');
+  console.log('\n=== VERIFICACIÓN DE SERVIDOR FASTIFY (VERCEL) ===');
   try {
-    const renderSalud = await fetch('https://inces-lms-api.onrender.com/salud');
-    console.log('Render /salud status:', renderSalud.status, await renderSalud.text());
+    const apiSalud = await fetch('https://inces-lms-api.vercel.app/salud');
+    console.log('Vercel /salud status:', apiSalud.status, await apiSalud.text());
   } catch (e) {
-    console.error('Render /salud error:', e.message);
+    console.error('Vercel /salud error:', e.message);
   }
 }
 

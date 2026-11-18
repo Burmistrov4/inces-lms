@@ -355,23 +355,28 @@ class _AspiranteDashboardScreenState extends State<AspiranteDashboardScreen>
   /// cabecera decía un período y los paneles otro: medido el 2026-10-31, la
   /// insignia mostraba «SA26-2» mientras «Mis aulas» decía «Período: INCES26-3».
   /// Un dato fijo en una cabecera es una mentira con fecha de caducidad.
+  ///
+  /// **Se pide a `/api/v1/periodo-vigente` y no a `/admin/periodos`.** Medido
+  /// con Playwright contra producción el 2026-11-18: la ruta de administración
+  /// respondía `403 SOLO_ADMIN` en cada apertura del panel del aprendiz, tapado
+  /// por el respaldo a PostgREST de esta misma capa.
   late final CuadranteRepository _periodosRepo = CuadranteRepository();
   String? _periodoCodigo;
   String? _periodoNombre;
   bool _periodoEsVigente = true;
 
   Future<void> _cargarPeriodoVigente() async {
-    final resultado = await _periodosRepo.listarPeriodos();
+    final resultado = await _periodosRepo.obtenerPeriodoVigente();
     if (!mounted) return;
     resultado.when(
-      success: (periodos) {
-        final elegido = periodos.where((p) => p.vigente).firstOrNull ??
-            (periodos.isNotEmpty ? periodos.first : null);
-        if (elegido == null) return;
+      success: (periodo) {
+        // `null` = el centro aún no ha creado ningún lapso: se deja la insignia
+        // como está, porque no hay dato que mostrar.
+        if (periodo == null) return;
         setState(() {
-          _periodoCodigo = elegido.codigo;
-          _periodoNombre = elegido.nombre;
-          _periodoEsVigente = elegido.vigente;
+          _periodoCodigo = periodo.codigo;
+          _periodoNombre = periodo.nombre;
+          _periodoEsVigente = periodo.vigente;
         });
       },
       failure: (_) {

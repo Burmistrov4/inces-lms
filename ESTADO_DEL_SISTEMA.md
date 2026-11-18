@@ -1,6 +1,21 @@
 # ESTADO DEL SISTEMA — INCES LMS
 
-## Fotografía operativa vigente — 2026-10-31 · v1.9.0 desplegada · **API en Vercel**
+## Fotografía operativa vigente — 2026-11-18 · **API en Vercel** · v1.14.0 publicada, v1.14.1 lista
+
+> **Nota de coherencia (2026-11-18).** La fotografía anterior decía `v1.9.0`
+> mientras `pubspec.yaml` y `CHANGELOG.md` ya iban por **1.14.0+33**; se corrige
+> aquí la etiqueta. Lo medido ese día: `/salud` de Vercel responde, la web
+> publicada llama a `https://inces-lms-api.vercel.app`, y los tres roles
+> recorren su menú completo (16/16 admin, 5/5 docente, 8/8 estudiante).
+> Los entornos y sus límites gratuitos viven en `docs/ENTORNOS_Y_DESPLIEGUE.md`.
+>
+> **v1.14.1 (2026-11-18) — en el árbol, no publicada.** El sitio sigue sirviendo
+> `v1.14.0`. En el árbol está compilado y verificado `build/web` con
+> `pubspec 1.14.1+34`, `main.dart.js` de 4,86 MB que cita
+> `inces-lms-api.vercel.app` y **no** contiene `onrender.com`, `localhost` ni
+> `127.0.0.1`; `version.json` del bundle declara `1.14.1/34`. Falta la
+> publicación (Vercel + Pages). Detalle en
+> `docs/handover/CIERRE_2026-11-18_VERCEL_Y_DOCS.md`.
 
 > **H1 RESUELTO.** La API ya no vive en Render. Render agotó sus 750 horas/mes y
 > suspendió el servicio el 2026-10-30 (`503` + `x-render-routing: suspend`); y
@@ -9,8 +24,10 @@
 > pago admitida»).
 >
 > **API de producción: `https://inces-lms-api.vercel.app`** (Vercel Hobby: gratis,
-> sin tarjeta, sin techo de horas, sin suspensión, sin dormir). Despliegue
-> automático desde `main`; el proyecto está vinculado al repo.
+> sin tarjeta, sin techo de horas, sin suspensión, sin dormir). **El despliegue
+> es manual y a propósito**: el vínculo de Git se quitó porque `rootDirectory`
+> quedaba en `null` y el CLI se rompía; se publica con `npx vercel --prod` desde
+> `backend/` (ver `docs/PROCEDIMIENTO_DESPLIEGUE_PRODUCCION.md` §7 quater).
 >
 > Medido el 2026-10-31 08:25 UTC, contra producción:
 > `/salud` → 200 `{"estado":"ok"}` en 0,7 s · `/salud/profundo` → 200 con
@@ -27,10 +44,13 @@
 > Hobby es **sólo para uso no comercial** (un centro público sin ánimo de lucro
 > encaja, pero si el uso crece habrá que pasar a Pro, 20 $/mes por asiento).
 >
-> **Pendiente del dueño:** suspender el servicio de Render en su panel. Mañana se
-> le reinician las 750 h y arrancaría solo contra la misma base: dos APIs vivas
-> sobre el mismo Supabase. Y probar un login real en producción (la contraseña de
-> administrador se rotó y no está en el repo, así que ese camino no se pudo medir).
+> **Pendiente del dueño:** confirmar en el panel de Render que el servicio quedó
+> **suspendido o eliminado**. Mañana se le reinician las 750 h y arrancaría solo
+> contra la misma base: dos APIs vivas sobre el mismo Supabase. El blueprint
+> `render.yaml` ya se retiró de la raíz (`docs/historial/configuracion/`), pero eso
+> no apaga un servicio que ya exista. Y probar un login real en producción (la
+> contraseña de administrador se rotó y no está en el repo, así que ese camino no
+> se pudo medir).
 
 
 
@@ -500,9 +520,9 @@ Sin seguimiento, por entrada de `git status --short`: `e2e/` 13 (sondas `_*.spec
 
 ### Arquitectura confirmada
 
-Frontend **Flutter Web** (Cloudflare Pages, `inces-lms.pages.dev`) · backend **Node.js + TypeScript con Fastify 5 + Zod**, ESM (Render, `inces-lms-api.onrender.com`, health `/salud`) · base de datos **Supabase/PostgreSQL** con RLS y 46 migraciones en `supabase/migrations/` · almacenamiento **Cloudflare R2** · repositorio `github.com/Burmistrov4/inces-lms`. Tres roles. La frontera de autorización es la RLS, no la API (ADR-003).
+Frontend **Flutter Web** (Cloudflare Pages, `inces-lms.pages.dev`) · backend **Node.js + TypeScript con Fastify 5 + Zod**, ESM (**Vercel**, `inces-lms-api.vercel.app`, health `/salud`) · base de datos **Supabase/PostgreSQL** con RLS · almacenamiento **Cloudflare R2** · repositorio `github.com/Burmistrov4/inces-lms`. Tres roles. La frontera de autorización es la RLS, no la API (ADR-003).
 
-Servicios y entornos: producción (Pages + Render + Supabase) y local (backend 3001, frontend 8090). `render.yaml` versiona sólo el blueprint del backend; los secretos viven en el Dashboard de Render y no están en el repositorio.
+Servicios y entornos: producción (Pages + **Vercel** + Supabase) y local (backend 3001, frontend 8090). Fuente única: `docs/ENTORNOS_Y_DESPLIEGUE.md`. Render se retiró el 2026-10-31 y su blueprint vive en `docs/historial/configuracion/render.yaml`; los secretos están en el panel de Vercel y en `backend/.env`, nunca en el repositorio.
 
 ### Pruebas ejecutadas realmente en esta sesión
 

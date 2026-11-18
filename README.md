@@ -25,6 +25,10 @@ nube y la API está probada de extremo a extremo contra ella.
 > El documento que manda es **[`ESTADO_DEL_SISTEMA.md`](ESTADO_DEL_SISTEMA.md)**.
 > Describe el estado **real**: lo construido, lo verificado y lo que falta. Si algo
 > contradice a otro archivo, manda ese.
+>
+> **Entornos y despliegue:** [`docs/ENTORNOS_Y_DESPLIEGUE.md`](docs/ENTORNOS_Y_DESPLIEGUE.md)
+> — dónde vive cada pieza (Vercel + Cloudflare Pages + Supabase + R2), límites de
+> los planes gratuitos y orden de despliegue.
 
 ---
 

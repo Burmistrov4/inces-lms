@@ -33,7 +33,8 @@ export async function onRequestPost(context) {
       );
     }
 
-    const backendHost = context.env?.RENDER_BACKEND_URL || 'https://inces-lms-api.onrender.com';
+    // Backend vigente: Vercel. Render se retiró el 2026-10-31.
+    const backendHost = context.env?.BACKEND_URL || 'https://inces-lms-api.vercel.app';
     const targetUrl = `${backendHost}/api/v1/auth/solicitar-recuperacion`;
 
     const resp = await fetch(targetUrl, {

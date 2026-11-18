@@ -18,7 +18,7 @@
 | Validación SQL | **PGlite** (PostgreSQL compilado a WASM) | — | `supabase/tests/` |
 | E2E | **Playwright + TypeScript** (Chromium real) | — | `e2e/` |
 | CI/CD | **GitHub Actions** (6 workflows) | — | `.github/workflows/` |
-| Producción backend | **Render** (Docker, plan free) | — | `render.yaml` |
+| Producción backend | **Vercel** (plan Hobby, función Node) | — | proyecto `inces-lms-api` · `backend/vercel.json` (Render retirado; blueprint en `docs/historial/configuracion/`) |
 | Producción frontend | **Cloudflare Pages** | — | proyecto `inces-lms` |
 | Local/dual | **Docker + docker-compose** | — | raíz |
 

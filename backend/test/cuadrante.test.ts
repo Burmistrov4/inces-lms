@@ -1630,3 +1630,84 @@ describe('la guardia del módulo (m3_cuadrante)', () => {
     expect(respuesta.json().error.codigo).toBe('MODULO_DESCONOCIDO');
   });
 });
+
+// --- Período vigente (lectura para cualquier rol) ---------------------------
+
+/**
+ * El período de la cabecera de los tres paneles.
+ *
+ * Existe porque los dashboards de docente y estudiante lo pedían a
+ * `GET /api/v1/admin/periodos`, una ruta de administrador: cada apertura de esos
+ * paneles terminaba en un `403 SOLO_ADMIN` que el cliente tapaba con un respaldo
+ * silencioso. La cabecera se pintaba bien y el error quedaba escondido en la
+ * consola y en el registro del servidor.
+ */
+describe('GET /api/v1/periodo-vigente', () => {
+  it('un docente obtiene el lapso vigente sin pasar por una ruta de administrador', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'GET',
+      url: '/api/v1/periodo-vigente',
+      headers: conToken(TOKEN_DOCENTE),
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    const cuerpo = respuesta.json() as { periodo: { codigo: string; vigente: boolean } | null };
+    expect(cuerpo.periodo?.codigo).toBe(PERIODO_2026_1.codigo);
+    expect(cuerpo.periodo?.vigente).toBe(true);
+  });
+
+  it('el estudiante también lo recibe: es el período de su cabecera', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'GET',
+      url: '/api/v1/periodo-vigente',
+      headers: conToken(TOKEN_ALUMNO),
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    const cuerpo = respuesta.json() as { periodo: { codigo: string } | null };
+    expect(cuerpo.periodo?.codigo).toBe(PERIODO_2026_1.codigo);
+  });
+
+  it('el administrador lo recibe igual, y no necesita el rol para leer su propia cabecera', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'GET',
+      url: '/api/v1/periodo-vigente',
+      headers: conToken(TOKEN_ADMIN),
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    expect((respuesta.json() as { periodo: { vigente: boolean } }).periodo.vigente).toBe(true);
+  });
+
+  it('sin sesión responde 401: no es una ruta pública', async () => {
+    const arnés = crearArnés();
+    app = arnés.app;
+
+    const respuesta = await app.inject({ method: 'GET', url: '/api/v1/periodo-vigente' });
+
+    expect(respuesta.statusCode).toBe(401);
+  });
+
+  it('sin ningún lapso declarado devuelve null en vez de inventarse uno', async () => {
+    const arnés = crearArnés({ periodos: [] });
+    app = arnés.app;
+
+    const respuesta = await app.inject({
+      method: 'GET',
+      url: '/api/v1/periodo-vigente',
+      headers: conToken(TOKEN_DOCENTE),
+    });
+
+    expect(respuesta.statusCode).toBe(200);
+    expect((respuesta.json() as { periodo: unknown }).periodo).toBeNull();
+  });
+});

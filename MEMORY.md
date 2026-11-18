@@ -20,7 +20,7 @@
 - Proyecto: INCES-LMS-PROJECT, LMS para INCES La Isabelica.
 - Stack: Flutter Web + Fastify 5/TypeScript/Zod + Supabase PostgreSQL/RLS + Cloudflare R2 + Playwright.
 - Producción: https://inces-lms.pages.dev/
-- API: https://inces-lms-api.onrender.com
+- API: https://inces-lms-api.vercel.app  (Vercel; Render retirado el 2026-10-31 — ver docs/ENTORNOS_Y_DESPLIEGUE.md)
 - Cloud/Local/offline: FUERA DE ALCANCE; pertenecía a otro proyecto.
 
 ## 2. Secuencia vigente

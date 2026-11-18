@@ -32,7 +32,14 @@ permissions:
   contents: read
 
 env:
-  API_PRODUCCION: https://inces-lms-api.onrender.com
+  # **API de producción: Vercel** (decisión del propietario, 2026-10-31: todo el
+  # stack en capas gratuitas). Render se retiró al agotar sus 750 h/mes y
+  # suspender el servicio; `render.yaml` quedó archivado en
+  # `docs/historial/configuracion/`.
+  #
+  # Este valor se compila DENTRO del bundle. Si apunta a un servicio muerto, la
+  # web carga y todas las llamadas fallan con «contenido HTML en lugar de JSON».
+  API_PRODUCCION: https://inces-lms-api.vercel.app
 
 jobs:
   bundle:

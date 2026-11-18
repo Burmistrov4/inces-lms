@@ -293,6 +293,35 @@ export function rutasCuadrante(app: FastifyInstance, deps: DependenciasRutas): v
   // --- Lectura por rol --------------------------------------------------------
 
   /**
+   * El lapso vigente, para cualquier sesión.
+   *
+   * Existe porque los tres paneles piden el período que muestran en su cabecera,
+   * y hasta ahora lo pedían a `GET /api/v1/admin/periodos`: en docente y
+   * estudiante esa llamada terminaba en `403 SOLO_ADMIN` en **cada** apertura del
+   * panel, tapada por un respaldo silencioso del cliente. La cabecera se veía
+   * bien y el error quedaba escondido en la consola y en el registro.
+   *
+   * **Sin guardia de módulo a propósito.** El período de la cabecera no es
+   * contenido de M3: si el administrador apaga «Cuadrante y Horarios», el panel
+   * sigue mostrando en qué lapso está trabajando. Con `exigirCuadrante` esta
+   * ruta devolvería 403 justo cuando la cabecera más falta hace.
+   *
+   * Sin lapsos declarados devuelve `periodo: null` —no un 404—: «el centro aún
+   * no ha creado ninguno» es un estado legítimo y el cliente ya sabe pintarlo.
+   */
+  app.get('/api/v1/periodo-vigente', { preHandler: [exigirSesion()] }, async (request) => {
+    const periodos = await reposDe(request).cuadrante.listarPeriodos();
+
+    // `listarPeriodos()` los devuelve del más reciente al más viejo y marca con
+    // `vigente` el que apunta `system_settings.periodo_activo`. Si ninguno lo
+    // está (base recién sembrada), se toma el primero: es el que los paneles ya
+    // usaban como respaldo.
+    const periodo = periodos.find((p) => p.vigente) ?? periodos[0] ?? null;
+
+    return { periodo };
+  });
+
+  /**
    * El horario del llamante.
    *
    * Una sola ruta para docente y estudiante porque el aislamiento ya lo

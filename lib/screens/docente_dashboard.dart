@@ -164,23 +164,29 @@ class _DocenteDashboardScreenState extends State<DocenteDashboardScreen>
   ///
   /// Era una constante (`'SA26-2'`): la cabecera mostraba un período anterior
   /// mientras los paneles ya trabajaban con el vigente. Medido el 2026-10-31.
+  ///
+  /// **Se pide a `/api/v1/periodo-vigente` y no a `/admin/periodos`.** Medido
+  /// con Playwright contra producción el 2026-11-18: la ruta de administración
+  /// devolvía `403 SOLO_ADMIN` en cada apertura del panel del docente, y el
+  /// respaldo del cliente lo tapaba, así que la insignia se pintaba bien y el
+  /// fallo sólo se veía en la consola y en el registro del servidor.
   late final CuadranteRepository _periodosRepo = CuadranteRepository();
   String? _periodoCodigo;
   String? _periodoNombre;
   bool _periodoEsVigente = true;
 
   Future<void> _cargarPeriodoVigente() async {
-    final resultado = await _periodosRepo.listarPeriodos();
+    final resultado = await _periodosRepo.obtenerPeriodoVigente();
     if (!mounted) return;
     resultado.when(
-      success: (periodos) {
-        final elegido = periodos.where((p) => p.vigente).firstOrNull ??
-            (periodos.isNotEmpty ? periodos.first : null);
-        if (elegido == null) return;
+      success: (periodo) {
+        // `null` = el centro aún no ha creado ningún lapso. Se deja la insignia
+        // como está: no hay dato que mostrar, y no es un error.
+        if (periodo == null) return;
         setState(() {
-          _periodoCodigo = elegido.codigo;
-          _periodoNombre = elegido.nombre;
-          _periodoEsVigente = elegido.vigente;
+          _periodoCodigo = periodo.codigo;
+          _periodoNombre = periodo.nombre;
+          _periodoEsVigente = periodo.vigente;
         });
       },
       failure: (_) {},

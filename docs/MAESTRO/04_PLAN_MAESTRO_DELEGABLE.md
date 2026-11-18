@@ -11,6 +11,24 @@
 
 ---
 
+## Estado de los paquetes al 2026-11-18 (léelo antes de ejecutar nada)
+
+`02_PENDIENTES_Y_ERRORES.md` es la **lista viva**; este documento es el plan. Si
+discrepan, manda `02`. A esta fecha ya están cerrados y **no deben reabrirse**:
+
+| Paquete | Estado real | Evidencia |
+|---|---|---|
+| **P0.1** — expectativas obsoletas de `verificar-esquema.mjs` | **CERRADO** (B4 de `02`) | quedó en 147 OK y 1 rojo de deriva real (B13) |
+| **P1.1** — N2, cuadrante inutilizable en el teléfono | **CERRADO** (`02:33`) | `CuadranteGrid.cabeComoTabla`; medido 0 desbordes a 390 px |
+| **B15** — `limite=150` → 400 en el catálogo de secciones | **CERRADO** (`02:60`) | paginado con el máximo del contrato |
+| **Contradicción Render/Vercel** (estaba viva en 5 archivos) | **CERRADO el 2026-11-18** | `docs/ENTORNOS_Y_DESPLIEGUE.md`; workflow y procedimiento alineados |
+
+Y un hallazgo nuevo de esa fecha, ya corregido: el período de la cabecera se pedía
+a `/admin/periodos` desde los paneles de docente y estudiante, que respondía
+**403 SOLO_ADMIN** en cada carga. Ahora hay `GET /api/v1/periodo-vigente`.
+
+---
+
 ## 0. Cómo verificar en este equipo (obligatorio leer)
 
 > **CORREGIDO EL 2026-10-29 (noche), medido en esta máquina.** La versión anterior
@@ -39,10 +57,14 @@
 
 ```bash
 # Frontend (análisis estático, equivalente a flutter analyze sin subproceso hijo)
-node devops/analizar-dart.mjs            # 250 archivos · 0/0/0 esperado
+node devops/analizar-dart.mjs            # exit 0, 0 diagnósticos esperados
+
+# Con el SDK instalado (medido el 2026-11-18 en C:\Users\Admin\develop\flutter):
+flutter analyze                          # solo avisos de deprecación del SDK
+flutter test                             # suite completa
 
 # Backend
-cd backend && npm run verify             # 728/728 esperado
+cd backend && npm run verify             # 755/755 esperado (medido 2026-11-18)
 cd backend && npm run typecheck
 cd backend && npm run openapi            # regenera openapi.json (contrato D6)
 

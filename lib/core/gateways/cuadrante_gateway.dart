@@ -35,7 +35,18 @@ abstract interface class CuadranteGateway {
 
   /// El catálogo completo de lapsos, sin paginar: un centro acumula unos pocos
   /// al año y el desplegable los necesita todos para ofrecer el siguiente.
+  ///
+  /// **Es una ruta de administración** (`/api/v1/admin/periodos`). Para el
+  /// período de la cabecera de un panel use [obtenerPeriodoVigente]: docente y
+  /// estudiante no pueden leer esta y el 403 resultante quedaba tapado por el
+  /// respaldo del cliente.
   Future<List<Periodo>> listarPeriodos();
+
+  /// El lapso vigente, legible por **cualquier** sesión.
+  ///
+  /// Es lo que pinta la cabecera de los tres paneles. Devuelve `null` cuando el
+  /// centro aún no ha creado ningún lapso: es un estado legítimo, no un error.
+  Future<Periodo?> obtenerPeriodoVigente();
 
   Future<Periodo> crearPeriodo(EntradaCrearPeriodo entrada);
 

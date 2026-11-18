@@ -36,7 +36,8 @@
 | `MAESTRO/` | **Consolidado 2026-10-29**: entrada principal (ver §0/§1). Sustituye la necesidad de leer el resto para retomar el trabajo. |
 | `ESPECIFICACION_MAESTRA_REDISENO_1_5_2026-10-25.md` | **Mandato del Rediseño 1.5** (11 tareas, decisiones D1–D11). Ojo: su TAREA 9 («Campus») fue **anulada** el 2026-10-27; ver `ESTADO_DEL_SISTEMA.md`. |
 | `ARQUITECTURA_Y_ESPECIFICACION_SISTEMA_SDD.md` | Arquitectura y especificacion (SDD). |
-| `PROCEDIMIENTO_DESPLIEGUE_PRODUCCION.md` | Como desplegar (Render + Cloudflare Pages). |
+| `PROCEDIMIENTO_DESPLIEGUE_PRODUCCION.md` | **Cómo desplegar** (Cloudflare Pages + **Vercel** + Supabase). |
+| `ENTORNOS_Y_DESPLIEGUE.md` | **Fuente única de entornos, hosts, planes gratuitos y variables.** Si contradice a cualquier otro `.md`, manda este. |
 | `CONFIGURACION_R2.md` | Configuracion del almacenamiento R2. |
 | `PROJECT_PHASE_GATES.md` | Puertas de fase del proyecto. |
 | `DISENO_MULTINUBE_DRIVE_2026-10-23.md` | Diseno de la Fase D (Drive): decisiones cerradas el 2026-10-24. |
@@ -93,8 +94,12 @@ guía de indexación en Google, plan de trabajo del 2026-10-23 y propuesta de
 Y si contradice al codigo, gana el codigo.
 
 *Indice reescrito el 2026-10-22. Antes habia 29 `.md` sueltos en `docs/` y 15 en
-la raiz; ahora 15 y 7.* Recontado el 2026-10-29: **15** `.md` en `docs/` (antes
-decia 13 y ya eran 15 cuando se escribio esa linea) y **7** en la raiz. Los dos
+la raiz; ahora 20 y 7.* Recontado el **2026-11-18**: **20** `.md` en el primer
+nivel de `docs/` y **85** contando subcarpetas (`git ls-files 'docs/**/*.md'`);
+en la raiz siguen siendo **7**. Los dos
 documentos de handoff que otra sesion dejo en `docs/` el 2026-10-28 se retiraron
 el 2026-10-29 —contenian afirmaciones falsas— y su contenido, corregido, vive en
 `historial/reportes/LOTE_5_CIERRE_2026-10-29.md`.*
+
+**Añadido el 2026-11-18:** `ENTORNOS_Y_DESPLIEGUE.md` (entornos y planes) y
+`historial/configuracion/render.yaml` (blueprint retirado de la raíz).
