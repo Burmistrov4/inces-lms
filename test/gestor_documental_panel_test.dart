@@ -102,6 +102,17 @@ Finder texto(String contenido) => find.byWidgetPredicate(
       description: 'texto «$contenido», sin distinguir mayúsculas',
     );
 
+/// Quita del registro las llamadas de **hidratación** de la lista.
+///
+/// Desde el arreglo del 2026-10-31 (`0672c8b`) el panel pregunta siempre al
+/// abrirse: con entidad, los archivos de esa tarea o guía; sin entidad, los
+/// propios —que es lo que impide que el archivo recién subido desaparezca al
+/// cambiar de pestaña—. Las pruebas que hablan de la **subida** no deben
+/// romperse por esa petición de fondo, así que la filtran aquí en vez de
+/// reescribir su lista de llamadas una por una.
+List<String> sinHidratar(List<String> llamadas) =>
+    llamadas.where((c) => !c.startsWith('listar')).toList();
+
 /// Gateway que retiene el paso 1 hasta que la prueba lo suelta.
 ///
 /// Sirve para mirar la pantalla **mientras** la subida está en curso, que es el
@@ -161,24 +172,35 @@ void main() {
   group('GestorDocumentalPanel · estado inicial', () {
     testWidgets('sin entidad lo explica en vez de fingir una lista vacía',
         (tester) async {
+      final gateway = FakeArchivosGateway();
       await montar(
         tester,
-        repo: ArchivosRepository(gateway: FakeArchivosGateway()),
+        repo: ArchivosRepository(gateway: gateway),
         selector: FakeSelectorDeArchivos(),
       );
+      await asentar(tester);
 
       // El título se deriva del tipo de entidad: el mismo panel sirve para las
       // entregas del estudiante y para las guías del docente.
       expect(texto('Mis entregas'), findsOneWidget);
-      expect(texto('Todavía no has subido archivos'), findsOneWidget);
+      // Sin entidad el panel **sí** pregunta, pero por los archivos propios, no
+      // por los de una tarea que no existe. Si esa petición vuelve vacía, el
+      // texto es «Todavía no hay archivos aquí» y no una lista en blanco.
+      expect(texto('Todavía no hay archivos aquí'), findsOneWidget);
       expect(find.text('Elegir archivo'), findsOneWidget);
 
-      // Sin `entidadId` no hay pregunta que hacer —la ruta pide los archivos de
-      // una tarea concreta, y un id nulo daría 400—. Decirlo es la diferencia
-      // entre una limitación y una mentira.
+      // Sin `entidadId` la ruta de la entidad daría 400, así que no se pide:
+      // se piden los archivos propios, que sí existe y es la razón por la que
+      // esta pestaña ya no pierde lo recién subido al cambiar de vista.
       expect(
-        find.textContaining('no está atada a una tarea o una guía'),
-        findsOneWidget,
+        gateway.llamadas.any((c) => c.startsWith('listarMios')),
+        isTrue,
+        reason: 'sin entidad hay que hidratar «mis archivos»',
+      );
+      expect(
+        gateway.llamadas.any((c) => c.startsWith('listarPorEntidad')),
+        isFalse,
+        reason: 'un id nulo daría 400: no se pide la ruta de la entidad',
       );
     });
 
@@ -239,7 +261,8 @@ void main() {
       );
     });
 
-    testWidgets('sin entidad no se llama a la ruta', (tester) async {
+    testWidgets('sin entidad pide los archivos propios, no la ruta de la entidad',
+        (tester) async {
       final gateway = FakeArchivosGateway();
 
       await montar(
@@ -249,8 +272,15 @@ void main() {
       );
       await asentar(tester);
 
-      // No se gasta un viaje en un 400 anunciado.
-      expect(gateway.llamadas, isEmpty);
+      // No se gasta un viaje en un 400 anunciado (la ruta de la entidad exige
+      // un id), pero tampoco se deja la lista sin hidratar: se piden los
+      // archivos propios, que es lo que hace que lo subido sobreviva al cambio
+      // de pestaña.
+      expect(sinHidratar(gateway.llamadas), isEmpty);
+      expect(
+        gateway.llamadas.where((c) => c.startsWith('listar')),
+        everyElement(startsWith('listarMios')),
+      );
     });
 
     testWidgets('un fallo al listar no impide subir', (tester) async {
@@ -287,7 +317,9 @@ void main() {
 
       // Orden exacto, no sólo «se llamaron las tres». Firmar después del `PUT`
       // dejaría el objeto sin fila; confirmar antes del `PUT` mediría la nada.
-      expect(gateway.llamadas, [
+      // Se ignoran las llamadas de hidratación: hablan de la lista, no del orden
+      // de la subida.
+      expect(sinHidratar(gateway.llamadas), [
         'firmarSubida:Constancia José.pdf',
         'subirObjeto',
         'confirmar:${gateway.archivoFirmadoDevuelto.id}',
@@ -440,7 +472,9 @@ void main() {
       await tester.pump();
 
       expect(selector.vecesElegir, 1);
-      expect(gateway.llamadas, isEmpty);
+      // Cancelar no dispara ni firma ni subida; la hidratación de la lista no
+      // cuenta como acción del usuario.
+      expect(sinHidratar(gateway.llamadas), isEmpty);
       // Ni caja de error ni aviso: cancelar es una decisión, no un fallo. Un
       // aviso aquí enseñaría al usuario a ignorar los avisos.
       expect(find.textContaining('No pudimos abrir el selector'), findsNothing);
@@ -465,7 +499,7 @@ void main() {
 
       expect(find.text('No pudimos abrir el selector de archivos.'), findsOneWidget);
       expect(find.text('Recarga la página e inténtalo de nuevo.'), findsOneWidget);
-      expect(gateway.llamadas, isEmpty);
+      expect(sinHidratar(gateway.llamadas), isEmpty);
 
       // Y el botón vuelve a estar disponible: el estado de carga se libera
       // **antes** de comprobar `mounted`, que es lo que evita que un fallo deje
@@ -532,7 +566,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Reintentar subida'), findsOneWidget);
-      expect(resultado.gateway.llamadas, [
+      expect(sinHidratar(resultado.gateway.llamadas), [
         'firmarSubida:Constancia José.pdf',
         'subirObjeto',
       ]);

@@ -16,7 +16,10 @@ import 'support/fake_aula_gateway.dart';
 /// `marcar_asistencia_panel.dart` no aparecían en ningún archivo de `test/`. Una
 /// pantalla sin prueba es una pantalla que nadie ha visto fallar, y estas dos
 /// tienen caminos que fallan en silencio: el panel del docente rota el QR solo y
-/// pinta lo que llega por el canal, y el del alumno tiene que distinguir «el
+/// refresca el tablero con un **sondeo cada 4 s** (el WebSocket se retiró en el
+/// 1.14.0: una función serverless no puede mantener el canal y el aviso «se cayó
+/// la conexión» salía en cada clase aunque las marcas se guardaran), y el del
+/// alumno tiene que distinguir «el
 /// código no tiene la forma» de «la base lo rechazó» — dos errores con el mismo
 /// síntoma para el usuario—, y desde D21 además elegir entre las dos vías de
 /// entrada sin confundirlas.
@@ -116,9 +119,12 @@ void main() {
       await montarDocente(tester);
       await abrirSesion(tester);
 
-      // Se pidió la sesión de **esa** sección, y con la ventana por defecto.
+      // Se pidió la sesión de **esa** sección, y con la ventana por defecto:
+      // 45 s desde el arreglo del 1.14.0 (antes eran 15 fijos y al docente no le
+      // daba tiempo a proyectar el QR). El panel deja elegir 30/45/60/90 antes
+      // de abrir; el valor lo fija el servidor al crear la sesión.
       expect(fake.ultimaSeccionAbierta, 'sec-1');
-      expect(fake.ultimaVentanaPedida, 15);
+      expect(fake.ultimaVentanaPedida, 45);
 
       // El QR se pinta, y el contador dice cuánto le queda a la ventana.
       expect(find.byType(QrImageView), findsOneWidget);
@@ -150,17 +156,19 @@ void main() {
         reason: 'el QR tiene que anunciar su caducidad a quien no lo ve',
       );
 
-      // Y el canal en vivo se abrió para esa misma sesión.
-      expect(fake.ultimoSesionIdEnVivo, 'e5e5e5e5-0001-4001-8001-000000000001');
+      // Y el panel pregunta por las marcas de esa misma sesión: el sondeo es la
+      // única vía desde que se retiró el WebSocket (una función serverless no
+      // puede mantener el canal abierto).
+      expect(fake.llamadas.where((l) => l.startsWith('marcas:')), isNotEmpty);
 
       await desmontar(tester);
     });
 
-    testWidgets('una marca que llega por el canal se pinta sin recargar nada',
+    testWidgets('una marca nueva aparece con el siguiente sondeo, sin recargar',
         (tester) async {
-      // El corazón del diseño de M7: el tablero del docente **no hace polling**.
-      // Esta prueba es la única que ejerce ese empuje desde el lado de la
-      // pantalla.
+      // **Sondeo, no empuje.** Desde que se retiró el WebSocket (1.14.0) el
+      // tablero pregunta cada 4 s; esta prueba es la que fija que la marca de un
+      // estudiante aparece sola, sin que el docente toque nada.
       await montarDocente(tester);
       await abrirSesion(tester);
 
@@ -172,17 +180,22 @@ void main() {
 
       expect(find.text(vacio), findsOneWidget);
 
-      fake.empujarMarca(estudianteId: 'Iris Vega');
-      await tester.pump();
+      // Una vuelta del sondeo sin marcas nuevas no cambia nada en pantalla.
+      await tester.pump(const Duration(seconds: 4));
+      expect(find.text(vacio), findsOneWidget);
+
+      // Ahora el estudiante marca; la siguiente vuelta lo trae.
+      fake.marcasAResponder = [marcaAsistenciaEjemplo(estudianteId: 'Iris Vega')];
+      await tester.pump(const Duration(seconds: 4));
       await tester.pump();
 
       expect(find.text(vacio), findsNothing);
       expect(find.text('Iris Vega'), findsOneWidget);
-      // El canal se abrió **una** vez: el panel no se re-suscribe en cada marca.
-      expect(
-        fake.llamadas.where((l) => l.startsWith('enVivo')).length,
-        1,
-      );
+
+      // Y no se duplica en la vuelta siguiente: el panel fusiona por estudiante.
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pump();
+      expect(find.text('Iris Vega'), findsOneWidget);
 
       await desmontar(tester);
     });
@@ -247,69 +260,56 @@ void main() {
       expect(find.byType(QrImageView), findsNothing);
     });
 
-    testWidgets('si el canal se rompe con un error, lo dice y no borra lo ya marcado',
+    testWidgets('un sondeo que falla no alarma ni borra lo ya marcado',
         (tester) async {
-      // Perder el canal **no** pierde las marcas: están en la base, y el propio
-      // mensaje lo recuerda. Lo que se pierde es el aviso, y eso el docente tiene
-      // que saberlo para no creer que la clase no ha entrado.
+      // Un sondeo que falla **no** es una avería que anunciar: el siguiente
+      // intento llega en cuatro segundos. Lo que sí importa es que lo ya pintado
+      // no se pierda — las marcas están en la base, no en la pantalla.
+      fake.marcasAResponder = [marcaAsistenciaEjemplo(estudianteId: 'Ana Pérez')];
       await montarDocente(tester);
       await abrirSesion(tester);
 
-      fake.empujarMarca(estudianteId: 'Ana Pérez');
-      await tester.pump();
-      await tester.pump();
-
-      fake.fallarCanal();
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.textContaining('La conexión en vivo se cayó'), findsOneWidget);
       expect(find.text('Ana Pérez'), findsOneWidget);
 
-      await desmontar(tester);
-    });
-
-    testWidgets('un cierre LIMPIO del canal también se avisa', (tester) async {
-      // D22, fijado. Un cierre limpio y una avería llegan por caminos distintos:
-      // `WebSocketChannel` emite `done` en el primero y `error` en la segunda. El
-      // panel sólo escuchaba `onError`, así que si el servidor cerraba el socket
-      // —reinicio, o la sesión terminando de su lado— el tablero se quedaba
-      // congelado **sin decir nada**, que es justo lo que este mensaje existe
-      // para evitar.
-      await montarDocente(tester);
-      await abrirSesion(tester);
-
-      fake.cerrarCanal();
-      await tester.pump();
+      fake.errorAlListarMarcas = const AppException(
+        type: AppErrorType.red,
+        message: 'No hay conexión con el servidor.',
+        code: 'SIN_RED',
+      );
+      await tester.pump(const Duration(seconds: 4));
       await tester.pump();
 
-      expect(find.textContaining('La conexión en vivo se cayó'), findsOneWidget);
+      expect(find.text('Ana Pérez'), findsOneWidget);
+      expect(find.textContaining('La conexión en vivo se cayó'), findsNothing);
+      // Y el panel sigue usable: no hay caja de error que tape el tablero.
+      expect(find.textContaining('No hay conexión con el servidor'), findsNothing);
 
       await desmontar(tester);
     });
 
-    testWidgets('cerrar la sesión y caerse el canal después NO alarma',
+    testWidgets('cerrar la sesión detiene el sondeo y no deja avisos de conexión',
         (tester) async {
-      // La otra mitad de D22: al cerrar la sesión el servidor cierra el socket,
-      // así que ese `done` es lo esperado. Si el aviso se pintara igual, el
-      // docente aprendería a ignorarlo y el mensaje dejaría de servir.
+      // Cerrar la sesión cancela el sondeo: seguir preguntando por una sesión
+      // cerrada sería gastar peticiones para nada. Y no debe quedar ningún aviso
+      // de «conexión»: ese mensaje se retiró con el WebSocket porque mentía.
       await montarDocente(tester);
       await abrirSesion(tester);
 
-      // El servidor anuncia el cierre de la sesión...
-      fake.empujar({
-        'tipo': 'sesion_cerrada',
-        'sesionId': 'e5e5e5e5-0001-4001-8001-000000000001',
-      });
-      await tester.pump();
-      await tester.pump();
-
-      // ...y entonces se cae el canal.
-      fake.cerrarCanal();
+      await tester.tap(find.text('Cerrar'));
       await tester.pump();
       await tester.pump();
 
       expect(find.textContaining('Sesión cerrada'), findsOneWidget);
+
+      final antes = fake.llamadas.where((l) => l.startsWith('marcas:')).length;
+      await tester.pump(const Duration(seconds: 12));
+      await tester.pump();
+
+      expect(
+        fake.llamadas.where((l) => l.startsWith('marcas:')).length,
+        antes,
+        reason: 'cerrada la sesión, el panel no vuelve a preguntar',
+      );
       expect(find.textContaining('La conexión en vivo se cayó'), findsNothing);
 
       await desmontar(tester);
