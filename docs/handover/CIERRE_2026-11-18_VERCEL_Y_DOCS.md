@@ -51,7 +51,8 @@ PostgREST, así que el error solo se veía en consola y en el registro del servi
 | Ruta nueva contra **Supabase real** (backend local) | admin 200 · docente 200 · estudiante 200 · sin token 401 · lapso `INCES26-3`, `vigente: true` |
 | Ruta vieja como docente (control) | 403 `SOLO_ADMIN` |
 | `flutter analyze` (SDK 3.50) | solo avisos de deprecación del propio SDK (`package:flutter/material.dart` → `material_ui`), 127 avisos, **0 errores** |
-| `flutter test` (suite completa, SDK 3.50) | **1163/1191**; 28 rojos **preexistentes**, en 6 archivos (ver §5) |
+| `flutter test` (suite completa, SDK 3.50) | **1086/1086 en el árbol del commit `0f57828`** (CI verde). En el árbol de trabajo quedan **17 rojos**, todos del formulario de aspirante sin commitear |
+| `flutter analyze` sobre las pruebas reescritas | sin errores; solo el aviso de deprecación del SDK |
 | `flutter test test/periodo_vigente_test.dart` + paneles de cuadrante | **42/42** |
 | `flutter build web --release` con `API_BASE_URL` de Vercel | OK, 91,6 s, `build/web` 4,86 MB de `main.dart.js` |
 | Playwright, 3 roles contra producción | admin 16/16 · docente 5/5 · estudiante 8/8 |
@@ -80,21 +81,23 @@ PostgREST, así que el error solo se veía en consola y en el registro del servi
 - **Decisiones del propietario pendientes**: `m7_calificaciones`/`m8_pasantias`
   encendidos sin código; rotación de credenciales expuestas; confirmar que el
   servicio de Render quedó apagado.
-- **Pruebas Flutter que ya venían en rojo** — 28 de 1191, medida el 2026-11-18.
-  Ninguna toca el período ni el cuadrante; se comprobó ejecutando aparte los
-  archivos implicados (42/42 en verde). Reparto:
+- **Pruebas Flutter.** Al cerrar la sesión estaban **28 en rojo**. Once eran
+  pruebas viejas que describían pantallas que ya no existen y se corrigieron en
+  el commit `0f57828` (asistencia 18/18 y gestor documental 22/22). Con eso el
+  árbol del commit queda en **1086/1086, CI verde**, comprobado en un worktree
+  limpio de `0f57828`.
 
-  | Archivo | Rojos | Causa medida |
-  |---|---|---|
-  | `test/aspirante_form_catalogo_test.dart` | 11 | formulario de aspirante **en curso** (`lib/screens/aspirante_form_screen.dart` modificado sin commitear) |
-  | `test/gestor_documental_panel_test.dart` | 6 | el panel llama `listarMios` sin entidad; la prueba espera que no lo haga |
-  | `test/asistencia_paneles_test.dart` | 5 | la pantalla pide ventana de **45 s** (`_ventanaSeg = 45`), la prueba espera **15** |
-  | `test/aspirante_form_navegacion_test.dart` | 4 | mismo formulario en curso |
-  | `test/cedula_y_ubicacion_test.dart` | 1 | **no compila**: llama `CampoInscripcion(...)` con argumentos que el modelo ya no acepta |
-  | `test/barrido_responsive_test.dart` | 1 | `StateError` recorriendo el formulario de aspirante |
-
-  Son deuda previa; arreglarlas exige decidir cuál manda, si el código o la
-  prueba. No se tocaron sin decisión del propietario.
+  Los **17 restantes** siguen rojos en el árbol de trabajo y **no afectan al
+  CI**: dependen del formulario de aspirante que está sin commitear
+  (`aspirante_form_screen.dart`, `campo_planilla.dart` y los widgets nuevos de
+  cédula y dirección). Se comprobó guardando ese trabajo aparte: con el árbol del
+  commit, los mismos archivos pasan 50/50. Reparto actual: 13 en
+  `aspirante_form_catalogo_test.dart`/`aspirante_form_navegacion_test.dart`
+  (fallan con `Bad state: Too many elements` porque el formulario en curso pinta
+  campos nuevos), 1 en `barrido_responsive_test.dart`, 1 en
+  `cedula_y_ubicacion_test.dart` (el widget de dirección pinta **dos**
+  `TextFormField` y la prueba busca uno; se dejaron compilando sus dos
+  constructores de `CampoInscripcion`, que no pasaban `orden`).
 
 ## 6. Trampas que encontró esta sesión
 

@@ -6,7 +6,7 @@
 > **ENTORNOS Y DESPLIEGUE (fuente única):** [`docs/ENTORNOS_Y_DESPLIEGUE.md`](docs/ENTORNOS_Y_DESPLIEGUE.md) — dónde vive cada pieza (Vercel + Cloudflare Pages), planes gratuitos, variables y orden de despliegue.
 > **PLAN DE TRABAJO:** [`docs/MAESTRO/04_PLAN_MAESTRO_DELEGABLE.md`](docs/MAESTRO/04_PLAN_MAESTRO_DELEGABLE.md) (paquetes P0–P4).
 > **CONTINUIDAD:** [`docs/handover/REPORTE_CONTINUIDAD_2026-10-22.md`](docs/handover/REPORTE_CONTINUIDAD_2026-10-22.md).
-> **ÚLTIMO CIERRE:** [`docs/handover/CIERRE_2026-11-18_VERCEL_Y_DOCS.md`](docs/handover/CIERRE_2026-11-18_VERCEL_Y_DOCS.md) — consolidación Render → Vercel, contradicciones cerradas, bundle v1.14.1 compilado y verificado, y las 28 pruebas Flutter que ya venían en rojo.
+> **ÚLTIMO CIERRE:** [`docs/handover/CIERRE_2026-11-18_VERCEL_Y_DOCS.md`](docs/handover/CIERRE_2026-11-18_VERCEL_Y_DOCS.md) — consolidación Render → Vercel, contradicciones cerradas, bundle v1.14.1 compilado y verificado, y la suite Flutter en **1086/1086** en el árbol del commit.
 
 > ## ⚡ TRABAJO VIGENTE — REDISEÑO 1.5 (2026-10-25)
 >
