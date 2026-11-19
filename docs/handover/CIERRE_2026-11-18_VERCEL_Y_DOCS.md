@@ -51,7 +51,7 @@ PostgREST, así que el error solo se veía en consola y en el registro del servi
 | Ruta nueva contra **Supabase real** (backend local) | admin 200 · docente 200 · estudiante 200 · sin token 401 · lapso `INCES26-3`, `vigente: true` |
 | Ruta vieja como docente (control) | 403 `SOLO_ADMIN` |
 | `flutter analyze` (SDK 3.50) | solo avisos de deprecación del propio SDK (`package:flutter/material.dart` → `material_ui`), 127 avisos, **0 errores** |
-| `flutter test` (suite completa, SDK 3.50) | **1086/1086 en el árbol del commit `0f57828`** (CI verde). En el árbol de trabajo quedan **17 rojos**, todos del formulario de aspirante sin commitear |
+| `flutter test` (suite completa, SDK 3.50) | **1095/1095** con el árbol de trabajo tras `b7ab6b2` (incluye el formulario de aspirante con cédula y dirección nuevas) |
 | `flutter analyze` sobre las pruebas reescritas | sin errores; solo el aviso de deprecación del SDK |
 | `flutter test test/periodo_vigente_test.dart` + paneles de cuadrante | **42/42** |
 | `flutter build web --release` con `API_BASE_URL` de Vercel | OK, 91,6 s, `build/web` 4,86 MB de `main.dart.js` |
@@ -87,17 +87,12 @@ PostgREST, así que el error solo se veía en consola y en el registro del servi
   árbol del commit queda en **1086/1086, CI verde**, comprobado en un worktree
   limpio de `0f57828`.
 
-  Los **17 restantes** siguen rojos en el árbol de trabajo y **no afectan al
-  CI**: dependen del formulario de aspirante que está sin commitear
-  (`aspirante_form_screen.dart`, `campo_planilla.dart` y los widgets nuevos de
-  cédula y dirección). Se comprobó guardando ese trabajo aparte: con el árbol del
-  commit, los mismos archivos pasan 50/50. Reparto actual: 13 en
-  `aspirante_form_catalogo_test.dart`/`aspirante_form_navegacion_test.dart`
-  (fallan con `Bad state: Too many elements` porque el formulario en curso pinta
-  campos nuevos), 1 en `barrido_responsive_test.dart`, 1 en
-  `cedula_y_ubicacion_test.dart` (el widget de dirección pinta **dos**
-  `TextFormField` y la prueba busca uno; se dejaron compilando sus dos
-  constructores de `CampoInscripcion`, que no pasaban `orden`).
+  Los **17 rojos** que quedaban en el árbol de trabajo se cerraron en `b7ab6b2`
+  (1.15.0): 13 eran `Bad state: Too many elements` porque el campo de dirección
+  es compuesto y pinta dos `TextFormField` —se corrigió `entradaDe()` del arnés,
+  que ahora toma el primero—, uno del barrido responsive, uno del widget de
+  dirección (rediseñado) y dos de expectativas del formulario (la cédula viaja con
+  prefijo). La suite completa queda en **1095/1095**.
 
 ## 6. Trampas que encontró esta sesión
 
