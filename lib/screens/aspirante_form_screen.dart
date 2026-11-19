@@ -407,6 +407,26 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
         _valores.remove('parroquia');
         _valores.remove('comunidad');
       }
+
+      // Sincronización inteligente Cédula <-> Nacionalidad
+      if (cod == 'cedula' && valor != null) {
+        final str = valor.toString();
+        if (str.startsWith('V-')) {
+          _valores['nacionalidad'] = 'V';
+        } else if (str.startsWith('E-')) {
+          _valores['nacionalidad'] = 'E';
+        }
+      } else if (cod == 'nacionalidad' && valor != null) {
+        final nac = valor.toString().toUpperCase();
+        if (_valores.containsKey('cedula') && _valores['cedula'] != null) {
+          final digitos = _valores['cedula']
+              .toString()
+              .replaceAll(RegExp(r'[^\d]'), '');
+          if (digitos.isNotEmpty && (nac == 'V' || nac == 'E')) {
+            _valores['cedula'] = '$nac-$digitos';
+          }
+        }
+      }
     });
     _guardarBorradorLocal();
   }
@@ -770,6 +790,15 @@ class _AspiranteFormScreenState extends State<AspiranteFormScreen> {
             valor: _valores[campo.codigo],
             opciones: _obtenerOpcionesParaCampo(campo),
             error: _errores[campo.codigo],
+            prefijoCedula: (_valores['nacionalidad']?.toString() ?? 'V'),
+            onPrefijoCedulaCambio: (prefijo) {
+              if (prefijo == 'V' || prefijo == 'E') {
+                setState(() {
+                  _valores['nacionalidad'] = prefijo;
+                });
+                _guardarBorradorLocal();
+              }
+            },
             onCambio: (valor) => _cambiarValor(campo, valor),
           ),
       ],

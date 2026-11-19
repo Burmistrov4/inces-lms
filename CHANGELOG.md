@@ -2,6 +2,28 @@
 
 Todas las modificaciones, correcciones y nuevas funcionalidades implementadas en el proyecto INCES LMS se documentan en este archivo.
 
+## [1.15.0] - 2026-11-19
+### La cédula con prefijo y una dirección que se puede encontrar
+
+- **Cédula con nacionalidad.** El campo guarda `V-`, `E-`, `J-` o `P-` delante de
+  los dígitos, en vez de solo los dígitos. La nacionalidad es un dato del
+  aspirante y se perdía al escribir.
+- **Constructor de dirección de habitación**, rediseñado: la dirección y el
+  **punto de referencia** están los dos a la vista (antes la referencia vivía en
+  un desplegable «Asistente» y en la práctica no se llenaba), los prefijos
+  frecuentes (`Urb.`, `Av.`, `Calle`, `Sector`, `Vereda`…) se insertan en el
+  cursor con la coma que separa, y las comunidades de la parroquia se **añaden**
+  al texto en vez de reemplazarlo. Se retiró el selector «Tipo de ubicación», que
+  no se guardaba, el contador de caracteres y la vista previa duplicada.
+- **Se corrige un fallo del widget**: al recibir un valor nuevo del padre
+  reasignaba controladores `late final` y reventaba con `LateInitializationError`
+  al volver a un paso ya visitado.
+- **Prechequeo de cédulas por dígitos**
+  (`202611060001_precheck_aspirante_solo_digitos.sql`): compara `solo_digitos`
+  para que «V-12345678», «12345678» y «12.345.678» no entren dos veces.
+  **Requiere aplicar la migración**; sin ella, el duplicado solo se detecta si el
+  texto coincide exactamente.
+
 ## [1.14.1] - 2026-11-18
 ### El período de la cabecera deja de pedirse a una ruta de administrador
 

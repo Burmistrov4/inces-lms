@@ -4,8 +4,10 @@ import 'package:intl/intl.dart';
 
 import '../../models/inscripcion_campo.dart';
 import '../../theme/inces_theme.dart';
+import 'campo_cedula.dart';
 import 'campo_rejilla.dart';
 import 'campo_tabla.dart';
+import 'constructor_direccion_inteligente.dart';
 import 'estilos_campo.dart';
 
 /// Pinta **un** campo del catálogo, sea del tipo que sea.
@@ -35,6 +37,8 @@ class CampoPlanilla extends StatelessWidget {
     required this.onCambio,
     this.opciones,
     this.error,
+    this.prefijoCedula,
+    this.onPrefijoCedulaCambio,
   });
 
   final CampoInscripcion campo;
@@ -50,6 +54,10 @@ class CampoPlanilla extends StatelessWidget {
   /// `SnackBar` para que el aspirante vea **cuál** falla y no sólo que algo
   /// falla.
   final String? error;
+
+  /// Prefijo de documento para cédula ('V', 'E', 'J', 'P'), sincronizado con nacionalidad.
+  final String? prefijoCedula;
+  final ValueChanged<String>? onPrefijoCedulaCambio;
 
   /// La clave de estado del **widget de dentro**, la que guarda el valor.
   ///
@@ -73,17 +81,39 @@ class CampoPlanilla extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: switch (campo.tipo) {
-        TipoCampoInscripcion.texto => _Texto(
-            key: claveDeEstado,
-            campo: campo,
-            valor: valor,
-            onCambio: onCambio,
-            etiqueta: etiqueta,
-            error: error,
-            opciones: opciones,
-            tipoTeclado: _resolverTipoTeclado(campo.codigo),
-            validadorDeFormato: _resolverValidadorTexto(campo.codigo),
-          ),
+        TipoCampoInscripcion.texto => _esCampoIdentidad(campo.codigo)
+            ? CampoCedula(
+                key: claveDeEstado,
+                campo: campo,
+                valor: valor,
+                onCambio: onCambio,
+                etiqueta: etiqueta,
+                prefijoInicial: prefijoCedula ?? 'V',
+                onPrefijoCambio: onPrefijoCedulaCambio,
+                error: error,
+              )
+            : (campo.codigo.toLowerCase() == 'direccion' ||
+                    campo.codigo.toLowerCase() == 'domicilio')
+                ? ConstructorDireccionInteligente(
+                    key: claveDeEstado,
+                    campo: campo,
+                    valor: valor,
+                    onCambio: onCambio,
+                    etiqueta: etiqueta,
+                    sugerenciasGeograficas: opciones,
+                    error: error,
+                  )
+                : _Texto(
+                    key: claveDeEstado,
+                    campo: campo,
+                    valor: valor,
+                    onCambio: onCambio,
+                    etiqueta: etiqueta,
+                    error: error,
+                    opciones: opciones,
+                    tipoTeclado: _resolverTipoTeclado(campo.codigo),
+                    validadorDeFormato: _resolverValidadorTexto(campo.codigo),
+                  ),
         TipoCampoInscripcion.email => _Texto(
             key: claveDeEstado,
             campo: campo,
@@ -510,7 +540,7 @@ class _TextoState extends State<_Texto> {
                 ),
                 const SizedBox(height: 6),
                 ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 140),
+                  constraints: const BoxConstraints(maxHeight: 95),
                   child: Scrollbar(
                     thumbVisibility: opcionesParaMostrar.length > 5,
                     child: SingleChildScrollView(

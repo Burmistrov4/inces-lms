@@ -111,10 +111,18 @@ Future<ArnesFormulario> montarFormulario(
 Finder campoDe(String codigo) => find.byKey(ValueKey('campo-$codigo'));
 
 /// El `TextFormField` de dentro de un campo.
-Finder entradaDe(String codigo) => find.descendant(
+///
+/// **`.first`, y a propósito.** El campo de dirección no es un `TextFormField`
+/// suelto: `ConstructorDireccionInteligente` pinta dos —la dirección y el punto
+/// de referencia opcional—, y la dirección es siempre el primero del árbol. Sin
+/// el `.first`, `enterText` fallaba con «Too many elements» en cualquier prueba
+/// que escribiera la dirección, aunque la pantalla estuviera bien.
+Finder entradaDe(String codigo) => find
+    .descendant(
       of: campoDe(codigo),
       matching: find.byType(TextFormField),
-    );
+    )
+    .first;
 
 /// Escribe en un campo de texto.
 ///

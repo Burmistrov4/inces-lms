@@ -462,7 +462,13 @@ void main() {
       await enviar(tester);
 
       final metadata = gateway.ultimaMetadata!;
-      expect(metadata['cedula'], '20123456');
+      // La cédula viaja **con su prefijo** desde el 2026-11-06: el formulario
+      // guarda «V-», «E-», «J-» o «P-» delante de los dígitos, porque la
+      // nacionalidad es un dato y perderlo obligaba a preguntarla otra vez
+      // después. El prechequeo de duplicados ya no compara texto: compara
+      // dígitos limpios (`202611060001_precheck_aspirante_solo_digitos.sql`), que
+      // es lo que impide que «V-12345678» y «12345678» entren dos veces.
+      expect(metadata['cedula'], 'V-20123456');
       expect(metadata['sexo'], 'M');
       expect(metadata['telefono'], '04141234567');
       expect(metadata['nivel_educativo'], 'SECUNDARIA');
